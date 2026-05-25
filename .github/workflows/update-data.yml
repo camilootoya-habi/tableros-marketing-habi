@@ -2,7 +2,7 @@ name: Actualizar datos BigQuery
 
 on:
   schedule:
-    - cron: '0 13 * * *'  # 7:00 AM México (UTC-6) / 8:00 AM Colombia (UTC-5)
+    - cron: '0 */4 * * *'  # Cada 4h UTC — cubre lunes en la mañana para tableros semanales
   workflow_dispatch:  # Permite ejecutar manualmente desde GitHub
 
 jobs:
@@ -449,11 +449,31 @@ jobs:
         run: |
           python3 calificados-mm-inmo/build_data.py /tmp/calificados-mm-inmo-raw.json calificados-mm-inmo/data.json
 
+      - name: Query funnel-web-mx — clicks (MX)
+        if: always()
+        run: |
+          bq query --use_legacy_sql=false --format=json --max_rows=200000 < funnel-web-mx/query_clicks.sql > /tmp/wfmx_clicks.json
+
+      - name: Query funnel-web-mx — sessions (MX)
+        if: always()
+        run: |
+          bq query --use_legacy_sql=false --format=json --max_rows=500000 < funnel-web-mx/query_sessions.sql > /tmp/wfmx_sessions.json
+
+      - name: Query funnel-web-mx — leads (MX)
+        if: always()
+        run: |
+          bq query --use_legacy_sql=false --format=json --max_rows=500000 < funnel-web-mx/query_leads.sql > /tmp/wfmx_leads.json
+
+      - name: Build funnel-web-mx/data.json
+        if: always()
+        run: |
+          python3 funnel-web-mx/build_data.py /tmp/wfmx_clicks.json /tmp/wfmx_sessions.json /tmp/wfmx_leads.json funnel-web-mx/data.json
+
       - name: Commit and push
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add incompletos-colombia/data.json tablero-marketing/data.json tablero-marketing/antifunnel.json tablero-marketing/mm_sin_inmo_states.json okr-marketing/data.json pmax-mexico-quality/data.json pmax-mexico-quality/states.json creativo-pamela/data.json incompletos-direccion/data.json marketing-wbr/data.json wbr-2-0/data.json asignados-creacion/data.json prioridad-mm/data.json funnel-fuentes/data.json calificados-mm-inmo/data.json
+          git add incompletos-colombia/data.json tablero-marketing/data.json tablero-marketing/antifunnel.json tablero-marketing/mm_sin_inmo_states.json okr-marketing/data.json pmax-mexico-quality/data.json pmax-mexico-quality/states.json creativo-pamela/data.json incompletos-direccion/data.json marketing-wbr/data.json wbr-2-0/data.json asignados-creacion/data.json prioridad-mm/data.json funnel-fuentes/data.json calificados-mm-inmo/data.json funnel-web-mx/data.json
           if git diff --staged --quiet; then
             echo "No changes to commit"
           else
