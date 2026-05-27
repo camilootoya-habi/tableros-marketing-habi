@@ -213,9 +213,10 @@ se ve en el PR).
 ## Gobernanza — PR + revisión
 
 - **Branch protection** en `main` (disponible gratis en repos públicos):
-  - PR obligatorio antes de merge, sin push directo a `main`.
-  - Requerir 1 aprobación.
-  - Requerir review de code owners.
+  - PR obligatorio antes de merge + requerir 1 aprobación + review de code owners.
+  - **NO** activar "include administrators" / "do not allow bypassing" → Camilo
+    (admin/owner) **conserva push directo a `main`**; los líderes (rol `write`,
+    no-admin) sí quedan obligados a pasar por PR.
 - **CODEOWNERS:** los archivos compartidos requieren review de `@camilootoya-habi`:
   ```
   /index.html            @camilootoya-habi
@@ -226,9 +227,11 @@ se ve en el PR).
   Las carpetas de líder (`/canales/<lider>/`) pueden tener al líder como owner para
   que revise su propia área.
 - ⚠️ **Gotcha del auto-commit:** el cron pushea `data.json` + `index.html` a `main`.
-  Con branch protection activa hay que **permitir el bypass** para ese commit
-  automatizado (excepción al actor del workflow, o usar un token/deploy key con
-  permiso de bypass). Si no se configura, el cron queda bloqueado.
+  El `GITHUB_TOKEN` por defecto **no** es admin, así que branch protection lo
+  bloquearía. Solución más limpia dado que los admins pasan directo: hacer que el
+  cron pushee con un **PAT de Camilo** (admin) en vez del `GITHUB_TOKEN` → sus
+  commits bypassan igual que los de Camilo. Alternativa: agregar el actor del
+  workflow a la lista de bypass.
 
 ## Flujo repetible para un líder — `CONTRIBUTING.md`
 
