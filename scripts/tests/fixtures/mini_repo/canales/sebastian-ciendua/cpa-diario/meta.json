@@ -1,0 +1,1 @@
+{ "title": "CPA diario", "description": "Costo por adquisición diario.", "country": "CO", "section": "dashboard", "order": 1, "query": "query.sql" }
