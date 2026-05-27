@@ -1,0 +1,7 @@
+{
+  "title": "Desempeño hoy",
+  "description": "Calificados MM live del día actual, hora por hora. Selector país + multi-select de fuentes. Comparativo hoy vs hace 7 días vs promedio últimos 4 mismos días. Auto-refresh cada 15 min.",
+  "country": "CO & MX",
+  "section": "dashboard",
+  "order": 130
+}

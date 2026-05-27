@@ -1,0 +1,7 @@
+{
+  "title": "Calificados MM vs Inmo",
+  "description": "Cohort por fecha de registro: barras calif MM + Inmo, ratio Inmo / MM, y CVR Reg→Calif con tendencias. Selectores país, granularidad, fuentes. 52 semanas.",
+  "country": "CO & MX",
+  "section": "dashboard",
+  "order": 120
+}

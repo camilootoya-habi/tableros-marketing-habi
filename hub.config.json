@@ -1,0 +1,23 @@
+{
+  "title": "Growth & Marketing",
+  "subtitle": "Lo que no se mide no se mejora — y acá buscamos mejora continua.",
+  "general": { "title": "General · Marketing", "order": 0 },
+  "external_cards": [
+    {
+      "section": "analysis",
+      "order": 1,
+      "title": "Análisis de asignados — 2026",
+      "description": "Postmortem de la caída de asignados desde el 12 de marzo: nuevo Backbone, recalibración de metas y plan para recuperar volumen.",
+      "country": "CO",
+      "url": "https://camilootoya-habi.github.io/analisis-asignados-co/"
+    },
+    {
+      "section": "analysis",
+      "order": 2,
+      "title": "Postmortem campaña Multimedios — MTY",
+      "description": "Impacto de la campaña ALL-IN TUHABI en Monterrey, marzo 2026: tráfico, registros, conversión y funnel comercial.",
+      "country": "MX",
+      "url": "https://camilootoya-habi.github.io/analisis-mty-multimedios/"
+    }
+  ]
+}
