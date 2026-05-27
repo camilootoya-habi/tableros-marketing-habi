@@ -1,0 +1,7 @@
+{
+  "title": "Asignados · Mart vs Ever-asignado",
+  "description": "Selector de país. Compara la línea del WBR mart contra el universo ever-asignado, togglea 5 filtros sobre ever y descompone el gap por filtro (tabla + áreas apiladas).",
+  "country": "CO & MX",
+  "section": "dashboard",
+  "order": 50
+}

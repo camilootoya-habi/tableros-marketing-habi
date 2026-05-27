@@ -1,0 +1,7 @@
+{
+  "title": "PMAX — Calidad de leads",
+  "description": "Performance Max: registros diarios y % de leads sin ask_price por UTM. QA con objetivo < 10%.",
+  "country": "MX",
+  "section": "dashboard",
+  "order": 90
+}

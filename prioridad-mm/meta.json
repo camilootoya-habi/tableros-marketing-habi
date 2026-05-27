@@ -1,0 +1,7 @@
+{
+  "title": "Prioridad Market Maker",
+  "description": "Distribución semanal de leads tipificados A/B/C en HubSpot (campo prioridad_gestion_market_maker), últimas 18 semanas con selector de país.",
+  "country": "CO & MX",
+  "section": "dashboard",
+  "order": 60
+}
