@@ -1326,12 +1326,12 @@ Wait ~30s for GH Pages to pick up the push.
 
 ```bash
 sleep 30
-curl -sI https://camotoya.github.io/tableros-marketing-habi/asignados-filtros/ | head -1
+curl -sI https://camilootoya-habi.github.io/tableros-marketing-habi/asignados-filtros/ | head -1
 ```
 
 Expected: `HTTP/2 200`.
 
-Open https://camotoya.github.io/tableros-marketing-habi/asignados-filtros/ in a browser and re-verify:
+Open https://camilootoya-habi.github.io/tableros-marketing-habi/asignados-filtros/ in a browser and re-verify:
 - Header, controls, filter panel render
 - Chart shows recent data
 - Toggle a filter, see it change

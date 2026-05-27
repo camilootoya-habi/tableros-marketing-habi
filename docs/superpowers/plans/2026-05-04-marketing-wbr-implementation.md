@@ -476,7 +476,7 @@ Create `marketing-wbr/index.html` with this exact content:
 <body>
   <button type="button" class="theme-btn" id="themeToggle" onclick="toggleTheme()" aria-label="Cambiar tema">🌙</button>
 
-  <a href="https://camotoya.github.io/tableros-marketing-habi/" class="back-link">← Volver al hub</a>
+  <a href="https://camilootoya-habi.github.io/tableros-marketing-habi/" class="back-link">← Volver al hub</a>
 
   <div class="header">
     <h1>Marketing <span>WBR</span></h1>
@@ -1076,7 +1076,7 @@ EOF
 Open `~/habi/tableros-marketing/index.html`. Find this block (near the top of the Dashboards card stack — currently the Funnel Sellers card):
 
 ```html
-        <a class="card" href="https://camotoya.github.io/tableros-marketing-habi/tablero-marketing/">
+        <a class="card" href="https://camilootoya-habi.github.io/tableros-marketing-habi/tablero-marketing/">
           <h2><span class="country">CO &amp; MX</span>Funnel Sellers</h2>
           <p>Calificación de leads para Market Maker vs Inmobiliaria por fuente, país y período.</p>
         </a>
@@ -1085,7 +1085,7 @@ Open `~/habi/tableros-marketing/index.html`. Find this block (near the top of th
 Insert the WBR card immediately *before* the Funnel Sellers card (so it appears at the top of the dashboards column):
 
 ```html
-        <a class="card" href="https://camotoya.github.io/tableros-marketing-habi/marketing-wbr/">
+        <a class="card" href="https://camilootoya-habi.github.io/tableros-marketing-habi/marketing-wbr/">
           <h2><span class="country">CO &amp; MX</span>Marketing WBR</h2>
           <p>Weekly Business Review: matriz Dupont por canal con comparativos vs período anterior. CO disponible, MX próximamente.</p>
         </a>
@@ -1211,14 +1211,14 @@ GitHub Pages typically rebuilds in 1–2 minutes after a push. After waiting:
 
 ```bash
 # Check the dashboard is live
-curl -sI https://camotoya.github.io/tableros-marketing-habi/marketing-wbr/ | head -3
+curl -sI https://camilootoya-habi.github.io/tableros-marketing-habi/marketing-wbr/ | head -3
 ```
 
 Expected: HTTP/2 200.
 
 ```bash
 # Check data.json is reachable
-curl -s https://camotoya.github.io/tableros-marketing-habi/marketing-wbr/data.json | python3 -c "
+curl -s https://camilootoya-habi.github.io/tableros-marketing-habi/marketing-wbr/data.json | python3 -c "
 import json, sys
 d = json.load(sys.stdin)
 print('updated:', d['updated'])
@@ -1230,7 +1230,7 @@ Expected: prints today's date (or yesterday if the cron hasn't run yet) and ~180
 
 - [ ] **Step 4: Open in browser and smoke-test the live site**
 
-Visit https://camotoya.github.io/tableros-marketing-habi/marketing-wbr/ in a browser. Verify:
+Visit https://camilootoya-habi.github.io/tableros-marketing-habi/marketing-wbr/ in a browser. Verify:
 - Page loads, matrix renders with CO data.
 - Default view: 7 days, sorted by Registros desc.
 - Switching window pills (14/28/56) recomputes the matrix.
@@ -1239,7 +1239,7 @@ Visit https://camotoya.github.io/tableros-marketing-habi/marketing-wbr/ in a bro
 - Coloring is visible on cells with > ±10% delta.
 - Tooltip on hover shows actual/anterior/delta.
 - Theme toggle works and persists across reloads.
-- Hub card on https://camotoya.github.io/tableros-marketing-habi/ links to it correctly.
+- Hub card on https://camilootoya-habi.github.io/tableros-marketing-habi/ links to it correctly.
 
 - [ ] **Step 5: Manually trigger the workflow to confirm the cron path works**
 

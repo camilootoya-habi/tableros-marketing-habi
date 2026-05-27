@@ -226,7 +226,7 @@ Agregar `<a class="card">` al **final** de la sección "Tableros" en el `index.h
 ## Verificación post-deploy
 
 Antes de declarar éxito:
-- Abrir `https://camotoya.github.io/tableros-marketing-habi/desempeno-hoy/` y validar que:
+- Abrir `https://camilootoya-habi.github.io/tableros-marketing-habi/desempeno-hoy/` y validar que:
   - El chart muestra la línea de hoy con datos hasta cerca de la hora actual.
   - Las 2 series comparativas están completas (24 puntos).
   - El selector de país recalcula y los valores cambian.

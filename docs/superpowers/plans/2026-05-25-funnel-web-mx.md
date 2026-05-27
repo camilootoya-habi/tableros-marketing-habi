@@ -1624,7 +1624,7 @@ sleep 90
 - [ ] **Step 2: Open the live dashboard**
 
 ```bash
-xdg-open https://camotoya.github.io/tableros-marketing-habi/funnel-web-mx/ 2>/dev/null || echo "Open the URL manually in browser"
+xdg-open https://camilootoya-habi.github.io/tableros-marketing-habi/funnel-web-mx/ 2>/dev/null || echo "Open the URL manually in browser"
 ```
 
 Verify:

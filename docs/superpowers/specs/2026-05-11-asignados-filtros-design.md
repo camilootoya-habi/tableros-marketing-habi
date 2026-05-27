@@ -42,7 +42,7 @@ asignados-filtros/
 
 - Auto-update: nuevo step en `.github/workflows/update-data.yml`, cron 13:00 UTC.
 - Card en el landing `index.html` del root.
-- Live URL: `https://camotoya.github.io/tableros-marketing-habi/asignados-filtros/`.
+- Live URL: `https://camilootoya-habi.github.io/tableros-marketing-habi/asignados-filtros/`.
 - Tema visual compartido: background `#0f172a`, cards `#1e293b`, acento `#818cf8` (universo del usuario), referencia ámbar `#fbbf24` (mart oficial).
 - Favicon megáfono estándar.
 - Back link al inicio del body.

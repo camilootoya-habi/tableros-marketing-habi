@@ -67,10 +67,10 @@ El tablero se compone de **dos bloques**. Este spec cubre solo el primero:
 ### 4.1 Ubicación y URL
 
 - **Path local:** `~/habi/tableros-marketing/marketing-wbr/`
-- **URL prod:** `https://camotoya.github.io/tableros-marketing-habi/marketing-wbr/`
+- **URL prod:** `https://camilootoya-habi.github.io/tableros-marketing-habi/marketing-wbr/`
 - **Card en HUB** (`index.html` root, columna *Dashboards*):
   ```html
-  <a class="card" href="https://camotoya.github.io/tableros-marketing-habi/marketing-wbr/">
+  <a class="card" href="https://camilootoya-habi.github.io/tableros-marketing-habi/marketing-wbr/">
     <h2><span class="country">CO &amp; MX</span>Marketing WBR</h2>
     <p>Weekly Business Review: matriz Dupont por canal con comparativos vs período anterior.</p>
   </a>

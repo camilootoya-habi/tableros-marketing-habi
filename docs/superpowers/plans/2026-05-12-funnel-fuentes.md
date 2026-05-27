@@ -57,7 +57,7 @@ Funnel de leads desde landing hasta deal en HubSpot, cortado por fuente (Web hab
 
 Spec: `docs/superpowers/specs/2026-05-12-funnel-fuentes-design.md`
 
-Live: https://camotoya.github.io/tableros-marketing-habi/funnel-fuentes/
+Live: https://camilootoya-habi.github.io/tableros-marketing-habi/funnel-fuentes/
 ```
 
 - [ ] **Step 4: Commit inicial**
@@ -1141,7 +1141,7 @@ gh workflow run update-data.yml
 gh run watch
 ```
 
-Expected: workflow exitoso, commit automático con `funnel-fuentes/data.json` actualizado. Abrir la URL de GH Pages https://camotoya.github.io/tableros-marketing-habi/funnel-fuentes/ y verificar que el tablero levanta y muestra datos.
+Expected: workflow exitoso, commit automático con `funnel-fuentes/data.json` actualizado. Abrir la URL de GH Pages https://camilootoya-habi.github.io/tableros-marketing-habi/funnel-fuentes/ y verificar que el tablero levanta y muestra datos.
 
 ---
 
@@ -1164,7 +1164,7 @@ metadata:
 ---
 
 ## URL y paths
-- Live: https://camotoya.github.io/tableros-marketing-habi/funnel-fuentes/
+- Live: https://camilootoya-habi.github.io/tableros-marketing-habi/funnel-fuentes/
 - Local: `~/habi/tableros-marketing/funnel-fuentes/`
 - Spec: `docs/superpowers/specs/2026-05-12-funnel-fuentes-design.md`
 
