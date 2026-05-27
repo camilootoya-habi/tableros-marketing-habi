@@ -37,6 +37,21 @@ def test_render_card_escapes_html():
 
 SECTION_LABELS = {"analysis": "Analysis", "dashboard": "Dashboards", "reference": "Reference"}
 
+def test_build_page_orders_general_then_leaders():
+    dashboards = build_hub.discover_dashboards(REPO)
+    leaders = build_hub.discover_leaders(REPO)
+    config = {"title": "Growth & Marketing", "subtitle": "sub", "general": {"title": "General · Marketing", "order": 0}, "external_cards": []}
+    html = build_hub.build_page(dashboards, leaders, config, template=build_hub.load_template())
+    assert "NO editar a mano" in html
+    assert "Growth &amp; Marketing" in html or "Growth & Marketing" in html
+    assert html.index("General · Marketing") < html.index("Sebastián Ciendua · Performance Colombia")
+    assert "canales/sebastian-ciendua/cpa-diario/" in html
+
+def test_discover_leaders_reads_leader_json():
+    leaders = build_hub.discover_leaders(REPO)
+    assert leaders["sebastian-ciendua"]["name"] == "Sebastián Ciendua"
+    assert leaders["sebastian-ciendua"]["channel"] == "Performance Colombia"
+
 def test_render_owner_block_groups_by_section_in_order():
     cards = [
         {"title": "B dash", "description": "", "country": "CO", "link": "b/", "section": "dashboard", "order": 2},

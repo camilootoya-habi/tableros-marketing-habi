@@ -4,6 +4,8 @@ from pathlib import Path
 
 IGNORE_DIRS = {".git", ".github", "scripts", "docs", "node_modules"}
 
+TEMPLATE_PATH = Path(__file__).parent / "templates" / "hub.html"
+
 SECTION_ORDER = ["analysis", "dashboard", "reference"]
 SECTION_LABELS = {"analysis": "Analysis", "dashboard": "Dashboards", "reference": "Reference"}
 
@@ -71,3 +73,49 @@ def discover_dashboards(repo_root: Path):
             "order": meta.get("order", 9999), "query": meta.get("query"),
         })
     return dashboards
+
+
+def discover_leaders(repo_root: Path) -> dict:
+    repo_root = Path(repo_root)
+    leaders = {}
+    canales = repo_root / "canales"
+    if canales.exists():
+        for lj in sorted(canales.glob("*/_leader.json")):
+            data = json.loads(lj.read_text(encoding="utf-8"))
+            leaders[lj.parent.name] = data
+    return leaders
+
+
+def load_template() -> str:
+    return TEMPLATE_PATH.read_text(encoding="utf-8")
+
+
+def build_page(dashboards, leaders, config, template) -> str:
+    blocks = []
+    general_cards = [d for d in dashboards if d["owner"] == "general"] + [
+        {**c, "link": c["url"]} for c in config.get("external_cards", [])
+    ]
+    blocks.append(render_owner_block(config["general"]["title"], general_cards))
+    for lid in sorted(leaders, key=lambda k: leaders[k].get("order", 9999)):
+        ld = leaders[lid]
+        heading = f'{ld["name"]} · {ld["channel"]}'
+        lcards = [d for d in dashboards if d["owner"] == lid]
+        if lcards:
+            blocks.append(render_owner_block(heading, lcards))
+    content = "\n".join(blocks)
+    return (template
+            .replace("{{TITLE}}", escape(config["title"]))
+            .replace("{{SUBTITLE}}", escape(config["subtitle"]))
+            .replace("{{CONTENT}}", content))
+
+
+def main():
+    repo = Path(__file__).resolve().parents[1]
+    config = json.loads((repo / "hub.config.json").read_text(encoding="utf-8"))
+    html = build_page(discover_dashboards(repo), discover_leaders(repo), config, load_template())
+    (repo / "index.html").write_text(html, encoding="utf-8")
+    print(f"index.html regenerado ({len(html)} bytes)")
+
+
+if __name__ == "__main__":
+    main()
