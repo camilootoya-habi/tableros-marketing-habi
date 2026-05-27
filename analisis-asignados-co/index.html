@@ -1,0 +1,1715 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📊</text></svg>">
+<title>Análisis de asignados CO — 2026</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<style>
+  :root {
+    --bg: #fafaf7; --card: #ffffff;
+    --text: #1f2937; --text-muted: #6b7280; --text-title: #111827;
+    --accent: #4f46e5; --accent-soft: #eef2ff;
+    --border: #e5e7eb; --code-bg: #f3f4f6; --table-alt: #f9fafb;
+    --warn-bg: #fef3c7; --warn-border: #f59e0b;
+    --info-bg: #eef2ff; --info-border: #4f46e5;
+    --ok-bg: #ecfdf5; --ok-border: #10b981;
+    --danger-bg: #fee2e2; --danger-border: #dc2626;
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: var(--bg); color: var(--text); line-height: 1.65; margin: 0; padding: 0; }
+  .topbar { position: sticky; top: 0; background: rgba(250,250,247,0.94); backdrop-filter: blur(8px); border-bottom: 1px solid var(--border); padding: 10px 20px; display: flex; justify-content: space-between; align-items: center; font-size: 13px; z-index: 100; flex-wrap: wrap; gap: 8px; }
+  .topbar a { color: var(--accent); text-decoration: none; margin-left: 14px; }
+  .topbar a:hover { text-decoration: underline; }
+  .topbar .back-hub { color: var(--text-muted); margin-left: 0; margin-right: 14px; padding: 3px 8px; border: 1px solid var(--border); border-radius: 6px; font-weight: 500; }
+  .topbar .back-hub:hover { color: var(--accent); border-color: var(--accent); text-decoration: none; }
+  .wrap { max-width: 920px; margin: 0 auto; padding: 40px 28px 96px; }
+  h1 { color: var(--text-title); font-size: 2rem; font-weight: 700; margin: 0 0 6px; padding-bottom: 12px; border-bottom: 2px solid var(--accent); }
+  h2 { color: var(--text-title); font-size: 1.5rem; font-weight: 700; margin: 44px 0 12px; padding-top: 20px; border-top: 1px solid var(--border); }
+  h3 { color: var(--text-title); font-size: 1.2rem; font-weight: 600; margin: 28px 0 10px; }
+  p, li { font-size: 15px; }
+  ul, ol { padding-left: 26px; }
+  li { margin-bottom: 6px; }
+  strong { color: var(--text-title); }
+  code { background: var(--code-bg); padding: 2px 6px; border-radius: 4px; font-size: 13px; font-family: 'SF Mono', Menlo, Monaco, Consolas, monospace; color: #be185d; }
+  .meta { font-size: 13px; color: var(--text-muted); margin: 8px 0 24px; }
+
+  .placeholder { background: #f9fafb; border: 1px dashed #d1d5db; border-radius: 8px; padding: 20px; color: #6b7280; font-style: italic; text-align: center; }
+
+  .callout { padding: 14px 18px; border-radius: 0 8px 8px 0; margin: 18px 0; font-size: 14px; }
+  .callout.info { background: var(--info-bg); border-left: 3px solid var(--info-border); color: #1e1b4b; }
+  .callout.warn { background: var(--warn-bg); border-left: 3px solid var(--warn-border); color: #78350f; }
+  .callout.ok { background: var(--ok-bg); border-left: 3px solid var(--ok-border); color: #064e3b; }
+  .callout.danger { background: var(--danger-bg); border-left: 3px solid var(--danger-border); color: #7f1d1d; }
+  .callout strong { color: inherit; }
+  .callout p { margin: 6px 0; font-size: 14px; }
+  .callout p:first-child { margin-top: 0; }
+  .callout p:last-child { margin-bottom: 0; }
+
+  table { border-collapse: collapse; width: 100%; font-size: 13px; margin: 18px 0; display: block; overflow-x: auto; }
+  thead { background: var(--accent-soft); }
+  th { text-align: left; padding: 10px 12px; font-weight: 600; color: var(--text-title); border-bottom: 2px solid var(--accent); white-space: nowrap; }
+  td { padding: 8px 12px; border-bottom: 1px solid var(--border); white-space: nowrap; }
+  tbody tr:nth-child(even) { background: var(--table-alt); }
+  td:not(:first-child), th:not(:first-child) { text-align: right; font-variant-numeric: tabular-nums; }
+
+  .chart-card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 20px; margin: 18px 0; box-shadow: 0 1px 2px rgba(0,0,0,0.04); }
+  .chart-title { font-size: 16px; font-weight: 600; color: var(--text-title); margin-bottom: 4px; }
+  .chart-subtitle { font-size: 12px; color: var(--text-muted); margin-bottom: 14px; }
+  .chart-wrap { position: relative; height: 380px; width: 100%; }
+
+  .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; margin: 18px 0; }
+
+  .source-block { display: flex; align-items: stretch; gap: 16px; margin: 14px 0; }
+  .source-block .source-label { display: flex; align-items: center; justify-content: flex-start; min-width: 140px; max-width: 160px; padding: 14px 16px; background: var(--accent-soft); border-radius: 8px; font-weight: 600; color: var(--text-title); font-size: 15px; }
+  .source-block .kpi-grid { flex: 1; margin: 0; }
+  @media (max-width: 720px) {
+    .source-block { flex-direction: column; gap: 8px; }
+    .source-block .source-label { max-width: none; padding: 8px 14px; font-size: 13px; }
+  }
+  .kpi { background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 10px 14px; display: flex; flex-wrap: wrap; align-items: baseline; column-gap: 8px; }
+  .kpi .label { flex-basis: 100%; color: var(--text-muted); font-size: 11px; text-transform: uppercase; letter-spacing: 0.4px; margin-bottom: 2px; }
+  .kpi .val { font-weight: 700; color: var(--text-title); font-size: 18px; line-height: 1.2; }
+  .kpi .sub { color: var(--text-muted); font-size: 12px; margin-top: 0; }
+</style>
+</head>
+<body>
+<div class="topbar">
+  <span>
+    <a href="../" class="back-hub">← Hub</a>
+    📊 Análisis · Habi CO — Asignados 2026
+  </span>
+  <span>
+    <a href="#resumen">Resumen</a>
+    <a href="#cap-1">Cap. 1: Contexto</a>
+    <a href="#cap-2">Cap. 2: Por fuente</a>
+    <a href="#cap-3">Cap. 3: Metas</a>
+    <a href="#cap-4">Cap. 4: Volumen</a>
+  </span>
+</div>
+
+<div class="wrap">
+
+<h1>Análisis de asignados de marketing — Colombia 2026</h1>
+<div class="meta">
+  <strong>Fecha:</strong> 2026-04-24 · <strong>Autor:</strong> Camilo Otoya — growth/marketing<br>
+  <strong>Scope:</strong> Colombia · <strong>Estado del documento:</strong> en construcción, capítulo por capítulo
+</div>
+
+<h2 id="resumen">Resumen ejecutivo</h2>
+
+<ul>
+  <li><strong>El problema.</strong> Desde el 12 de marzo, los asignados de marketing CO caen <strong>−30%/día</strong> y la conversión registro → asignado pierde <strong>4.4 pp</strong>. WEB y Habimetro pesan ~80% del volumen y explican la mayor parte de la caída.</li>
+  <li><strong>La causa.</strong> Entró en producción un nuevo <strong>Backbone</strong> que recalibra qué es un lead calificado. No es un fallo — es la consecuencia esperada de filtrar mejor: menos errores tipo 1 (falsos positivos que antes calificaban) y más errores tipo 2 rescatados. La conversión consolidada baja por diseño.</li>
+  <li><strong>La señal positiva.</strong> Aunque entren menos leads al embudo, los que pasan son de mejor calidad: la <strong>conversión asignado → cita agendada subió +2 pp</strong> post-Backbone (16.7% → 18.7%). El filtro nuevo está acertando más.</li>
+  <li><strong>Las metas dejaron de aplicar.</strong> Recalibradas con las tasas nuevas, las próximas 6 semanas deben bajar <strong>−1,408 asignados (−16%)</strong>. Habimetro es la fuente que más se ajusta (−27%). Aplicado a las 6 semanas que ya pasaron post-Backbone, <strong>5 de 6 superan el 100%</strong> de cumplimiento — el equipo no se quedó corto en operación, se quedó corto contra un parámetro desactualizado.</li>
+  <li><strong>El frente de volumen.</strong> El CPL en WEB Paid subió <strong>+24%</strong> (USD 11.1 → 13.8) — síntoma de que las plataformas también recalibran. Estamos manteniendo estabilidad operativa, renovando creativos y reforzando eventos de tracking. Esperamos reducción de CPL + recuperación de volumen en las próximas semanas conforme el modelo termine de aprender el nuevo perfil de lead.</li>
+</ul>
+
+<div class="callout info">
+  <p><strong>Decisión inmediata:</strong> recalibrar las metas del Q2 con las nuevas conversiones por fuente. Sostener disciplina de no tocar la mecánica de las campañas mientras el modelo recalibra.</p>
+</div>
+
+<h2 id="cap-1">Capítulo 1 — Contextualización del problema</h2>
+
+<h3>Objetivo del documento</h3>
+<p>Diagnosticar la caída del indicador de asignados de marketing CO: dimensionarla, identificar causas, generar accionables que reviertan la tendencia y proponer ajustes al seguimiento.</p>
+
+<h3>Situación actual</h3>
+<p>La métrica reina del equipo es <strong>leads asignados</strong>, reportada en el WBR. Contra ese número se definen las metas anuales y el desempeño semanal. Acompañan tres indicadores de contexto: la <strong>inversión</strong> de paid media, el <strong>costo por lead asignado</strong> (CPLA) y los <strong>cierres potenciales</strong> que se derivan de cada cosecha de leads.</p>
+
+<h3>Cumplimiento semanal</h3>
+<p>El primer signo del problema aparece a nivel semanal. El primer trimestre cerró arriba o pegado a meta; <strong>las últimas semanas vienen por debajo del 100%.</strong> </p>
+
+<div id="chart-weekly" class="chart-card">
+  <div class="chart-title">Cumplimiento semanal vs meta y vs año anterior</div>
+  <div class="chart-subtitle">Cada punto es una semana, sin acumular.</div>
+  <div class="chart-wrap"><canvas id="cv-weekly" height="380"></canvas></div>
+</div>
+
+<h3>Cumplimiento YTD</h3>
+<p>Mirados en acumulado YTD esos mismos números todavía aguantan, pero solo por el colchón del Q1, cuando llegamos a estar <strong>17pp sobre meta</strong>. Las semanas malas vienen consumiendo esa holgura: hoy el cumplimiento YTD está en el filo del 100% y, de seguir así, en pocas semanas pasaríamos también a incumplir el acumulado. La inversión de paid media no se ha reducido en proporción, lo que está empujando el CPLA al alza.</p>
+
+<div id="chart-ytd" class="chart-card">
+  <div class="chart-title">Cumplimiento YTD vs meta y vs año anterior</div>
+  <div class="chart-subtitle">Cada punto acumula desde la primera semana del año.</div>
+  <div class="chart-wrap"><canvas id="cv-ytd" height="380"></canvas></div>
+</div>
+
+<div class="kpi-grid" id="kpis-ytd"></div>
+
+<p class="meta" style="font-size:12px">Fuente: WBR de Colombia, total de fuentes de marketing (WEB, Lead Forms, Habimetro, CRM, Broker, Comercial). Series desde la primera semana de 2026 hasta la última completa (20-26 abr). La semana en curso se excluye por ser parcial.</p>
+
+<h3>El volumen y la conversión también cayeron</h3>
+<p>Comparando las semanas pre y post 12 de marzo, las tres métricas del embudo se mueven en la misma dirección:</p>
+
+<div class="chart-card">
+  <div class="chart-title">Registros y asignados por semana — Colombia</div>
+  <div class="chart-wrap"><canvas id="cv-vol-clean" height="380"></canvas></div>
+</div>
+
+<div class="source-block">
+  <div class="source-label">Marketing Colombia<br><span style="font-size:11px; color:var(--text-muted); font-weight:400">total 6 fuentes</span></div>
+  <div class="kpi-grid" id="kpis-vol-clean"></div>
+</div>
+
+<div class="callout warn">
+  <p>Los asignados caen <strong>13pp más rápido</strong> que los registros: <strong>−30%</strong> vs <strong>−17%</strong>. Y la tasa de conversión cae de <strong>28.7% a 24.3%</strong> (<strong>−4.4 pp</strong>). No es solo menos volumen — además, una porción menor de los que entran termina asignada. El candidato natural es lo que pasó el 12 de marzo, la implementación del nuevo Backbone.</p>
+</div>
+
+<h3>¿Qué cambió el 12 de marzo con el nuevo Backbone?</h3>
+<p>Entró en producción un nuevo <strong>Backbone</strong> que evalúa cada lead y decide si el inmueble cumple el buybox de Market Maker (MM) o las reglas de Inmo. Trae dos cambios:</p>
+<ol>
+  <li><strong>Nuevas reglas de calificación MM:</strong> si cambia la tasa de calificación, la asignación se mueve directo con ella — un lead solo se asigna si antes califica.</li>
+  <li><strong>Funnel Inmo en paralelo:</strong> ahora cada lead recibe también un veredicto del funnel Inmo. Antes del 12 de marzo este flujo paralelo no existía.</li>
+</ol>
+
+<h3>Lo que el nuevo Backbone debería lograr</h3>
+
+<p>El Backbone nuevo no solo cambió quién califica — también <strong>recalibró el filtro</strong>. Tres efectos esperados:</p>
+
+<ol>
+  <li><strong>Reducir errores tipo 1:</strong> dejar de calificar leads que no cumplían realmente el buybox de Market Maker (el filtro viejo dejaba pasar leads que después se descartaban en gestión).</li>
+  <li><strong>Reducir errores tipo 2:</strong> empezar a calificar leads que sí cumplían el buybox y antes se estaban descartando.</li>
+  <li><strong>Efecto neto sobre la conversión:</strong> al combinarse ambos cambios, la conversión consolidada registro → asignado baja. <strong>Esto ya está comprobado en la vida real</strong> — los Cap. 1 y 2 muestran la caída de −4 a −5 pp por fuente, que es justamente esta reducción neta.</li>
+</ol>
+
+<p>Si el filtro nuevo es mejor, la <strong>calidad downstream</strong> de los leads asignados debería subir: aunque entren menos al embudo, una proporción mayor debería avanzar a cita, visita y cierre. La hipótesis testeable más inmediata es la <strong>conversión asignado → cita agendada</strong>.</p>
+
+<div class="chart-card">
+  <div class="chart-title">Conversión asignado → cita agendada (≤ 14 días)</div>
+  <div class="chart-subtitle">Línea semanal por fecha de asignación. Solo cuenta citas agendadas dentro de 14 días desde la asignación — así todas las cohortes son comparables al mismo nivel de maduración.</div>
+  <div class="chart-wrap" style="height:340px"><canvas id="cv-cvr-cita"></canvas></div>
+</div>
+
+<div class="callout info">
+  <p><strong>Señal temprana positiva:</strong> el CVR asignado → cita pasa de un promedio de <strong>16.7% pre-12-mar</strong> a <strong>18.7% post</strong> (+2 pp). El pico más alto de toda la serie es la semana del 6-abr con <strong>22.3%</strong>. Aunque entren menos leads al embudo, una proporción mayor avanza a cita en la primera ventana — consistente con que el filtro nuevo está acertando más.</p>
+</div>
+
+<h2 id="cap-2">Capítulo 2 — La caída por fuente</h2>
+
+<p>El agregado del Cap. 1 mete a las 6 fuentes de marketing en una sola línea. Para entender de dónde viene la caída descomponemos la misma comparación pre/post (6 semanas vs 6 semanas) por fuente.</p>
+
+<div class="source-block">
+  <div class="source-label">WEB</div>
+  <div class="kpi-grid">
+    <div class="kpi"><div class="label">Registros / día</div><div class="val" style="color:#dc2626">−22%</div><div class="sub">277 vs 355 pre</div></div>
+    <div class="kpi"><div class="label">Asignados / día</div><div class="val" style="color:#dc2626">−31%</div><div class="sub">102 vs 147 pre</div></div>
+    <div class="kpi"><div class="label">Conversión asig / reg</div><div class="val" style="color:#dc2626">−4.5pp</div><div class="sub">36.8% vs 41.3% pre</div></div>
+  </div>
+</div>
+
+<div class="source-block">
+  <div class="source-label">Habimetro</div>
+  <div class="kpi-grid">
+    <div class="kpi"><div class="label">Registros / día</div><div class="val" style="color:#dc2626">−10%</div><div class="sub">353 vs 394 pre</div></div>
+    <div class="kpi"><div class="label">Asignados / día</div><div class="val" style="color:#dc2626">−35%</div><div class="sub">42 vs 65 pre</div></div>
+    <div class="kpi"><div class="label">Conversión asig / reg</div><div class="val" style="color:#dc2626">−4.5pp</div><div class="sub">11.9% vs 16.4% pre</div></div>
+  </div>
+</div>
+
+<div class="source-block">
+  <div class="source-label">Lead Forms</div>
+  <div class="kpi-grid">
+    <div class="kpi"><div class="label">Registros / día</div><div class="val" style="color:#dc2626">−13%</div><div class="sub">37 vs 43 pre</div></div>
+    <div class="kpi"><div class="label">Asignados / día</div><div class="val" style="color:#dc2626">−30%</div><div class="sub">6 vs 9 pre</div></div>
+    <div class="kpi"><div class="label">Conversión asig / reg</div><div class="val" style="color:#dc2626">−3.9pp</div><div class="sub">16.2% vs 20.1% pre</div></div>
+  </div>
+</div>
+
+<div class="source-block">
+  <div class="source-label">CRM</div>
+  <div class="kpi-grid">
+    <div class="kpi"><div class="label">Registros / día</div><div class="val" style="color:#dc2626">−18%</div><div class="sub">12 vs 14 pre</div></div>
+    <div class="kpi"><div class="label">Asignados / día</div><div class="val" style="color:#dc2626">−24%</div><div class="sub">10 vs 13 pre</div></div>
+    <div class="kpi"><div class="label">Conversión asig / reg</div><div class="val" style="color:#dc2626">−5.8pp</div><div class="sub">84.3% vs 90.1% pre</div></div>
+  </div>
+</div>
+
+<div class="source-block">
+  <div class="source-label">Broker</div>
+  <div class="kpi-grid">
+    <div class="kpi"><div class="label">Registros / día</div><div class="val" style="color:#059669">+40%</div><div class="sub">10 vs 7 pre</div></div>
+    <div class="kpi"><div class="label">Asignados / día</div><div class="val" style="color:#059669">+29%</div><div class="sub">7 vs 5 pre</div></div>
+    <div class="kpi"><div class="label">Conversión asig / reg</div><div class="val" style="color:#dc2626">−6.2pp</div><div class="sub">69.1% vs 75.3% pre</div></div>
+  </div>
+</div>
+
+<div class="source-block">
+  <div class="source-label">Comercial</div>
+  <div class="kpi-grid">
+    <div class="kpi"><div class="label">Registros / día</div><div class="val" style="color:#dc2626">−82%</div><div class="sub">4 vs 23 pre</div></div>
+    <div class="kpi"><div class="label">Asignados / día</div><div class="val" style="color:#059669">+34%</div><div class="sub">2 vs 2 pre</div></div>
+    <div class="kpi"><div class="label">Conversión asig / reg</div><div class="val" style="color:#059669">+49.7pp</div><div class="sub">57.5% vs 7.8% pre</div></div>
+  </div>
+</div>
+
+<p class="meta">Pre: 26-ene → 8-mar (42 días). Post: 16-mar → 26-abr (42 días). Semana frontera 9-15 mar excluida. WEB pre con el ajuste del pico de duplicados aplicado.</p>
+
+<h3>Lecturas</h3>
+
+<ol>
+  <li><strong>WEB y Habimetro pesan casi todo.</strong> Suman ~80% del volumen total. Caen <strong>−31% y −35%</strong> en asignados respectivamente — el grueso de la caída agregada se explica acá.</li>
+  <li><strong>La conversión cae en todas las fuentes principales</strong> (−3.9 a −5.8 pp). No es un problema localizado: el Backbone nuevo está dejando pasar una proporción menor de los leads que entran, pareja en todas las fuentes grandes.</li>
+  <li><strong>Comercial: cambio operativo atípico.</strong> Registros caen 82% y la conversión salta de 7.8% a 57.5%. Probable cambio en cómo se captura/clasifica esta fuente, no un efecto del Backbone — vale revisar con el equipo de captación.</li>
+</ol>
+
+<div class="callout warn">
+  <p>Las metas se construyeron con la conversión histórica y, con las tasas nuevas (−3.9 a −5.8 pp más bajas), ya no se sostienen contra el volumen entrante.</p>
+  <p><strong>Próximos pasos obligatorios:</strong></p>
+  <ol style="margin: 4px 0 0 20px; padding: 0;">
+    <li>Recalcular las metas de asignados con las nuevas conversiones post-Backbone. <em>(Capítulo 3)</em></li>
+    <li>Revertir la tendencia en volumen de registros por fuente. <em>(Capítulo 4)</em></li>
+  </ol>
+</div>
+
+<h2 id="cap-3">Capítulo 3 — Recalcular las metas con las nuevas conversiones</h2>
+
+<p>Las metas de asignados del año se construyeron asumiendo las conversiones registro → asignado <strong>históricas</strong>. Con las tasas nuevas (post-Backbone), esas metas dejan de ser realistas: para mantener los mismos asignados se necesitarían más registros, y el volumen no está creciendo. La salida es ajustar las metas hacia abajo en proporción a la caída de conversión, <strong>sabiendo además que el filtro nuevo está mejorando la calidad de los leads asignados</strong> — el CVR asignado → cita agendada subió +2 pp post-Backbone (Cap. 1). Menos leads asignados, pero de mejor calidad.</p>
+
+<p><strong>Fórmula:</strong> meta nueva = meta actual × (conversión post / conversión pre). Equivale a decir "asumiendo el mismo volumen de registros, ¿cuántos asignados saldrían con las tasas nuevas?".</p>
+
+<div class="callout info">
+  <p><strong>Ejemplo concreto · WEB, semana 27-abr → 03-may:</strong> meta actual <strong>824</strong> asignados. Con la conversión vieja del 41.3% implicaba ~1,995 registros. Aplicando la conversión nueva del 36.8% sobre el mismo volumen, la meta debería ser <strong>734</strong> — una caída de 90 asignados (−11%) sólo por el ajuste de tasa.</p>
+</div>
+
+<h3>Ajuste de las próximas 6 semanas (27-abr → 7-jun)</h3>
+
+<table>
+  <thead>
+    <tr>
+      <th>Fuente</th>
+      <th>Conv pre</th>
+      <th>Conv post</th>
+      <th>Factor</th>
+      <th>Meta actual (6 sem)</th>
+      <th>Meta nueva (6 sem)</th>
+      <th>Δ</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><strong>WEB</strong></td>
+      <td>41.3%</td><td>36.8%</td><td>0.891</td>
+      <td>5,077</td><td><strong>4,524</strong></td>
+      <td style="color:#dc2626">−553 (−11%)</td>
+    </tr>
+    <tr>
+      <td><strong>Habimetro</strong></td>
+      <td>16.4%</td><td>11.9%</td><td>0.726</td>
+      <td>2,712</td><td><strong>1,968</strong></td>
+      <td style="color:#dc2626; font-weight:600">−744 (−27%)</td>
+    </tr>
+    <tr>
+      <td><strong>Lead Forms</strong></td>
+      <td>20.1%</td><td>16.2%</td><td>0.806</td>
+      <td>298</td><td><strong>240</strong></td>
+      <td style="color:#dc2626">−58 (−19%)</td>
+    </tr>
+    <tr>
+      <td><strong>CRM</strong></td>
+      <td>90.1%</td><td>84.3%</td><td>0.936</td>
+      <td>438</td><td><strong>410</strong></td>
+      <td style="color:#dc2626">−28 (−6%)</td>
+    </tr>
+    <tr>
+      <td><strong>Broker</strong></td>
+      <td>75.3%</td><td>69.1%</td><td>0.918</td>
+      <td>308</td><td><strong>283</strong></td>
+      <td style="color:#dc2626">−25 (−8%)</td>
+    </tr>
+    <tr>
+      <td><strong>Comercial</strong></td>
+      <td colspan="2" style="text-align:center; color:var(--text-muted)">mantiene (atípico)</td>
+      <td>1.000</td>
+      <td>73</td><td>73</td>
+      <td>0</td>
+    </tr>
+    <tr style="background:var(--accent-soft); font-weight:700">
+      <td>Total</td>
+      <td>—</td><td>—</td><td>—</td>
+      <td>8,906</td><td>7,498</td>
+      <td style="color:#dc2626">−1,408 (−16%)</td>
+    </tr>
+  </tbody>
+</table>
+
+<h3>Detalle semana × fuente</h3>
+
+<table>
+  <thead>
+    <tr>
+      <th>Semana</th>
+      <th>WEB</th>
+      <th>Habimetro</th>
+      <th>Lead Forms</th>
+      <th>CRM</th>
+      <th>Broker</th>
+      <th>Comercial</th>
+      <th>Total nueva</th>
+      <th>Total actual</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>27/04 → 03/05</td>
+      <td>734</td><td>317</td><td>34</td><td>59</td><td>40</td><td>10</td>
+      <td><strong>1,194</strong></td>
+      <td style="color:var(--text-muted)">1,419</td>
+    </tr>
+    <tr>
+      <td>04/05 → 10/05</td>
+      <td>770</td><td>333</td><td>44</td><td>73</td><td>50</td><td>13</td>
+      <td><strong>1,283</strong></td>
+      <td style="color:var(--text-muted)">1,522</td>
+    </tr>
+    <tr>
+      <td>11/05 → 17/05</td>
+      <td>770</td><td>333</td><td>44</td><td>73</td><td>50</td><td>13</td>
+      <td><strong>1,283</strong></td>
+      <td style="color:var(--text-muted)">1,522</td>
+    </tr>
+    <tr>
+      <td>18/05 → 24/05</td>
+      <td>737</td><td>319</td><td>35</td><td>59</td><td>40</td><td>11</td>
+      <td><strong>1,201</strong></td>
+      <td style="color:var(--text-muted)">1,428</td>
+    </tr>
+    <tr>
+      <td>25/05 → 31/05</td>
+      <td>770</td><td>333</td><td>44</td><td>73</td><td>50</td><td>13</td>
+      <td><strong>1,283</strong></td>
+      <td style="color:var(--text-muted)">1,522</td>
+    </tr>
+    <tr>
+      <td>01/06 → 07/06</td>
+      <td>743</td><td>333</td><td>40</td><td>73</td><td>50</td><td>13</td>
+      <td><strong>1,252</strong></td>
+      <td style="color:var(--text-muted)">1,489</td>
+    </tr>
+    <tr style="background:var(--accent-soft); font-weight:700">
+      <td>Total 6 semanas</td>
+      <td>4,524</td><td>1,968</td><td>240</td><td>410</td><td>283</td><td>73</td>
+      <td>7,498</td>
+      <td>8,906</td>
+    </tr>
+  </tbody>
+</table>
+
+<p class="meta">Fuente de las metas actuales: hoja "CO Cumplimiento Fuentes" del sheet de planning. Conversión pre: 26-ene → 8-mar (6 semanas). Conversión post: 16-mar → 26-abr (6 semanas). Comercial mantiene su meta original porque su conversión post (57.5%) saltó desde 7.8% — es un cambio operativo atípico, no un efecto del Backbone, y no aplica el ajuste a la baja.</p>
+
+<div class="callout warn">
+  <p><strong>Lectura para el equipo:</strong> con las nuevas conversiones, las próximas 6 semanas deberían ajustarse a la baja en <strong>1,408 asignados</strong> (−16% del total planificado). Habimetro es la fuente que más se ajusta (−27%), seguida de Lead Forms (−19%) y WEB (−11%). El siguiente paso es presentar este ajuste al equipo de planning para revisar las metas del Q2.</p>
+</div>
+
+<h3>¿Cómo se vería el cumplimiento de las semanas post-Backbone con la meta correcta?</h3>
+
+<p>Si aplicamos el mismo recalculo a las 6 semanas post-12-mar que ya pasaron, el cumplimiento semanal se ve distinto: en vez de quedarnos entre 86% y 97% contra una meta que dejó de aplicar, el equipo está en <strong>102%-115%</strong> contra la meta correcta.</p>
+
+<div id="chart-recal" class="chart-card">
+  <div class="chart-title">Cumplimiento semanal vs meta original y vs meta recalibrada</div>
+  <div class="chart-subtitle">Las dos líneas coinciden hasta el 12 de marzo. Desde el 16 de marzo, la línea verde aplica el factor de recalibración por fuente del Cap. 3 a la meta de cada semana.</div>
+  <div class="chart-wrap"><canvas id="cv-recal" height="380"></canvas></div>
+</div>
+
+<div class="callout info">
+  <p><strong>Lectura clave:</strong> el equipo no se quedó corto en operación — se quedó corto contra un parámetro desactualizado. Con la meta recalibrada, <strong>5 de las 6 semanas post-Backbone superan el 100%</strong>. Esto refuerza la urgencia de actualizar las metas del Q2 con las nuevas conversiones.</p>
+</div>
+
+<h2 id="cap-4">Capítulo 4 — Recuperar el volumen de registros</h2>
+
+<p>Con las nuevas reglas del Backbone, las campañas de paid media están <strong>recalibrando qué es un lead calificado</strong> para Habi. En la transición hay señales contradictorias: perfiles que antes calificaban ahora no lo hacen, y al revés. Las plataformas (Meta, Google) reciben esa mezcla y van a ajustar a quién muestran los anuncios.</p>
+
+<div class="callout info">
+  <p>No es que las campañas estén en <strong>modo aprendizaje</strong> — ese reset operativo se evita al 100% y aquí no ocurrió. Es una <strong>recalibración del modelo</strong>: empieza a dar más peso a perfiles que antes no calificaban y menos peso a los que antes sí calificaban.</p>
+</div>
+
+<p>El camino para recuperar volumen pasa por <strong>dejar que el modelo se reestabilice solo</strong>. Cualquier cambio brusco — apagar/prender campañas, mover budgets de un día para otro, cambiar pixel/eventos — puede mandar las campañas a modo aprendizaje real, justo el escenario que queremos evitar.</p>
+
+<h3>Situación entre plataformas</h3>
+
+<div class="chart-card">
+  <div class="chart-title">Inversión y registros WEB por plataforma — Colombia</div>
+  <div class="chart-subtitle">Barras apiladas: registros WEB por semana de creación, por plataforma de origen. Líneas: share % de inversión Facebook vs Google (suma 100%).</div>
+  <div class="chart-wrap"><canvas id="cv-platforms" height="380"></canvas></div>
+</div>
+
+<h3>Lo que cuesta cada lead — costo por registro WEB Paid</h3>
+
+<p>El segundo síntoma de la recalibración del modelo es el <strong>costo por lead (CPL)</strong>. Cuando una plataforma deja de tener clara la señal de quién convierte, necesita más impresiones para encontrar al lead correcto — el CPL sube. Es exactamente lo que vemos desde el 12 de marzo en WEB Paid CO.</p>
+
+<div class="chart-card">
+  <div class="chart-title">Costo por lead — WEB Paid Colombia (USD)</div>
+  <div class="chart-subtitle">Spend / registros por semana ISO. Universo: campañas con <code>mkt_channel_medium = WEB Paid</code> (Facebook + Google + Bing + TikTok).</div>
+  <div class="chart-wrap" style="height:340px"><canvas id="cv-cpl"></canvas></div>
+</div>
+
+<div class="callout warn">
+  <p>El CPL pre-12-mar promediaba <strong>USD 11.1</strong>. Post-Backbone subió a <strong>USD 13.8</strong> — un alza del <strong>+24%</strong>. El pico fue la semana del 20-abr con <strong>USD 14.7</strong>. El modelo no solo dejó pasar menos leads — los que pasan cuestan más. Es esperable durante la recalibración; debería bajar cuando las plataformas terminen de aprender el nuevo perfil de lead calificado.</p>
+</div>
+
+<h3>Acciones en curso para acelerar la reestabilización</h3>
+
+<p>Estamos complementando el tracking con <strong>nuevos y mejores eventos de retroalimentación</strong> hacia las plataformas — pixels actualizados y eventos de conversión más alineados con el perfil de lead que ahora califica el Backbone. Mejor señal para que el algoritmo aprenda más rápido el perfil correcto.</p>
+
+<p>En paralelo, mantenemos dos disciplinas:</p>
+
+<ol>
+  <li><strong>Estabilidad operativa</strong> — sin tocar la mecánica de las campañas mientras el modelo recalibra (sin apagar/prender, sin mover budgets bruscos).</li>
+  <li><strong>Renovación de creativos</strong> — refresh continuo de anuncios para evitar fatiga y darle al algoritmo más combinaciones donde optimizar.</li>
+</ol>
+
+<div class="callout ok">
+  <p><strong>Lo que esperamos en las próximas semanas:</strong> reducción del CPL combinada con aumento del volumen de registros. Si las dos señales se mueven juntas, el modelo terminó de recalibrar y vuelve al equilibrio operativo previo.</p>
+</div>
+
+</div>
+
+<script>
+// Datos OKR CO — leads asignados del WBR mart, meta + actual + prev (año anterior mismo rango)
+// Se excluye la semana en curso (parcial) del análisis
+const OKR_WEEKS = [
+  {"label":"01/01 - 04/01","actual":454,"meta":633,"prev":394},
+  {"label":"05/01 - 11/01","actual":1360,"meta":1430,"prev":1395},
+  {"label":"12/01 - 18/01","actual":1836,"meta":1343,"prev":1562},
+  {"label":"19/01 - 25/01","actual":1919,"meta":1430,"prev":1547},
+  {"label":"26/01 - 01/02","actual":1814,"meta":1442,"prev":1577},
+  {"label":"02/02 - 08/02","actual":1836,"meta":1533,"prev":1904},
+  {"label":"09/02 - 15/02","actual":1644,"meta":1533,"prev":1485},
+  {"label":"16/02 - 22/02","actual":1625,"meta":1533,"prev":1484},
+  {"label":"23/02 - 01/03","actual":1759,"meta":1531,"prev":1573},
+  {"label":"02/03 - 08/03","actual":1590,"meta":1517,"prev":1697},
+  {"label":"09/03 - 15/03","actual":1370,"meta":1517,"prev":1594},
+  {"label":"16/03 - 22/03","actual":1344,"meta":1517,"prev":1615},
+  {"label":"23/03 - 29/03","actual":1360,"meta":1425,"prev":1257},
+  {"label":"30/03 - 05/04","actual":951,"meta":1105,"prev":1430},
+  {"label":"06/04 - 12/04","actual":1458,"meta":1504,"prev":1326},
+  {"label":"13/04 - 19/04","actual":1292,"meta":1504,"prev":1170},
+  {"label":"20/04 - 26/04","actual":1183,"meta":1504,"prev":833}
+];
+
+Object.assign(Chart.defaults.plugins.tooltip, {
+  backgroundColor: 'rgba(15, 23, 42, 0.95)',
+  borderColor: 'rgba(99, 102, 241, 0.4)',
+  borderWidth: 1,
+  titleColor: '#f8fafc',
+  bodyColor: '#e2e8f0',
+  titleFont: { size: 13, weight: '600' },
+  bodyFont: { size: 12 },
+  padding: 10, cornerRadius: 8, displayColors: true, boxPadding: 4
+});
+
+function renderYtdChart() {
+  let cumA = 0, cumM = 0, cumP = 0;
+  const series = OKR_WEEKS.map(w => {
+    cumA += w.actual; cumM += w.meta; cumP += w.prev;
+    return {
+      label: w.label,
+      pctMeta: cumM ? (cumA / cumM) * 100 : 0,
+      pctYoY: cumP ? (cumA / cumP) * 100 : 0,
+      cumA, cumM, cumP
+    };
+  });
+
+  const labels = series.map(s => s.label);
+  const dataMeta = series.map(s => s.pctMeta);
+  const dataYoY = series.map(s => s.pctYoY);
+
+  const ctx = document.getElementById('cv-ytd');
+  new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [
+        {
+          label: 'vs meta (%)',
+          data: dataMeta,
+          borderColor: '#4f46e5',
+          backgroundColor: '#4f46e5',
+          tension: 0.2, borderWidth: 3,
+          pointRadius: 4, pointHoverRadius: 7
+        },
+        {
+          label: 'vs año anterior (%)',
+          data: dataYoY,
+          borderColor: '#10b981',
+          backgroundColor: '#10b981',
+          tension: 0.2, borderWidth: 3,
+          pointRadius: 4, pointHoverRadius: 7
+        }
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: { position: 'bottom', labels: { boxWidth: 12, boxHeight: 12, padding: 14, font: { size: 12 } } },
+        tooltip: {
+          callbacks: {
+            label: ctx => ctx.dataset.label + ': ' + ctx.raw.toFixed(1) + '%',
+            afterBody: items => {
+              const s = series[items[0].dataIndex];
+              return [`Acum. real: ${s.cumA.toLocaleString()}`, `Acum. meta: ${s.cumM.toLocaleString()}`, `Acum. 2025: ${s.cumP.toLocaleString()}`];
+            }
+          }
+        }
+      },
+      scales: {
+        x: { ticks: { font: { size: 10 }, maxRotation: 60, minRotation: 45 }, grid: { display: false } },
+        y: { beginAtZero: false, suggestedMin: 70, suggestedMax: 125,
+          title: { display: true, text: 'Porcentaje', font: { size: 11 }, color: '#6b7280' },
+          ticks: { font: { size: 10 }, color: '#6b7280', callback: v => v + '%' },
+          grid: { color: 'rgba(148, 163, 184, 0.15)' } }
+      }
+    },
+    plugins: [{
+      id: 'refline100',
+      afterDatasetsDraw(chart) {
+        const y = chart.scales.y.getPixelForValue(100);
+        const xa = chart.chartArea;
+        const ctx = chart.ctx;
+        ctx.save();
+        ctx.strokeStyle = '#94a3b8'; ctx.setLineDash([4, 4]); ctx.lineWidth = 1;
+        ctx.beginPath(); ctx.moveTo(xa.left, y); ctx.lineTo(xa.right, y); ctx.stroke();
+        ctx.fillStyle = '#64748b'; ctx.font = '10px -apple-system, sans-serif'; ctx.textAlign = 'right';
+        ctx.fillText('100% (meta)', xa.right - 4, y - 4);
+        ctx.restore();
+      }
+    }]
+  });
+
+  // KPIs a la fecha
+  const last = series[series.length - 1];
+  document.getElementById('kpis-ytd').innerHTML = `
+    <div class="kpi">
+      <div class="label">Cumplimiento YTD</div>
+      <div class="val" style="color:${last.pctMeta >= 100 ? '#059669' : '#dc2626'}">${last.pctMeta.toFixed(1)}%</div>
+      <div class="sub">${last.cumA.toLocaleString()} de ${last.cumM.toLocaleString()} meta</div>
+    </div>
+    <div class="kpi">
+      <div class="label">vs año anterior YTD</div>
+      <div class="val" style="color:${last.pctYoY >= 100 ? '#059669' : '#dc2626'}">${last.pctYoY.toFixed(1)}%</div>
+      <div class="sub">${last.cumA.toLocaleString()} vs ${last.cumP.toLocaleString()} mismo rango 2025</div>
+    </div>
+    <div class="kpi">
+      <div class="label">Pico de cumplimiento</div>
+      <div class="val">${Math.max(...series.map(s=>s.pctMeta)).toFixed(1)}%</div>
+      <div class="sub">Alcanzado a principios de Feb</div>
+    </div>
+    <div class="kpi">
+      <div class="label">Pérdida desde el pico</div>
+      <div class="val" style="color:#dc2626">−${(Math.max(...series.map(s=>s.pctMeta)) - last.pctMeta).toFixed(1)}pp</div>
+      <div class="sub">Erosión progresiva del colchón</div>
+    </div>
+  `;
+}
+
+function renderWeeklyChart() {
+  const labels = OKR_WEEKS.map(w => w.label);
+  const dataMeta = OKR_WEEKS.map(w => w.meta ? (w.actual / w.meta) * 100 : 0);
+  const dataYoY = OKR_WEEKS.map(w => w.prev ? (w.actual / w.prev) * 100 : 0);
+
+  const ctx = document.getElementById('cv-weekly');
+  new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [
+        {
+          label: 'vs meta (%)',
+          data: dataMeta,
+          borderColor: '#4f46e5', backgroundColor: '#4f46e5',
+          tension: 0.2, borderWidth: 3,
+          pointRadius: 4, pointHoverRadius: 7
+        },
+        {
+          label: 'vs año anterior (%)',
+          data: dataYoY,
+          borderColor: '#10b981', backgroundColor: '#10b981',
+          tension: 0.2, borderWidth: 3,
+          pointRadius: 4, pointHoverRadius: 7
+        }
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: { position: 'bottom', labels: { boxWidth: 12, boxHeight: 12, padding: 14, font: { size: 12 } } },
+        tooltip: {
+          callbacks: {
+            label: ctx => ctx.dataset.label + ': ' + ctx.raw.toFixed(1) + '%',
+            afterBody: items => {
+              const w = OKR_WEEKS[items[0].dataIndex];
+              return [
+                `Real: ${w.actual.toLocaleString()}`,
+                `Meta: ${w.meta.toLocaleString()}`,
+                `2025: ${w.prev.toLocaleString()}`
+              ];
+            }
+          }
+        }
+      },
+      scales: {
+        x: { ticks: { font: { size: 10 }, maxRotation: 60, minRotation: 45 }, grid: { display: false } },
+        y: { beginAtZero: false, suggestedMin: 50, suggestedMax: 150,
+          title: { display: true, text: 'Porcentaje', font: { size: 11 }, color: '#6b7280' },
+          ticks: { font: { size: 10 }, color: '#6b7280', callback: v => v + '%' },
+          grid: { color: 'rgba(148, 163, 184, 0.15)' } }
+      }
+    },
+    plugins: [{
+      id: 'refline100w',
+      afterDatasetsDraw(chart) {
+        const y = chart.scales.y.getPixelForValue(100);
+        const xa = chart.chartArea;
+        const c = chart.ctx;
+        c.save();
+        c.strokeStyle = '#94a3b8'; c.setLineDash([4, 4]); c.lineWidth = 1;
+        c.beginPath(); c.moveTo(xa.left, y); c.lineTo(xa.right, y); c.stroke();
+        c.fillStyle = '#64748b'; c.font = '10px -apple-system, sans-serif'; c.textAlign = 'right';
+        c.fillText('100% (meta)', xa.right - 4, y - 4);
+        c.restore();
+      }
+    }]
+  });
+}
+
+// Volumen semanal CO — cohorte por fecha de creación, JOIN por nid contra mart de asignados
+// Mismo perímetro: 6 fuentes principales (3, 7, 20, 35, 39, 47), excluye Ventana=1
+// reg = todos los registros (con + sin NID); asig = nids de esos registros presentes en el mart
+const VOL_WEEKS = [
+  {"w":"2026-01-05","reg":5824,"regSinNid":11,"asig":1572},
+  {"w":"2026-01-12","reg":5426,"regSinNid":8,"asig":1665},
+  {"w":"2026-01-19","reg":6742,"regSinNid":8,"asig":1979},
+  {"w":"2026-01-26","reg":5840,"regSinNid":12,"asig":1764},
+  {"w":"2026-02-02","reg":5693,"regSinNid":9,"asig":1750},
+  {"w":"2026-02-09","reg":5802,"regSinNid":53,"asig":1637},
+  {"w":"2026-02-16","reg":6186,"regSinNid":18,"asig":1714},
+  {"w":"2026-02-23","reg":6948,"regSinNid":80,"asig":1625},
+  {"w":"2026-03-02","reg":5858,"regSinNid":21,"asig":1591},
+  {"w":"2026-03-09","reg":5146,"regSinNid":613,"asig":1492},
+  {"w":"2026-03-16","reg":4746,"regSinNid":1287,"asig":1254},
+  {"w":"2026-03-23","reg":4810,"regSinNid":1392,"asig":1176},
+  {"w":"2026-03-30","reg":4656,"regSinNid":1550,"asig":970},
+  {"w":"2026-04-06","reg":5292,"regSinNid":1411,"asig":1373},
+  {"w":"2026-04-13","reg":4838,"regSinNid":1403,"asig":1204},
+  {"w":"2026-04-20","reg":4744,"regSinNid":817,"asig":1103}
+];
+
+const MESES_ES = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+function fmtFechaEs(iso) {
+  const p = iso.split('-');
+  return `${p[2]} ${MESES_ES[parseInt(p[1],10)-1]}`;
+}
+
+function renderVolChart() {
+  const labels = VOL_WEEKS.map(w => w.w);
+  const regConNid = VOL_WEEKS.map(w => w.reg - w.regSinNid);
+  const regSinNid = VOL_WEEKS.map(w => w.regSinNid);
+  const asig = VOL_WEEKS.map(w => w.asig);
+  const conv = VOL_WEEKS.map(w => w.reg ? (w.asig / w.reg) * 100 : 0);
+
+  // Línea vertical en la frontera del 12-mar (entre 09 y 16 de marzo)
+  const cutLineVol = {
+    id: 'cutLineVol',
+    afterDatasetsDraw(chart) {
+      const xa = chart.scales.x;
+      const ya = chart.chartArea;
+      const idx = labels.indexOf('2026-03-09');
+      if (idx < 0) return;
+      // Posición entre Mar 9 y Mar 16 (idx y idx+1)
+      const x1 = xa.getPixelForValue(idx);
+      const x2 = xa.getPixelForValue(idx + 1);
+      const x = (x1 + x2) / 2;
+      const c = chart.ctx;
+      c.save();
+      c.strokeStyle = '#ef4444'; c.setLineDash([5, 4]); c.lineWidth = 1.5;
+      c.beginPath(); c.moveTo(x, ya.top); c.lineTo(x, ya.bottom); c.stroke();
+      c.fillStyle = '#ef4444'; c.font = '600 10px -apple-system, sans-serif'; c.textAlign = 'left';
+      c.fillText('12-mar', x + 4, ya.top + 10);
+      c.restore();
+    }
+  };
+
+  // Bandas Pre / Post — pintan el fondo de las ventanas de comparación.
+  // Pre: 26-ene → 2-mar (índigo suave) · Post: 16-mar → 20-abr (rojo suave).
+  // La semana frontera 9-15 mar queda sin sombrear.
+  const prePostBands = {
+    id: 'prePostBands',
+    beforeDatasetsDraw(chart) {
+      const xa = chart.scales.x;
+      const ya = chart.chartArea;
+      const c = chart.ctx;
+      const draw = (idxFrom, idxTo, fill, label, labelColor) => {
+        if (idxFrom < 0 || idxTo < 0) return;
+        const x1 = xa.getPixelForValue(idxFrom) - (xa.getPixelForValue(1) - xa.getPixelForValue(0)) / 2;
+        const x2 = xa.getPixelForValue(idxTo) + (xa.getPixelForValue(1) - xa.getPixelForValue(0)) / 2;
+        c.save();
+        c.fillStyle = fill;
+        c.fillRect(x1, ya.top, x2 - x1, ya.bottom - ya.top);
+        c.fillStyle = labelColor;
+        c.font = '700 10px -apple-system, sans-serif';
+        c.textAlign = 'center';
+        c.fillText(label, (x1 + x2) / 2, ya.top + 14);
+        c.restore();
+      };
+      draw(labels.indexOf('2026-01-26'), labels.indexOf('2026-03-02'),
+           'rgba(79, 70, 229, 0.07)', 'PRE (6 sem)', 'rgba(67, 56, 202, 0.55)');
+      draw(labels.indexOf('2026-03-16'), labels.indexOf('2026-04-20'),
+           'rgba(220, 38, 38, 0.07)', 'POST (6 sem)', 'rgba(153, 27, 27, 0.55)');
+    }
+  };
+
+  const ctx = document.getElementById('cv-vol');
+  new Chart(ctx, {
+    data: {
+      labels,
+      datasets: [
+        {
+          type: 'bar',
+          label: 'Registros con NID',
+          data: regConNid,
+          backgroundColor: 'rgba(203, 213, 225, 0.75)',
+          borderColor: 'rgba(148, 163, 184, 0.9)',
+          borderWidth: 1,
+          yAxisID: 'yVol', stack: 'reg',
+          order: 4
+        },
+        {
+          type: 'bar',
+          label: 'Registros sin NID (bug)',
+          data: regSinNid,
+          backgroundColor: 'rgba(71, 85, 105, 0.85)',
+          borderColor: 'rgba(51, 65, 85, 1)',
+          borderWidth: 1,
+          yAxisID: 'yVol', stack: 'reg',
+          order: 3
+        },
+        {
+          type: 'bar',
+          label: 'Asignados (WBR)',
+          data: asig,
+          backgroundColor: 'rgba(79, 70, 229, 0.85)',
+          borderColor: 'rgba(67, 56, 202, 1)',
+          borderWidth: 1,
+          yAxisID: 'yVol', stack: 'asig',
+          order: 2
+        },
+        {
+          type: 'line',
+          label: 'Conversión asig / reg (%)',
+          data: conv,
+          borderColor: '#dc2626',
+          backgroundColor: '#dc2626',
+          tension: 0.2,
+          pointRadius: 4, pointHoverRadius: 7, borderWidth: 3,
+          yAxisID: 'yPct',
+          order: 0
+        }
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: { position: 'bottom', labels: { boxWidth: 12, boxHeight: 12, padding: 14, font: { size: 12 } } },
+        tooltip: {
+          callbacks: {
+            title: items => 'Semana ' + fmtFechaEs(items[0].label),
+            label: ctx => {
+              if (ctx.dataset.yAxisID === 'yPct') return ctx.dataset.label + ': ' + ctx.raw.toFixed(1) + '%';
+              return ctx.dataset.label + ': ' + ctx.raw.toLocaleString();
+            }
+          }
+        }
+      },
+      scales: {
+        x: { ticks: { font: { size: 10 }, maxRotation: 60, minRotation: 45,
+              callback: function(v) { return fmtFechaEs(this.getLabelForValue(v)); } },
+            grid: { display: false } },
+        yVol: { position: 'left', beginAtZero: true,
+          title: { display: true, text: 'Leads', font: { size: 11 }, color: '#6b7280' },
+          ticks: { font: { size: 10 }, color: '#6b7280' },
+          grid: { color: 'rgba(148, 163, 184, 0.15)' } },
+        yPct: { position: 'right', beginAtZero: true, suggestedMax: 40,
+          title: { display: true, text: 'Conversión %', font: { size: 11 }, color: '#dc2626' },
+          ticks: { font: { size: 10 }, color: '#dc2626', callback: v => v + '%' },
+          grid: { display: false } }
+      }
+    },
+    plugins: [prePostBands, cutLineVol]
+  });
+
+  // KPIs pre / post — flujo diario promedio.
+  // 6 semanas a cada lado de la semana frontera (9-15 mar excluida).
+  // Pre: 26-ene → 8-mar · Post: 16-mar → 26-abr.
+  const PRE_WEEKS = VOL_WEEKS.filter(w => w.w >= '2026-01-26' && w.w <= '2026-03-02');
+  const POST_WEEKS = VOL_WEEKS.filter(w => w.w >= '2026-03-16' && w.w <= '2026-04-20');
+  const sum = arr => arr.reduce((a, b) => a + b, 0);
+  const preDays = PRE_WEEKS.length * 7;
+  const postDays = POST_WEEKS.length * 7;
+  const preRegD = sum(PRE_WEEKS.map(w => w.reg)) / preDays;
+  const postRegD = sum(POST_WEEKS.map(w => w.reg)) / postDays;
+  const preAsigD = sum(PRE_WEEKS.map(w => w.asig)) / preDays;
+  const postAsigD = sum(POST_WEEKS.map(w => w.asig)) / postDays;
+  const preConv = preAsigD / preRegD * 100;
+  const postConv = postAsigD / postRegD * 100;
+  document.getElementById('kpis-vol').innerHTML = `
+    <div class="kpi">
+      <div class="label">Registros / día</div>
+      <div class="val" style="color:#dc2626">−${((1 - postRegD/preRegD)*100).toFixed(0)}%</div>
+      <div class="sub">${Math.round(postRegD).toLocaleString()} vs ${Math.round(preRegD).toLocaleString()} pre</div>
+    </div>
+    <div class="kpi">
+      <div class="label">Asignados / día</div>
+      <div class="val" style="color:#dc2626">−${((1 - postAsigD/preAsigD)*100).toFixed(0)}%</div>
+      <div class="sub">${Math.round(postAsigD).toLocaleString()} vs ${Math.round(preAsigD).toLocaleString()} pre</div>
+    </div>
+    <div class="kpi">
+      <div class="label">Conversión asig / reg</div>
+      <div class="val" style="color:#dc2626">−${(preConv - postConv).toFixed(1)}pp</div>
+      <div class="sub">${postConv.toFixed(1)}% vs ${preConv.toFixed(1)}% pre</div>
+    </div>
+  `;
+}
+
+// Cap 2 — % leads sin NID en Estudio Inmueble (CO), semana lunes-domingo
+// Fuente: papyrus-data.habi_wh_bi.tabla_inmuebles_general · fuente_id=7
+// Hitos: salto el 12-mar (BB nuevo) · fix parcial el 22-abr (estado 65 mapeado)
+const NID_WEEKS = [
+  {label:"05/01-11/01", pct:0.23},
+  {label:"12/01-18/01", pct:0.21},
+  {label:"19/01-25/01", pct:0.24},
+  {label:"26/01-01/02", pct:0.43},
+  {label:"02/02-08/02", pct:0.29},
+  {label:"09/02-15/02", pct:1.53},
+  {label:"16/02-22/02", pct:0.45},
+  {label:"23/02-01/03", pct:0.23},
+  {label:"02/03-08/03", pct:0.74},
+  {label:"09/03-15/03", pct:25.55, marker: '12-mar · Backbone nuevo'},
+  {label:"16/03-22/03", pct:53.88},
+  {label:"23/03-29/03", pct:57.19},
+  {label:"30/03-05/04", pct:58.48},
+  {label:"06/04-12/04", pct:56.04},
+  {label:"13/04-19/04", pct:56.22},
+  {label:"20/04-26/04", pct:33.45, marker: '22-abr · fix parcial'}
+];
+
+function renderNidTimelineChart() {
+  const ctx = document.getElementById('chartNidTimeline');
+  if (!ctx) return;
+  const labels = NID_WEEKS.map(w => w.label);
+  const data = NID_WEEKS.map(w => w.pct);
+  const markerWeeks = NID_WEEKS.map((w, i) => w.marker ? i : null).filter(x => x !== null);
+
+  new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [{
+        label: '% leads sin NID',
+        data,
+        borderColor: '#dc2626',
+        backgroundColor: 'rgba(220, 38, 38, 0.08)',
+        fill: true,
+        tension: 0.2, borderWidth: 3,
+        pointRadius: NID_WEEKS.map(w => w.marker ? 6 : 3),
+        pointHoverRadius: 7,
+        pointBackgroundColor: NID_WEEKS.map(w => w.marker ? '#f59e0b' : '#dc2626'),
+        pointBorderColor: NID_WEEKS.map(w => w.marker ? '#78350f' : '#dc2626'),
+        pointBorderWidth: NID_WEEKS.map(w => w.marker ? 2 : 1)
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            label: ctx => '% sin NID: ' + ctx.raw.toFixed(2) + '%',
+            afterBody: items => {
+              const w = NID_WEEKS[items[0].dataIndex];
+              return w.marker ? ['→ ' + w.marker] : [];
+            }
+          }
+        }
+      },
+      scales: {
+        x: { ticks: { font: { size: 10 }, maxRotation: 60, minRotation: 45 }, grid: { display: false } },
+        y: {
+          beginAtZero: true, suggestedMax: 65,
+          title: { display: true, text: '% sin NID', font: { size: 11 }, color: '#6b7280' },
+          ticks: { font: { size: 10 }, color: '#6b7280', callback: v => v + '%' },
+          grid: { color: 'rgba(148, 163, 184, 0.15)' }
+        }
+      }
+    },
+    plugins: [{
+      id: 'nidMarkers',
+      afterDatasetsDraw(chart) {
+        const xa = chart.chartArea;
+        const c = chart.ctx;
+        markerWeeks.forEach(idx => {
+          const w = NID_WEEKS[idx];
+          const x = chart.scales.x.getPixelForValue(idx);
+          c.save();
+          c.strokeStyle = '#f59e0b'; c.setLineDash([4, 4]); c.lineWidth = 1.5;
+          c.beginPath(); c.moveTo(x, xa.top); c.lineTo(x, xa.bottom); c.stroke();
+          c.fillStyle = '#78350f'; c.font = 'bold 10px -apple-system, sans-serif';
+          c.textAlign = idx < NID_WEEKS.length / 2 ? 'left' : 'right';
+          c.fillText(w.marker, idx < NID_WEEKS.length / 2 ? x + 6 : x - 6, xa.top + 14);
+          c.restore();
+        });
+        // baseline reference (~2%)
+        const yb = chart.scales.y.getPixelForValue(2);
+        c.save();
+        c.strokeStyle = '#10b981'; c.setLineDash([2, 4]); c.lineWidth = 1;
+        c.beginPath(); c.moveTo(xa.left, yb); c.lineTo(xa.right, yb); c.stroke();
+        c.fillStyle = '#047857'; c.font = '10px -apple-system, sans-serif'; c.textAlign = 'right';
+        c.fillText('baseline pre-12-mar (~2%)', xa.right - 4, yb - 4);
+        c.restore();
+      }
+    }]
+  });
+}
+
+// Cap 1 — Bug Habicenter (16-feb → 8-mar). Pico de duplicados WEB CO.
+// Baseline pre-pico: ~233 dup/sem (promedio 5-ene → 9-feb). Pico: 16-feb (574), 23-feb (697), 2-mar (657).
+const WEB_DUP_WEEKS = [
+  {w:"2026-01-05", web:2550, dup:262},
+  {w:"2026-01-12", web:2590, dup:230},
+  {w:"2026-01-19", web:2901, dup:257},
+  {w:"2026-01-26", web:2542, dup:209},
+  {w:"2026-02-02", web:2538, dup:192},
+  {w:"2026-02-09", web:2337, dup:249},
+  {w:"2026-02-16", web:2847, dup:574},
+  {w:"2026-02-23", web:3006, dup:697},
+  {w:"2026-03-02", web:2882, dup:657},
+  {w:"2026-03-09", web:2347, dup:260},
+  {w:"2026-03-16", web:1957, dup:141},
+  {w:"2026-03-23", web:1923, dup:119},
+  {w:"2026-03-30", web:1687, dup:89},
+  {w:"2026-04-06", web:2290, dup:111},
+  {w:"2026-04-13", web:1884, dup:103},
+  {w:"2026-04-20", web:1904, dup:82}
+];
+
+// Exceso del bug Habicenter solo en las 3 semanas del pico. Descuenta el baseline (~233/sem).
+const HABI_PEAK_WEEKS = new Set(['2026-02-16', '2026-02-23', '2026-03-02']);
+const HABI_BASELINE = 233;
+
+function renderHabicenterChart() {
+  const ctx = document.getElementById('cv-dup');
+  if (!ctx) return;
+  const labels = WEB_DUP_WEEKS.map(w => w.w);
+  const data = WEB_DUP_WEEKS.map(w => w.dup);
+
+  const peakBand = {
+    id: 'peakBand',
+    beforeDatasetsDraw(chart) {
+      const xa = chart.scales.x;
+      const ya = chart.chartArea;
+      const c = chart.ctx;
+      const half = (xa.getPixelForValue(1) - xa.getPixelForValue(0)) / 2;
+      const i1 = labels.indexOf('2026-02-16');
+      const i2 = labels.indexOf('2026-03-02');
+      if (i1 < 0 || i2 < 0) return;
+      const x1 = xa.getPixelForValue(i1) - half;
+      const x2 = xa.getPixelForValue(i2) + half;
+      c.save();
+      c.fillStyle = 'rgba(220, 38, 38, 0.08)';
+      c.fillRect(x1, ya.top, x2 - x1, ya.bottom - ya.top);
+      c.fillStyle = 'rgba(153, 27, 27, 0.7)';
+      c.font = '700 10px -apple-system, sans-serif';
+      c.textAlign = 'center';
+      c.fillText('Bug Habicenter (3 sem)', (x1 + x2) / 2, ya.top + 14);
+      c.restore();
+    }
+  };
+
+  new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [{
+        label: 'Leads duplicados WEB',
+        data,
+        borderColor: '#dc2626',
+        backgroundColor: 'rgba(220, 38, 38, 0.12)',
+        fill: true,
+        tension: 0.25, borderWidth: 2.5,
+        pointRadius: 4, pointHoverRadius: 6,
+        pointBackgroundColor: '#dc2626'
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            title: items => fmtFechaEs(items[0].label),
+            label: ctx => 'Duplicados: ' + ctx.raw.toLocaleString()
+          }
+        }
+      },
+      scales: {
+        x: { ticks: { font: { size: 10 }, maxRotation: 60, minRotation: 45,
+              callback: function(v) { return fmtFechaEs(this.getLabelForValue(v)); } },
+            grid: { display: false } },
+        y: { beginAtZero: true,
+          title: { display: true, text: 'Leads duplicados', font: { size: 11 }, color: '#6b7280' },
+          ticks: { font: { size: 10 }, color: '#6b7280' },
+          grid: { color: 'rgba(148, 163, 184, 0.15)' } }
+      }
+    },
+    plugins: [peakBand, {
+      id: 'baseline',
+      afterDatasetsDraw(chart) {
+        const xa = chart.chartArea;
+        const c = chart.ctx;
+        const yb = chart.scales.y.getPixelForValue(HABI_BASELINE);
+        c.save();
+        c.strokeStyle = '#10b981'; c.setLineDash([3, 4]); c.lineWidth = 1;
+        c.beginPath(); c.moveTo(xa.left, yb); c.lineTo(xa.right, yb); c.stroke();
+        c.fillStyle = '#047857'; c.font = '10px -apple-system, sans-serif'; c.textAlign = 'right';
+        c.fillText('baseline ~' + HABI_BASELINE, xa.right - 4, yb - 4);
+        c.restore();
+      }
+    }]
+  });
+}
+
+function renderVolCleanChart() {
+  const ctx = document.getElementById('cv-vol-clean');
+  if (!ctx) return;
+  const labels = VOL_WEEKS.map(w => w.w);
+  const dupExtra = VOL_WEEKS.map(w => {
+    const wd = WEB_DUP_WEEKS.find(d => d.w === w.w);
+    if (!wd || !HABI_PEAK_WEEKS.has(w.w)) return 0;
+    return Math.max(0, wd.dup - HABI_BASELINE);
+  });
+  const regConNidClean = VOL_WEEKS.map((w, i) => (w.reg - w.regSinNid) - dupExtra[i]);
+  const regSinNid = VOL_WEEKS.map(w => w.regSinNid);
+  const asig = VOL_WEEKS.map(w => w.asig);
+  const conv = VOL_WEEKS.map((w, i) => {
+    const den = regConNidClean[i] + regSinNid[i];
+    return den ? (w.asig / den) * 100 : 0;
+  });
+
+  const cutLineClean = {
+    id: 'cutLineClean',
+    afterDatasetsDraw(chart) {
+      const xa = chart.scales.x;
+      const ya = chart.chartArea;
+      const idx = labels.indexOf('2026-03-09');
+      if (idx < 0) return;
+      const x = (xa.getPixelForValue(idx) + xa.getPixelForValue(idx + 1)) / 2;
+      const c = chart.ctx;
+      c.save();
+      c.strokeStyle = '#ef4444'; c.setLineDash([5, 4]); c.lineWidth = 1.5;
+      c.beginPath(); c.moveTo(x, ya.top); c.lineTo(x, ya.bottom); c.stroke();
+      c.fillStyle = '#ef4444'; c.font = '600 10px -apple-system, sans-serif'; c.textAlign = 'left';
+      c.fillText('12-mar', x + 4, ya.top + 10);
+      c.restore();
+    }
+  };
+  const prePostBandsClean = {
+    id: 'prePostBandsClean',
+    beforeDatasetsDraw(chart) {
+      const xa = chart.scales.x;
+      const ya = chart.chartArea;
+      const c = chart.ctx;
+      const half = (xa.getPixelForValue(1) - xa.getPixelForValue(0)) / 2;
+      const draw = (idxFrom, idxTo, fill, label, labelColor) => {
+        if (idxFrom < 0 || idxTo < 0) return;
+        const x1 = xa.getPixelForValue(idxFrom) - half;
+        const x2 = xa.getPixelForValue(idxTo) + half;
+        c.save();
+        c.fillStyle = fill;
+        c.fillRect(x1, ya.top, x2 - x1, ya.bottom - ya.top);
+        c.fillStyle = labelColor;
+        c.font = '700 10px -apple-system, sans-serif';
+        c.textAlign = 'center';
+        c.fillText(label, (x1 + x2) / 2, ya.top + 14);
+        c.restore();
+      };
+      draw(labels.indexOf('2026-01-26'), labels.indexOf('2026-03-02'),
+           'rgba(79, 70, 229, 0.07)', 'PRE (6 sem)', 'rgba(67, 56, 202, 0.55)');
+      draw(labels.indexOf('2026-03-16'), labels.indexOf('2026-04-20'),
+           'rgba(220, 38, 38, 0.07)', 'POST (6 sem)', 'rgba(153, 27, 27, 0.55)');
+    }
+  };
+
+  new Chart(ctx, {
+    data: {
+      labels,
+      datasets: [
+        {
+          type: 'bar', label: 'Registros con NID', data: regConNidClean,
+          backgroundColor: 'rgba(203, 213, 225, 0.75)',
+          borderColor: 'rgba(148, 163, 184, 0.9)', borderWidth: 1,
+          yAxisID: 'yVol', stack: 'reg', order: 2
+        },
+        {
+          type: 'bar', label: 'Registros sin NID (bug)', data: regSinNid,
+          backgroundColor: 'rgba(71, 85, 105, 0.85)',
+          borderColor: 'rgba(51, 65, 85, 0.95)', borderWidth: 1,
+          yAxisID: 'yVol', stack: 'reg', order: 3
+        },
+        {
+          type: 'bar', label: 'Asignados (WBR)', data: asig,
+          backgroundColor: 'rgba(99, 102, 241, 0.85)',
+          borderColor: 'rgba(79, 70, 229, 0.95)', borderWidth: 1,
+          yAxisID: 'yVol', stack: 'asig', order: 1
+        },
+        {
+          type: 'line', label: 'Conversión', data: conv,
+          borderColor: '#dc2626', backgroundColor: '#dc2626',
+          tension: 0.2, borderWidth: 2.5,
+          pointRadius: 3, pointHoverRadius: 6,
+          yAxisID: 'yPct', order: 0
+        }
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: { position: 'bottom', labels: { boxWidth: 12, boxHeight: 12, padding: 12, font: { size: 11 } } },
+        tooltip: {
+          callbacks: {
+            title: items => fmtFechaEs(items[0].label),
+            label: ctx => {
+              const v = ctx.raw;
+              if (ctx.dataset.label === 'Conversión') return 'Conversión: ' + v.toFixed(1) + '%';
+              return ctx.dataset.label + ': ' + v.toLocaleString();
+            }
+          }
+        }
+      },
+      scales: {
+        x: { ticks: { font: { size: 10 }, maxRotation: 60, minRotation: 45,
+              callback: function(v) { return fmtFechaEs(this.getLabelForValue(v)); } },
+            grid: { display: false } },
+        yVol: { position: 'left', beginAtZero: true,
+          title: { display: true, text: 'Leads', font: { size: 11 }, color: '#6b7280' },
+          ticks: { font: { size: 10 }, color: '#6b7280' },
+          grid: { color: 'rgba(148, 163, 184, 0.15)' } },
+        yPct: { position: 'right', beginAtZero: true, suggestedMax: 40,
+          title: { display: true, text: 'Conversión %', font: { size: 11 }, color: '#dc2626' },
+          ticks: { font: { size: 10 }, color: '#dc2626', callback: v => v + '%' },
+          grid: { display: false } }
+      }
+    },
+    plugins: [prePostBandsClean, cutLineClean]
+  });
+
+  // KPIs limpios
+  const PRE = VOL_WEEKS.filter(w => w.w >= '2026-01-26' && w.w <= '2026-03-02');
+  const POST = VOL_WEEKS.filter(w => w.w >= '2026-03-16' && w.w <= '2026-04-20');
+  const sum = arr => arr.reduce((a, b) => a + b, 0);
+  const dupSum = ws => sum(ws.map(w => HABI_PEAK_WEEKS.has(w.w) ? Math.max(0, (WEB_DUP_WEEKS.find(d => d.w === w.w).dup - HABI_BASELINE)) : 0));
+  const preDays = PRE.length * 7, postDays = POST.length * 7;
+  const preRegD = (sum(PRE.map(w => w.reg)) - dupSum(PRE)) / preDays;
+  const postRegD = (sum(POST.map(w => w.reg)) - dupSum(POST)) / postDays;
+  const preAsigD = sum(PRE.map(w => w.asig)) / preDays;
+  const postAsigD = sum(POST.map(w => w.asig)) / postDays;
+  const preConv = preAsigD / preRegD * 100;
+  const postConv = postAsigD / postRegD * 100;
+  document.getElementById('kpis-vol-clean').innerHTML = `
+    <div class="kpi">
+      <div class="label">Registros / día</div>
+      <div class="val" style="color:#dc2626">−${((1 - postRegD/preRegD)*100).toFixed(0)}%</div>
+      <div class="sub">${Math.round(postRegD).toLocaleString()} vs ${Math.round(preRegD).toLocaleString()} pre</div>
+    </div>
+    <div class="kpi">
+      <div class="label">Asignados / día</div>
+      <div class="val" style="color:#dc2626">−${((1 - postAsigD/preAsigD)*100).toFixed(0)}%</div>
+      <div class="sub">${Math.round(postAsigD).toLocaleString()} vs ${Math.round(preAsigD).toLocaleString()} pre</div>
+    </div>
+    <div class="kpi">
+      <div class="label">Conversión asig / reg</div>
+      <div class="val" style="color:#dc2626">−${(preConv - postConv).toFixed(1)}pp</div>
+      <div class="sub">${postConv.toFixed(1)}% vs ${preConv.toFixed(1)}% pre</div>
+    </div>
+  `;
+}
+
+// Cap 4 — Inversión y registros WEB por plataforma — Colombia, semana ISO
+// Inversión: papyrus-data.habi_wh_bi.resumen_inversiones_mkt_co (Facebook + Google solamente).
+// Registros: tabla_inmuebles_general fuente_id=3 cruzado con dict UTM CO. "Otros" = todo lo no FB/GG.
+const PLAT_WEEKS = [
+  {w:"2025-12-29", inv_fb:9749,  inv_gg:7726,  reg_fb:455, reg_gg:518,  reg_otros:561},
+  {w:"2026-01-05", inv_fb:11212, inv_gg:11749, reg_fb:722, reg_gg:840,  reg_otros:988},
+  {w:"2026-01-12", inv_fb:10740, inv_gg:10278, reg_fb:549, reg_gg:942,  reg_otros:1099},
+  {w:"2026-01-19", inv_fb:14034, inv_gg:13116, reg_fb:651, reg_gg:1146, reg_otros:1104},
+  {w:"2026-01-26", inv_fb:13009, inv_gg:12103, reg_fb:579, reg_gg:921,  reg_otros:1042},
+  {w:"2026-02-02", inv_fb:11663, inv_gg:12220, reg_fb:565, reg_gg:922,  reg_otros:1051},
+  {w:"2026-02-09", inv_fb:12614, inv_gg:12375, reg_fb:536, reg_gg:809,  reg_otros:992},
+  {w:"2026-02-16", inv_fb:12389, inv_gg:12384, reg_fb:611, reg_gg:940,  reg_otros:1296},
+  {w:"2026-02-23", inv_fb:12592, inv_gg:12100, reg_fb:666, reg_gg:1023, reg_otros:1317},
+  {w:"2026-03-02", inv_fb:12647, inv_gg:11486, reg_fb:557, reg_gg:1026, reg_otros:1299},
+  {w:"2026-03-09", inv_fb:13130, inv_gg:10605, reg_fb:482, reg_gg:943,  reg_otros:968},
+  {w:"2026-03-16", inv_fb:11413, inv_gg:11416, reg_fb:433, reg_gg:831,  reg_otros:751},
+  {w:"2026-03-23", inv_fb:10623, inv_gg:11282, reg_fb:422, reg_gg:781,  reg_otros:791},
+  {w:"2026-03-30", inv_fb:9443,  inv_gg:11358, reg_fb:436, reg_gg:709,  reg_otros:626},
+  {w:"2026-04-06", inv_fb:10604, inv_gg:12217, reg_fb:468, reg_gg:962,  reg_otros:962},
+  {w:"2026-04-13", inv_fb:8808,  inv_gg:13035, reg_fb:378, reg_gg:856,  reg_otros:730},
+  {w:"2026-04-20", inv_fb:10451, inv_gg:12309, reg_fb:443, reg_gg:853,  reg_otros:712}
+];
+
+function renderPlatformsChart() {
+  const ctx = document.getElementById('cv-platforms');
+  if (!ctx) return;
+  const labels = PLAT_WEEKS.map(w => w.w);
+  const reg_fb = PLAT_WEEKS.map(w => w.reg_fb);
+  const reg_gg = PLAT_WEEKS.map(w => w.reg_gg);
+  const reg_otros = PLAT_WEEKS.map(w => w.reg_otros);
+  const share_fb = PLAT_WEEKS.map(w => 100 * w.inv_fb / (w.inv_fb + w.inv_gg));
+  const share_gg = PLAT_WEEKS.map(w => 100 * w.inv_gg / (w.inv_fb + w.inv_gg));
+
+  const cutLine = {
+    id: 'cutLinePlat',
+    afterDatasetsDraw(chart) {
+      const xa = chart.scales.x;
+      const ya = chart.chartArea;
+      const idx = labels.indexOf('2026-03-09');
+      if (idx < 0) return;
+      const x = (xa.getPixelForValue(idx) + xa.getPixelForValue(idx + 1)) / 2;
+      const c = chart.ctx;
+      c.save();
+      c.strokeStyle = '#ef4444'; c.setLineDash([5, 4]); c.lineWidth = 1.5;
+      c.beginPath(); c.moveTo(x, ya.top); c.lineTo(x, ya.bottom); c.stroke();
+      c.fillStyle = '#ef4444'; c.font = '600 10px -apple-system, sans-serif'; c.textAlign = 'left';
+      c.fillText('12-mar', x + 4, ya.top + 10);
+      c.restore();
+    }
+  };
+
+  new Chart(ctx, {
+    data: {
+      labels,
+      datasets: [
+        {
+          type: 'bar', label: 'Reg. WEB · Facebook', data: reg_fb,
+          backgroundColor: 'rgba(24, 119, 242, 0.85)', borderColor: 'rgba(24, 119, 242, 1)',
+          borderWidth: 1, yAxisID: 'yReg', stack: 'reg', order: 4
+        },
+        {
+          type: 'bar', label: 'Reg. WEB · Google', data: reg_gg,
+          backgroundColor: 'rgba(234, 67, 53, 0.85)', borderColor: 'rgba(234, 67, 53, 1)',
+          borderWidth: 1, yAxisID: 'yReg', stack: 'reg', order: 3
+        },
+        {
+          type: 'bar', label: 'Reg. WEB · Otros', data: reg_otros,
+          backgroundColor: 'rgba(148, 163, 184, 0.7)', borderColor: 'rgba(100, 116, 139, 0.9)',
+          borderWidth: 1, yAxisID: 'yReg', stack: 'reg', order: 2
+        },
+        {
+          type: 'line', label: 'Share inversión · Facebook', data: share_fb,
+          borderColor: 'rgba(24, 119, 242, 1)', backgroundColor: 'rgba(24, 119, 242, 1)',
+          tension: 0.2, borderWidth: 2.5, borderDash: [5, 4],
+          pointRadius: 3, pointHoverRadius: 6, yAxisID: 'yShare', order: 1
+        },
+        {
+          type: 'line', label: 'Share inversión · Google', data: share_gg,
+          borderColor: 'rgba(234, 67, 53, 1)', backgroundColor: 'rgba(234, 67, 53, 1)',
+          tension: 0.2, borderWidth: 2.5, borderDash: [5, 4],
+          pointRadius: 3, pointHoverRadius: 6, yAxisID: 'yShare', order: 0
+        }
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: { position: 'bottom', labels: { boxWidth: 12, boxHeight: 12, padding: 10, font: { size: 11 } } },
+        tooltip: {
+          callbacks: {
+            title: items => fmtFechaEs(items[0].label),
+            label: ctx => {
+              const v = ctx.raw;
+              if (ctx.dataset.label.startsWith('Share')) return ctx.dataset.label + ': ' + v.toFixed(1) + '%';
+              return ctx.dataset.label + ': ' + v.toLocaleString();
+            }
+          }
+        }
+      },
+      scales: {
+        x: { ticks: { font: { size: 10 }, maxRotation: 60, minRotation: 45,
+              callback: function(v) { return fmtFechaEs(this.getLabelForValue(v)); } },
+            grid: { display: false } },
+        yReg: { position: 'left', beginAtZero: true,
+          title: { display: true, text: 'Registros WEB', font: { size: 11 }, color: '#6b7280' },
+          ticks: { font: { size: 10 }, color: '#6b7280' },
+          grid: { color: 'rgba(148, 163, 184, 0.15)' } },
+        yShare: { position: 'right', beginAtZero: true, suggestedMin: 0, suggestedMax: 100,
+          title: { display: true, text: 'Share inversión %', font: { size: 11 }, color: '#6b7280' },
+          ticks: { font: { size: 10 }, color: '#6b7280', callback: v => v + '%' },
+          grid: { display: false } }
+      }
+    },
+    plugins: [cutLine]
+  });
+}
+
+// Cap 1 — CVR asignado → cita agendada en ≤14 días, por semana de asignación, CO 6 fuentes mkt
+// Excluye semanas sin maduración completa de 14 días (corte en 06-abr al hoy 27-abr).
+const CVR_CITA_WEEKS = [
+  {w:"2025-12-29", cvr:11.50, asg:904},
+  {w:"2026-01-05", cvr:16.09, asg:1355},
+  {w:"2026-01-12", cvr:16.09, asg:1827},
+  {w:"2026-01-19", cvr:15.12, asg:1911},
+  {w:"2026-01-26", cvr:16.13, asg:1804},
+  {w:"2026-02-02", cvr:16.31, asg:1821},
+  {w:"2026-02-09", cvr:18.27, asg:1637},
+  {w:"2026-02-16", cvr:18.55, asg:1623},
+  {w:"2026-02-23", cvr:17.55, asg:1766},
+  {w:"2026-03-02", cvr:16.59, asg:1591},
+  {w:"2026-03-09", cvr:18.98, asg:1359},
+  {w:"2026-03-16", cvr:17.46, asg:1329},
+  {w:"2026-03-23", cvr:16.91, asg:1313},
+  {w:"2026-03-30", cvr:18.06, asg:919},
+  {w:"2026-04-06", cvr:22.28, asg:1378}
+];
+
+function renderCvrCitaChart() {
+  const ctx = document.getElementById('cv-cvr-cita');
+  if (!ctx) return;
+  const labels = CVR_CITA_WEEKS.map(w => w.w);
+  const data = CVR_CITA_WEEKS.map(w => w.cvr);
+
+  const cutLine = {
+    id: 'cutLineCvr',
+    afterDatasetsDraw(chart) {
+      const xa = chart.scales.x;
+      const ya = chart.chartArea;
+      const idx = labels.indexOf('2026-03-09');
+      if (idx < 0) return;
+      const x = (xa.getPixelForValue(idx) + xa.getPixelForValue(idx + 1)) / 2;
+      const c = chart.ctx;
+      c.save();
+      c.strokeStyle = '#ef4444'; c.setLineDash([5, 4]); c.lineWidth = 1.5;
+      c.beginPath(); c.moveTo(x, ya.top); c.lineTo(x, ya.bottom); c.stroke();
+      c.fillStyle = '#ef4444'; c.font = '600 10px -apple-system, sans-serif'; c.textAlign = 'left';
+      c.fillText('12-mar', x + 4, ya.top + 10);
+      c.restore();
+    }
+  };
+  const prePostBands = {
+    id: 'prePostBandsCvr',
+    beforeDatasetsDraw(chart) {
+      const xa = chart.scales.x;
+      const ya = chart.chartArea;
+      const c = chart.ctx;
+      const half = (xa.getPixelForValue(1) - xa.getPixelForValue(0)) / 2;
+      const draw = (idxFrom, idxTo, fill, label, labelColor) => {
+        if (idxFrom < 0 || idxTo < 0) return;
+        const x1 = xa.getPixelForValue(idxFrom) - half;
+        const x2 = xa.getPixelForValue(idxTo) + half;
+        c.save();
+        c.fillStyle = fill;
+        c.fillRect(x1, ya.top, x2 - x1, ya.bottom - ya.top);
+        c.fillStyle = labelColor;
+        c.font = '700 10px -apple-system, sans-serif';
+        c.textAlign = 'center';
+        c.fillText(label, (x1 + x2) / 2, ya.top + 14);
+        c.restore();
+      };
+      draw(labels.indexOf('2026-01-26'), labels.indexOf('2026-03-02'),
+           'rgba(79, 70, 229, 0.07)', 'PRE', 'rgba(67, 56, 202, 0.55)');
+      draw(labels.indexOf('2026-03-16'), labels.indexOf('2026-04-06'),
+           'rgba(16, 185, 129, 0.07)', 'POST', 'rgba(6, 95, 70, 0.6)');
+    }
+  };
+
+  new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [{
+        label: 'CVR asignado → cita (≤14 días)',
+        data,
+        borderColor: '#10b981',
+        backgroundColor: 'rgba(16, 185, 129, 0.12)',
+        fill: true, tension: 0.25, borderWidth: 2.5,
+        pointRadius: 4, pointHoverRadius: 7,
+        pointBackgroundColor: '#10b981'
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            title: items => fmtFechaEs(items[0].label),
+            label: ctx => 'CVR: ' + ctx.raw.toFixed(1) + '% · ' + CVR_CITA_WEEKS[ctx.dataIndex].asg.toLocaleString() + ' asignados'
+          }
+        }
+      },
+      scales: {
+        x: {
+          title: { display: true, text: 'Semana de asignación (lunes-domingo)', font: { size: 11 }, color: '#6b7280' },
+          ticks: { font: { size: 10 }, maxRotation: 60, minRotation: 45,
+                   callback: function(v) { return fmtFechaEs(this.getLabelForValue(v)); } },
+          grid: { display: false }
+        },
+        y: { beginAtZero: false, suggestedMin: 10, suggestedMax: 25,
+          title: { display: true, text: 'CVR %', font: { size: 11 }, color: '#6b7280' },
+          ticks: { font: { size: 10 }, color: '#6b7280', callback: v => v + '%' },
+          grid: { color: 'rgba(148, 163, 184, 0.15)' } }
+      }
+    },
+    plugins: [prePostBands, cutLine]
+  });
+}
+
+// Cap 3 — Cumplimiento semanal con meta original vs meta recalibrada (post-Backbone).
+// Pre-12-mar: meta_recal = meta_orig (no se ajusta). Post-12-mar: meta_recal aplica factor por fuente del Cap. 3.
+// Factores por fuente: WEB 0.891, Habi 0.726, LF 0.806, CRM 0.936, Brk 0.918, Com 1.000.
+const RECAL_WEEKS = [
+  {label:"01/01 - 04/01", actual:454,  meta_orig:633,  meta_recal:633},
+  {label:"05/01 - 11/01", actual:1360, meta_orig:1430, meta_recal:1430},
+  {label:"12/01 - 18/01", actual:1836, meta_orig:1343, meta_recal:1343},
+  {label:"19/01 - 25/01", actual:1919, meta_orig:1430, meta_recal:1430},
+  {label:"26/01 - 01/02", actual:1814, meta_orig:1442, meta_recal:1442},
+  {label:"02/02 - 08/02", actual:1836, meta_orig:1533, meta_recal:1533},
+  {label:"09/02 - 15/02", actual:1644, meta_orig:1533, meta_recal:1533},
+  {label:"16/02 - 22/02", actual:1625, meta_orig:1533, meta_recal:1533},
+  {label:"23/02 - 01/03", actual:1759, meta_orig:1531, meta_recal:1531},
+  {label:"02/03 - 08/03", actual:1590, meta_orig:1517, meta_recal:1517},
+  {label:"09/03 - 15/03", actual:1370, meta_orig:1517, meta_recal:1517},
+  {label:"16/03 - 22/03", actual:1344, meta_orig:1517, meta_recal:1278},
+  {label:"23/03 - 29/03", actual:1360, meta_orig:1425, meta_recal:1200},
+  {label:"30/03 - 05/04", actual:951,  meta_orig:1105, meta_recal:929},
+  {label:"06/04 - 12/04", actual:1458, meta_orig:1504, meta_recal:1268},
+  {label:"13/04 - 19/04", actual:1292, meta_orig:1504, meta_recal:1268},
+  {label:"20/04 - 26/04", actual:1183, meta_orig:1504, meta_recal:1268}
+];
+
+function renderRecalChart() {
+  const ctx = document.getElementById('cv-recal');
+  if (!ctx) return;
+  const labels = RECAL_WEEKS.map(w => w.label);
+  const cumpl_orig = RECAL_WEEKS.map(w => 100 * w.actual / w.meta_orig);
+  const cumpl_recal = RECAL_WEEKS.map(w => 100 * w.actual / w.meta_recal);
+
+  const cutLine = {
+    id: 'cutLineRecal',
+    afterDatasetsDraw(chart) {
+      const xa = chart.scales.x;
+      const ya = chart.chartArea;
+      const idx = labels.indexOf('09/03 - 15/03');
+      if (idx < 0) return;
+      const x = (xa.getPixelForValue(idx) + xa.getPixelForValue(idx + 1)) / 2;
+      const c = chart.ctx;
+      c.save();
+      c.strokeStyle = '#ef4444'; c.setLineDash([5, 4]); c.lineWidth = 1.5;
+      c.beginPath(); c.moveTo(x, ya.top); c.lineTo(x, ya.bottom); c.stroke();
+      c.fillStyle = '#ef4444'; c.font = '600 10px -apple-system, sans-serif'; c.textAlign = 'left';
+      c.fillText('12-mar', x + 4, ya.top + 10);
+      c.restore();
+    }
+  };
+  const refLine100 = {
+    id: 'refLine100Recal',
+    afterDatasetsDraw(chart) {
+      const y = chart.scales.y.getPixelForValue(100);
+      const xa = chart.chartArea;
+      const c = chart.ctx;
+      c.save();
+      c.strokeStyle = '#94a3b8'; c.setLineDash([4, 4]); c.lineWidth = 1;
+      c.beginPath(); c.moveTo(xa.left, y); c.lineTo(xa.right, y); c.stroke();
+      c.fillStyle = '#64748b'; c.font = '10px -apple-system, sans-serif'; c.textAlign = 'right';
+      c.fillText('100% (meta)', xa.right - 4, y - 4);
+      c.restore();
+    }
+  };
+
+  new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [
+        {
+          label: 'vs meta original (%)',
+          data: cumpl_orig,
+          borderColor: '#4f46e5', backgroundColor: '#4f46e5',
+          tension: 0.2, borderWidth: 3,
+          pointRadius: 4, pointHoverRadius: 7
+        },
+        {
+          label: 'vs meta recalibrada (%)',
+          data: cumpl_recal,
+          borderColor: '#10b981', backgroundColor: '#10b981',
+          tension: 0.2, borderWidth: 3,
+          pointRadius: 4, pointHoverRadius: 7
+        }
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: { position: 'bottom', labels: { boxWidth: 12, boxHeight: 12, padding: 14, font: { size: 12 } } },
+        tooltip: {
+          callbacks: {
+            label: ctx => ctx.dataset.label + ': ' + ctx.raw.toFixed(1) + '%',
+            afterBody: items => {
+              const w = RECAL_WEEKS[items[0].dataIndex];
+              return [`Actual: ${w.actual.toLocaleString()}`, `Meta original: ${w.meta_orig.toLocaleString()}`, `Meta recalibrada: ${w.meta_recal.toLocaleString()}`];
+            }
+          }
+        }
+      },
+      scales: {
+        x: { ticks: { font: { size: 10 }, maxRotation: 60, minRotation: 45 }, grid: { display: false } },
+        y: { beginAtZero: false, suggestedMin: 70, suggestedMax: 145,
+          title: { display: true, text: 'Cumplimiento %', font: { size: 11 }, color: '#6b7280' },
+          ticks: { font: { size: 10 }, color: '#6b7280', callback: v => v + '%' },
+          grid: { color: 'rgba(148, 163, 184, 0.15)' } }
+      }
+    },
+    plugins: [refLine100, cutLine]
+  });
+}
+
+// Cap 4 — CPL semanal WEB Paid CO. spend/leads, USD por lead.
+const CPL_WEEKS = [
+  {w:"2025-12-29", spend:14798, leads:1065, cpl:13.89},
+  {w:"2026-01-05", spend:17862, leads:1722, cpl:10.37},
+  {w:"2026-01-12", spend:16989, leads:1679, cpl:10.12},
+  {w:"2026-01-19", spend:21006, leads:2025, cpl:10.37},
+  {w:"2026-01-26", spend:20842, leads:1692, cpl:12.32},
+  {w:"2026-02-02", spend:19390, leads:1736, cpl:11.17},
+  {w:"2026-02-09", spend:19884, leads:1546, cpl:12.86},
+  {w:"2026-02-16", spend:20527, leads:1846, cpl:11.12},
+  {w:"2026-02-23", spend:19685, leads:1898, cpl:10.37},
+  {w:"2026-03-02", spend:19968, leads:1746, cpl:11.44},
+  {w:"2026-03-09", spend:19885, leads:1579, cpl:12.59},
+  {w:"2026-03-16", spend:18752, leads:1370, cpl:13.69},
+  {w:"2026-03-23", spend:17643, leads:1342, cpl:13.15},
+  {w:"2026-03-30", spend:18066, leads:1244, cpl:14.52},
+  {w:"2026-04-06", spend:19461, leads:1593, cpl:12.22},
+  {w:"2026-04-13", spend:17745, leads:1240, cpl:14.31},
+  {w:"2026-04-20", spend:18981, leads:1290, cpl:14.71}
+];
+
+function renderCplChart() {
+  const ctx = document.getElementById('cv-cpl');
+  if (!ctx) return;
+  const labels = CPL_WEEKS.map(w => w.w);
+  const data = CPL_WEEKS.map(w => w.cpl);
+
+  const cutLine = {
+    id: 'cutLineCpl',
+    afterDatasetsDraw(chart) {
+      const xa = chart.scales.x;
+      const ya = chart.chartArea;
+      const idx = labels.indexOf('2026-03-09');
+      if (idx < 0) return;
+      const x = (xa.getPixelForValue(idx) + xa.getPixelForValue(idx + 1)) / 2;
+      const c = chart.ctx;
+      c.save();
+      c.strokeStyle = '#ef4444'; c.setLineDash([5, 4]); c.lineWidth = 1.5;
+      c.beginPath(); c.moveTo(x, ya.top); c.lineTo(x, ya.bottom); c.stroke();
+      c.fillStyle = '#ef4444'; c.font = '600 10px -apple-system, sans-serif'; c.textAlign = 'left';
+      c.fillText('12-mar', x + 4, ya.top + 10);
+      c.restore();
+    }
+  };
+  const prePostBands = {
+    id: 'prePostBandsCpl',
+    beforeDatasetsDraw(chart) {
+      const xa = chart.scales.x;
+      const ya = chart.chartArea;
+      const c = chart.ctx;
+      const half = (xa.getPixelForValue(1) - xa.getPixelForValue(0)) / 2;
+      const draw = (idxFrom, idxTo, fill, label, labelColor) => {
+        if (idxFrom < 0 || idxTo < 0) return;
+        const x1 = xa.getPixelForValue(idxFrom) - half;
+        const x2 = xa.getPixelForValue(idxTo) + half;
+        c.save();
+        c.fillStyle = fill;
+        c.fillRect(x1, ya.top, x2 - x1, ya.bottom - ya.top);
+        c.fillStyle = labelColor;
+        c.font = '700 10px -apple-system, sans-serif';
+        c.textAlign = 'center';
+        c.fillText(label, (x1 + x2) / 2, ya.top + 14);
+        c.restore();
+      };
+      draw(labels.indexOf('2026-01-26'), labels.indexOf('2026-03-02'),
+           'rgba(79, 70, 229, 0.07)', 'PRE', 'rgba(67, 56, 202, 0.55)');
+      draw(labels.indexOf('2026-03-16'), labels.indexOf('2026-04-20'),
+           'rgba(220, 38, 38, 0.07)', 'POST', 'rgba(153, 27, 27, 0.55)');
+    }
+  };
+
+  new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [{
+        label: 'CPL (USD/lead)',
+        data,
+        borderColor: '#dc2626',
+        backgroundColor: 'rgba(220, 38, 38, 0.12)',
+        fill: true, tension: 0.25, borderWidth: 2.5,
+        pointRadius: 4, pointHoverRadius: 7,
+        pointBackgroundColor: '#dc2626'
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            title: items => fmtFechaEs(items[0].label),
+            label: ctx => 'CPL: $' + ctx.raw.toFixed(2),
+            afterBody: items => {
+              const w = CPL_WEEKS[items[0].dataIndex];
+              return [`Spend: $${w.spend.toLocaleString()}`, `Leads: ${w.leads.toLocaleString()}`];
+            }
+          }
+        }
+      },
+      scales: {
+        x: {
+          title: { display: true, text: 'Semana de creación del lead', font: { size: 11 }, color: '#6b7280' },
+          ticks: { font: { size: 10 }, maxRotation: 60, minRotation: 45,
+                   callback: function(v) { return fmtFechaEs(this.getLabelForValue(v)); } },
+          grid: { display: false }
+        },
+        y: { beginAtZero: false, suggestedMin: 9, suggestedMax: 16,
+          title: { display: true, text: 'CPL USD', font: { size: 11 }, color: '#6b7280' },
+          ticks: { font: { size: 10 }, color: '#6b7280', callback: v => '$' + v },
+          grid: { color: 'rgba(148, 163, 184, 0.15)' } }
+      }
+    },
+    plugins: [prePostBands, cutLine]
+  });
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  renderYtdChart();
+  renderWeeklyChart();
+  renderVolCleanChart();
+  renderNidTimelineChart();
+  renderPlatformsChart();
+  renderCvrCitaChart();
+  renderRecalChart();
+  renderCplChart();
+});
+</script>
+</body>
+</html>
