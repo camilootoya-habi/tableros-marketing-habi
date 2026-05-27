@@ -13,6 +13,8 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.HUB_PUSH_TOKEN }}
 
       - uses: google-github-actions/setup-gcloud@v2
 
@@ -469,11 +471,20 @@ jobs:
         run: |
           python3 funnel-web-mx/build_data.py /tmp/wfmx_clicks.json /tmp/wfmx_sessions.json /tmp/wfmx_leads.json funnel-web-mx/data.json
 
+      - name: Auto-discovery — correr queries de tableros nuevos (líderes)
+        if: always()
+        run: python3 scripts/run_queries.py
+
+      - name: Regenerar el hub (index.html)
+        if: always()
+        run: python3 scripts/build_hub.py
+
       - name: Commit and push
+        if: always()
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add incompletos-colombia/data.json tablero-marketing/data.json tablero-marketing/antifunnel.json tablero-marketing/mm_sin_inmo_states.json okr-marketing/data.json pmax-mexico-quality/data.json pmax-mexico-quality/states.json creativo-pamela/data.json incompletos-direccion/data.json marketing-wbr/data.json wbr-2-0/data.json asignados-creacion/data.json prioridad-mm/data.json funnel-fuentes/data.json calificados-mm-inmo/data.json funnel-web-mx/data.json
+          git add -A
           if git diff --staged --quiet; then
             echo "No changes to commit"
           else
