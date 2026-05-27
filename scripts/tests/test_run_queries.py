@@ -16,3 +16,11 @@ def test_job_applies_default_max_bytes():
     assert job["max_bytes"] == run_queries.DEFAULT_MAX_BYTES
     assert job["data_path"].name == "data.json"
     assert job["sql_path"].name == "query.sql"
+
+def test_build_bq_command_includes_guardrails():
+    cmd = run_queries.build_bq_command(max_bytes=5_000_000_000, project="papyrus-data")
+    assert cmd[0] == "bq"
+    assert "--maximum_bytes_billed=5000000000" in cmd
+    assert "--format=json" in cmd
+    assert "--nouse_legacy_sql" in cmd
+    assert "--project_id=papyrus-data" in cmd

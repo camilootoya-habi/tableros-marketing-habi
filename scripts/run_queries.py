@@ -26,3 +26,40 @@ def discover_jobs(repo_root: Path):
             "build_py": build_py if build_py.exists() else None,
         })
     return jobs
+
+def build_bq_command(max_bytes: int, project: str):
+    return [
+        "bq", "query", "--nouse_legacy_sql", "--format=json",
+        f"--maximum_bytes_billed={max_bytes}", f"--project_id={project}",
+    ]
+
+def run_job(job: dict, project: str) -> bool:
+    """Corre un job; True si tuvo éxito. Aísla fallos (no levanta excepción)."""
+    try:
+        if job["build_py"]:
+            subprocess.run([sys.executable, "build.py"], cwd=job["folder"], check=True, timeout=600)
+        else:
+            sql = job["sql_path"].read_text(encoding="utf-8")
+            cmd = build_bq_command(job["max_bytes"], project)
+            out = subprocess.run(cmd, input=sql, capture_output=True, text=True, timeout=600)
+            if out.returncode != 0:
+                print(f"  ✗ {job['slug']}: {out.stderr.strip()[:300]}", file=sys.stderr)
+                return False
+            job["data_path"].write_text(out.stdout, encoding="utf-8")
+        print(f"  ✓ {job['slug']}")
+        return True
+    except Exception as e:
+        print(f"  ✗ {job['slug']}: {e}", file=sys.stderr)
+        return False
+
+def main():
+    import os
+    repo = Path(__file__).resolve().parents[1]
+    project = os.environ.get("GCP_PROJECT", "papyrus-data")
+    jobs = discover_jobs(repo)
+    print(f"Auto-discovery: {len(jobs)} job(s)")
+    ok = sum(run_job(j, project) for j in jobs)
+    print(f"Hecho: {ok}/{len(jobs)} OK")
+
+if __name__ == "__main__":
+    main()
