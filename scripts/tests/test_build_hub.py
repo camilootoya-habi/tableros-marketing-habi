@@ -17,3 +17,20 @@ def test_discover_dashboards_infers_owner_and_loads_meta():
     assert cpa["owner"] == "sebastian-ciendua"
     assert cpa["link"] == "canales/sebastian-ciendua/cpa-diario/"
     assert cpa["query"] == "query.sql"
+
+def test_render_card_internal_and_country_chip():
+    card = build_hub.render_card({
+        "title": "CPA diario", "description": "Costo por adquisición.",
+        "country": "CO", "link": "canales/sebastian-ciendua/cpa-diario/",
+    })
+    assert 'href="canales/sebastian-ciendua/cpa-diario/"' in card
+    assert "CPA diario" in card
+    assert '<span class="country">CO</span>' in card
+    assert "Costo por adquisición." in card
+
+def test_render_card_escapes_html():
+    card = build_hub.render_card({
+        "title": "A & B", "description": "x < y", "country": "CO", "link": "a/",
+    })
+    assert "A &amp; B" in card
+    assert "x &lt; y" in card

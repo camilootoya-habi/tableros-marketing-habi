@@ -1,7 +1,22 @@
 import json
+from html import escape
 from pathlib import Path
 
 IGNORE_DIRS = {".git", ".github", "scripts", "docs", "node_modules"}
+
+
+def render_card(d: dict) -> str:
+    country = d.get("country", "")
+    chips = "".join(
+        f'<span class="country">{escape(c.strip())}</span>'
+        for c in country.split("&")
+    ) if country else ""
+    return (
+        f'        <a class="card" href="{escape(d["link"])}">\n'
+        f'          <h2>{chips}{escape(d["title"])}</h2>\n'
+        f'          <p>{escape(d["description"])}</p>\n'
+        f'        </a>'
+    )
 
 
 def discover_dashboards(repo_root: Path):
