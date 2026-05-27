@@ -52,6 +52,19 @@ def test_discover_leaders_reads_leader_json():
     assert leaders["sebastian-ciendua"]["name"] == "Sebastián Ciendua"
     assert leaders["sebastian-ciendua"]["channel"] == "Performance Colombia"
 
+def test_build_page_renders_external_card_under_analysis():
+    config = {
+        "title": "T", "subtitle": "s", "general": {"title": "General", "order": 0},
+        "external_cards": [{
+            "section": "analysis", "order": 1, "title": "Informe externo",
+            "description": "d", "country": "CO", "url": "https://example.com/x/",
+        }],
+    }
+    html = build_hub.build_page([], {}, config, template=build_hub.load_template())
+    assert 'href="https://example.com/x/"' in html
+    assert "Informe externo" in html
+    assert ">Analysis<" in html
+
 def test_render_owner_block_groups_by_section_in_order():
     cards = [
         {"title": "B dash", "description": "", "country": "CO", "link": "b/", "section": "dashboard", "order": 2},

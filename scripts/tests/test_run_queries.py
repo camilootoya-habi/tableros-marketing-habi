@@ -24,3 +24,13 @@ def test_build_bq_command_includes_guardrails():
     assert "--format=json" in cmd
     assert "--nouse_legacy_sql" in cmd
     assert "--project_id=papyrus-data" in cmd
+
+def test_run_job_isolates_failure(tmp_path):
+    # SQL inexistente → read_text levanta; run_job debe capturarlo y devolver False
+    job = {
+        "slug": "bad", "folder": tmp_path,
+        "sql_path": tmp_path / "missing.sql", "data_path": tmp_path / "data.json",
+        "max_bytes": 1, "build_py": None,
+    }
+    assert run_queries.run_job(job, "papyrus-data") is False
+    assert not (tmp_path / "data.json").exists()

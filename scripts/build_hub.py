@@ -1,4 +1,5 @@
 import json
+import sys
 from html import escape
 from pathlib import Path
 
@@ -49,29 +50,29 @@ def render_owner_block(heading: str, cards: list) -> str:
 
 def discover_dashboards(repo_root: Path):
     """Cada carpeta con meta.json es un tablero. Dueño inferido por ubicación:
-    hijo directo de la raíz = 'general'; bajo canales/<lider>/ = ese líder."""
+    hijo directo de la raíz = 'general'; bajo canales/<lider>/ = ese líder.
+    Un meta.json malformado o incompleto se salta con warning, para no tumbar
+    la regeneración del hub entero por culpa del tablero de un solo líder."""
     repo_root = Path(repo_root)
     dashboards = []
     for meta_path in sorted(repo_root.rglob("meta.json")):
         rel = meta_path.parent.relative_to(repo_root)
         parts = rel.parts
-        if parts and parts[0] in IGNORE_DIRS:
+        if not parts or parts[0] in IGNORE_DIRS:
             continue
-        if parts[0] == "canales":
-            owner = parts[1]            # canales/<lider>/<slug>
-            slug = parts[-1]
-            link = "/".join(parts) + "/"
-        else:
-            owner = "general"           # <slug> en la raíz
-            slug = parts[-1]
-            link = "/".join(parts) + "/"
-        meta = json.loads(meta_path.read_text(encoding="utf-8"))
-        dashboards.append({
-            "slug": slug, "owner": owner, "link": link,
-            "title": meta["title"], "description": meta["description"],
-            "country": meta["country"], "section": meta.get("section", "dashboard"),
-            "order": meta.get("order", 9999), "query": meta.get("query"),
-        })
+        owner = parts[1] if parts[0] == "canales" else "general"
+        slug = parts[-1]
+        link = "/".join(parts) + "/"
+        try:
+            meta = json.loads(meta_path.read_text(encoding="utf-8"))
+            dashboards.append({
+                "slug": slug, "owner": owner, "link": link,
+                "title": meta["title"], "description": meta["description"],
+                "country": meta["country"], "section": meta.get("section", "dashboard"),
+                "order": meta.get("order", 9999), "query": meta.get("query"),
+            })
+        except (ValueError, KeyError, OSError) as e:
+            print(f"  ⚠ meta inválido, se salta: {meta_path} ({e})", file=sys.stderr)
     return dashboards
 
 

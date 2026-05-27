@@ -473,6 +473,8 @@ jobs:
 
       - name: Auto-discovery — correr queries de tableros nuevos (líderes)
         if: always()
+        env:
+          GCP_PROJECT: ${{ secrets.GCP_PROJECT }}
         run: python3 scripts/run_queries.py
 
       - name: Regenerar el hub (index.html)
