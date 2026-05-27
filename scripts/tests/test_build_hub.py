@@ -34,3 +34,16 @@ def test_render_card_escapes_html():
     })
     assert "A &amp; B" in card
     assert "x &lt; y" in card
+
+SECTION_LABELS = {"analysis": "Analysis", "dashboard": "Dashboards", "reference": "Reference"}
+
+def test_render_owner_block_groups_by_section_in_order():
+    cards = [
+        {"title": "B dash", "description": "", "country": "CO", "link": "b/", "section": "dashboard", "order": 2},
+        {"title": "A dash", "description": "", "country": "CO", "link": "a/", "section": "dashboard", "order": 1},
+        {"title": "An analysis", "description": "", "country": "CO", "link": "an/", "section": "analysis", "order": 1},
+    ]
+    html = build_hub.render_owner_block("General · Marketing", cards)
+    assert "General · Marketing" in html
+    assert html.index(">Analysis<") < html.index(">Dashboards<")
+    assert html.index("A dash") < html.index("B dash")
