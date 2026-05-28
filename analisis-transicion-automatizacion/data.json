@@ -4,7 +4,7 @@
   "leaders": [
     {
       "id": "lider_performance_mx",
-      "label": "Líder Performance — MX (Sellers + Pulppo + Brokers + Franquicias + Buyers)",
+      "label": "Líder Performance MX",
       "country": "MX",
       "hours_week": 44.4,
       "capacity_week": 40,
@@ -16,16 +16,16 @@
         "Estratégico": 1.9
       },
       "ai_buckets_week": {
-        "IA ejecuta": 16.0,
+        "IA ejecuta": 11.0,
         "IA asiste (humano decide)": 15.0,
-        "Solo humano": 13.3
+        "Solo humano": 18.4
       },
-      "overcapacity_note": "4.4 h/sem sobre capacidad"
+      "scope": "Performance Sellers + Pulppo + Brokers + Franquicias + Buyers + Funnel"
     },
     {
-      "id": "lider_ta_specialist",
-      "label": "Líder Performance + SEO + Referidos",
-      "country": "MX",
+      "id": "lider_performance_co",
+      "label": "Líder Performance CO",
+      "country": "CO",
       "hours_week": 37.4,
       "capacity_week": 40,
       "stages_week": {
@@ -35,14 +35,15 @@
         "Coordinación": 3.2,
         "Estratégico": 1.9
       },
+      "scope": "Performance Sellers + SEO + Referidos + Funnel",
       "automation_plan_sheet": [
-        "Mantenimiento canal Referidos (re-asignación leads sin propietario) → -1 h/sem",
-        "Asignación y actualización de links personalizados → -1 h/sem"
+        "Mantenimiento canal Referidos (re-asignación leads sin propietario) → –1 h/sem",
+        "Asignación y actualización de links personalizados → –1 h/sem"
       ]
     },
     {
-      "id": "lider_performance_agentes",
-      "label": "Líder Performance + Agentes (gestión equipo agentes + Performance)",
+      "id": "lider_growth_mx",
+      "label": "Líder Growth MX",
       "country": "MX",
       "hours_week": 38.9,
       "capacity_week": 40,
@@ -53,15 +54,16 @@
         "Coordinación": 3.2,
         "Estratégico": 1.9
       },
+      "scope": "Performance + Buyers + gestión Agentes + Funnel",
       "automation_plan_sheet": [
-        "Asignación registros (automatizable) → -1 h/sem",
-        "Reporting de Budget Buyers → -1 h/sem",
-        "Revisión Backbone/DMN → -1 h/sem"
+        "Asignación registros (automatizable) → –1 h/sem",
+        "Reporting Budget Buyers → –1 h/sem",
+        "Revisión Backbone/DMN → –1 h/sem"
       ]
     },
     {
       "id": "lider_growth_co",
-      "label": "Líder Growth — Colombia",
+      "label": "Líder Growth CO",
       "country": "CO",
       "hours_week": 36.9,
       "capacity_week": 40,
@@ -71,30 +73,31 @@
         "Planeación": 1.2,
         "Coordinación": 3.2,
         "Estratégico": 1.9
-      }
+      },
+      "scope": "Performance + Triada Digital (A/B tests) + gestión Agentes + Funnel"
     }
   ],
   "lider_mx_tasks": [
-    { "task": "Renovación de creativos (apagar saturados, lanzar nuevos)", "etapa": "Mantenimiento — Performance Sellers", "freq": "Cada 2 días", "hours_week": 3.0, "ai": "IA ejecuta", "how": "Marketing Agents pipeline (creatividad + render + nomenclatura) — ya probado en LOLU" },
-    { "task": "Daily Growth & Acquisition: despliegue + indicadores", "etapa": "Mantenimiento — Performance Sellers", "freq": "Diario", "hours_week": 5.0, "ai": "IA ejecuta", "how": "Reporting agent que entrega el daily en Slack a las 8am" },
-    { "task": "Pacing de presupuesto vs meta mensual", "etapa": "Mantenimiento — Performance Sellers", "freq": "Semanal", "hours_week": 1.0, "ai": "IA ejecuta", "how": "Alertas automáticas sobre desviación >X%" },
-    { "task": "Optimización de bids / audiencias / segmentación", "etapa": "Mantenimiento — Performance Sellers", "freq": "Semanal", "hours_week": 1.0, "ai": "IA asiste (humano decide)", "how": "Sugerencias diarias del optimizador, aprobación humana" },
+    { "task": "Renovación de creativos (apagar saturados, lanzar nuevos)", "etapa": "Mantenimiento — Performance Sellers", "freq": "Cada 2 días", "hours_week": 3.0, "ai": "IA ejecuta", "how": "Pipeline de Marketing Agents que lee performance, propone variantes y rota" },
+    { "task": "Daily Growth & Acquisition: despliegue + indicadores", "etapa": "Mantenimiento — Performance Sellers", "freq": "Diario", "hours_week": 5.0, "ai": "Solo humano", "how": "Se mantiene como espacio diario de lectura activa del líder — no se automatiza" },
+    { "task": "Pacing de presupuesto vs meta mensual", "etapa": "Mantenimiento — Performance Sellers", "freq": "Semanal", "hours_week": 1.0, "ai": "IA ejecuta", "how": "Alarmas automáticas de desviación" },
+    { "task": "Optimización de bids / audiencias / segmentación", "etapa": "Mantenimiento — Performance Sellers", "freq": "Semanal", "hours_week": 1.0, "ai": "IA asiste (humano decide)", "how": "IA propone, humano aprueba" },
     { "task": "Revisión calidad tracking (pixel, CAPI, UTMs)", "etapa": "Mantenimiento — Performance Sellers", "freq": "Quincenal", "hours_week": 1.0, "ai": "IA ejecuta", "how": "Healthcheck automático + alertas" },
-    { "task": "Setup de campañas nuevas (lanzamientos)", "etapa": "Mantenimiento — Performance Sellers", "freq": "Bajo demanda", "hours_week": 2.0, "ai": "IA asiste (humano decide)", "how": "Plantillas + generación automática de variantes, humano valida" },
-    { "task": "Seguimiento con Medios (Google/META account managers)", "etapa": "Mantenimiento — Performance Sellers", "freq": "Quincenal", "hours_week": 2.0, "ai": "Solo humano", "how": "Reunión con stakeholders externos" },
+    { "task": "Setup de campañas nuevas (lanzamientos)", "etapa": "Mantenimiento — Performance Sellers", "freq": "Bajo demanda", "hours_week": 2.0, "ai": "IA asiste (humano decide)", "how": "Plantillas + generación de variantes" },
+    { "task": "Seguimiento con Medios (Google/META account managers)", "etapa": "Mantenimiento — Performance Sellers", "freq": "Quincenal", "hours_week": 2.0, "ai": "Solo humano", "how": "Relación con stakeholders externos" },
     { "task": "Seguimiento Finanzas/Tesorería (pagos, facturas)", "etapa": "Mantenimiento — Performance Sellers", "freq": "Semanal", "hours_week": 1.0, "ai": "Solo humano", "how": "Negociación administrativa" },
-    { "task": "Setup y seguimiento Performance Pulppo MX", "etapa": "Mantenimiento — Pulppo MX", "freq": "Semanal", "hours_week": 4.5, "ai": "IA asiste (humano decide)", "how": "Reporting automático + ajustes manuales" },
+    { "task": "Setup y seguimiento Performance Pulppo MX", "etapa": "Mantenimiento — Pulppo MX", "freq": "Semanal", "hours_week": 4.5, "ai": "IA asiste (humano decide)", "how": "Reporting automático + decisiones humanas" },
     { "task": "Setup y seguimiento campañas Brokers", "etapa": "Mantenimiento — Brokers", "freq": "Semanal", "hours_week": 4.0, "ai": "IA asiste (humano decide)", "how": "Plantillas + reporting automático" },
-    { "task": "Planeación, Reporting y control Budget Buyers", "etapa": "Mantenimiento — Buyers", "freq": "Semanal", "hours_week": 2.0, "ai": "IA ejecuta", "how": "Dashboard automático + alertas" },
-    { "task": "Setup campañas Franquicias", "etapa": "Mantenimiento — Franquicias", "freq": "Semanal", "hours_week": 1.0, "ai": "IA asiste (humano decide)", "how": "Plantillas + reporting" },
-    { "task": "Auditoría anuncios con CX (sentiment, comentarios)", "etapa": "Mantenimiento — CX", "freq": "Quincenal", "hours_week": 0.5, "ai": "IA asiste (humano decide)", "how": "Análisis automático de sentiment, humano interpreta" },
-    { "task": "Tráfico Creativo: solicitudes contenido", "etapa": "Mantenimiento — Orgánico", "freq": "Por posición", "hours_week": 1.0, "ai": "IA ejecuta", "how": "Generación de copys/títulos automática" },
-    { "task": "Tráfico Agencia CM: revisión parrilla orgánico", "etapa": "Mantenimiento — Orgánico", "freq": "Por posición", "hours_week": 1.0, "ai": "IA asiste (humano decide)", "how": "IA propone parrilla, humano aprueba" },
-    { "task": "Manejo de objeciones — Agente Brokers", "etapa": "Mantenimiento — Agentes", "freq": "Semanal", "hours_week": 3.0, "ai": "Solo humano", "how": "Coaching directo al equipo" },
+    { "task": "Planeación, Reporting y control Budget Buyers", "etapa": "Mantenimiento — Buyers", "freq": "Semanal", "hours_week": 2.0, "ai": "IA ejecuta", "how": "Dashboard automático + alarmas" },
+    { "task": "Setup campañas Franquicias", "etapa": "Mantenimiento — Franquicias", "freq": "Semanal", "hours_week": 1.0, "ai": "IA asiste (humano decide)", "how": "Plantillas" },
+    { "task": "Auditoría anuncios con CX (sentiment, comentarios)", "etapa": "Mantenimiento — CX", "freq": "Quincenal", "hours_week": 0.5, "ai": "IA asiste (humano decide)", "how": "Análisis de sentiment automatizado" },
+    { "task": "Tráfico Creativo: solicitudes contenido", "etapa": "Mantenimiento — Orgánico", "freq": "Por posición", "hours_week": 1.0, "ai": "IA ejecuta", "how": "Generación de copys/títulos con IA" },
+    { "task": "Tráfico Agencia CM: revisión parrilla orgánico", "etapa": "Mantenimiento — Orgánico", "freq": "Por posición", "hours_week": 1.0, "ai": "IA asiste (humano decide)", "how": "IA propone, humano aprueba" },
+    { "task": "Manejo de objeciones — Agente Brokers", "etapa": "Mantenimiento — Agentes", "freq": "Semanal", "hours_week": 3.0, "ai": "Solo humano", "how": "Coaching directo" },
     { "task": "Revisión Backbone/Antifunnel DMN", "etapa": "Mantenimiento — Funnel", "freq": "Cada 2 días", "hours_week": 2.0, "ai": "Solo humano", "how": "Decisión de negocio sobre reglas" },
-    { "task": "Validación de UTMs y nomenclatura ads", "etapa": "Mantenimiento — Funnel", "freq": "Semanal", "hours_week": 0.5, "ai": "IA ejecuta", "how": "Validator automático con reglas" },
+    { "task": "Validación de UTMs y nomenclatura ads", "etapa": "Mantenimiento — Funnel", "freq": "Semanal", "hours_week": 0.5, "ai": "IA ejecuta", "how": "Validator automático" },
     { "task": "Calidad atribución / chain UUID Segment→Deal", "etapa": "Mantenimiento — Funnel", "freq": "Semanal", "hours_week": 0.5, "ai": "IA ejecuta", "how": "Monitor automático + alertas" },
-    { "task": "WBR: preparación + presentación", "etapa": "Análisis", "freq": "Semanal", "hours_week": 1.0, "ai": "IA ejecuta", "how": "Reporting agent genera la baseline + humano presenta" },
+    { "task": "WBR: preparación + presentación", "etapa": "Análisis", "freq": "Semanal", "hours_week": 1.0, "ai": "IA ejecuta", "how": "Baseline automática, humano presenta" },
     { "task": "Postmortem de campañas / experimentos", "etapa": "Análisis", "freq": "Por posición", "hours_week": 1.0, "ai": "IA asiste (humano decide)", "how": "Análisis automático, narrativa humana" },
     { "task": "Plan trimestral del canal (OKRs)", "etapa": "Planeación", "freq": "Trimestral", "hours_week": 0.2, "ai": "Solo humano", "how": "Decisión estratégica" },
     { "task": "Plan mensual de inversión por canal", "etapa": "Planeación", "freq": "Mensual", "hours_week": 0.5, "ai": "Solo humano", "how": "Decisión estratégica" },
@@ -109,53 +112,68 @@
     { "task": "Capacitación (dictada / recibida)", "etapa": "Estratégico", "freq": "Mensual", "hours_week": 1.0, "ai": "Solo humano", "how": "Aprendizaje y mentoring" },
     { "task": "Discovery con sellers / entrevistas cualitativas", "etapa": "Estratégico", "freq": "Mensual", "hours_week": 0.5, "ai": "Solo humano", "how": "Investigación cualitativa" }
   ],
-  "agents": [
+  "agent_teams": [
     {
-      "id": "agente_ventanas_co",
-      "label": "Agente Marketing — Ventanas (CO)",
+      "id": "ventanas_co",
+      "label": "Ventanas CO (CRM + dirección + incompletos web)",
       "country": "CO",
-      "hours_week": 61.0,
-      "capacity_week": 40,
+      "headcount": 3,
+      "hours_available": 120,
+      "hours_used": 200,
+      "overcapacity": 80,
       "tasks": [
-        { "task": "Revisar dirección", "hours_week": 10.0, "ai": "IA ejecuta", "how": "Geocoding + validación automatizada" },
-        { "task": "Incompletos desde WEB", "hours_week": 10.0, "ai": "IA ejecuta", "how": "Agente IA que completa por llamada/WhatsApp" },
-        { "task": "Incompletos desde Leadforms", "hours_week": 20.0, "ai": "IA ejecuta", "how": "Agente IA — el caso de uso central del plan" },
-        { "task": "Ventana a CRM", "hours_week": 20.0, "ai": "IA asiste (humano decide)", "how": "Triage automatizado, escalación humana en casos complejos" },
-        { "task": "1to1 con líder", "hours_week": 0.5, "ai": "Solo humano", "how": "—" },
-        { "task": "Weekly", "hours_week": 0.5, "ai": "Solo humano", "how": "—" }
-      ],
-      "overcapacity_note": "21 h/sem sobre capacidad — el rol más sobrecargado del equipo"
+        { "task": "Ventana a CRM", "hours_week": 160, "ai": "IA asiste (humano decide)", "how": "Triage automatizado del flujo; escalación humana solo casos complejos" },
+        { "task": "Revisar dirección", "hours_week": 20, "ai": "IA ejecuta", "how": "Geocoding + validación automatizada" },
+        { "task": "Incompletos desde WEB", "hours_week": 20, "ai": "IA ejecuta", "how": "Agente IA completa por llamada saliente + WhatsApp" }
+      ]
     },
     {
-      "id": "agente_leadforms_mx",
-      "label": "Agente Marketing — Lead Forms (MX)",
-      "country": "MX",
-      "hours_week": 48.2,
-      "capacity_week": 40,
+      "id": "leadforms",
+      "label": "Lead Forms (1 CO + 4 MX)",
+      "country": "CO + MX",
+      "headcount": 5,
+      "hours_available": 200,
+      "hours_used": 188,
+      "overcapacity": 0,
+      "breakdown": "1 agente CO + 4 agentes MX",
       "tasks": [
-        { "task": "Incompletos desde Leadforms", "hours_week": 20.0, "ai": "IA ejecuta", "how": "Agente IA llamada saliente + WhatsApp" },
-        { "task": "Regestión Incompletos Leadforms", "hours_week": 25.0, "ai": "IA ejecuta", "how": "Re-contacto automatizado con ventana de tiempos" },
-        { "task": "Incompletos desde WEB", "hours_week": 0.2, "ai": "IA ejecuta", "how": "Mismo agente IA" },
-        { "task": "Weekly con jefe", "hours_week": 1.0, "ai": "Solo humano", "how": "—" },
-        { "task": "Discovery con sellers", "hours_week": 2.0, "ai": "Solo humano", "how": "Insumo cualitativo para producto" }
-      ],
-      "overcapacity_note": "8 h/sem sobre capacidad"
+        { "task": "Incompletos desde Lead Forms (CO)", "hours_week": 40, "ai": "IA ejecuta", "how": "Agente IA — caso de uso central del piloto Q3'26" },
+        { "task": "Incompletos desde Lead Forms (MX)", "hours_week": 120, "ai": "IA ejecuta", "how": "Agente IA llamada saliente + WhatsApp" },
+        { "task": "Regestión Incompletos Lead Forms (MX)", "hours_week": 20, "ai": "IA ejecuta", "how": "Re-contacto automatizado con ventanas de tiempo" },
+        { "task": "Incompletos desde WEB (MX)", "hours_week": 8, "ai": "IA ejecuta", "how": "Mismo agente IA" }
+      ]
     },
     {
-      "id": "agente_brokers",
-      "label": "Agente Marketing — Brokers (CO/MX)",
-      "country": "CO & MX",
-      "hours_week": 36.5,
-      "capacity_week": 40,
+      "id": "brokers",
+      "label": "Brokers (1 CO + 1 MX)",
+      "country": "CO + MX",
+      "headcount": 2,
+      "hours_available": 80,
+      "hours_used": 80,
+      "overcapacity": 0,
+      "breakdown": "1 agente CO + 1 agente MX",
       "tasks": [
-        { "task": "Relacionamiento Brokers", "hours_week": 20.0, "ai": "Solo humano", "how": "Relación comercial directa" },
-        { "task": "Relacionamiento con Sellers", "hours_week": 9.0, "ai": "IA asiste (humano decide)", "how": "Briefing automático, conversación humana" },
-        { "task": "Subida de negocios de Brokers a Nexus", "hours_week": 6.0, "ai": "IA ejecuta", "how": "Integración automatizada" },
-        { "task": "1to1 con líder", "hours_week": 1.0, "ai": "Solo humano", "how": "—" },
-        { "task": "Weekly", "hours_week": 0.5, "ai": "Solo humano", "how": "—" }
+        { "task": "Relacionamiento Brokers", "hours_week": 68, "ai": "Solo humano", "how": "Relación comercial directa con brokers independientes (34h × 2 países)" },
+        { "task": "Subida de negocios de Brokers a Nexus", "hours_week": 10, "ai": "IA ejecuta", "how": "Integración automatizada (5h × 2 países)" }
       ]
     }
   ],
+  "capacity_reallocation": {
+    "narrative": "Las 9 oportunidades aplican a los 4 perfiles de líder, no solo al de Performance MX. Al ejecutar los 3 proyectos del documento esperamos:",
+    "regularization": {
+      "leader": "Líder Performance MX",
+      "from": 44.4,
+      "to": 40,
+      "delta": -4.4,
+      "note": "Regularización del único rol sobre capacidad — vuelve a 40 h/sem"
+    },
+    "per_leader_savings_pct": 10,
+    "destinations": [
+      { "title": "Experimentación de nuevos canales", "desc": "Capacidad para probar y medir canales que hoy no tenemos tiempo de explorar." },
+      { "title": "Tecnificación SEO + GEO", "desc": "Fortalecer SEO tradicional y agregar GEO — Generative Engine Optimization, SEO para buscadores con IA (Google AI Overviews, Perplexity, ChatGPT search)." },
+      { "title": "Fortalecimiento del plan Brokers", "desc": "Acompañar la apuesta de Brokers multiproducto del Cap. 2 con planeación dedicada del líder." }
+    ]
+  },
   "history_co": [
     { "quarter": "2022 Q4", "CRM": 10, "Direccion": 2, "Incompletos": 2, "LeadForms": 0, "Brokers": 0, "total": 14 },
     { "quarter": "2023 Q1", "CRM": 8,  "Direccion": 2, "Incompletos": 2, "LeadForms": 0, "Brokers": 0, "total": 12 },
@@ -163,8 +181,8 @@
     { "quarter": "2023 Q4", "CRM": 6,  "Direccion": 1, "Incompletos": 1, "LeadForms": 0, "Brokers": 0, "total": 8 },
     { "quarter": "2024 Q1", "CRM": 6,  "Direccion": 1, "Incompletos": 1, "LeadForms": 1, "Brokers": 0, "total": 9 },
     { "quarter": "2025 Q1", "CRM": 4,  "Direccion": 1, "Incompletos": 0, "LeadForms": 1, "Brokers": 0, "total": 6, "note": "1 persona cubre Dirección + Brokers" },
-    { "quarter": "2026 Q2", "CRM": 3,  "Direccion": 0, "Incompletos": 0, "LeadForms": 1, "Brokers": 1, "total": 5, "today": true },
-    { "quarter": "Plan Q3'26", "CRM": 1, "Direccion": 0, "Incompletos": 0, "LeadForms": 0, "Brokers": 2, "total": 3, "plan": true }
+    { "quarter": "2026 Q2", "CRM": 3,  "Direccion": 0, "Incompletos": 0, "LeadForms": 1, "Brokers": 1, "total": 5, "today": true, "note": "3 Ventanas (CRM) + 1 Lead Forms CO + 1 Brokers CO" },
+    { "quarter": "Plan Q3'26", "CRM": 1, "Direccion": 0, "Incompletos": 0, "LeadForms": 0, "Brokers": 2, "total": 3, "plan": true, "note": "1 CRM residual + 2 Brokers dedicados CO" }
   ],
   "history_mx": [
     { "quarter": "2022 Q4", "modalidad": "BPO tercerizado", "LeadForms": 20, "Brokers": 0, "total": 20 },
@@ -172,8 +190,8 @@
     { "quarter": "2024 Q1", "modalidad": "BPO", "LeadForms": 10, "Brokers": 0, "total": 10 },
     { "quarter": "2025 Q1", "modalidad": "Internos (BPO cancelado)", "LeadForms": 6, "Brokers": 0, "total": 6 },
     { "quarter": "2025 Q2", "modalidad": "Internos", "LeadForms": 5, "Brokers": 1, "total": 6 },
-    { "quarter": "2026 Q1", "modalidad": "Internos", "LeadForms": 4, "Brokers": 1, "total": 5, "today": true },
-    { "quarter": "Plan Q3'26", "modalidad": "Internos + IA", "LeadForms": 1, "Brokers": 2, "total": 3, "plan": true, "note": "1 supervisor de transición Leadforms + apuesta crecimiento Brokers" },
+    { "quarter": "2026 Q1", "modalidad": "Internos", "LeadForms": 4, "Brokers": 1, "total": 5, "today": true, "note": "4 dedicados a Lead Forms MX + 1 Brokers MX" },
+    { "quarter": "Plan Q3'26", "modalidad": "Internos + IA", "LeadForms": 1, "Brokers": 2, "total": 3, "plan": true, "note": "1 supervisor transición Lead Forms + 2 Brokers dedicados MX" },
     { "quarter": "Visión 2027", "modalidad": "100% IA", "LeadForms": 0, "Brokers": 2, "total": 2, "vision": true }
   ],
   "co_milestones": [
@@ -181,34 +199,40 @@
     { "q": "2023 Q3", "title": "Primer escalón", "text": "Optimización del CRM y reducción a 1 agente de dirección. Total cae 30%." },
     { "q": "2024 Q1", "title": "Nace Lead Forms", "text": "Llegan formularios nativos de META/TikTok. Se crea el rol Lead Forms (+1)." },
     { "q": "2025 Q1", "title": "Fusión Dirección + Brokers", "text": "Una sola persona cubre ambos. Equipo baja a 6 (-33%)." },
-    { "q": "2026 Q2", "title": "Brokers se separa", "text": "Brokers se vuelve rol propio por la apuesta multiproducto. Equipo a 5." },
-    { "q": "Plan Q3'26", "title": "3 agentes", "text": "1 CRM (residual) + 2 Brokers (apuesta crecimiento). Lead Forms y resto, automatizados." }
+    { "q": "2026 Q2", "title": "Brokers se separa", "text": "Brokers se vuelve rol propio dedicado por país. Equipo CO total a 5 (3 Ventanas + 1 Lead Forms + 1 Brokers)." },
+    { "q": "Plan Q3'26", "title": "3 agentes", "text": "1 CRM (residual) + 2 Brokers dedicados CO. Lead Forms y completitud automatizados." }
   ],
   "mx_milestones": [
     { "q": "2022 Q4", "title": "BPO pago-por-lead", "text": "20 agentes tercerizados, modelo pago por lead completado." },
     { "q": "2024 Q1", "title": "Reducción gradual del BPO", "text": "BPO baja a 10 agentes. Comienza la conversación de internalizar." },
     { "q": "2025 Q1", "title": "BPO cancelado", "text": "Equipo interno de 6 reemplaza al BPO. Calidad sube, costo baja." },
-    { "q": "2025 Q2", "title": "Nace Brokers MX", "text": "Primer agente dedicado a Brokers — apuesta de crecimiento." },
-    { "q": "2026 Q1", "title": "Foco en Lead Forms", "text": "4 agentes operan 100% Lead Forms + 1 en Brokers." },
-    { "q": "Plan Q3'26", "title": "1 supervisor + 2 Brokers", "text": "Lead Forms con agentes IA, 1 humano supervisa la transición." },
+    { "q": "2025 Q2", "title": "Nace Brokers MX", "text": "Primer agente dedicado a Brokers en MX — apuesta de crecimiento." },
+    { "q": "2026 Q1", "title": "Foco en Lead Forms", "text": "4 agentes operan 100% Lead Forms + 1 Brokers MX." },
+    { "q": "Plan Q3'26", "title": "1 supervisor + 2 Brokers", "text": "Lead Forms con agentes IA, 1 humano supervisa la transición. 2 Brokers dedicados MX." },
     { "q": "Visión 2027", "title": "0 humanos en Lead Forms", "text": "Lead Forms gestionado al 100% por agentes IA. Equipo Brokers crece." }
   ],
   "brokers_multiproducto": {
     "today": ["Captación de Brokers independientes"],
     "future": ["Franquicias", "Sellers Market Maker", "Sellers Inmo", "Buyers (inventario)", "Pulppo (tickets altos)"]
   },
-  "roadmap": {
-    "junio_2026": [
-      { "title": "Marketing Agents para Habi (Sellers)", "frees": "~3 h/sem por líder", "desc": "Replicar el pipeline ya probado en LOLU: generación de creativos + render + nomenclatura ads. Reduce la tarea \"Renovación de creativos\" en cada líder." },
-      { "title": "Reporting agent — Daily Growth & Acquisition", "frees": "~5 h/sem por líder", "desc": "Agente que arma y entrega el daily a las 8am en Slack. Es el rubro más grande del líder MX (5h)." },
-      { "title": "WBR automatizado (baseline)", "frees": "~1 h/sem por líder", "desc": "Reporting agent que arma la baseline del WBR. El líder agrega contexto y presenta." },
-      { "title": "Healthcheck automático tracking + UTMs", "frees": "~1 h/sem por líder", "desc": "Validator que monitorea pixel/CAPI/UTMs/atribución y alerta sobre desviaciones." }
-    ],
-    "q3_2026": [
-      { "title": "Agente IA piloto para Lead Forms MX", "frees": "~25 h/sem por agente humano", "desc": "Re-gestión + completitud automatizada por llamada saliente + WhatsApp. Meta: 3 agentes MX al cierre de Q3 (1 supervisor + 2 Brokers)." },
-      { "title": "Agente IA para Ventana a CRM (CO)", "frees": "~20 h/sem por agente", "desc": "Triage automatizado del flujo Ventana a CRM en CO — el rubro más grande del agente más sobrecargado (61 h/sem)." },
-      { "title": "Auto-publicación en Meta + TikTok", "frees": "Aceleración de lanzamientos", "desc": "Conectar agentes IA a las APIs de plataformas para publicar y rotar variantes sin paso manual." },
-      { "title": "Reconversión Brokers multiproducto", "frees": "Crecimiento (no liberación)", "desc": "Capacitar al agente Brokers para que ofrezca Franquicias + Sellers MM/Inmo + Buyers + Pulppo. Es la apuesta de crecimiento que justifica subir de 1 a 2 agentes en ambos países." }
-    ]
-  }
+  "projects": [
+    {
+      "n": 1,
+      "title": "Lectura conectada — agentes Claude con acceso a Meta, TikTok y Google Ads",
+      "outcome": "Capacidad de monitoreo continuo",
+      "desc": "Conectar agentes IA con read access a las APIs de las 3 plataformas. Hoy el líder consulta cada cuenta manualmente y arma el panorama mentalmente. Con esto, el dato vive en el agente y está disponible para todo lo que sigue (reporting, alarmas, decisiones)."
+    },
+    {
+      "n": 2,
+      "title": "Reportes + alarmas + sugerencias de cambios automatizadas",
+      "outcome": "El líder decide, no calcula",
+      "desc": "Sobre la lectura conectada del paso 1, el agente arma el daily, dispara alarmas de pacing / CPL / saturación y propone cambios accionables (\"subir bid en X audiencia\", \"apagar Y creativo\", \"redistribuir 15% del budget a Z\"). El líder aprueba o descarta — no construye el reporte ni hace el cálculo manual."
+    },
+    {
+      "n": 3,
+      "title": "Renovación de creativos guiada por performance",
+      "outcome": "Itera hacia lo que funciona, sin briefing manual",
+      "desc": "Cierre del loop: el agente lee qué creativos performan, identifica patrones (formato, copy, hook, audiencia), genera variantes con IA y las rota. La \"renovación de creativos\" deja de ser una tarea calendarizada cada 2 días y se vuelve un loop continuo guiado por la data del paso 1."
+    }
+  ]
 }
