@@ -19,7 +19,9 @@
     --color-a: #818cf8;
     --color-b: #f59e0b;
     --color-c: #94a3b8;
+    --color-sin: #ef4444;
     --grid: rgba(148, 163, 184, 0.18);
+    --code-bg: rgba(129, 140, 248, 0.12);
   }
   body.light {
     --bg: #f5f7fa;
@@ -33,7 +35,9 @@
     --color-a: #6366f1;
     --color-b: #d97706;
     --color-c: #64748b;
+    --color-sin: #dc2626;
     --grid: rgba(100, 116, 139, 0.18);
+    --code-bg: rgba(99, 102, 241, 0.10);
   }
   * { margin: 0; padding: 0; box-sizing: border-box; }
   body { font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; padding: 24px; transition: background 0.2s, color 0.2s; }
@@ -49,12 +53,28 @@
   .header p { font-size: 13.5px; color: var(--text-muted); line-height: 1.5; }
   .meta { font-size: 12px; color: var(--text-muted-2); margin-top: 4px; }
 
-  .controls { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; margin-bottom: 18px; }
+  code { background: var(--code-bg); color: var(--accent); padding: 1px 6px; border-radius: 4px; font-size: 0.92em; font-family: 'SF Mono', Menlo, Consolas, monospace; }
+
+  .controls { display: flex; flex-direction: column; gap: 10px; margin-bottom: 18px; }
+  .control-row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+  .control-label { font-size: 12px; font-weight: 500; color: var(--text-muted-2); text-transform: uppercase; letter-spacing: 0.04em; min-width: 64px; }
+
   .seg { display: inline-flex; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; background: var(--card); }
   .seg button { background: transparent; border: 0; color: var(--text); padding: 8px 16px; cursor: pointer; font-size: 13px; font-weight: 500; transition: background 0.12s, color 0.12s; }
   .seg button + button { border-left: 1px solid var(--border); }
   .seg button.active { background: var(--accent); color: #0b1224; font-weight: 600; }
   .seg button:not(.active):hover { color: var(--accent); }
+
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; }
+  .chip { background: var(--card); border: 1px solid var(--border); color: var(--text); padding: 6px 12px; font-size: 12.5px; border-radius: 999px; cursor: pointer; transition: background 0.12s, color 0.12s, border-color 0.12s; font-family: inherit; text-transform: capitalize; }
+  .chip:hover { color: var(--accent); border-color: var(--accent); }
+  .chip.active { background: var(--accent); color: #0b1224; border-color: var(--accent); font-weight: 600; }
+
+  .toggle { display: inline-flex; align-items: center; gap: 8px; background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 7px 13px; cursor: pointer; font-size: 13px; color: var(--text); transition: border-color 0.12s, color 0.12s; user-select: none; }
+  .toggle:hover { border-color: var(--accent); }
+  .toggle input { appearance: none; -webkit-appearance: none; width: 14px; height: 14px; border: 1.5px solid var(--text-muted); border-radius: 3px; cursor: pointer; position: relative; transition: background 0.12s, border-color 0.12s; flex-shrink: 0; }
+  .toggle input:checked { background: var(--accent); border-color: var(--accent); }
+  .toggle input:checked::after { content: ''; position: absolute; left: 3px; top: 0px; width: 4px; height: 8px; border: solid #0b1224; border-width: 0 2px 2px 0; transform: rotate(45deg); }
 
   .chart-card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 20px 22px; }
   .chart-header { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 14px; flex-wrap: wrap; gap: 8px; }
@@ -63,10 +83,26 @@
   .chart-wrap { position: relative; height: 420px; }
   .footnote { font-size: 12px; color: var(--text-muted-2); margin-top: 14px; line-height: 1.5; }
 
+  .doc-card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 20px 22px; margin-top: 18px; }
+  .doc-card h2 { font-size: 14px; font-weight: 600; color: var(--text-title); margin-bottom: 14px; display: flex; align-items: center; gap: 8px; }
+  .doc-card h2::before { content: '📖'; font-size: 14px; }
+  .doc-card h3 { font-size: 12.5px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; margin: 16px 0 8px; }
+  .doc-card h3:first-of-type { margin-top: 0; }
+  .doc-card p, .doc-card li { font-size: 13px; line-height: 1.55; color: var(--text); }
+  .doc-card ul { padding-left: 20px; margin-top: 4px; }
+  .doc-card ul li + li { margin-top: 4px; }
+  .doc-grid { display: grid; grid-template-columns: 180px 1fr; gap: 10px 16px; align-items: baseline; }
+  .doc-grid dt { font-size: 12px; color: var(--text-muted-2); font-weight: 500; }
+  .doc-grid dd { font-size: 13px; color: var(--text); }
+  .callout { background: var(--code-bg); border-left: 3px solid var(--accent); padding: 10px 14px; border-radius: 4px; margin-top: 10px; font-size: 12.5px; line-height: 1.55; color: var(--text); }
+  .callout strong { color: var(--accent); }
+
   @media (max-width: 640px) {
     body { padding: 16px; }
     .header h1 { font-size: 22px; }
     .chart-wrap { height: 340px; }
+    .doc-grid { grid-template-columns: 1fr; gap: 2px 0; }
+    .doc-grid dt { margin-top: 8px; }
   }
 </style>
 </head>
@@ -77,25 +113,93 @@
 
     <div class="header">
       <h1>Prioridad <span>Market Maker</span></h1>
-      <p>Distribución semanal de leads tipificados A/B/C (campo <code>prioridad_gestion_market_maker</code> en HubSpot deals), últimas 18 semanas ISO.</p>
+      <p>Distribución semanal de leads por tipificación A/B/C (campo <code>prioridad_gestion_market_maker</code> de HubSpot deals), sobre el universo de leads de las 6 fuentes de marketing por país. Últimas 18 semanas ISO.</p>
       <p class="meta" id="meta">Cargando…</p>
     </div>
 
     <div class="controls">
-      <div class="seg" role="tablist" aria-label="País">
-        <button type="button" data-country="Colombia" class="active">Colombia</button>
-        <button type="button" data-country="México">México</button>
+      <div class="control-row">
+        <span class="control-label">País</span>
+        <div class="seg" role="tablist" aria-label="País">
+          <button type="button" data-country="Colombia" class="active">Colombia</button>
+          <button type="button" data-country="México">México</button>
+        </div>
+      </div>
+      <div class="control-row">
+        <span class="control-label">Fuente</span>
+        <div class="chips" id="fuenteChips" role="tablist" aria-label="Fuente"></div>
+      </div>
+      <div class="control-row">
+        <span class="control-label">Área</span>
+        <div class="chips" id="areaChips" role="tablist" aria-label="Área metropolitana"></div>
+      </div>
+      <div class="control-row">
+        <span class="control-label">Filtros</span>
+        <label class="toggle"><input type="checkbox" id="tipOnly" checked> Solo tipificados (A/B/C)</label>
+        <label class="toggle"><input type="checkbox" id="asigOnly"> Solo asignados al mart</label>
       </div>
     </div>
 
     <div class="chart-card">
       <div class="chart-header">
-        <div class="chart-title" id="chartTitle">Colombia · % de leads tipo A / B / C por semana</div>
+        <div class="chart-title" id="chartTitle"></div>
         <div class="chart-sub" id="chartSub"></div>
       </div>
       <div class="chart-wrap"><canvas id="chart"></canvas></div>
-      <p class="footnote">Bucket: ISO week por <code>createdate</code> del deal. Denominador: deals con prioridad asignada (A+B+C, excluye <code>null</code> = no tipificados / Inmo). La semana en curso se excluye por ser parcial.</p>
+      <p class="footnote" id="footnote"></p>
     </div>
+
+    <section class="doc-card" aria-label="Documentación del query">
+      <h2>Qué hace el query detrás de esta gráfica</h2>
+
+      <h3>Universo</h3>
+      <p>Cuenta <strong>leads de las 6 fuentes de marketing</strong> creados en las últimas 18 semanas ISO, según <code>tabla_inmuebles_general</code> del país correspondiente. Las 6 fuentes son distintas por país:</p>
+      <ul>
+        <li><strong>CO</strong>: web · estudio inmueble · crm · lead_forms · broker · comercial</li>
+        <li><strong>MX</strong>: web · estudio inmueble · propiedades · lead_forms · broker · comercial</li>
+      </ul>
+
+      <h3>Origen de cada campo</h3>
+      <dl class="doc-grid">
+        <dt>Universo de leads</dt>
+        <dd><code>papyrus-data.habi_wh_bi.tabla_inmuebles_general</code> (CO) y <code>papyrus-data-mx.habi_wh_bi.tabla_inmuebles_general</code> (MX), filtrado a los <code>fuente_id</code> de marketing.</dd>
+
+        <dt>Fecha (semana)</dt>
+        <dd><code>DATE_TRUNC(DATE(fecha_creacion), ISOWEEK)</code> sobre el lead — no sobre el deal.</dd>
+
+        <dt>Fuente</dt>
+        <dd><code>tabla_inmuebles_general.fuente</code> (id en <code>fuente_id</code>).</dd>
+
+        <dt>Área metropolitana</dt>
+        <dd>Campo <code>area_metropolitana</code> de la misma <code>tabla_inmuebles_general</code>. Áreas con menos de 100 obs en 18 sem → "Otras"; sin valor → "Sin clasificar". Los nombres MX vienen como "Zona metropolitana Guadalajara" y se normalizan a "Guadalajara".</dd>
+
+        <dt>Tipificación A/B/C</dt>
+        <dd>LEFT JOIN con <code>sellers-main-prod.hubspot.deals</code> por <code>nid</code>+<code>country</code>, tomando el deal más reciente. Campo <code>prioridad_gestion_market_maker</code>. Si no hay deal o la prioridad es <code>null</code>, el lead cuenta como "Sin tipificación".</dd>
+
+        <dt>Asignado al mart</dt>
+        <dd>LEFT JOIN con <code>papyrus-master.sellers_data_mart.sellers_leads_asignados_marketing_wbr_mart</code> por <code>nid</code>+<code>pais</code>. Si el <code>nid</code> existe en la mart, cuenta como "asignado" (es la mart oficial del WBR de Marketing).</dd>
+      </dl>
+
+      <h3>Lógica de los filtros</h3>
+      <ul>
+        <li><strong>Solo tipificados</strong> ON: denominador = A+B+C. Solo 3 líneas en la gráfica. OFF: denominador = A+B+C+Sin tipificación, aparece la 4ª línea.</li>
+        <li><strong>Solo asignados al mart</strong> ON: restringe el universo a leads presentes en la mart de asignados. OFF: incluye todos los leads de marketing (asignados y no).</li>
+        <li><strong>Fuente</strong>: single-select. "Todas" suma las 6 fuentes del país.</li>
+        <li><strong>Área</strong>: single-select. "Todas" suma todas las áreas (incluye "Otras" y "Sin clasificar").</li>
+      </ul>
+
+      <h3>Bucketeo y exclusiones</h3>
+      <ul>
+        <li>Ventana fija: 18 semanas ISO completas, terminadas. La semana en curso se excluye porque está incompleta y distorsiona porcentajes.</li>
+        <li>Si un lead tiene varios deals en HubSpot, se toma el más reciente por <code>createdate</code> para evitar duplicar.</li>
+      </ul>
+
+      <h3>Fórmula que se grafica</h3>
+      <p>Para cada semana <em>w</em> tras aplicar los filtros:<br>
+        <code>%A(w) = a(w) / D(w)</code> · idem para B, C y Sin tipificación.<br>
+        <code>D(w)</code> = A+B+C si "Solo tipificados" ON; A+B+C+SinTip si OFF.
+      </p>
+    </section>
   </div>
 
 <script>
@@ -104,6 +208,10 @@
   let chart;
   let DATA;
   let currentCountry = 'Colombia';
+  let currentFuente = 'Todas';
+  let currentArea = 'Todas';
+  let tipOnly = true;
+  let asigOnly = false;
 
   function fmtWeek(iso) {
     const [y, m, d] = iso.split('-').map(Number);
@@ -122,37 +230,62 @@
     return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
   }
 
-  function buildSeries(country) {
-    const c = DATA.countries[country];
-    const a = [], b = [], cc = [];
-    for (let i = 0; i < DATA.weeks.length; i++) {
-      const n = c.n[i];
-      if (!n) { a.push(null); b.push(null); cc.push(null); continue; }
-      a.push(+(100 * c.a[i] / n).toFixed(1));
-      b.push(+(100 * c.b[i] / n).toFixed(1));
-      cc.push(+(100 * c.c[i] / n).toFixed(1));
+  function aggregate() {
+    // Devuelve arrays por semana: a, b, c, s, n_efectivo, denom
+    const W = DATA.weeks.length;
+    const a = new Array(W).fill(0);
+    const b = new Array(W).fill(0);
+    const c = new Array(W).fill(0);
+    const s = new Array(W).fill(0);
+    const rows = DATA.countries[currentCountry].rows;
+
+    for (const r of rows) {
+      if (currentFuente !== 'Todas' && r.f !== currentFuente) continue;
+      if (currentArea   !== 'Todas' && r.ar !== currentArea) continue;
+      if (asigOnly && r.as !== 1) continue;
+      a[r.w] += r.a;
+      b[r.w] += r.b;
+      c[r.w] += r.c;
+      s[r.w] += r.s;
     }
-    return { a, b, c: cc };
+    const denom = new Array(W).fill(0);
+    const n_total = new Array(W).fill(0);
+    for (let i = 0; i < W; i++) {
+      denom[i] = tipOnly ? (a[i] + b[i] + c[i]) : (a[i] + b[i] + c[i] + s[i]);
+      n_total[i] = a[i] + b[i] + c[i] + s[i];
+    }
+    return { a, b, c, s, denom, n_total };
+  }
+
+  function pct(num, den) {
+    if (!den) return null;
+    return +(100 * num / den).toFixed(1);
   }
 
   function buildChart() {
     const ctx = document.getElementById('chart').getContext('2d');
-    const s = buildSeries(currentCountry);
+    const agg = aggregate();
     const textMuted = cssVar('--text-muted');
     const grid = cssVar('--grid');
 
+    const aSeries = agg.denom.map((d, i) => pct(agg.a[i], d));
+    const bSeries = agg.denom.map((d, i) => pct(agg.b[i], d));
+    const cSeries = agg.denom.map((d, i) => pct(agg.c[i], d));
+    const sSeries = agg.denom.map((d, i) => pct(agg.s[i], d));
+
     const baseDataset = { tension: 0.25, borderWidth: 2.5, pointRadius: 3, pointHoverRadius: 5, spanGaps: true };
+    const datasets = [
+      { ...baseDataset, label: 'A', data: aSeries, borderColor: cssVar('--color-a'), backgroundColor: cssVar('--color-a') },
+      { ...baseDataset, label: 'B', data: bSeries, borderColor: cssVar('--color-b'), backgroundColor: cssVar('--color-b') },
+      { ...baseDataset, label: 'C', data: cSeries, borderColor: cssVar('--color-c'), backgroundColor: cssVar('--color-c') },
+    ];
+    if (!tipOnly) {
+      datasets.push({ ...baseDataset, label: 'Sin tipificación', data: sSeries, borderColor: cssVar('--color-sin'), backgroundColor: cssVar('--color-sin'), borderDash: [6, 4] });
+    }
 
     chart = new Chart(ctx, {
       type: 'line',
-      data: {
-        labels: DATA.weeks.map(fmtWeek),
-        datasets: [
-          { ...baseDataset, label: 'A', data: s.a, borderColor: cssVar('--color-a'), backgroundColor: cssVar('--color-a') },
-          { ...baseDataset, label: 'B', data: s.b, borderColor: cssVar('--color-b'), backgroundColor: cssVar('--color-b') },
-          { ...baseDataset, label: 'C', data: s.c, borderColor: cssVar('--color-c'), backgroundColor: cssVar('--color-c') },
-        ]
-      },
+      data: { labels: DATA.weeks.map(fmtWeek), datasets },
       options: {
         responsive: true,
         maintainAspectRatio: false,
@@ -174,8 +307,10 @@
                 if (!items.length) return '';
                 const idx = items[0].dataIndex;
                 const week = DATA.weeks[idx];
-                const n = DATA.countries[currentCountry].n[idx];
-                return `Semana del ${fmtWeek(week)} · n=${n != null ? n.toLocaleString('es-CO') : '—'}`;
+                const dn = agg.denom[idx];
+                const tot = agg.n_total[idx];
+                const denomLabel = tipOnly ? 'tipificados' : 'leads';
+                return `Semana del ${fmtWeek(week)} · ${denomLabel}=${dn.toLocaleString('es-CO')}${tipOnly ? '' : ' (de '+tot.toLocaleString('es-CO')+' totales)'}`;
               },
               label: function (item) {
                 const v = item.parsed.y;
@@ -197,32 +332,85 @@
         }
       }
     });
+    // Guardar para tooltip; aggregate() ya se ejecutó arriba
+    chart._aggCache = agg;
+  }
+
+  function renderChips(containerId, items, current, onSelect) {
+    const wrap = document.getElementById(containerId);
+    wrap.innerHTML = '';
+    items.forEach(item => {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'chip' + (item === current ? ' active' : '');
+      btn.dataset.value = item;
+      btn.textContent = item;
+      btn.addEventListener('click', () => {
+        wrap.querySelectorAll('.chip').forEach(c => c.classList.toggle('active', c.dataset.value === item));
+        onSelect(item);
+      });
+      wrap.appendChild(btn);
+    });
+  }
+
+  function rebuildSelectors() {
+    const cdata = DATA.countries[currentCountry];
+    if (!cdata.fuentes.includes(currentFuente)) currentFuente = 'Todas';
+    if (!cdata.areas.includes(currentArea)) currentArea = 'Todas';
+    renderChips('fuenteChips', cdata.fuentes, currentFuente, v => { currentFuente = v; rebuild(); });
+    renderChips('areaChips',   cdata.areas,   currentArea,   v => { currentArea = v;   rebuild(); });
   }
 
   function rebuild() {
-    document.getElementById('chartTitle').textContent =
-      `${COUNTRY_LABEL[currentCountry]} · % de leads tipo A / B / C por semana`;
+    const partsTitle = [COUNTRY_LABEL[currentCountry]];
+    if (currentFuente !== 'Todas') partsTitle.push('fuente ' + currentFuente);
+    if (currentArea !== 'Todas') partsTitle.push(currentArea);
+    if (asigOnly) partsTitle.push('asignados');
+    partsTitle.push(tipOnly ? '% A / B / C sobre tipificados' : '% A / B / C / Sin tip sobre todos los leads');
+    document.getElementById('chartTitle').textContent = partsTitle.join(' · ');
+
+    const fnParts = [
+      'Bucket: ISO week por <code>fecha_creacion</code> del lead.',
+      tipOnly
+        ? 'Denominador: leads con tipificación A/B/C.'
+        : 'Denominador: TODOS los leads de las fuentes filtradas (incluye sin tipificación).',
+      asigOnly ? 'Filtro activo: solo leads asignados en el mart.' : 'Incluye leads asignados y no asignados.',
+      'La semana en curso se excluye por ser parcial.'
+    ];
+    document.getElementById('footnote').innerHTML = fnParts.join(' ');
+
     if (chart) chart.destroy();
     buildChart();
     updateSub();
   }
 
   function updateSub() {
-    const c = DATA.countries[currentCountry];
-    const n = c.n[c.n.length - 1];
-    const lastWeek = DATA.weeks[DATA.weeks.length - 1];
+    const agg = chart._aggCache;
+    const i = DATA.weeks.length - 1;
+    const lastWeek = DATA.weeks[i];
+    const denomLabel = tipOnly ? 'tipificados' : 'leads';
     document.getElementById('chartSub').textContent =
-      `Última semana: ${fmtWeek(lastWeek)} · n=${n != null ? n.toLocaleString('es-CO') : '—'}`;
+      `Última semana: ${fmtWeek(lastWeek)} · ${denomLabel}=${agg.denom[i].toLocaleString('es-CO')}`;
   }
 
   function bindControls() {
     document.querySelectorAll('.seg button[data-country]').forEach(btn => {
       btn.addEventListener('click', () => {
+        if (btn.dataset.country === currentCountry) return;
         document.querySelectorAll('.seg button[data-country]').forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
         currentCountry = btn.dataset.country;
+        rebuildSelectors();
         rebuild();
       });
+    });
+    document.getElementById('tipOnly').addEventListener('change', e => {
+      tipOnly = e.target.checked;
+      rebuild();
+    });
+    document.getElementById('asigOnly').addEventListener('change', e => {
+      asigOnly = e.target.checked;
+      rebuild();
     });
   }
 
@@ -247,8 +435,8 @@
         `Actualizado: ${fmtUpdated(data.updated_at)} · ${data.weeks.length} semanas ISO`;
       bindTheme();
       bindControls();
-      buildChart();
-      updateSub();
+      rebuildSelectors();
+      rebuild();
     })
     .catch(err => {
       document.getElementById('meta').textContent = 'Error cargando data.json: ' + err.message;
