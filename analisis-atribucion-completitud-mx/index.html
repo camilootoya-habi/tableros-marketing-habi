@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🔎</text></svg>">
+<title>Atribución de completitud — Lead Forms MX 2026</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<style>
+  :root {
+    --bg: #fafaf7; --card: #ffffff;
+    --text: #1f2937; --text-muted: #6b7280; --text-title: #111827;
+    --accent: #4f46e5; --accent-soft: #eef2ff;
+    --border: #e5e7eb; --code-bg: #f3f4f6; --table-alt: #f9fafb;
+    --warn-bg: #fef3c7; --warn-border: #f59e0b;
+    --info-bg: #eef2ff; --info-border: #4f46e5;
+    --ok-bg: #ecfdf5; --ok-border: #10b981;
+    --danger-bg: #fee2e2; --danger-border: #dc2626;
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: var(--bg); color: var(--text); line-height: 1.65; margin: 0; padding: 0; }
+  .topbar { position: sticky; top: 0; background: rgba(250,250,247,0.94); backdrop-filter: blur(8px); border-bottom: 1px solid var(--border); padding: 10px 20px; display: flex; justify-content: space-between; align-items: center; font-size: 13px; z-index: 100; flex-wrap: wrap; gap: 8px; }
+  .topbar a { color: var(--accent); text-decoration: none; margin-left: 14px; }
+  .topbar a:hover { text-decoration: underline; }
+  .topbar .back-hub { color: var(--text-muted); margin-left: 0; margin-right: 14px; padding: 3px 8px; border: 1px solid var(--border); border-radius: 6px; font-weight: 500; }
+  .topbar .back-hub:hover { color: var(--accent); border-color: var(--accent); text-decoration: none; }
+  .wrap { max-width: 920px; margin: 0 auto; padding: 40px 28px 96px; }
+  h1 { color: var(--text-title); font-size: 2rem; font-weight: 700; margin: 0 0 6px; padding-bottom: 12px; border-bottom: 2px solid var(--accent); }
+  h2 { color: var(--text-title); font-size: 1.5rem; font-weight: 700; margin: 44px 0 12px; padding-top: 20px; border-top: 1px solid var(--border); }
+  h3 { color: var(--text-title); font-size: 1.2rem; font-weight: 600; margin: 28px 0 10px; }
+  p, li { font-size: 15px; }
+  ul, ol { padding-left: 26px; }
+  li { margin-bottom: 6px; }
+  strong { color: var(--text-title); }
+  code { background: var(--code-bg); padding: 2px 6px; border-radius: 4px; font-size: 13px; font-family: 'SF Mono', Menlo, Monaco, Consolas, monospace; color: #be185d; }
+  pre { background: #0f172a; color: #e2e8f0; padding: 16px 18px; border-radius: 8px; overflow-x: auto; font-size: 12.5px; line-height: 1.5; font-family: 'SF Mono', Menlo, Monaco, Consolas, monospace; margin: 16px 0; }
+  pre code { background: none; color: inherit; padding: 0; }
+  .meta { font-size: 13px; color: var(--text-muted); margin: 8px 0 24px; }
+
+  .callout { padding: 14px 18px; border-radius: 0 8px 8px 0; margin: 18px 0; font-size: 14px; }
+  .callout.info { background: var(--info-bg); border-left: 3px solid var(--info-border); color: #1e1b4b; }
+  .callout.warn { background: var(--warn-bg); border-left: 3px solid var(--warn-border); color: #78350f; }
+  .callout.ok { background: var(--ok-bg); border-left: 3px solid var(--ok-border); color: #064e3b; }
+  .callout.danger { background: var(--danger-bg); border-left: 3px solid var(--danger-border); color: #7f1d1d; }
+  .callout strong { color: inherit; }
+  .callout p { margin: 6px 0; font-size: 14px; }
+  .callout p:first-child { margin-top: 0; }
+  .callout p:last-child { margin-bottom: 0; }
+
+  table { border-collapse: collapse; width: 100%; font-size: 13px; margin: 18px 0; display: block; overflow-x: auto; }
+  thead { background: var(--accent-soft); }
+  th { text-align: left; padding: 10px 12px; font-weight: 600; color: var(--text-title); border-bottom: 2px solid var(--accent); white-space: nowrap; }
+  td { padding: 8px 12px; border-bottom: 1px solid var(--border); white-space: nowrap; }
+  tbody tr:nth-child(even) { background: var(--table-alt); }
+  td:not(:first-child), th:not(:first-child) { text-align: right; font-variant-numeric: tabular-nums; }
+  tr.highlight td { background: #fef3c7 !important; font-weight: 600; }
+
+  .chart-card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 20px; margin: 18px 0; box-shadow: 0 1px 2px rgba(0,0,0,0.04); }
+  .chart-title { font-size: 16px; font-weight: 600; color: var(--text-title); margin-bottom: 4px; }
+  .chart-subtitle { font-size: 12px; color: var(--text-muted); margin-bottom: 14px; }
+  .chart-wrap { position: relative; height: 360px; width: 100%; }
+
+  .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; margin: 18px 0; }
+  .kpi { background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 12px 16px; }
+  .kpi .label { color: var(--text-muted); font-size: 11px; text-transform: uppercase; letter-spacing: 0.4px; margin-bottom: 4px; }
+  .kpi .val { font-weight: 700; color: var(--text-title); font-size: 24px; line-height: 1.1; }
+  .kpi .sub { color: var(--text-muted); font-size: 12px; margin-top: 4px; }
+  .kpi.flag .val { color: var(--danger-border); }
+
+  .timeline { list-style: none; padding-left: 0; margin: 14px 0; }
+  .timeline li { position: relative; padding: 8px 0 8px 132px; border-left: 2px solid var(--border); margin-left: 8px; }
+  .timeline .ts { position: absolute; left: -4px; top: 8px; width: 120px; text-align: right; font-size: 12px; color: var(--text-muted); font-variant-numeric: tabular-nums; }
+  .timeline .dot { position: absolute; left: -7px; top: 12px; width: 10px; height: 10px; border-radius: 50%; background: var(--border); border: 2px solid var(--bg); }
+  .timeline li.bot .dot { background: #6b7280; }
+  .timeline li.grab .dot { background: var(--danger-border); }
+  .timeline li.grab { background: #fff5f5; }
+  .timeline .who { font-size: 11px; color: var(--text-muted); }
+  .badge { display:inline-block; font-size: 11px; padding: 1px 7px; border-radius: 999px; font-weight: 600; }
+  .badge.bot { background:#e5e7eb; color:#374151; }
+  .badge.human { background:#ede9fe; color:#5b21b6; }
+  .badge.grab { background:#fee2e2; color:#991b1b; }
+  .timeline .ann { display:block; font-size:12px; font-style:italic; margin-top:3px; color:var(--text-muted); }
+  .timeline li.key .ann { color:#065f46; font-style:normal; font-weight:600; }
+  .timeline li.grab .ann { color:#991b1b; }
+  .timeline li.key .dot { background:var(--ok-border); }
+  .seal { font-size:12.5px; background:#f9fafb; border:1px solid var(--border); border-radius:6px; padding:9px 13px; margin:10px 0 4px; }
+  .seal code { background:#fff; }
+  .ex-head { display:flex; align-items:baseline; gap:10px; flex-wrap:wrap; margin:28px 0 4px; }
+  .ex-head h3 { margin:0; }
+  .ex-head .tag { font-size:11px; background:var(--ok-bg); color:#065f46; padding:2px 8px; border-radius:999px; font-weight:600; }
+</style>
+</head>
+<body>
+<div class="topbar">
+  <span>
+    <a href="../" class="back-hub">← Hub</a>
+    🔎 Auditoría · Habi MX — Atribución de completitud
+  </span>
+  <span>
+    <a href="#resumen">Resumen</a>
+    <a href="#cap-1">1. Proceso</a>
+    <a href="#cap-2">2. La pregunta</a>
+    <a href="#cap-3">3. Evidencia</a>
+    <a href="#cap-4">4. Ejemplos</a>
+    <a href="#cap-5">5. BigQuery</a>
+    <a href="#cap-6">6. Límites</a>
+  </span>
+</div>
+
+<div class="wrap">
+
+<h1>¿Quién completa los leads de Lead Forms? — Atribución de completitud en MX</h1>
+<div class="meta">
+  <strong>Fecha:</strong> 2026-05-27 · <strong>Autor:</strong> Camilo Otoya — growth/marketing<br>
+  <strong>Scope:</strong> México · fuente <strong>Lead Forms</strong> (<code>fuente_id = 47</code>) · año 2026<br>
+  <strong>Estado:</strong> documento preliminar de auditoría interna
+</div>
+
+<div class="callout warn">
+  <p><strong>Aviso.</strong> Este es un documento <strong>preliminar de auditoría interna</strong>. Todas las cifras son reproducibles en BigQuery (capítulo 5). Describe un <strong>patrón en los datos</strong>; no constituye una determinación de fraude ni de mala fe. Las conclusiones sobre intención y sobre impacto en comisiones requieren validación con RRHH/Compliance y, idealmente, revisión de grabaciones de llamadas (capítulo 6).</p>
+</div>
+
+<h2 id="resumen">Resumen ejecutivo</h2>
+<ul>
+  <li><strong>La pregunta.</strong> ¿Hay agentes del call center de marketing que entran a marcar como "Completo" leads de Lead Forms que <strong>ya estaban completos</strong> —porque la automatización (MabiMX y otros bots) ya los había llevado a una tipificación de Backbone (calificado o descarte)— quedándose así con el crédito de una completitud que no hicieron?</li>
+  <li><strong>El hallazgo.</strong> Sí ocurre, y está <strong>fuertemente concentrado en un agente</strong>. De los 1,912 leads Lead Forms 2026 donde <strong>César Álvarez</strong> figura como completador, en <strong>1,138 (60%)</strong> un bot ya había tipificado el lead <em>antes</em> de que él marcara "Completo". En el resto del equipo ese porcentaje es de <strong>5%–13%</strong>.</li>
+  <li><strong>Quién hacía el trabajo.</strong> La automatización que tipificaba antes que él es sobre todo <strong>MabiMX</strong> (816 casos), seguido de <code>docking-backbone</code> (124), <code>gabi-completeness</code> / GABI (88) y <code>docking_whatsapp</code> (45).</li>
+  <li><strong>Conexión con cierres.</strong> César es el completador acreditado en <strong>42 de 104 (40%)</strong> de los cierres "Cierre - Comprado" de Lead Forms en 2026 — muy por encima de cualquier compañero. De esos 42, <strong>23</strong> habían sido tipificados por un bot antes de que él los "completara".</li>
+  <li><strong>Lo que falta confirmar.</strong> Que la comisión del agente gestor se pague por completar leads que luego cierran (regla de compensación — RRHH), y si en estos casos hubo o no trabajo real (llamada al vendedor) — verificable con grabaciones.</li>
+</ul>
+
+<div class="kpi-grid">
+  <div class="kpi flag"><div class="label">César · % completados ya tipificados por bot</div><div class="val">60%</div><div class="sub">1,138 de 1,912 · LF 2026</div></div>
+  <div class="kpi"><div class="label">Mismo % · resto del equipo</div><div class="val">5–13%</div><div class="sub">8 agentes comparados</div></div>
+  <div class="kpi flag"><div class="label">Cierres LF 2026 acreditados a César</div><div class="val">42 / 104</div><div class="sub">40% del total del canal</div></div>
+  <div class="kpi"><div class="label">De esos cierres, ya tipificados por bot</div><div class="val">23</div><div class="sub">antes de su "Completo"</div></div>
+</div>
+
+<h2 id="cap-1">Capítulo 1 — Cómo se atribuye la completitud (dos roles)</h2>
+<p>El funnel de sellers en MX tiene <strong>dos procesos independientes</strong> con dos atribuciones distintas:</p>
+<ul>
+  <li><strong>Marketing — call center / "agente gestor" (completitud).</strong> Un lead de Lead Forms entra solo con datos de contacto capturados en redes sociales; está <em>incompleto</em>. El call center llama al vendedor y <strong>completa</strong> las características del inmueble en <strong>Nexus</strong>. Una vez completo, <strong>Backbone</strong> compara contra el buybox y <strong>tipifica</strong> el lead como <em>calificado</em> o <em>descartado</em>.</li>
+  <li><strong>Comercial — propietario del negocio (gestión y cierre).</strong> Los leads calificados se asignan al equipo comercial, que los gestiona y ejecuta el cierre. Esa atribución vive en <code>hubspot_owner_id</code> y es un equipo distinto.</li>
+</ul>
+<p>La atribución de <strong>completitud</strong> (la de marketing) se sella en el momento en que el lead pasa al estado <strong>"Completo" (state_id = 13)</strong>: el agente que ejecuta esa transición queda registrado como completador en:</p>
+<ul>
+  <li><code>tabla_inmuebles_general.agente_primer_completo</code> (analítica), y</li>
+  <li><code>hubspot.deals.agente_gestor_crm</code> (HubSpot owner id; p. ej. <code>82004373</code> = César, equipo "Leadforms MX").</li>
+</ul>
+<div class="callout info">
+  <p><strong>Premisa a validar (RRHH):</strong> según el modelo de comisiones de marketing, el agente gestor que <em>completó</em> un lead gana comisión si ese lead después llega a <strong>"Cierre - Comprado"</strong>. Si esto es así, quedar registrado como completador de leads que terminan cerrando tiene valor económico directo.</p>
+</div>
+
+<h2 id="cap-2">Capítulo 2 — La pregunta y cómo la medimos</h2>
+<p>Un lead solo puede ser tipificado por Backbone (calificado/descarte) <strong>si ya está completo</strong>. Por lo tanto, si un lead se encuentra en un estado de tipificación (calificado o descarte) <strong>distinto de "Incompleto"</strong>, la completitud <em>ya ocurrió</em>.</p>
+<p>La señal que buscamos es entonces precisa y verificable:</p>
+<div class="callout danger">
+  <p><strong>Patrón auditado:</strong> un agente marca <strong>"Completo" (13)</strong> sobre un lead que <strong>ya había alcanzado una tipificación de Backbone</strong> (cualquier estado de <code>stage_id = 3</code>: <em>No gestionado</em>, <em>Sin pricing inicial</em>, <em>Descartado por…</em>) ejecutada <strong>por un bot</strong>, en un momento <strong>anterior</strong>. Es decir: el lead ya estaba completo y tipificado, y aun así el agente queda registrado como su completador.</p>
+</div>
+<p>Operacionalización (por cada lead Lead Forms creado en 2026):</p>
+<ul>
+  <li>Se toma la <strong>primera</strong> transición a estado 13 ("Completo") y su agente → <em>el completador acreditado</em>.</li>
+  <li>Se toma la <strong>primera</strong> transición a cualquier estado de <code>stage_id = 3</code> (tipificación) y su agente.</li>
+  <li>Se marca el patrón cuando la tipificación ocurrió <strong>antes</strong> del "Completo" y la hizo un <strong>bot</strong> (agente que no es un usuario <code>nexus:</code>).</li>
+</ul>
+
+<h2 id="cap-3">Capítulo 3 — Evidencia</h2>
+<p>Universo: leads Lead Forms (<code>fuente_id = 47</code>) creados en 2026, agrupados por el <strong>agente que figura como completador</strong> (primera transición a estado 13).</p>
+
+<table>
+  <thead><tr>
+    <th>Agente gestor (completador)</th>
+    <th>Leads que "completó"</th>
+    <th>Ya tipificados por bot antes</th>
+    <th>% del agente</th>
+  </tr></thead>
+  <tbody>
+    <tr class="highlight"><td>César Álvarez</td><td>1,912</td><td>1,138</td><td>60%</td></tr>
+    <tr><td>Bruno Arredondo</td><td>233</td><td>31</td><td>13%</td></tr>
+    <tr><td>Alma Robles</td><td>199</td><td>26</td><td>13%</td></tr>
+    <tr><td>Eduardo Leal</td><td>118</td><td>12</td><td>10%</td></tr>
+    <tr><td>César Arce</td><td>51</td><td>5</td><td>10%</td></tr>
+    <tr><td>Aldo Caballero</td><td>515</td><td>49</td><td>10%</td></tr>
+    <tr><td>Débora Vázquez</td><td>602</td><td>46</td><td>8%</td></tr>
+    <tr><td>José Ramírez</td><td>459</td><td>22</td><td>5%</td></tr>
+  </tbody>
+</table>
+
+<div class="chart-card">
+  <div class="chart-title">% de leads "completados" que ya estaban tipificados por un bot</div>
+  <div class="chart-subtitle">Lead Forms MX · creados 2026 · por agente gestor</div>
+  <div class="chart-wrap"><canvas id="chartAgentes"></canvas></div>
+</div>
+
+<p>La diferencia no es de grado, es de naturaleza: César está en <strong>60%</strong> mientras el resto del equipo no pasa de <strong>13%</strong>. En volumen absoluto, sus 1,138 casos son <strong>~14 veces</strong> el del segundo agente (49).</p>
+
+<h3>¿Qué automatización había completado/tipificado antes?</h3>
+<p>En los 1,138 casos de César, el agente (bot) que tipificó el lead antes de su "Completo" fue:</p>
+<table>
+  <thead><tr><th>Bot / sistema que tipificó antes</th><th>Casos</th></tr></thead>
+  <tbody>
+    <tr><td>MabiMX <span class="who">(bot conversacional WhatsApp)</span></td><td>816</td></tr>
+    <tr><td>docking-backbone</td><td>124</td></tr>
+    <tr><td>gabi-completeness <span class="who">(GABI)</span></td><td>88</td></tr>
+    <tr><td>santiagomontealegre@habi.co <span class="who">(usuario @habi.co, no bot)</span></td><td>63</td></tr>
+    <tr><td>docking_whatsapp</td><td>45</td></tr>
+    <tr><td>post_deal_webhook</td><td>2</td></tr>
+  </tbody>
+</table>
+<div class="callout info">
+  <p>La automatización dominante es <strong>MabiMX</strong> (72%). "GABI" (<code>gabi-completeness</code>) aparece en 88 casos. Es decir: cuando hablamos de "el bot que ya había completado el lead", en la práctica es sobre todo MabiMX.</p>
+</div>
+
+<h3>Conexión con los cierres</h3>
+<p>De los <strong>104 cierres "Cierre - Comprado"</strong> de Lead Forms ocurridos en 2026, César figura como completador en <strong>42 (40%)</strong> — concentración muy por encima de cualquier par. De esos 42, <strong>23</strong> habían sido tipificados por un bot antes de que él marcara "Completo".</p>
+
+<h2 id="cap-4">Capítulo 4 — Ejemplos puntuales</h2>
+<p>Los tres casos siguientes terminaron en <strong>Cierre - Comprado</strong> y comparten exactamente la misma secuencia. En cada uno se ve, con marca de tiempo y agente:</p>
+<ol>
+  <li>El lead entra <strong>Incompleto</strong> (solo datos de contacto de Lead Forms).</li>
+  <li>Un <strong>bot</strong> lo lleva hasta <strong>"No gestionado" (calificado)</strong> — es decir, <strong>Backbone ya pudo tipificarlo sin ninguna intervención humana</strong>. El lead ya estaba completo.</li>
+  <li><strong>Horas después</strong>, César ejecuta <strong>"Completo" (state 13)</strong> — un estado <em>anterior</em> en el flujo. La acción era <strong>innecesaria</strong>: el lead ya estaba calificado.</li>
+  <li>Tras su intervención, el lead <strong>vuelve al mismo estado ("No gestionado")</strong> que ya tenía. <strong>Nada operativo cambia</strong> — lo único que cambia es que el campo <strong>agente gestor</strong> queda sellado con su nombre.</li>
+</ol>
+
+<div class="ex-head"><h3>Ejemplo A — nid 56844945927</h3><span class="tag">Cierre - Comprado · 2026-03-23</span></div>
+<ul class="timeline">
+  <li class="bot"><span class="ts">02-22 18:29:09</span><span class="dot"></span> Backbone → Incompleto <span class="who">· docking-leadforms-ads <span class="badge bot">bot</span></span><span class="ann">El lead entra solo con datos de contacto.</span></li>
+  <li class="bot"><span class="ts">02-22 18:35–18:41</span><span class="dot"></span> Ciclos Backbone ↔ Incompleto <span class="who">· MabiMX <span class="badge bot">bot</span></span><span class="ann">El bot enriquece y completa las características del inmueble.</span></li>
+  <li class="key"><span class="ts">02-22 18:43:46</span><span class="dot"></span> <strong>No gestionado (CALIFICADO)</strong> <span class="who">· MabiMX <span class="badge bot">bot</span></span><span class="ann">✓ Backbone tipifica el lead SIN intervención humana. Ya está completo y calificado.</span></li>
+  <li class="grab"><span class="ts">02-23 09:10:29</span><span class="dot"></span> <strong>"Completo" (state 13)</strong> <span class="who">· César Álvarez <span class="badge grab">atribución</span></span><span class="ann">~14 h después. Intervención innecesaria: el lead ya estaba calificado desde la noche anterior.</span></li>
+  <li class="grab"><span class="ts">02-23 09:10:37</span><span class="dot"></span> No gestionado <span class="who">· César Álvarez</span><span class="ann">El lead vuelve al MISMO estado que ya tenía. No cambió nada — salvo el sello de agente gestor.</span></li>
+</ul>
+<p class="seal">Resultado en HubSpot · <code>agente_gestor_crm = cesaralvarezs@tuhabi.mx</code> · <code>lead_completo_ = true</code> · <code>oportunidad_del_negocio = Cierre - Comprado</code></p>
+
+<div class="ex-head"><h3>Ejemplo B — nid 59989861484</h3><span class="tag">Cierre - Comprado · 2026-05-22</span></div>
+<ul class="timeline">
+  <li class="bot"><span class="ts">05-03 01:43:42</span><span class="dot"></span> Backbone → Incompleto <span class="who">· docking-leadforms-ads <span class="badge bot">bot</span></span></li>
+  <li class="key"><span class="ts">05-03 01:47:59</span><span class="dot"></span> <strong>No gestionado (CALIFICADO)</strong> <span class="who">· docking-backbone <span class="badge bot">bot</span></span><span class="ann">✓ Calificado 100% por automatización (4 minutos después de entrar), sin ningún humano.</span></li>
+  <li class="grab"><span class="ts">05-03 08:50:13</span><span class="dot"></span> <strong>"Completo" (state 13)</strong> <span class="who">· César Álvarez <span class="badge grab">atribución</span></span><span class="ann">~7 h después. El lead ya estaba calificado; la acción no era necesaria.</span></li>
+  <li class="grab"><span class="ts">05-03 08:50:18</span><span class="dot"></span> No gestionado <span class="who">· César Álvarez</span><span class="ann">Vuelve al mismo estado. Único efecto real: queda sellado como agente gestor.</span></li>
+</ul>
+<p class="seal">Resultado en HubSpot · <code>agente_gestor_crm = cesaralvarezs@tuhabi.mx</code> · <code>lead_completo_ = true</code> · <code>oportunidad_del_negocio = Cierre - Comprado</code></p>
+
+<div class="ex-head"><h3>Ejemplo C — nid 55677434890</h3><span class="tag">Cierre - Comprado · 2026-03-25</span></div>
+<ul class="timeline">
+  <li class="bot"><span class="ts">02-06 11:12:55</span><span class="dot"></span> Backbone → Incompleto <span class="who">· docking-leadforms-ads <span class="badge bot">bot</span></span></li>
+  <li class="bot"><span class="ts">02-06 11:18–11:30</span><span class="dot"></span> Ciclos Backbone ↔ Incompleto <span class="who">· MabiMX <span class="badge bot">bot</span></span><span class="ann">El bot completa el inmueble.</span></li>
+  <li class="key"><span class="ts">02-06 11:31:02</span><span class="dot"></span> <strong>No gestionado (CALIFICADO)</strong> <span class="who">· MabiMX <span class="badge bot">bot</span></span><span class="ann">✓ Backbone tipifica el lead sin intervención humana.</span></li>
+  <li class="grab"><span class="ts">02-06 13:21:14</span><span class="dot"></span> <strong>"Completo" (state 13)</strong> <span class="who">· César Álvarez <span class="badge grab">atribución</span></span><span class="ann">~2 h después, lead ya calificado. Acción innecesaria.</span></li>
+  <li class="grab"><span class="ts">02-06 13:21:22</span><span class="dot"></span> No gestionado <span class="who">· César Álvarez</span><span class="ann">Vuelve al mismo estado. Solo cambia el agente gestor.</span></li>
+</ul>
+<p class="seal">Resultado en HubSpot · <code>agente_gestor_crm = cesaralvarezs@tuhabi.mx</code> · <code>lead_completo_ = true</code> · <code>oportunidad_del_negocio = Cierre - Comprado</code></p>
+
+<div class="callout danger">
+  <p><strong>Cómo leer estos casos.</strong> En los tres, Backbone ya había <strong>calificado</strong> el lead — prueba de que ya estaba completo — <strong>antes</strong> de que César interviniera por Nexus. Su transición a "Completo" no avanzó ni cambió el estado del negocio (el lead regresa exactamente a "No gestionado"); su único efecto observable es que el campo <strong>agente gestor</strong> del negocio queda con su nombre. Los tres negocios terminaron comprados, momento en el que esa atribución tiene valor de comisión.</p>
+</div>
+
+<h2 id="cap-5">Capítulo 5 — Cómo revisarlo en BigQuery</h2>
+<p>Todo es reproducible. Estas son las tablas, columnas y la query exacta.</p>
+
+<h3>Tablas y campos</h3>
+<table>
+  <thead><tr><th>Tabla</th><th>Campos clave</th><th>Para qué</th></tr></thead>
+  <tbody>
+    <tr><td><code>sellers-main-prod.mx_rds_staging.habi_db_history_state</code></td><td>deal_id, state_id, agent, date_create</td><td>Log de transiciones de estado (quién y cuándo)</td></tr>
+    <tr><td><code>sellers-main-prod.mx_rds_staging.habi_db_state</code></td><td>id, stage_id, label</td><td>Catálogo: 7=Incompleto, 13=Completo, 68=Backbone, stage_id=3=tipificación</td></tr>
+    <tr><td><code>sellers-main-prod.mx_rds_staging.habi_db_property_deal</code></td><td>id, nid, property_id</td><td>Puente deal_id ↔ nid</td></tr>
+    <tr><td><code>papyrus-data-mx.habi_wh_bi.tabla_inmuebles_general</code></td><td>nid, fuente_id, agente_primer_completo, estado</td><td>Fuente del lead y completador acreditado (analítica)</td></tr>
+    <tr><td><code>sellers-main-prod.hubspot.deals</code></td><td>nid, agente_gestor_crm, agente_completo, lead_completo_, oportunidad_del_negocio</td><td>Atribución en HubSpot y estado de cierre</td></tr>
+    <tr><td><code>sellers-main-prod.hubspot.owners</code></td><td>hubspot_id, email, teams</td><td>Mapeo owner_id → persona (82004373 = César, equipo Leadforms MX)</td></tr>
+    <tr><td><code>…habi_db_business_opportunities_logs</code></td><td>nid, business_opportunity, created_at</td><td>"Cierre - Comprado" (atribuir con hubspot_owner_id, no con agent_email)</td></tr>
+  </tbody>
+</table>
+
+<h3>Query — patrón "completó un lead ya tipificado por bot", por agente</h3>
+<pre><code>WITH lf AS (
+  SELECT pd.id AS deal_id
+  FROM `papyrus-data-mx.habi_wh_bi.tabla_inmuebles_general` g
+  JOIN `sellers-main-prod.mx_rds_staging.habi_db_property_deal` pd ON pd.nid = g.nid
+  WHERE g.fuente_id = 47 AND EXTRACT(YEAR FROM g.fecha_creacion) = 2026
+),
+h AS (
+  SELECT h.deal_id, h.state_id, s.stage_id, h.agent, h.date_create
+  FROM `sellers-main-prod.mx_rds_staging.habi_db_history_state` h
+  JOIN `sellers-main-prod.mx_rds_staging.habi_db_state` s ON s.id = h.state_id
+  WHERE h.deal_id IN (SELECT deal_id FROM lf)
+),
+per_deal AS (
+  SELECT deal_id,
+    ARRAY_AGG(IF(state_id=13, STRUCT(date_create,agent),NULL)
+              IGNORE NULLS ORDER BY date_create LIMIT 1)[SAFE_OFFSET(0)] AS f13,   -- 1er "Completo"
+    ARRAY_AGG(IF(stage_id=3, STRUCT(date_create,agent),NULL)
+              IGNORE NULLS ORDER BY date_create LIMIT 1)[SAFE_OFFSET(0)] AS ftip   -- 1a tipificación
+  FROM h GROUP BY deal_id
+)
+SELECT f13.agent AS completador,
+       COUNT(*) AS total_completados_por_el,
+       COUNTIF(ftip IS NOT NULL AND ftip.date_create &lt; f13.date_create
+               AND NOT STARTS_WITH(IFNULL(ftip.agent,""),"nexus:")) AS ya_tipificado_por_bot_antes
+FROM per_deal
+WHERE f13 IS NOT NULL AND STARTS_WITH(IFNULL(f13.agent,""),"nexus:")
+GROUP BY 1 ORDER BY total_completados_por_el DESC;</code></pre>
+
+<h2 id="cap-6">Capítulo 6 — Límites y siguientes pasos</h2>
+<div class="callout warn">
+  <p><strong>Qué NO prueba este análisis por sí solo.</strong> Completar leads de Lead Forms (llamar al vendedor y confirmar datos) es la función del agente gestor. Que un bot haya tipificado el lead antes no demuestra, por sí mismo, que no hubo trabajo real: la data de estados no captura si hubo o no una llamada. Lo que sí es anómalo y exige explicación es la <strong>magnitud y concentración</strong> (60% vs 5–13%).</p>
+</div>
+<p><strong>Para cerrar la interpretación se necesita:</strong></p>
+<ul>
+  <li><strong>Regla de comisión (RRHH):</strong> confirmar si el agente gestor cobra por completar leads que luego cierran. Sin esto no se puede afirmar impacto económico.</li>
+  <li><strong>Grabaciones de llamadas:</strong> en una muestra de los 1,138 casos, verificar en <code>habi_db_historical_call</code> / <code>hubspot.transcription_calls</code> si hubo contacto real con el vendedor entre la tipificación del bot y el "Completo".</li>
+  <li><strong>Control de proceso:</strong> evaluar si Nexus debería impedir marcar "Completo" un lead que ya está tipificado, o registrar explícitamente la re-completitud.</li>
+</ul>
+<div class="callout info">
+  <p><strong>Recomendación.</strong> Llevar este documento (vía privada) al manager del equipo Leadforms MX y a People/Compliance, junto con la confirmación de la regla de comisión. No tomar acción unilateral.</p>
+</div>
+
+<p class="meta" style="margin-top:40px">Generado el 2026-05-27 · datos a esa fecha · todas las cifras reproducibles con la query del capítulo 5.</p>
+
+</div>
+
+<script>
+const C = { indigo:'#4f46e5', red:'#dc2626', slate:'#94a3b8' };
+new Chart(document.getElementById('chartAgentes'), {
+  type: 'bar',
+  data: {
+    labels: ['César Álvarez','Bruno Arredondo','Alma Robles','Eduardo Leal','César Arce','Aldo Caballero','Débora Vázquez','José Ramírez'],
+    datasets: [{
+      label: '% completados ya tipificados por bot',
+      data: [60, 13, 13, 10, 10, 10, 8, 5],
+      backgroundColor: ['#dc2626','#94a3b8','#94a3b8','#94a3b8','#94a3b8','#94a3b8','#94a3b8','#94a3b8'],
+      borderRadius: 4
+    }]
+  },
+  options: {
+    indexAxis: 'y',
+    responsive: true, maintainAspectRatio: false,
+    plugins: {
+      legend: { display: false },
+      tooltip: { callbacks: { label: c => c.parsed.x + '%' } }
+    },
+    scales: {
+      x: { beginAtZero: true, max: 70, ticks: { callback: v => v + '%' }, title: { display: true, text: '% de sus leads "completados" que ya estaban tipificados por un bot' } }
+    }
+  }
+});
+</script>
+</body>
+</html>
