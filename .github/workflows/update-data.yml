@@ -343,23 +343,6 @@ jobs:
           print(f'Inc/Dir rows: {len(data)}')
           "
 
-      - name: Query Marketing WBR — leads + calificados (CO)
-        if: always()
-        run: |
-          bq query --use_legacy_sql=false --format=json --max_rows=200000 < marketing-wbr/query_leads.sql > /tmp/wbr_leads_co.json
-          echo "WBR leads CO rows: $(python3 -c 'import json,sys;print(len(json.load(open(sys.argv[1]))))' /tmp/wbr_leads_co.json)"
-
-      - name: Query Marketing WBR — spend (CO)
-        if: always()
-        run: |
-          bq query --use_legacy_sql=false --format=json --max_rows=200000 < marketing-wbr/query_spend.sql > /tmp/wbr_spend_co.json
-          echo "WBR spend CO rows: $(python3 -c 'import json,sys;print(len(json.load(open(sys.argv[1]))))' /tmp/wbr_spend_co.json)"
-
-      - name: Build Marketing WBR data.json
-        if: always()
-        run: |
-          python3 marketing-wbr/build_data.py /tmp/wbr_leads_co.json /tmp/wbr_spend_co.json marketing-wbr/data.json
-
       - name: Query WBR 2.0 — fuentes (CO)
         if: always()
         run: |
