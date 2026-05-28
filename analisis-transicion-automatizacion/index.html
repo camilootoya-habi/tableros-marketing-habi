@@ -134,6 +134,27 @@
   .pivot-box .arrow { font-size: 28px; color: #db2777; text-align: center; }
   @media (max-width: 600px) { .pivot-box .from-to { grid-template-columns: 1fr; } .pivot-box .arrow { transform: rotate(90deg); } }
 
+  /* Plan de transición Q1 → Q3 */
+  .transition-grid { display: grid; gap: 14px; margin: 24px 0 18px; }
+  .transition-row { background: var(--card); border: 1px solid var(--border); border-left: 4px solid var(--accent); border-radius: 0 12px 12px 0; padding: 18px 22px; }
+  .eje-title { margin: 0 0 14px; font-size: 12px; font-weight: 700; color: var(--accent); text-transform: uppercase; letter-spacing: 0.6px; }
+  .transition-flow { display: grid; grid-template-columns: 1fr auto 1fr; gap: 14px; align-items: stretch; }
+  .t-state { padding: 12px 16px; border-radius: 8px; display: flex; flex-direction: column; justify-content: center; }
+  .t-state.from { background: #f9fafb; border: 1px solid var(--border); }
+  .t-state.to { background: #f0fdf4; border: 1px solid #86efac; }
+  .t-state .when { font-size: 10.5px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; font-weight: 700; }
+  .t-state.to .when { color: #15803d; }
+  .t-state .value { font-size: 20px; font-weight: 800; color: var(--text-title); margin: 5px 0 4px; line-height: 1.15; }
+  .t-state.to .value { color: #15803d; }
+  .t-state .detail { font-size: 12.5px; color: var(--text-muted); line-height: 1.45; }
+  .t-arrow { font-size: 26px; color: var(--accent); display: flex; align-items: center; justify-content: center; font-weight: 600; }
+  .t-how { font-size: 13.5px; color: var(--text); margin: 14px 0 0; padding-top: 12px; border-top: 1px dashed var(--border); line-height: 1.6; }
+  .t-how strong { color: var(--accent); }
+  @media (max-width: 640px) {
+    .transition-flow { grid-template-columns: 1fr; gap: 8px; }
+    .t-arrow { transform: rotate(90deg); margin: 0 auto; }
+  }
+
   .brokers-flow { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 18px; margin: 22px 0; }
   .brokers-flow .arrow { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 20px; }
   .brokers-flow .col-side { background: var(--accent-soft); border-radius: 8px; padding: 14px; }
@@ -171,31 +192,65 @@
 <div class="meta">Fuente: ABC COSTING People · Mayo 2026 (Marketing) — equipo Habi CO + MX</div>
 
 <section id="resumen">
-<div class="kpi-grid">
-  <div class="kpi flag">
-    <div class="label">Líder Performance MX hoy</div>
-    <div class="val">44.4 h/sem</div>
-    <div class="sub">El único rol del equipo sobre capacidad (+4.4h). Con IA volvemos a 40h y descargamos lo más repetitivo.</div>
-  </div>
-  <div class="kpi">
-    <div class="label">3 líderes restantes (Perf CO, Growth MX, Growth CO)</div>
-    <div class="val">36–39 h/sem</div>
-    <div class="sub">Dentro de capacidad. La meta con IA no es bajar horas — es entregar más output: más experimentos, más cobertura de canales, más discovery.</div>
-  </div>
-  <div class="kpi flag">
-    <div class="label">Equipo Ventanas CO (CRM)</div>
-    <div class="val">+80 h/sem sobre</div>
-    <div class="sub">3 personas, 120h disponibles, 200h ocupadas. <strong>Ventana a CRM</strong> sola consume 160h — palanca principal de automatización.</div>
-  </div>
-  <div class="kpi ok">
-    <div class="label">Plan Q3 2026 — equipo agentes</div>
-    <div class="val">10 → 6</div>
-    <div class="sub">5 CO + 5 MX hoy → 3 CO + 3 MX, vehiculizado por automatización de completitud Lead Forms.</div>
-  </div>
-</div>
+<h2 style="margin-top:32px;padding-top:0;border-top:none">Plan de transición Q1 → Q3 2026</h2>
+<p>Tres ejes simultáneos: <strong>agentes</strong> que se reducen apoyados en IA, <strong>líderes</strong> que se especializan en Performance + Growth, y <strong>productos</strong> que se multiplican bajo un modelo de hub de marketing con servicios transversales.</p>
 
-<div class="callout info">
-  <p><strong>El punto del análisis.</strong> No buscamos bajar horas del equipo. Solo el líder Performance MX (hoy sobre 40h) descarga lo justo para volver a su capacidad. Para todos los demás líderes, la apuesta con IA es entregar <strong>más output con las mismas horas</strong> — más experimentos, más decisiones rápidas, más tiempo para estrategia. En agentes, el plan a 3+3 sí baja headcount porque la automatización absorbe el grueso del trabajo de completitud.</p>
+<div class="transition-grid">
+
+  <div class="transition-row">
+    <div class="eje-title">Agentes de marketing</div>
+    <div class="transition-flow">
+      <div class="t-state from">
+        <div class="when">Q1 2026</div>
+        <div class="value">12 agentes</div>
+        <div class="detail">6 MX + 6 CO operando completitud manual</div>
+      </div>
+      <div class="t-arrow">→</div>
+      <div class="t-state to">
+        <div class="when">Q3 2026</div>
+        <div class="value">6 agentes</div>
+        <div class="detail">3 MX + 3 CO, foco en Brokers + entrenamiento de IA</div>
+      </div>
+    </div>
+    <p class="t-how"><strong>Cómo:</strong> automatizar la completitud de Lead Forms (agente IA por llamada + WhatsApp) y el flujo de Ventanas a CRM (triage automatizado), y fortalecer el rol de Brokers como canal multiproducto del ecosistema Habi.</p>
+  </div>
+
+  <div class="transition-row">
+    <div class="eje-title">Líderes de canal</div>
+    <div class="transition-flow">
+      <div class="t-state from">
+        <div class="when">Q1 2026</div>
+        <div class="value">4 Performance</div>
+        <div class="detail">Perfil homogéneo, foco en pauta</div>
+      </div>
+      <div class="t-arrow">→</div>
+      <div class="t-state to">
+        <div class="when">Q3 2026</div>
+        <div class="value">2 Performance + 2 Growth</div>
+        <div class="detail">1 + 1 por país (MX y CO)</div>
+      </div>
+    </div>
+    <p class="t-how"><strong>Cómo:</strong> automatizar y estandarizar los procesos de pauta Performance — para que mantener el motor cueste menos horas — y crecer en iteración y experimentación de nuevos canales (lo que pasa a ser responsabilidad de los nuevos líderes de Growth).</p>
+  </div>
+
+  <div class="transition-row">
+    <div class="eje-title">Infra y modelo operativo</div>
+    <div class="transition-flow">
+      <div class="t-state from">
+        <div class="when">Q1 2026</div>
+        <div class="value">1 Infra</div>
+        <div class="detail">Solo Habi Sellers</div>
+      </div>
+      <div class="t-arrow">→</div>
+      <div class="t-state to">
+        <div class="when">Q3 2026</div>
+        <div class="value">4 Marcas <span style="font-size:13px;color:var(--text-muted);font-weight:600;display:block;margin-top:2px">(multi infra · multi marca)</span></div>
+        <div class="detail">Habi Sellers + Habi Buyers + propiedades.com + Pulppo</div>
+      </div>
+    </div>
+    <p class="t-how"><strong>Cómo:</strong> pasar de un área-función a un <strong>hub de marketing</strong> con <strong>Performance + Brand + Growth</strong> como servicios transversales que sirven a múltiples productos. La capacidad no escala sumando personas — escala consolidando capacidades.</p>
+  </div>
+
 </div>
 </section>
 
