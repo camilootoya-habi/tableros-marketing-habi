@@ -1,0 +1,1246 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📺</text></svg>">
+<title>Postmortem campaña Multimedios — MTY</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<style>
+  :root {
+    --bg: #fafaf7; --card: #ffffff;
+    --text: #1f2937; --text-muted: #6b7280; --text-title: #111827;
+    --accent: #4f46e5; --accent-soft: #eef2ff;
+    --habi-purple: #5C36AB;
+    --habi-magenta: #C026D3;
+    --border: #e5e7eb; --code-bg: #f3f4f6; --table-alt: #f9fafb;
+    --warn-bg: #fef3c7; --warn-border: #f59e0b;
+    --info-bg: #dbeafe; --info-border: #4f46e5;
+    --ok-bg: #ecfdf5; --ok-border: #10b981;
+    --danger-bg: #fee2e2; --danger-border: #dc2626;
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: var(--bg); color: var(--text); line-height: 1.65; margin: 0; padding: 0; }
+  .topbar { position: sticky; top: 0; background: rgba(250,250,247,0.94); backdrop-filter: blur(8px); border-bottom: 1px solid var(--border); padding: 10px 20px; display: flex; justify-content: space-between; align-items: center; font-size: 13px; z-index: 100; flex-wrap: wrap; gap: 8px; }
+  .topbar a { color: var(--accent); text-decoration: none; margin-left: 14px; }
+  .topbar a:hover { text-decoration: underline; }
+  .topbar .back-hub { color: #fff; background: var(--habi-purple); margin-left: 0; margin-right: 14px; padding: 4px 12px; border: 1px solid var(--habi-purple); border-radius: 6px; font-weight: 600; transition: background 0.15s, border-color 0.15s, transform 0.1s; }
+  .topbar .back-hub:hover { background: #3F2475; border-color: #3F2475; text-decoration: none; transform: translateX(-2px); }
+  .scroll-progress-bar { position: absolute; left: 0; bottom: -1px; height: 3px; background: var(--habi-purple); width: 0; transition: width 0.05s linear; pointer-events: none; }
+  .progress-pct { display: inline-flex; align-items: center; gap: 6px; margin-left: 14px; padding: 3px 9px; background: rgba(92,54,171,0.08); border: 1px solid rgba(92,54,171,0.25); border-radius: 999px; font-size: 11px; font-weight: 600; color: var(--habi-purple); font-variant-numeric: tabular-nums; }
+  .progress-pct::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: var(--habi-purple); }
+  .wrap { max-width: 920px; margin: 0 auto; padding: 40px 28px 96px; }
+  h1 { color: var(--text-title); font-size: 2rem; font-weight: 700; margin: 0 0 6px; padding-bottom: 12px; border-bottom: 2px solid var(--accent); }
+  h2 { color: var(--habi-purple); font-size: 1.5rem; font-weight: 700; margin: 44px 0 12px; padding-top: 20px; border-top: 1px solid var(--border); }
+  h3 { color: var(--habi-magenta); font-size: 1.35rem; font-weight: 600; margin: 28px 0 10px; }
+  p, li { font-size: 15px; }
+  ul, ol { padding-left: 26px; }
+  li { margin-bottom: 6px; }
+  strong { color: var(--text-title); }
+  code { background: var(--code-bg); padding: 2px 6px; border-radius: 4px; font-size: 13px; font-family: 'SF Mono', Menlo, Monaco, Consolas, monospace; color: #be185d; }
+  .meta { font-size: 13px; color: var(--text-muted); margin: 8px 0 24px; }
+
+  .placeholder { background: #f9fafb; border: 1px dashed #d1d5db; border-radius: 8px; padding: 20px; color: #6b7280; font-style: italic; text-align: center; }
+
+  .callout { padding: 14px 18px; border-radius: 0 8px 8px 0; margin: 18px 0; font-size: 14px; }
+  .callout.info { background: var(--info-bg); border-left: 3px solid var(--info-border); color: #1e1b4b; }
+  .callout.warn { background: var(--warn-bg); border-left: 3px solid var(--warn-border); color: #78350f; }
+  .callout.ok { background: var(--ok-bg); border-left: 3px solid var(--ok-border); color: #064e3b; }
+  .callout.danger { background: var(--danger-bg); border-left: 3px solid var(--danger-border); color: #7f1d1d; }
+  .callout strong { color: inherit; }
+  .callout p { margin: 6px 0; font-size: 14px; }
+  .callout p:first-child { margin-top: 0; }
+  .callout p:last-child { margin-bottom: 0; }
+
+  table { border-collapse: collapse; width: 100%; font-size: 13px; margin: 18px 0; display: block; overflow-x: auto; }
+  table.summary-table { display: table; table-layout: fixed; overflow-x: visible; }
+  table.summary-table th:nth-child(1), table.summary-table td:nth-child(1) { width: 26%; }
+  table.summary-table th:nth-child(2), table.summary-table td:nth-child(2) { width: 54%; }
+  table.summary-table th:nth-child(3), table.summary-table td:nth-child(3) { width: 20%; }
+  table.summary-table th, table.summary-table td { white-space: normal; word-wrap: break-word; overflow-wrap: break-word; vertical-align: top; line-height: 1.45; }
+  table.summary-table td:not(:first-child), table.summary-table th:not(:first-child) { text-align: left; font-variant-numeric: normal; }
+  table.summary-table td:last-child, table.summary-table th:last-child { text-align: center; }
+  thead { background: var(--accent-soft); }
+  th { text-align: left; padding: 10px 12px; font-weight: 600; color: var(--text-title); border-bottom: 2px solid var(--accent); white-space: nowrap; }
+  td { padding: 8px 12px; border-bottom: 1px solid var(--border); white-space: nowrap; }
+  tbody tr:nth-child(even) { background: var(--table-alt); }
+  td:not(:first-child), th:not(:first-child) { text-align: right; font-variant-numeric: tabular-nums; }
+
+  .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; margin: 18px 0; }
+  .kpi { background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 10px 14px; display: flex; flex-wrap: wrap; align-items: baseline; column-gap: 8px; }
+  .kpi .label { flex-basis: 100%; color: var(--text-muted); font-size: 11px; text-transform: uppercase; letter-spacing: 0.4px; margin-bottom: 2px; }
+  .kpi .val { font-weight: 700; color: var(--text-title); font-size: 18px; line-height: 1.2; }
+  .kpi .sub { color: var(--text-muted); font-size: 12px; margin-top: 0; }
+
+  h3.channel-section { margin-top: 44px; padding-top: 24px; border-top: 1px solid var(--border); }
+  .channel-bar { display: flex; align-items: stretch; height: 28px; border-radius: 6px; overflow: hidden; margin: 14px 0 6px; border: 1px solid var(--border); }
+  .channel-bar > div { display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 600; color: white; }
+  .channel-legend { display: flex; flex-wrap: wrap; gap: 12px 18px; font-size: 12px; color: var(--text-muted); margin-bottom: 18px; }
+  .channel-legend span::before { content: ""; display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 6px; vertical-align: middle; }
+</style>
+</head>
+<body>
+<div class="topbar">
+  <span>
+    <a href="../" class="back-hub">← Hub</a>
+    Postmortem campaña Multimedios — MTY
+    <span class="progress-pct" id="progressPct">0%</span>
+  </span>
+  <span>
+    <a href="#resumen">Resumen</a>
+    <a href="#cap-1">Cap. 1: La campaña</a>
+    <a href="#cap-2">Cap. 2: Awareness</a>
+    <a href="#cap-3">Cap. 3: Consideration</a>
+    <a href="#cap-4">Cap. 4: Conversion</a>
+    <a href="#cap-5">Cap. 5: Efecto residual</a>
+    <a href="#cap-6">Cap. 6: Pipeline comercial</a>
+    <a href="#cap-7">Cap. 7: Conclusiones</a>
+  </span>
+  <div class="scroll-progress-bar" id="scrollProgressBar"></div>
+</div>
+
+<div class="wrap">
+
+<h1>Postmortem campaña Multimedios — MTY</h1>
+<div class="meta">
+  <strong>Fecha:</strong> 2026-04-28 · <strong>Autor:</strong> Camilo Otoya — growth/marketing<br>
+  <strong>Scope:</strong> Zona Metropolitana de Monterrey, México · <strong>Estado:</strong> finalizado<br>
+  <strong>Lectura:</strong> ~15 min · <strong>Extensión:</strong> ~8 páginas
+</div>
+
+<h2 id="resumen">Resumen ejecutivo</h2>
+
+<p><strong>ALL-IN TUHABI Multimedios</strong> (17-30 marzo 2026) fue una campaña 360° en MTY — TV, radio, OOH, digital, prensa — la apuesta más grande del año en plaza única. La medimos sobre todo el funnel: awareness → consideration → conversion → residual → pipeline comercial.</p>
+
+<p>El veredicto: <strong>la campaña no movió la aguja en el funnel de marketing, pero sí generó un efecto medible de confianza en el pipeline comercial</strong>. La huella en search es marginal y la conversión a registros web fue nula — pero los leads MTY que entraron durante la ventana aceptaron agendar visita en mayor proporción.</p>
+
+<table class="summary-table">
+  <thead>
+    <tr><th>Dimensión</th><th>Hallazgo</th><th>Veredicto</th></tr>
+  </thead>
+  <tbody>
+    <tr><td><strong>Awareness</strong> · Brand Lift</td><td>TOMA mar 20.07% vs feb 20.10% — plano. Curva ya venía construida desde nov 2025 con Uber MTY+GDL.</td><td><span style="color:#ef4444;font-weight:700">Sin lift</span></td></tr>
+    <tr><td><strong>Awareness</strong> · Tráfico GA4</td><td>Cae durante campaña vs baseline. Vuelve a niveles previos en abril.</td><td><span style="color:#ef4444;font-weight:700">Sin lift</span></td></tr>
+    <tr><td><strong>Consideration</strong> · GSC agregado</td><td>+6.4% clicks orgánicos · +4.7% impresiones, dentro de variación natural.</td><td><span style="color:#ef4444;font-weight:700">Marginal</span></td></tr>
+    <tr><td><strong>Consideration</strong> · "tuhabi monterrey"</td><td>+220% clicks (29 → 93) en marzo. Vuelve a baseline en 3 semanas.</td><td><span style="color:#f59e0b;font-weight:700">Señal real, magnitud baja</span></td></tr>
+    <tr><td><strong>Conversion</strong> · Registros web MTY</td><td>+6% en marzo, proporcional al +5% extra de spend. CPL congelado en $47.</td><td><span style="color:#ef4444;font-weight:700">Sin lift</span></td></tr>
+    <tr><td><strong>Efecto residual</strong></td><td>Toda métrica que se movió, volvió a baseline en abril.</td><td><span style="color:#ef4444;font-weight:700">Sin huella</span></td></tr>
+    <tr><td><strong>Pipeline comercial</strong> · % cita agendada</td><td>MTY 12.3% (pre) → <strong>17.0%</strong> (campaña) → 14.0% (post). Resto MX plano.</td><td><span style="color:#10b981;font-weight:700">Único positivo</span></td></tr>
+  </tbody>
+</table>
+
+<p><strong>Veredicto</strong>: el único efecto medible fue una mejora puntual en la tasa de agendamiento de visitas en MTY — beneficio marginal en una sola dimensión. <strong>El ROI no justifica una campaña 360° de este tamaño.</strong> El ticket invertido en TV abierta, radio, OOH, digital y prensa es desproporcionado frente al único efecto que dejó. No hay base para repetir la inversión bajo este formato.</p>
+
+<h2 id="cap-1">Capítulo 1 — La campaña: ALL-IN TUHABI Monterrey</h2>
+
+<p>Entre el <strong>17 y el 30 de marzo de 2026</strong>, TUHABI desplegó una campaña de saturación multi-canal en la Zona Metropolitana de Monterrey con la operadora <strong>Multimedios</strong>. El plan combinó televisión, radio, exterior (OOH), digital y prensa con el objetivo de generar el máximo nivel de exposición de marca posible en la región durante dos semanas.</p>
+
+<p>La campaña se planteó como un <em>burst</em> intensivo — la apuesta más grande del año en plaza única — para evaluar el efecto integral de medios masivos sobre el funnel de leads en MTY.</p>
+
+<h3>Cifras clave</h3>
+
+<div class="kpi-grid">
+  <div class="kpi"><div class="label">Inversión total</div><div class="val">MXN $3.93 M</div><div class="sub">≈ USD $194 K</div></div>
+  <div class="kpi"><div class="label">Duración</div><div class="val">14 días</div><div class="sub">17 → 30 mar 2026</div></div>
+  <div class="kpi"><div class="label">Plaza</div><div class="val">Monterrey</div><div class="sub">Zona metropolitana, NL</div></div>
+  <div class="kpi"><div class="label">Canales activos</div><div class="val">5</div><div class="sub">TV · Radio · OOH · Digital · Print</div></div>
+</div>
+
+<h3>Distribución de inversión por canal</h3>
+
+<div class="channel-bar">
+  <div style="background:#4f46e5; width:33.7%">OOH 33.7%</div>
+  <div style="background:#dc2626; width:26.1%">TV 26.1%</div>
+  <div style="background:#f59e0b; width:25.7%">Radio 25.7%</div>
+  <div style="background:#10b981; width:8.2%">Digital 8.2%</div>
+  <div style="background:#6b7280; width:6.3%">Print 6.3%</div>
+</div>
+<div class="channel-legend">
+  <span style="--c:#4f46e5"><span style="background:#4f46e5"></span>OOH — Vía pública</span>
+  <span><span style="background:#dc2626"></span>TV — Canal 6</span>
+  <span><span style="background:#f59e0b"></span>Radio — Multimedios MTY</span>
+  <span><span style="background:#10b981"></span>Digital — portales</span>
+  <span><span style="background:#6b7280"></span>Print — Milenio</span>
+</div>
+
+<table>
+  <thead>
+    <tr><th>Canal</th><th>Inversión MXN</th><th>%</th></tr>
+  </thead>
+  <tbody>
+    <tr><td><strong>OOH</strong> (Vía pública digital y tradicional)</td><td>$1,325,000</td><td>33.7%</td></tr>
+    <tr><td><strong>Televisión</strong> (Canal 6 Multimedios)</td><td>$1,023,442</td><td>26.1%</td></tr>
+    <tr><td><strong>Radio</strong> (Multimedios Radio Monterrey, 10 emisoras)</td><td>$1,008,300</td><td>25.7%</td></tr>
+    <tr><td><strong>Digital</strong> (4 portales + historias con talento)</td><td>$323,505</td><td>8.2%</td></tr>
+    <tr><td><strong>Print</strong> (Milenio Prensa)</td><td>$248,400</td><td>6.3%</td></tr>
+    <tr style="background:var(--accent-soft); font-weight:700">
+      <td>Total</td><td>$3,928,646</td><td>100%</td>
+    </tr>
+  </tbody>
+</table>
+
+<p>El peso de la inversión está concentrado en los <strong>tres canales tradicionales de masivos</strong> — OOH, TV y Radio — que en conjunto representan el <strong>85.5% del presupuesto</strong>. Digital y Print completan el mix con un rol más complementario.</p>
+
+<h3 class="channel-section">Televisión — Canal 6 Multimedios</h3>
+
+<p>14 días continuos de presencia en la programación local de Canal 6, cubriendo los principales horarios de Monterrey:</p>
+
+<table>
+  <thead><tr><th>Programa</th><th>Horario</th><th>Acción</th></tr></thead>
+  <tbody>
+    <tr><td>TD Matutino</td><td>07:00–10:00</td><td>Spoteo 20" diario · Mención 60" alterna</td></tr>
+    <tr><td>Vivalavi</td><td>10:00–12:00</td><td>Spoteo 20" diario</td></tr>
+    <tr><td>Futbol al Día</td><td>10:00–12:00</td><td>Mención 60" alterna</td></tr>
+    <tr><td>TD Vespertino</td><td>12:00–15:00</td><td>Spoteo 20" diario · Mención 60" alterna</td></tr>
+    <tr><td>C4</td><td>18:00–19:00</td><td>Spoteo 20"</td></tr>
+    <tr><td>TD Nocturno</td><td>19:00–21:00</td><td>Spoteo 20" diario</td></tr>
+    <tr><td>Barra Nocturna</td><td>22:00–24:00</td><td>Spoteo 20"</td></tr>
+    <tr><td>TD Matutino y Vespertino</td><td>—</td><td><strong>Back & Front</strong> diario (apertura/cierre de bloque)</td></tr>
+  </tbody>
+</table>
+
+<p>La estrategia combina <strong>spots de 20"</strong> para reach amplio y consistente con <strong>menciones de 60"</strong> y <strong>back & fronts</strong> para profundidad de mensaje en momentos clave del día.</p>
+
+<h3 class="channel-section">Radio — Multimedios Radio Monterrey</h3>
+
+<p><strong>10 emisoras simultáneas</strong> en MTY cubriendo todos los segmentos demográficos y géneros musicales:</p>
+
+<ul>
+  <li><strong>Música contemporánea</strong>: La Caliente (94.1 FM), La Lupe (105.3 FM), Hits (106.1 FM), D99 (98.9 FM)</li>
+  <li><strong>Música tradicional / regional</strong>: La Ke Buena (103.7 FM), Radio Recuerdo (860 AM), Classic (106.9 FM)</li>
+  <li><strong>Noticias / hablado</strong>: AW-FM (1280 AM), La T Grande (990 AM)</li>
+  <li><strong>Deportes</strong>: RG La Deportiva (690 AM)</li>
+</ul>
+
+<p>Volumen estimado: <strong>~78 spots de 20" por día</strong> (6 spots × 10 emisoras lunes-viernes; 60 sábados/domingos) más <strong>3 menciones de 40"</strong> por emisora en días seleccionados (lunes-jueves principalmente). Sumando las dos semanas: <strong>más de 1,000 impactos auditivos diarios</strong> repartidos entre todas las emisoras.</p>
+
+<h3 class="channel-section">OOH — Vía pública</h3>
+
+<table>
+  <thead><tr><th>Formato</th><th>Plaza</th><th>Sitios</th><th>Tarifa MXN/sitio</th><th>Inversión</th></tr></thead>
+  <tbody>
+    <tr><td>Circuito Digital</td><td>MTY</td><td>5</td><td>$95,000</td><td>$475,000</td></tr>
+    <tr><td>Pantallas Normales</td><td>MTY</td><td>10</td><td>$85,000</td><td>$850,000</td></tr>
+    <tr style="background:var(--accent-soft); font-weight:700"><td colspan="4">Total OOH</td><td>$1,325,000</td></tr>
+  </tbody>
+</table>
+
+<p>15 puntos físicos en MTY durante los 14 días — el canal con la mayor inversión absoluta.</p>
+
+<h3 class="channel-section">Digital — Portales y redes</h3>
+
+<p>Display en 4 portales con cobertura nacional:</p>
+
+<ul>
+  <li><strong>MEDIOTIEMPO.COM</strong> — Mediotiempo deportes</li>
+  <li><strong>CHIC</strong> — Lifestyle</li>
+  <li><strong>TELEDIARIO.COM</strong> — Noticias Multimedios</li>
+  <li><strong>MULTIMEDIOS.COM</strong> — Portal corporativo</li>
+</ul>
+
+<p>6 formatos por portal (BigBox, Filmstrip, Interstitial, Leaderboard, Takeover, Skyscrapper), totalizando <strong>~1.97 millones de impresiones</strong> y <strong>~11 mil clics estimados</strong>. Inversión: $263,505 MXN.</p>
+
+<p>Sumado a esto, <strong>3 historias con talento</strong> en Instagram y Facebook de Multimedios:</p>
+
+<table>
+  <thead><tr><th>Plataforma</th><th>Cuenta</th><th>Seguidores</th><th>Alcance estimado</th></tr></thead>
+  <tbody>
+    <tr><td>Instagram</td><td>@multimediostv</td><td>936,000</td><td>~80,000</td></tr>
+    <tr><td>Facebook</td><td>Multimedios TV</td><td>6,500,000</td><td>~120,000</td></tr>
+    <tr style="background:var(--accent-soft); font-weight:700"><td colspan="3">Total historias (6 publicaciones)</td><td>~200,000</td></tr>
+  </tbody>
+</table>
+
+<p>Inversión historias: $60,000 MXN. <strong>Total digital: $323,505 MXN.</strong></p>
+
+<div class="callout warn">
+  <p><strong>Nota:</strong> el display en estos 4 portales fue de <strong>cobertura nacional</strong>, no segmentado a MTY. Parte de las impresiones impactaron fuera de la zona objetivo y meten ruido al medir el efecto exclusivo en MTY.</p>
+</div>
+
+<h3 class="channel-section">Print — Milenio Prensa MTY</h3>
+
+<ul>
+  <li><strong>1 plana</strong> en periódico Milenio (lunes de la segunda semana de campaña).</li>
+  <li><strong>2 inserciones tipo CHIC</strong> (jueves de cada semana).</li>
+</ul>
+
+<p>Inversión: $248,400 MXN. Es el canal de menor peso en la mezcla.</p>
+
+<h3>Hipótesis de la campaña</h3>
+
+<p>El plan se diseñó para impactar las distintas etapas del funnel de marketing en sellers:</p>
+
+<ol>
+  <li><strong>Awareness</strong>: la saturación de 5 canales × 14 días debería empujar el <em>top of mind</em> de Tuhabi en MTY.</li>
+  <li><strong>Consideration</strong>: el awareness debería traducirse en búsquedas de la marca y recordación al pensar en vender.</li>
+  <li><strong>Conversion</strong>: la consideración debería convertirse en visitas a tuhabi.mx y registros en el formulario.</li>
+  <li><strong>Efecto residual</strong>: el recuerdo debería sostener tráfico y registros por encima del baseline varias semanas post-campaña.</li>
+  <li><strong>Conversion en el pipeline comercial</strong>: los registros nuevos deberían avanzar en el funnel (calificación → cierre) al menos al mismo ritmo que el baseline.</li>
+</ol>
+
+<div class="callout info">
+  <p>Es una <strong>campaña de brand</strong>, no de performance. Aún así mediremos su impacto en todo el funnel de marketing en sellers — de awareness a cierre.</p>
+</div>
+
+
+<h2 id="cap-2">Capítulo 2 — Awareness</h2>
+
+<p>El primer objetivo de la campaña era <strong>generar conocimiento de marca</strong> en Monterrey. Lo medimos con tres lentes complementarios: tráfico web (Google Analytics y Segment) y reconocimiento de marca (Continuous Brand Lift de Meta).</p>
+
+<h3 class="channel-section">Tráfico web — Google Analytics</h3>
+
+<p>Métrica: usuarios distintos que visitaron tuhabi.mx, semana a semana, desde el 16 de febrero al 26 de abril. Mostramos en paralelo el <strong>total nacional</strong> y la porción de <strong>Monterrey</strong> para ver si la campaña movió MTY de manera diferente al promedio del país.</p>
+
+<div class="chart-card">
+  <div class="chart-title">Usuarios en tuhabi.mx — Total México vs Monterrey</div>
+  <div class="chart-subtitle">Semana ISO. Banda gris: 2 semanas de campaña Multimedios (16-mar al 29-mar).</div>
+  <div class="chart-wrap" style="position:relative; height:380px"><canvas id="cv-ga4"></canvas></div>
+</div>
+
+<table>
+  <thead>
+    <tr><th>Período</th><th>Semanas</th><th>Total / sem</th><th>Δ Total</th><th>MTY / sem</th><th>Δ MTY</th></tr>
+  </thead>
+  <tbody>
+    <tr><td><strong>Pre</strong></td><td>4 sem · 16-feb → 15-mar</td><td>63,170</td><td>—</td><td>9,945</td><td>—</td></tr>
+    <tr><td><strong>Campaña</strong></td><td>2 sem · 16-mar → 29-mar</td><td>48,853</td><td style="color:#dc2626">−22.7%</td><td>7,246</td><td style="color:#dc2626; font-weight:600">−27.1%</td></tr>
+    <tr><td><strong>Post</strong></td><td>4 sem · 30-mar → 26-abr</td><td>71,350</td><td style="color:#059669">+12.9%</td><td>11,128</td><td style="color:#059669">+11.9%</td></tr>
+  </tbody>
+</table>
+
+<div class="callout warn">
+  <p><strong>Lectura:</strong> durante las dos semanas de campaña, los usuarios MTY a tuhabi.mx <strong>cayeron −27%</strong>, mientras que el total nacional cayó −23%. <strong>Sin lift atribuible</strong> a Multimedios en tráfico web — al contrario, MTY se contrajo más fuerte que el promedio del país. En post-campaña, ambos se recuperan al mismo ritmo (≈ +12-13%): no hay efecto residual diferenciado en MTY.</p>
+</div>
+
+<h3 class="channel-section">¿Por qué cayó el tráfico durante la campaña?</h3>
+
+<p>La caída no se explica por el calendario: las dos semanas de campaña fueron <strong>antes</strong> de Semana Santa (que empezó el 30-mar). De hecho la semana de Pascua tuvo el tráfico más alto del período — descarta la hipótesis "vacaciones bajan el tráfico inmobiliario".</p>
+
+<p>La explicación está en la <strong>inversión paid MX</strong>, que bajó de manera coincidente con la campaña Multimedios:</p>
+
+<table>
+  <thead>
+    <tr><th>Período</th><th>Inversión / sem (USD)</th><th>Δ vs Pre</th><th>Tráfico Total / sem</th><th>Δ vs Pre</th></tr>
+  </thead>
+  <tbody>
+    <tr><td><strong>Pre</strong> 4 sem</td><td>$53,487</td><td>—</td><td>63,170</td><td>—</td></tr>
+    <tr><td><strong>Campaña</strong> 2 sem</td><td>$48,028</td><td style="color:#dc2626">−10.2%</td><td>48,853</td><td style="color:#dc2626">−22.7%</td></tr>
+    <tr><td><strong>Post</strong> 4 sem</td><td>$51,774</td><td>−3.2%</td><td>71,350</td><td style="color:#059669">+12.9%</td></tr>
+  </tbody>
+</table>
+
+<div class="callout info">
+  <p>Las semanas de campaña coincidieron con <strong>cierre de mes y CPMs altos</strong> — la pauta digital bajó como estaba planeado. El movimiento del tráfico responde a esa dinámica de pauta, no a Multimedios. <strong>La campaña no tuvo ingerencia visible sobre el tráfico web a tuhabi.mx</strong>.</p>
+</div>
+
+<h3 class="channel-section">Búsquedas orgánicas y tráfico directo</h3>
+
+<p>El tráfico paid está condicionado por la inversión. Para aislar el efecto de la campaña sobre awareness real, miramos los canales que sí dependen de la memoria del usuario: <strong>Organic Search</strong> (gente que recordó la marca y la buscó en Google) y <strong>Direct</strong> (gente que tecleó la URL o tiene bookmark). Si Multimedios funcionó, ambos deberían crecer en MTY más que en el resto del país.</p>
+
+<table>
+  <thead>
+    <tr><th>Canal</th><th>Pre / sem</th><th>Campaña / sem</th><th>Post / sem</th><th>Δ MTY post vs pre</th><th>Δ Resto MX post vs pre</th><th>Diferencial</th></tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><strong>Organic Search</strong></td>
+      <td>192</td><td>191</td><td>185</td>
+      <td style="color:#dc2626">−3.6%</td>
+      <td style="color:#059669">+2.3%</td>
+      <td style="color:#dc2626; font-weight:600">−5.9 pp</td>
+    </tr>
+    <tr>
+      <td><strong>Direct</strong></td>
+      <td>794</td><td>784</td><td>927</td>
+      <td style="color:#059669; font-weight:600">+16.8%</td>
+      <td style="color:#059669">+10.7%</td>
+      <td style="color:#059669; font-weight:600">+6.1 pp</td>
+    </tr>
+    <tr>
+      <td>Paid Search (referencia)</td>
+      <td>8,827</td><td>6,258</td><td>10,000</td>
+      <td>+13.3%</td>
+      <td>+16.8%</td>
+      <td>−3.5 pp</td>
+    </tr>
+  </tbody>
+</table>
+
+<div class="callout warn">
+  <p><strong>Búsquedas orgánicas en MTY: sin lift.</strong> Cayeron −3.6% post-campaña vs +2.3% en el resto del país — si Multimedios hubiera empujado el recuerdo de marca, esperaríamos lo opuesto. El tráfico directo MTY sí subió +17% (vs +11% Resto MX), pero direct es un canal ambiguo y no es evidencia concluyente.</p>
+</div>
+
+<h3 class="channel-section">Continuous Brand Lift — Meta</h3>
+
+<p>Meta ejecuta un estudio de Brand Lift continuo con dos grupos: <strong>control</strong> (no expuesto a pauta Meta) y <strong>expuesto</strong> (sí expuesto). La pregunta clave es Top-of-Mind Awareness: <em>"¿Cuál de las siguientes marcas te viene primero a la mente al pensar en compañías que compren vivienda directamente?"</em> Esta es la métrica más cercana al recuerdo espontáneo de marca.</p>
+
+<div class="chart-card">
+  <div class="chart-title">Top-of-Mind Awareness — Tuhabi MX, sep 2025 → mar 2026</div>
+  <div class="chart-subtitle">Líneas: % de personas que mencionan Tuhabi como primera marca al pensar en compradores directos. Hitos: campaña Uber MTY+GDL (nov 2025) · campaña Multimedios MTY (mar 2026).</div>
+  <div class="chart-wrap" style="position:relative; height:380px"><canvas id="cv-brandlift"></canvas></div>
+</div>
+
+<table>
+  <thead>
+    <tr><th>Mes</th><th>Expuesto</th><th>Control</th><th>Lift (pp)</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>Sep 2025</td><td>14.07%</td><td>8.33%</td><td>+5.74</td></tr>
+    <tr><td>Oct 2025</td><td>15.38%</td><td>8.21%</td><td>+7.17</td></tr>
+    <tr><td><strong>Nov 2025</strong> · arranca Uber MTY+GDL</td><td>18.35%</td><td>11.34%</td><td>+7.00</td></tr>
+    <tr><td>Dic 2025</td><td>19.63%</td><td>14.09%</td><td>+5.54</td></tr>
+    <tr><td>Ene 2026</td><td>17.60%</td><td>11.31%</td><td>+6.28</td></tr>
+    <tr><td>Feb 2026</td><td>20.10%</td><td>14.01%</td><td>+6.09</td></tr>
+    <tr><td><strong>Mar 2026</strong> · Multimedios MTY</td><td>20.07%</td><td>11.55%</td><td>+8.51</td></tr>
+  </tbody>
+</table>
+
+<div class="callout info">
+  <p><strong>La marca viene construyendo recuerdo desde noviembre 2025</strong>, dentro y fuera de Meta. Expuesto sube de 14% a 20% (+6 pp); control de 8.3% a 11.5% (+3.2 pp). Que el control también suba apunta a que la palanca está afuera: coincide con el arranque de <strong>Uber MTY + GDL</strong> (100 unidades brandeadas) en noviembre.</p>
+  <p><strong>Multimedios no aporta lift visible.</strong> En marzo el expuesto queda plano vs febrero (20.07% vs 20.10%) y el control fluctúa (11.55% vs 14.01%). El +8.51 pp del mes viene del movimiento del control, no de más awareness en expuestos. La curva ya venía construida.</p>
+</div>
+
+<h2 id="cap-3">Capítulo 3 — Consideration</h2>
+
+<p>Awareness es saber que la marca existe. <strong>Consideration</strong> es el siguiente paso: que la persona <em>active</em> la marca al pensar en vender un inmueble — la busque en Google, escriba el nombre, compare contra alternativas. Es el momento donde el recuerdo de marca se convierte en intención.</p>
+
+<p>Lo medimos con dos lentes:</p>
+<ul>
+  <li><strong>Google Trends</strong>: índice relativo de búsquedas de "tuhabi" / "habi" en Nuevo León vs nacional. Captura el interés agregado del mercado.</li>
+  <li><strong>Google Search Console</strong>: impresiones y clics reales de tuhabi.mx en los resultados de búsqueda, segmentables por keyword y por país. Captura el desempeño orgánico de la marca como query.</li>
+</ul>
+
+<h3 class="channel-section">Búsquedas en Google — Search Console</h3>
+
+<p>Los datos de Search Console confirman lo que vimos en Brand Lift: la marca viene construyendo presencia orgánica de manera sostenida desde noviembre 2025.</p>
+
+<table>
+  <thead>
+    <tr><th>Mes</th><th>Clicks</th><th>Impresiones</th><th>CTR</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>Oct 2025 (parcial, 5 días)</td><td>2,958</td><td>117,646</td><td>2.5%</td></tr>
+    <tr><td><strong>Nov 2025</strong> · Uber MTY+GDL</td><td>20,500</td><td>810,616</td><td>2.5%</td></tr>
+    <tr><td>Dic 2025</td><td>18,275</td><td>703,747</td><td>2.6%</td></tr>
+    <tr><td>Ene 2026</td><td>23,203</td><td>1,030,509</td><td>2.3%</td></tr>
+    <tr><td>Feb 2026</td><td>22,165</td><td>951,564</td><td>2.3%</td></tr>
+    <tr><td><strong>Mar 2026</strong> · Multimedios MTY</td><td>23,582</td><td>996,656</td><td>2.4%</td></tr>
+    <tr><td>Abr 2026 (29 días)</td><td>19,801</td><td>856,221</td><td>2.3%</td></tr>
+  </tbody>
+</table>
+
+<p>De noviembre a marzo, los clicks orgánicos crecieron <strong>+15%</strong> (20.5K → 23.6K mensuales) y las impresiones <strong>+23%</strong> (810K → 997K). El CTR se mantuvo estable en ~2.3–2.5%: la marca conserva su posicionamiento mientras crece en volumen.</p>
+
+<h3 class="channel-section">Top queries de marca</h3>
+
+<p>Las consultas que contienen "tuhabi" o "tu habi" suman <strong>134,485 impresiones</strong> y <strong>63,393 clicks</strong> en el período de 6 meses. Tuhabi domina sus resultados — todas las queries de marca rankean en <strong>posición 1.0 a 1.3</strong>.</p>
+
+<table>
+  <thead>
+    <tr><th>Query</th><th>Clicks</th><th>Impresiones</th><th>CTR</th><th>Posición</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>tuhabi</td><td>17,458</td><td>44,899</td><td>38.9%</td><td>1.07</td></tr>
+    <tr><td>tuhabi brokers</td><td>18,278</td><td>20,092</td><td>91.0%</td><td>1.09</td></tr>
+    <tr><td>tu habi</td><td>6,338</td><td>16,939</td><td>37.4%</td><td>1.33</td></tr>
+    <tr><td>tu habi brokers</td><td>6,282</td><td>7,116</td><td>88.3%</td><td>1.20</td></tr>
+    <tr><td>tuhabi broker</td><td>4,380</td><td>4,790</td><td>91.4%</td><td>1.07</td></tr>
+    <tr><td>tuhabi.mx</td><td>973</td><td>3,488</td><td>27.9%</td><td>1.00</td></tr>
+    <tr><td><strong>tuhabi monterrey</strong></td><td>226</td><td>1,299</td><td>17.4%</td><td>1.13</td></tr>
+  </tbody>
+</table>
+
+<p>Aparece la query <strong>"tuhabi monterrey"</strong> (1,299 impresiones, posición 1.13) — búsqueda específica de marca + ciudad. Es exactamente el tipo de consulta que validaría awareness regional generado por una campaña como Multimedios.</p>
+
+<div class="callout warn">
+  <p><strong>Marzo vs febrero — el efecto Multimedios en el agregado:</strong> los clicks orgánicos suben +6.4% (22,165 → 23,582) y las impresiones +4.7% — un incremento marginal dentro del rango de variación natural mes a mes. La curva venía consolidada desde noviembre con Uber, y a nivel total Multimedios <strong>no es identificable como factor principal</strong> del crecimiento orgánico.</p>
+</div>
+
+<h3 class="channel-section">Zoom a la query "tuhabi monterrey"</h3>
+
+<p>Si Multimedios generó awareness regional, debería verse específicamente en una query: <strong>"tuhabi monterrey"</strong> — alguien que vio el anuncio en TV / radio / OOH y combinó el nombre de la marca con su ciudad al buscarlo en Google. Filtrar Search Console a ese query revela un patrón muy distinto al agregado.</p>
+
+<div class="chart-card">
+  <div class="chart-title">Búsquedas de "tuhabi monterrey" por semana</div>
+  <div class="chart-subtitle">Impresiones y clicks. Banda destacada: 2 semanas de campaña Multimedios.</div>
+  <div class="chart-wrap" style="position:relative; height:340px"><canvas id="cv-mty-query"></canvas></div>
+</div>
+
+<table>
+  <thead>
+    <tr><th>Mes</th><th>Clicks</th><th>Impresiones</th><th>Comentario</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>Nov 2025</td><td>31</td><td>693</td><td>Outlier de 578 imps en sem 9-15 nov (indexación puntual, no campaña)</td></tr>
+    <tr><td>Dic 2025</td><td>18</td><td>82</td><td>Baseline normal</td></tr>
+    <tr><td>Ene 2026</td><td>28</td><td>176</td><td>Baseline ~25-30 clicks/mes</td></tr>
+    <tr><td>Feb 2026</td><td>29</td><td>187</td><td>Baseline estable</td></tr>
+    <tr><td><strong>Mar 2026</strong></td><td style="font-weight:700">93</td><td style="font-weight:700">380</td><td><strong>+220% clicks · +103% impresiones</strong></td></tr>
+    <tr><td>Abr 2026 (parcial)</td><td>29</td><td>133</td><td>Vuelta a baseline post-campaña</td></tr>
+  </tbody>
+</table>
+
+<div class="callout ok">
+  <p><strong>Hay señal atribuible a Multimedios.</strong> "Tuhabi monterrey" se triplica en marzo: <strong>93 clicks</strong> (+220% vs feb), pico de 35 clicks la última semana de campaña vs baseline de 5-11. Es la firma esperada: gente que vio el comercial y buscó la marca con su ciudad.</p>
+  <p><strong>Pero la huella es marginal frente a la inversión.</strong> Son ~64 clicks incrementales — el 0.3% del tráfico orgánico mensual. Poco retorno en search para una campaña 360° en una plaza premium.</p>
+</div>
+
+<h2 id="cap-4">Capítulo 4 — Conversion</h2>
+
+<p>El paso final: ¿el recuerdo de marca se convirtió en registros? Lo medimos sobre la fuente <strong>WEB</strong> (formulario habi.mx) cruzada con la inversión paid media regional, para separar el efecto campaña del efecto gasto.</p>
+
+<h3 class="channel-section">Mensual — registros e inversión, MTY vs Resto MX</h3>
+
+<table>
+  <thead>
+    <tr><th>Mes</th><th>Zona</th><th>Registros web</th><th>Inversión paid (USD)</th><th>CPL (USD)</th></tr>
+  </thead>
+  <tbody>
+    <tr><td rowspan="2">Feb 2026</td><td>Resto MX</td><td>5,048</td><td>$120,889</td><td>$23.9</td></tr>
+    <tr><td><strong>MTY</strong></td><td><strong>954</strong></td><td><strong>$45,466</strong></td><td><strong>$47.7</strong></td></tr>
+    <tr><td rowspan="2"><strong>Mar 2026</strong> · Multimedios</td><td>Resto MX</td><td>6,450</td><td>$152,081</td><td>$23.6</td></tr>
+    <tr><td><strong>MTY</strong></td><td><strong>1,010</strong></td><td><strong>$47,937</strong></td><td><strong>$47.5</strong></td></tr>
+    <tr><td rowspan="2">Abr 2026</td><td>Resto MX</td><td>5,328</td><td>$119,731</td><td>$22.5</td></tr>
+    <tr><td><strong>MTY</strong></td><td><strong>951</strong></td><td><strong>$44,710</strong></td><td><strong>$47.0</strong></td></tr>
+  </tbody>
+</table>
+
+<ul>
+  <li><strong>Resto MX feb→mar</strong>: +28% leads con +26% spend. CPL estable. Crecimiento por más gasto, no por eficiencia.</li>
+  <li><strong>MTY feb→mar</strong>: +6% leads con +5% spend. CPL congelado en $47. Lift proporcional al gasto, sin halo de campaña.</li>
+  <li><strong>Share MTY del total</strong>: 16% (feb) → 13% (mar) → 15% (abr). MTY <em>pierde</em> peso en marzo.</li>
+</ul>
+
+<h3 class="channel-section">Semanal — la curva no muestra pico</h3>
+
+<div class="chart-card">
+  <div class="chart-title">Registros web por semana — MTY vs total México</div>
+  <div class="chart-subtitle">Fuente WEB (<code>fuente_id = 3</code>). Banda destacada: 2 semanas de campaña.</div>
+  <div class="chart-wrap" style="position:relative; height:340px"><canvas id="cv-leads-web"></canvas></div>
+</div>
+
+<p>MTY semanal: pre <strong>241</strong> · campaña <strong>234</strong> · post <strong>236</strong> registros/sem. Plano.</p>
+
+<div class="callout danger">
+  <p><strong>Multimedios no se materializó en registros web.</strong> El +24% nacional de marzo viene de más spend, no del halo de la campaña. En MTY el lift fue +6% (proporcional al gasto) y el CPL no bajó — si Multimedios hubiera generado búsqueda orgánica de marca, debería ver caer el costo por lead. No cayó.</p>
+  <p>El awareness que sí encontramos en Cap 2 y Cap 3 <strong>no atravesó hasta el formulario</strong>. Hubo más recuerdo de marca; no más registros.</p>
+</div>
+
+<h2 id="cap-5">Capítulo 5 — Efecto residual</h2>
+
+<p>Una campaña 360° debería dejar huella. La pregunta: ¿las semanas posteriores a Multimedios siguen mostrando lift, o el sistema vuelve a baseline?</p>
+
+<table>
+  <thead>
+    <tr><th>Dimensión</th><th>Métrica</th><th>Pre (4 sem)</th><th>Campaña (2 sem)</th><th>Post (4 sem)</th></tr>
+  </thead>
+  <tbody>
+    <tr><td><strong>Awareness</strong></td><td>Usuarios web MTY · prom/sem</td><td>9,945</td><td>7,246</td><td>11,128</td></tr>
+    <tr><td><strong>Awareness</strong></td><td>Brand Lift TOMA expuesto (Meta)</td><td>20.10% (feb)</td><td>20.07% (mar)</td><td>—</td></tr>
+    <tr><td><strong>Consideration</strong></td><td>"tuhabi monterrey" clicks/sem</td><td>~8</td><td>29</td><td>11 → 6</td></tr>
+    <tr><td><strong>Conversion</strong></td><td>Registros web MTY · prom/sem</td><td>241</td><td>234</td><td>236</td></tr>
+    <tr><td><strong>Conversion</strong></td><td>CPL MTY (mensual)</td><td>$47.7</td><td>$47.5</td><td>$47.0</td></tr>
+  </tbody>
+</table>
+
+<p>Cuatro de las cinco métricas están planas pre / campaña / post — la campaña no produjo un lift y por tanto no hay efecto residual posible sobre ellas. La excepción es la única señal real que encontramos: las búsquedas branded de "tuhabi monterrey".</p>
+
+<h3 class="channel-section">La única señal real se desinfla en 3 semanas</h3>
+
+<p>El lift de "tuhabi monterrey" llegó al pico la última semana de campaña y empezó a caer inmediatamente:</p>
+
+<table>
+  <thead>
+    <tr><th>Semana</th><th>Clicks</th><th>Estado</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>16-22 mar</td><td>23</td><td>Campaña</td></tr>
+    <tr><td>23-29 mar</td><td><strong>35</strong></td><td>Campaña · pico</td></tr>
+    <tr><td>30 mar-5 abr</td><td>15</td><td>Post · –57% vs pico</td></tr>
+    <tr><td>6-12 abr</td><td>11</td><td>Post · –69%</td></tr>
+    <tr><td>13-19 abr</td><td>10</td><td>Post · –71%</td></tr>
+    <tr><td>20-26 abr</td><td>6</td><td>Post · baseline pre-campaña</td></tr>
+  </tbody>
+</table>
+
+<div class="callout warn">
+  <p><strong>El recuerdo se evapora rápido.</strong> 4 semanas después de terminada la campaña, "tuhabi monterrey" volvió a su baseline previo (~6 clicks/sem). La huella dura mientras los anuncios están al aire.</p>
+  <p>El resto del funnel ni siquiera mostró lift que pudiera persistir. <strong>No hay efecto residual atribuible a Multimedios</strong> — la curva post abril 2026 es indistinguible de la curva pre febrero 2026.</p>
+</div>
+
+<h2 id="cap-6">Capítulo 6 — Conversion en pipeline comercial</h2>
+
+<p>Marketing no se movió. ¿Y el lado comercial? La pregunta: para los leads que sí entraron, ¿fue más fácil avanzarlos en el funnel durante la campaña? Tomamos la cohorte MM de cada ventana y medimos cuántos llegaron a cita agendada con un Market Maker.</p>
+
+<table>
+  <thead>
+    <tr><th>Cohorte</th><th>Zona</th><th>Registros</th><th>Asignados</th><th>% Asignación</th><th>Cita agendada</th><th>% Cita</th></tr>
+  </thead>
+  <tbody>
+    <tr><td rowspan="2">Pre (4 sem)</td><td>Resto MX</td><td>6,574</td><td>3,587</td><td>55%</td><td>753</td><td>11.5%</td></tr>
+    <tr><td><strong>MTY</strong></td><td><strong>941</strong></td><td><strong>793</strong></td><td><strong>84%</strong></td><td><strong>116</strong></td><td><strong>12.3%</strong></td></tr>
+    <tr><td rowspan="2"><strong>Campaña (2 sem)</strong></td><td>Resto MX</td><td>2,971</td><td>1,556</td><td>52%</td><td>334</td><td>11.2%</td></tr>
+    <tr><td><strong>MTY</strong></td><td><strong>459</strong></td><td><strong>378</strong></td><td><strong>82%</strong></td><td><strong>78</strong></td><td><strong style="color:#5C36AB">17.0%</strong></td></tr>
+    <tr><td rowspan="2">Post (4 sem)</td><td>Resto MX</td><td>6,175</td><td>3,539</td><td>57%</td><td>574</td><td>9.3%</td></tr>
+    <tr><td><strong>MTY</strong></td><td><strong>919</strong></td><td><strong>769</strong></td><td><strong>84%</strong></td><td><strong>129</strong></td><td><strong>14.0%</strong></td></tr>
+  </tbody>
+</table>
+
+<p>Dos lecturas de fondo:</p>
+<ul>
+  <li><strong>MTY convierte estructuralmente mejor a asignado</strong> (84% vs 55% Resto MX). Esto no es de la campaña: ya estaba antes y sigue después. Es operación regional.</li>
+  <li><strong>% de cita agendada en MTY salta durante campaña</strong>: 12.3% → 17.0% → 14.0%. Resto MX se mantiene plano y a la baja (11.5% → 11.2% → 9.3%). Solo MTY sube, y solo durante la ventana de exposición.</li>
+</ul>
+
+<h3 class="channel-section">El lift solo aparece en MTY y solo durante campaña</h3>
+
+<div class="chart-card">
+  <div class="chart-title">% de leads que agendan cita — MTY vs Resto MX por cohorte</div>
+  <div class="chart-subtitle">Cohorte = ventana en que se creó el lead. Funnel MM, fuente WEB.</div>
+  <div class="chart-wrap" style="position:relative; height:340px"><canvas id="cv-citas-cohorte"></canvas></div>
+</div>
+
+<p>En absolutos por semana, MTY pasa de <strong>29 citas/sem</strong> (pre) a <strong>39 citas/sem</strong> (campaña, +34%) y vuelve a <strong>32 citas/sem</strong> (post). Resto MX no muestra lift en ninguna ventana.</p>
+
+<div class="callout ok">
+  <p><strong>Aquí sí hay un argumento a favor de Multimedios.</strong> La campaña no movió volumen de leads, pero <em>sí parece haber lubricado la conversión funnel-abajo</em>: durante las dos semanas al aire, los leads MTY aceptaron agendar visita con un MM en mayor proporción. Interpretación natural — la exposición masiva en TV / radio / OOH generó confianza, y un lead con la marca fresca en la cabeza dice que sí más fácil cuando llama el MM.</p>
+</div>
+
+<h2 id="cap-7">Capítulo 7 — Conclusiones</h2>
+
+<h3 class="channel-section">Lo que la campaña no logró</h3>
+<ul>
+  <li><strong>No generó awareness adicional medible</strong>. El Brand Lift TOMA de marzo (20.07%) quedó plano vs febrero (20.10%); la curva venía construida desde noviembre por la campaña Uber MTY+GDL.</li>
+  <li><strong>No movió tráfico web a tuhabi.mx</strong>. Las semanas de campaña incluso cayeron vs baseline en GA4. Total México y MTY recuperan en abril sin patrón distintivo de la campaña.</li>
+  <li><strong>No movió la búsqueda orgánica agregada</strong>. +6.4% clicks GSC en marzo es marginal y dentro de variación natural mes a mes.</li>
+  <li><strong>No movió registros web</strong>. MTY +6% feb→mar, proporcional al +5% extra de spend digital. CPL MTY congelado en $47 — no hubo lift orgánico que bajara el costo por lead.</li>
+  <li><strong>No dejó efecto residual</strong>. Cuatro semanas post-campaña, toda métrica que se movió volvió a baseline. La búsqueda branded "tuhabi monterrey" se desinfló de 35 a 6 clicks/sem en 3 semanas.</li>
+</ul>
+
+<h3 class="channel-section">Lo que la campaña sí logró</h3>
+<ul>
+  <li><strong>Búsqueda branded específica</strong>. "Tuhabi monterrey" se triplicó en marzo (29 → 93 clicks). Firma esperada de awareness regional, pero magnitud marginal: 0.3% del tráfico orgánico mensual.</li>
+  <li><strong>Más confianza para agendar visita en MTY</strong>. % de cita agendada saltó de 12.3% a 17.0% durante campaña (vs Resto MX plano). En absolutos: 29 → 39 citas/sem en MTY (+34%). Es la única señal claramente positiva del informe.</li>
+</ul>
+
+<h3 class="channel-section">Veredicto</h3>
+<p>El único efecto medible de la campaña fue una mejora puntual en la tasa de agendamiento de visitas en MTY — un beneficio marginal en una sola dimensión del funnel. <strong>El ROI no justifica una campaña 360° de este tamaño</strong>: el ticket invertido en TV abierta, radio, OOH, digital y prensa es desproporcionado frente al único efecto que dejó. No hay base para repetir la inversión bajo este formato.</p>
+
+</div>
+
+<script>
+const GA4_TRAFFIC = [
+  {w:"2026-02-16", mty:10170, total:59186},
+  {w:"2026-02-23", mty:12081, total:78716},
+  {w:"2026-03-02", mty:8524,  total:53568},
+  {w:"2026-03-09", mty:9004,  total:61213},
+  {w:"2026-03-16", mty:6666,  total:44911},
+  {w:"2026-03-23", mty:7825,  total:52796},
+  {w:"2026-03-30", mty:11021, total:75424},
+  {w:"2026-04-06", mty:10776, total:74733},
+  {w:"2026-04-13", mty:10639, total:66817},
+  {w:"2026-04-20", mty:12076, total:68426}
+];
+const MESES_ES = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+function fmtFechaEs(iso) {
+  const p = iso.split('-');
+  return `${p[2]} ${MESES_ES[parseInt(p[1],10)-1]}`;
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  const ctx = document.getElementById('cv-ga4');
+  if (!ctx) return;
+  const labels = GA4_TRAFFIC.map(w => w.w);
+
+  const campaignBand = {
+    id: 'campaignBand',
+    beforeDatasetsDraw(chart) {
+      const xa = chart.scales.x;
+      const ya = chart.chartArea;
+      const c = chart.ctx;
+      const half = (xa.getPixelForValue(1) - xa.getPixelForValue(0)) / 2;
+      const i1 = labels.indexOf('2026-03-16');
+      const i2 = labels.indexOf('2026-03-23');
+      if (i1 < 0 || i2 < 0) return;
+      const x1 = xa.getPixelForValue(i1) - half;
+      const x2 = xa.getPixelForValue(i2) + half;
+      c.save();
+      // sombreado destacado
+      c.fillStyle = 'rgba(245, 158, 11, 0.18)';
+      c.fillRect(x1, ya.top, x2 - x1, ya.bottom - ya.top);
+      // bordes laterales para reforzar el corte
+      c.strokeStyle = 'rgba(180, 83, 9, 0.55)';
+      c.lineWidth = 1.5;
+      c.setLineDash([5, 4]);
+      c.beginPath(); c.moveTo(x1, ya.top); c.lineTo(x1, ya.bottom); c.stroke();
+      c.beginPath(); c.moveTo(x2, ya.top); c.lineTo(x2, ya.bottom); c.stroke();
+      c.setLineDash([]);
+      // etiqueta CAMPAÑA con fondo cálido
+      const text = 'CAMPAÑA MULTIMEDIOS';
+      c.font = '700 11px -apple-system, sans-serif';
+      const tw = c.measureText(text).width + 14;
+      const tx = (x1 + x2) / 2;
+      c.fillStyle = 'rgba(180, 83, 9, 0.92)';
+      c.beginPath();
+      c.roundRect(tx - tw/2, ya.top + 6, tw, 22, 4);
+      c.fill();
+      c.fillStyle = '#fff';
+      c.textAlign = 'center';
+      c.textBaseline = 'middle';
+      c.fillText(text, tx, ya.top + 17);
+      c.restore();
+    }
+  };
+
+  new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [
+        {
+          label: 'Total México',
+          data: GA4_TRAFFIC.map(w => w.total),
+          borderColor: '#94a3b8',
+          backgroundColor: 'rgba(148, 163, 184, 0.1)',
+          tension: 0.25, borderWidth: 2.5,
+          pointRadius: 4, pointHoverRadius: 7,
+          pointBackgroundColor: '#94a3b8',
+          yAxisID: 'yTotal'
+        },
+        {
+          label: 'Monterrey',
+          data: GA4_TRAFFIC.map(w => w.mty),
+          borderColor: '#5C36AB',
+          backgroundColor: 'rgba(92, 54, 171, 0.1)',
+          tension: 0.25, borderWidth: 3,
+          pointRadius: 4, pointHoverRadius: 7,
+          pointBackgroundColor: '#5C36AB',
+          yAxisID: 'yMty'
+        }
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: { position: 'bottom', labels: { boxWidth: 12, boxHeight: 12, padding: 12, font: { size: 12 } } },
+        tooltip: {
+          callbacks: {
+            title: items => fmtFechaEs(items[0].label),
+            label: ctx => ctx.dataset.label + ': ' + ctx.raw.toLocaleString()
+          }
+        }
+      },
+      scales: {
+        x: {
+          title: { display: true, text: 'Semana', font: { size: 11 }, color: '#6b7280' },
+          ticks: { font: { size: 10 }, maxRotation: 45, minRotation: 45,
+                   callback: function(v) { return fmtFechaEs(this.getLabelForValue(v)); } },
+          grid: { display: false }
+        },
+        yTotal: { position: 'left', beginAtZero: true,
+          title: { display: true, text: 'Total México', font: { size: 11 }, color: '#6b7280' },
+          ticks: { font: { size: 10 }, color: '#6b7280', callback: v => (v/1000).toFixed(0) + 'K' },
+          grid: { color: 'rgba(148, 163, 184, 0.15)' } },
+        yMty: { position: 'right', beginAtZero: true,
+          title: { display: true, text: 'Monterrey', font: { size: 11 }, color: '#5C36AB' },
+          ticks: { font: { size: 10 }, color: '#5C36AB', callback: v => (v/1000).toFixed(0) + 'K' },
+          grid: { display: false } }
+      }
+    },
+    plugins: [campaignBand]
+  });
+
+  // Brand Lift chart — sep 2025 → mar 2026
+  const BRAND_LIFT = [
+    {label:"Sep 2025", test:14.07, ctrl:8.33,  lift:+5.74},
+    {label:"Oct 2025", test:15.38, ctrl:8.21,  lift:+7.17},
+    {label:"Nov 2025", test:18.35, ctrl:11.34, lift:+7.00, marker:"Uber MTY+GDL"},
+    {label:"Dic 2025", test:19.63, ctrl:14.09, lift:+5.54},
+    {label:"Ene 2026", test:17.60, ctrl:11.31, lift:+6.28},
+    {label:"Feb 2026", test:20.10, ctrl:14.01, lift:+6.09},
+    {label:"Mar 2026", test:20.07, ctrl:11.55, lift:+8.51, marker:"Multimedios"}
+  ];
+
+  const ctxBL = document.getElementById('cv-brandlift');
+  if (!ctxBL) return;
+  const blLabels = BRAND_LIFT.map(w => w.label);
+
+  // Banda de la campaña Uber (entre Nov-Dic 2025 y Feb-Mar 2026)
+  const uberBand = {
+    id: 'uberBand',
+    beforeDatasetsDraw(chart) {
+      const xa = chart.scales.x;
+      const ya = chart.chartArea;
+      const c = chart.ctx;
+      const i_nov = blLabels.indexOf('Nov 2025');
+      const i_feb = blLabels.indexOf('Feb 2026');
+      if (i_nov < 0 || i_feb < 0) return;
+      const x1 = xa.getPixelForValue(i_nov + 0.5); // entre Nov y Dic
+      const x2 = xa.getPixelForValue(i_feb + 0.5); // entre Feb y Mar
+      c.save();
+      c.fillStyle = 'rgba(16, 185, 129, 0.10)';
+      c.fillRect(x1, ya.top, x2 - x1, ya.bottom - ya.top);
+      // bordes punteados
+      c.strokeStyle = 'rgba(6, 95, 70, 0.4)';
+      c.lineWidth = 1.2;
+      c.setLineDash([4, 4]);
+      c.beginPath(); c.moveTo(x1, ya.top); c.lineTo(x1, ya.bottom); c.stroke();
+      c.beginPath(); c.moveTo(x2, ya.top); c.lineTo(x2, ya.bottom); c.stroke();
+      c.setLineDash([]);
+      // etiqueta CAMPAÑA UBER MTY + GDL en el centro de la banda
+      c.fillStyle = 'rgba(6, 95, 70, 0.92)';
+      c.font = '700 11px -apple-system, sans-serif';
+      const text = 'CAMPAÑA UBER MTY + GDL';
+      const tw = c.measureText(text).width + 14;
+      const tx = (x1 + x2) / 2;
+      c.beginPath();
+      if (c.roundRect) { c.roundRect(tx - tw/2, ya.top + 36, tw, 22, 4); c.fill(); }
+      else c.fillRect(tx - tw/2, ya.top + 36, tw, 22);
+      c.fillStyle = '#fff';
+      c.textAlign = 'center'; c.textBaseline = 'middle';
+      c.fillText(text, tx, ya.top + 47);
+      c.restore();
+    }
+  };
+
+  const milestoneMarkers = {
+    id: 'milestoneMarkers',
+    afterDatasetsDraw(chart) {
+      const xa = chart.scales.x;
+      const ya = chart.chartArea;
+      const c = chart.ctx;
+      BRAND_LIFT.forEach((w, idx) => {
+        if (!w.marker) return;
+        // Solo el marker de Multimedios queda como línea vertical (Uber está cubierta por la banda)
+        if (w.marker !== 'Multimedios') return;
+        const x = xa.getPixelForValue(idx);
+        c.save();
+        c.strokeStyle = '#5C36AB'; c.setLineDash([5,4]); c.lineWidth = 1.5;
+        c.beginPath(); c.moveTo(x, ya.top); c.lineTo(x, ya.bottom); c.stroke();
+        c.setLineDash([]);
+        const text = w.marker;
+        c.font = '700 11px -apple-system, sans-serif';
+        const tw = c.measureText(text).width + 14;
+        c.fillStyle = 'rgba(92, 54, 171, 0.92)';
+        c.beginPath();
+        if (c.roundRect) { c.roundRect(x - tw/2, ya.top + 6, tw, 22, 4); c.fill(); }
+        else c.fillRect(x - tw/2, ya.top + 6, tw, 22);
+        c.fillStyle = '#fff';
+        c.textAlign = 'center'; c.textBaseline = 'middle';
+        c.fillText(text, x, ya.top + 17);
+        c.restore();
+      });
+    }
+  };
+
+  new Chart(ctxBL, {
+    type: 'line',
+    data: {
+      labels: blLabels,
+      datasets: [
+        {
+          label: 'Expuesto a pauta Meta',
+          data: BRAND_LIFT.map(w => w.test),
+          borderColor: '#5C36AB',
+          backgroundColor: 'rgba(92, 54, 171, 0.12)',
+          tension: 0.25, borderWidth: 3,
+          pointRadius: 5, pointHoverRadius: 8,
+          pointBackgroundColor: '#5C36AB',
+          fill: false
+        },
+        {
+          label: 'Control (no expuesto)',
+          data: BRAND_LIFT.map(w => w.ctrl),
+          borderColor: '#94a3b8',
+          backgroundColor: 'rgba(148, 163, 184, 0.1)',
+          tension: 0.25, borderWidth: 2.5,
+          pointRadius: 4, pointHoverRadius: 7,
+          pointBackgroundColor: '#94a3b8',
+          fill: false,
+          borderDash: [6, 4]
+        }
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: { position: 'bottom', labels: { boxWidth: 12, boxHeight: 12, padding: 12, font: { size: 12 } } },
+        tooltip: {
+          callbacks: {
+            label: ctx => ctx.dataset.label + ': ' + ctx.raw.toFixed(2) + '%',
+            afterBody: items => {
+              const w = BRAND_LIFT[items[0].dataIndex];
+              return [`Lift: ${w.lift >= 0 ? '+' : ''}${w.lift.toFixed(2)} pp`];
+            }
+          }
+        }
+      },
+      scales: {
+        x: {
+          title: { display: true, text: 'Mes', font: { size: 11 }, color: '#6b7280' },
+          ticks: { font: { size: 11 }, color: '#374151' },
+          grid: { display: false }
+        },
+        y: { beginAtZero: false, suggestedMin: 5, suggestedMax: 25,
+          title: { display: true, text: 'Top-of-Mind Awareness (%)', font: { size: 11 }, color: '#6b7280' },
+          ticks: { font: { size: 10 }, color: '#6b7280', callback: v => v + '%' },
+          grid: { color: 'rgba(148, 163, 184, 0.15)' } }
+      }
+    },
+    plugins: [uberBand, milestoneMarkers]
+  });
+
+  // === Chart "tuhabi monterrey" — semanal GSC ===
+  const TUHABI_MTY_WEEKS = [
+    {w:"2026-01-04", clicks:9,  imps:38},
+    {w:"2026-01-11", clicks:4,  imps:36},
+    {w:"2026-01-18", clicks:5,  imps:51},
+    {w:"2026-01-25", clicks:10, imps:51},
+    {w:"2026-02-01", clicks:7,  imps:41},
+    {w:"2026-02-08", clicks:8,  imps:35},
+    {w:"2026-02-15", clicks:3,  imps:52},
+    {w:"2026-02-22", clicks:11, imps:59},
+    {w:"2026-03-01", clicks:11, imps:53},
+    {w:"2026-03-08", clicks:9,  imps:52},
+    {w:"2026-03-15", clicks:23, imps:90},
+    {w:"2026-03-22", clicks:35, imps:128},
+    {w:"2026-03-29", clicks:15, imps:57},
+    {w:"2026-04-05", clicks:11, imps:42},
+    {w:"2026-04-12", clicks:10, imps:43},
+    {w:"2026-04-19", clicks:6,  imps:44}
+  ];
+
+  const ctxMty = document.getElementById('cv-mty-query');
+  if (!ctxMty) return;
+  const mtyLabels = TUHABI_MTY_WEEKS.map(w => w.w);
+
+  const mtyCampaignBand = {
+    id: 'mtyCampaignBand',
+    beforeDatasetsDraw(chart) {
+      const xa = chart.scales.x;
+      const ya = chart.chartArea;
+      const c = chart.ctx;
+      const half = (xa.getPixelForValue(1) - xa.getPixelForValue(0)) / 2;
+      const i1 = mtyLabels.indexOf('2026-03-15');
+      const i2 = mtyLabels.indexOf('2026-03-22');
+      if (i1 < 0 || i2 < 0) return;
+      const x1 = xa.getPixelForValue(i1) - half;
+      const x2 = xa.getPixelForValue(i2) + half;
+      c.save();
+      c.fillStyle = 'rgba(245, 158, 11, 0.18)';
+      c.fillRect(x1, ya.top, x2 - x1, ya.bottom - ya.top);
+      c.strokeStyle = 'rgba(180, 83, 9, 0.55)';
+      c.lineWidth = 1.5;
+      c.setLineDash([5, 4]);
+      c.beginPath(); c.moveTo(x1, ya.top); c.lineTo(x1, ya.bottom); c.stroke();
+      c.beginPath(); c.moveTo(x2, ya.top); c.lineTo(x2, ya.bottom); c.stroke();
+      c.setLineDash([]);
+      const text = 'CAMPAÑA MULTIMEDIOS';
+      c.font = '700 11px -apple-system, sans-serif';
+      const tw = c.measureText(text).width + 14;
+      const tx = (x1 + x2) / 2;
+      c.fillStyle = 'rgba(180, 83, 9, 0.92)';
+      c.beginPath();
+      if (c.roundRect) { c.roundRect(tx - tw/2, ya.top + 6, tw, 22, 4); c.fill(); }
+      else c.fillRect(tx - tw/2, ya.top + 6, tw, 22);
+      c.fillStyle = '#fff';
+      c.textAlign = 'center';
+      c.textBaseline = 'middle';
+      c.fillText(text, tx, ya.top + 17);
+      c.restore();
+    }
+  };
+
+  new Chart(ctxMty, {
+    type: 'line',
+    data: {
+      labels: mtyLabels,
+      datasets: [
+        {
+          label: 'Impresiones',
+          data: TUHABI_MTY_WEEKS.map(w => w.imps),
+          borderColor: '#94a3b8',
+          backgroundColor: 'rgba(148, 163, 184, 0.1)',
+          tension: 0.25, borderWidth: 2.5,
+          pointRadius: 4, pointHoverRadius: 7,
+          pointBackgroundColor: '#94a3b8',
+          yAxisID: 'yImps'
+        },
+        {
+          label: 'Clicks',
+          data: TUHABI_MTY_WEEKS.map(w => w.clicks),
+          borderColor: '#5C36AB',
+          backgroundColor: 'rgba(92, 54, 171, 0.12)',
+          tension: 0.25, borderWidth: 3,
+          pointRadius: 4, pointHoverRadius: 7,
+          pointBackgroundColor: '#5C36AB',
+          yAxisID: 'yClicks'
+        }
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: { position: 'bottom', labels: { boxWidth: 12, boxHeight: 12, padding: 12, font: { size: 12 } } },
+        tooltip: {
+          callbacks: {
+            title: items => 'Semana ' + fmtFechaEs(items[0].label),
+            label: ctx => ctx.dataset.label + ': ' + ctx.raw.toLocaleString()
+          }
+        }
+      },
+      scales: {
+        x: {
+          title: { display: true, text: 'Semana', font: { size: 11 }, color: '#6b7280' },
+          ticks: { font: { size: 10 }, maxRotation: 45, minRotation: 45,
+                   callback: function(v) { return fmtFechaEs(this.getLabelForValue(v)); } },
+          grid: { display: false }
+        },
+        yImps: { position: 'left', beginAtZero: true,
+          title: { display: true, text: 'Impresiones', font: { size: 11 }, color: '#6b7280' },
+          ticks: { font: { size: 10 }, color: '#6b7280' },
+          grid: { color: 'rgba(148, 163, 184, 0.15)' } },
+        yClicks: { position: 'right', beginAtZero: true,
+          title: { display: true, text: 'Clicks', font: { size: 11 }, color: '#5C36AB' },
+          ticks: { font: { size: 10 }, color: '#5C36AB' },
+          grid: { display: false } }
+      }
+    },
+    plugins: [mtyCampaignBand]
+  });
+
+  // === Chart Cap 4 — registros web semanales (Total MX vs MTY) ===
+  const LEADS_WEB = [
+    {w:"2026-02-16", total:1761, mty:283},
+    {w:"2026-02-23", total:1828, mty:229},
+    {w:"2026-03-02", total:2240, mty:246},
+    {w:"2026-03-09", total:1855, mty:205},
+    {w:"2026-03-16", total:1712, mty:212},
+    {w:"2026-03-23", total:1795, mty:257},
+    {w:"2026-03-30", total:1983, mty:230},
+    {w:"2026-04-06", total:2322, mty:275},
+    {w:"2026-04-13", total:1651, mty:213},
+    {w:"2026-04-20", total:1287, mty:225}
+  ];
+
+  const ctxLW = document.getElementById('cv-leads-web');
+  if (!ctxLW) return;
+  const lwLabels = LEADS_WEB.map(w => w.w);
+
+  const lwCampaignBand = {
+    id: 'lwCampaignBand',
+    beforeDatasetsDraw(chart) {
+      const xa = chart.scales.x;
+      const ya = chart.chartArea;
+      const c = chart.ctx;
+      const half = (xa.getPixelForValue(1) - xa.getPixelForValue(0)) / 2;
+      const i1 = lwLabels.indexOf('2026-03-16');
+      const i2 = lwLabels.indexOf('2026-03-23');
+      if (i1 < 0 || i2 < 0) return;
+      const x1 = xa.getPixelForValue(i1) - half;
+      const x2 = xa.getPixelForValue(i2) + half;
+      c.save();
+      c.fillStyle = 'rgba(245, 158, 11, 0.18)';
+      c.fillRect(x1, ya.top, x2 - x1, ya.bottom - ya.top);
+      c.strokeStyle = 'rgba(180, 83, 9, 0.55)';
+      c.lineWidth = 1.5;
+      c.setLineDash([5, 4]);
+      c.beginPath(); c.moveTo(x1, ya.top); c.lineTo(x1, ya.bottom); c.stroke();
+      c.beginPath(); c.moveTo(x2, ya.top); c.lineTo(x2, ya.bottom); c.stroke();
+      c.setLineDash([]);
+      const text = 'CAMPAÑA MULTIMEDIOS';
+      c.font = '700 11px -apple-system, sans-serif';
+      const tw = c.measureText(text).width + 14;
+      const tx = (x1 + x2) / 2;
+      c.fillStyle = 'rgba(180, 83, 9, 0.92)';
+      c.beginPath();
+      if (c.roundRect) { c.roundRect(tx - tw/2, ya.top + 6, tw, 22, 4); c.fill(); }
+      else c.fillRect(tx - tw/2, ya.top + 6, tw, 22);
+      c.fillStyle = '#fff';
+      c.textAlign = 'center';
+      c.textBaseline = 'middle';
+      c.fillText(text, tx, ya.top + 17);
+      c.restore();
+    }
+  };
+
+  new Chart(ctxLW, {
+    type: 'line',
+    data: {
+      labels: lwLabels,
+      datasets: [
+        {
+          label: 'Total México',
+          data: LEADS_WEB.map(w => w.total),
+          borderColor: '#94a3b8',
+          backgroundColor: 'rgba(148, 163, 184, 0.1)',
+          tension: 0.25, borderWidth: 2.5,
+          pointRadius: 4, pointHoverRadius: 7,
+          pointBackgroundColor: '#94a3b8',
+          yAxisID: 'yTotal'
+        },
+        {
+          label: 'Monterrey',
+          data: LEADS_WEB.map(w => w.mty),
+          borderColor: '#5C36AB',
+          backgroundColor: 'rgba(92, 54, 171, 0.12)',
+          tension: 0.25, borderWidth: 3,
+          pointRadius: 4, pointHoverRadius: 7,
+          pointBackgroundColor: '#5C36AB',
+          yAxisID: 'yMty'
+        }
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: { position: 'bottom', labels: { boxWidth: 12, boxHeight: 12, padding: 12, font: { size: 12 } } },
+        tooltip: {
+          callbacks: {
+            title: items => 'Sem ' + fmtFechaEs(items[0].label),
+            label: ctx => ctx.dataset.label + ': ' + ctx.raw.toLocaleString()
+          }
+        }
+      },
+      scales: {
+        x: {
+          title: { display: true, text: 'Semana', font: { size: 11 }, color: '#6b7280' },
+          ticks: { font: { size: 10 }, maxRotation: 45, minRotation: 45,
+                   callback: function(v) { return fmtFechaEs(this.getLabelForValue(v)); } },
+          grid: { display: false }
+        },
+        yTotal: { position: 'left', beginAtZero: true,
+          title: { display: true, text: 'Total México', font: { size: 11 }, color: '#6b7280' },
+          ticks: { font: { size: 10 }, color: '#6b7280' },
+          grid: { color: 'rgba(148, 163, 184, 0.15)' } },
+        yMty: { position: 'right', beginAtZero: true,
+          title: { display: true, text: 'Monterrey', font: { size: 11 }, color: '#5C36AB' },
+          ticks: { font: { size: 10 }, color: '#5C36AB' },
+          grid: { display: false } }
+      }
+    },
+    plugins: [lwCampaignBand]
+  });
+
+  // === Chart Cap 6 — % cita agendada por cohorte (bar agrupado) ===
+  const COHORTES_LABELS = ['Pre (4 sem)', 'Campaña (2 sem)', 'Post (4 sem)'];
+  const PCT_CITA_MTY = [12.3, 17.0, 14.0];
+  const PCT_CITA_RESTO = [11.5, 11.2, 9.3];
+
+  const ctxCC = document.getElementById('cv-citas-cohorte');
+  if (!ctxCC) return;
+
+  // Plugin: resaltar la cohorte campaña con fondo cálido
+  const cohorteCampaignBand = {
+    id: 'cohorteCampaignBand',
+    beforeDatasetsDraw(chart) {
+      const xa = chart.scales.x;
+      const ya = chart.chartArea;
+      const c = chart.ctx;
+      const idx = COHORTES_LABELS.indexOf('Campaña (2 sem)');
+      if (idx < 0) return;
+      const half = (xa.getPixelForValue(1) - xa.getPixelForValue(0)) / 2;
+      const x1 = xa.getPixelForValue(idx) - half;
+      const x2 = xa.getPixelForValue(idx) + half;
+      c.save();
+      c.fillStyle = 'rgba(245, 158, 11, 0.12)';
+      c.fillRect(x1, ya.top, x2 - x1, ya.bottom - ya.top);
+      c.restore();
+    }
+  };
+
+  // Plugin: etiqueta del valor encima de cada barra
+  const barValueLabels = {
+    id: 'barValueLabels',
+    afterDatasetsDraw(chart) {
+      const c = chart.ctx;
+      chart.data.datasets.forEach((ds, di) => {
+        const meta = chart.getDatasetMeta(di);
+        meta.data.forEach((bar, i) => {
+          const v = ds.data[i];
+          c.save();
+          c.fillStyle = di === 0 ? '#5C36AB' : '#64748b';
+          c.font = '700 11px -apple-system, sans-serif';
+          c.textAlign = 'center';
+          c.textBaseline = 'bottom';
+          c.fillText(v.toFixed(1) + '%', bar.x, bar.y - 4);
+          c.restore();
+        });
+      });
+    }
+  };
+
+  new Chart(ctxCC, {
+    type: 'bar',
+    data: {
+      labels: COHORTES_LABELS,
+      datasets: [
+        {
+          label: 'Monterrey',
+          data: PCT_CITA_MTY,
+          backgroundColor: 'rgba(92, 54, 171, 0.85)',
+          borderColor: '#5C36AB',
+          borderWidth: 1,
+          borderRadius: 4,
+          barPercentage: 0.75,
+          categoryPercentage: 0.7
+        },
+        {
+          label: 'Resto MX',
+          data: PCT_CITA_RESTO,
+          backgroundColor: 'rgba(148, 163, 184, 0.7)',
+          borderColor: '#94a3b8',
+          borderWidth: 1,
+          borderRadius: 4,
+          barPercentage: 0.75,
+          categoryPercentage: 0.7
+        }
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      layout: { padding: { top: 24 } },
+      plugins: {
+        legend: { position: 'bottom', labels: { boxWidth: 12, boxHeight: 12, padding: 12, font: { size: 12 } } },
+        tooltip: {
+          callbacks: {
+            label: ctx => ctx.dataset.label + ': ' + ctx.raw.toFixed(1) + '%'
+          }
+        }
+      },
+      scales: {
+        x: {
+          ticks: { font: { size: 11 }, color: '#374151' },
+          grid: { display: false }
+        },
+        y: { beginAtZero: true, suggestedMax: 20,
+          title: { display: true, text: '% leads que agendan cita', font: { size: 11 }, color: '#6b7280' },
+          ticks: { font: { size: 10 }, color: '#6b7280', callback: v => v + '%' },
+          grid: { color: 'rgba(148, 163, 184, 0.15)' } }
+      }
+    },
+    plugins: [cohorteCampaignBand, barValueLabels]
+  });
+
+  // === Scroll progress bar + porcentaje ===
+  const progressBar = document.getElementById('scrollProgressBar');
+  const progressPct = document.getElementById('progressPct');
+  function updateProgress() {
+    const docH = document.documentElement.scrollHeight - window.innerHeight;
+    const pct = docH > 0 ? Math.min(100, Math.max(0, (window.scrollY / docH) * 100)) : 0;
+    if (progressBar) progressBar.style.width = pct + '%';
+    if (progressPct) progressPct.textContent = Math.round(pct) + '%';
+  }
+  updateProgress();
+  window.addEventListener('scroll', updateProgress, { passive: true });
+  window.addEventListener('resize', updateProgress);
+});
+</script>
+
+</body>
+</html>
