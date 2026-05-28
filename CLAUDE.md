@@ -18,7 +18,7 @@ Live: https://camilootoya-habi.github.io/tableros-marketing-habi/
   - `index.html` — el tablero (hace `fetch('data.json')`).
   - `query.sql` (opcional) — si existe, el cron lo corre y escribe `data.json`.
   - `data.json` — generado por el cron (no se edita a mano).
-- `hub.config.json` — header del hub + cards externas (informes en repos aparte).
+- `hub.config.json` — header del hub + `external_cards` (links a dashboards GENUINAMENTE externos; hoy vacío — los análisis viven in-repo como `section: analysis`).
 - `scripts/build_hub.py` — regenera `index.html`. `scripts/run_queries.py` — auto-discovery de queries en el cron. `scripts/templates/` — plantillas (`hub.html`, `dashboard.html`).
 
 El **dueño** se infiere por ubicación: carpeta en la raíz = `general`; bajo `canales/<lider>/` = ese líder. El hub muestra la sección General arriba y una sección inline por líder debajo (líderes sin tableros se omiten).
