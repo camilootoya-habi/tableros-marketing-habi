@@ -102,6 +102,38 @@
   .dest-card .t { font-weight: 600; color: var(--text-title); font-size: 14.5px; margin-bottom: 6px; }
   .dest-card .d { font-size: 13px; color: var(--text); }
 
+  /* Evolution timeline */
+  .evo-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; margin: 22px 0; }
+  .evo-card { background: var(--card); border: 1px solid var(--border); border-top: 3px solid var(--border); border-radius: 0 0 10px 10px; padding: 14px 16px; position: relative; }
+  .evo-card.today { border-top-color: var(--ok-border); background: #f0fdf4; }
+  .evo-card .period { color: var(--accent); font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; }
+  .evo-card.today .period { color: var(--ok-border); }
+  .evo-card .struct { font-weight: 600; color: var(--text-title); font-size: 13.5px; margin: 6px 0; }
+  .evo-card .prods { display: flex; flex-wrap: wrap; gap: 4px; margin: 6px 0; }
+  .evo-card .prod { font-size: 11px; padding: 2px 7px; background: var(--accent-soft); color: var(--accent); border-radius: 999px; font-weight: 500; }
+  .evo-card.today .prod { background: #d1fae5; color: #065f46; }
+  .evo-card .note { font-size: 12px; color: var(--text-muted); font-style: italic; margin-top: 6px; line-height: 1.45; }
+
+  /* Brokers expanded */
+  .pillar-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px; margin: 22px 0; }
+  .pillar { background: var(--card); border: 1px solid var(--border); border-left: 3px solid #db2777; border-radius: 0 10px 10px 0; padding: 14px 18px; }
+  .pillar .t { font-weight: 700; color: var(--text-title); margin-bottom: 6px; font-size: 15px; }
+  .pillar .d { font-size: 13.5px; color: var(--text); }
+
+  .segment-grid { display: grid; grid-template-columns: 1fr; gap: 10px; margin: 18px 0; }
+  .segment { display: grid; grid-template-columns: minmax(180px, 1fr) 2fr; gap: 16px; align-items: center; background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 12px 16px; }
+  .segment .type { font-weight: 600; color: var(--text-title); font-size: 14px; }
+  .segment .offer { font-size: 13.5px; color: var(--text); }
+  @media (max-width: 600px) { .segment { grid-template-columns: 1fr; gap: 4px; } }
+
+  .pivot-box { background: linear-gradient(135deg, #fdf4ff 0%, #fef3c7 100%); border: 1px solid #db2777; border-radius: 12px; padding: 18px 22px; margin: 22px 0; font-size: 15px; line-height: 1.55; }
+  .pivot-box .from-to { display: grid; grid-template-columns: 1fr auto 1fr; gap: 14px; align-items: center; margin-top: 10px; }
+  .pivot-box .side { background: rgba(255,255,255,0.6); border-radius: 8px; padding: 12px 14px; }
+  .pivot-box .side .label { font-size: 11px; text-transform: uppercase; font-weight: 700; letter-spacing: 0.4px; color: var(--text-muted); }
+  .pivot-box .side .v { font-size: 14.5px; color: var(--text-title); font-weight: 600; margin-top: 4px; }
+  .pivot-box .arrow { font-size: 28px; color: #db2777; text-align: center; }
+  @media (max-width: 600px) { .pivot-box .from-to { grid-template-columns: 1fr; } .pivot-box .arrow { transform: rotate(90deg); } }
+
   .brokers-flow { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 18px; margin: 22px 0; }
   .brokers-flow .arrow { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 20px; }
   .brokers-flow .col-side { background: var(--accent-soft); border-radius: 8px; padding: 14px; }
@@ -170,7 +202,12 @@
 <!-- ============================================ CAPÍTULO 1 ============================================ -->
 <h2 id="cap-1" class="chapter"><span class="num">Capítulo 1</span>Líderes de canal — IA para ganar capacidad, no para bajar horas</h2>
 
-<h3>1.1 La foto actual: cómo se distribuye la semana</h3>
+<h3>1.1 De Performance puro a Growth multi-producto</h3>
+<p id="evo-narrative" style="margin-bottom:14px"></p>
+<div class="evo-grid" id="evo-grid"></div>
+<p style="font-size:13.5px;color:var(--text-muted)">Este salto explica el contexto del análisis: estamos midiendo la carga del equipo en el momento exacto en el que más responsabilidades cayeron — Pulppo, propiedades.com y Franquicias entraron <strong>en el mismo trimestre</strong>. Por eso la pregunta no es "cuánto sobra" sino "cómo escalamos sin sumar personas".</p>
+
+<h3>1.2 La foto actual: cómo se distribuye la semana</h3>
 <p>El ejercicio ABC COSTING (mayo 2026) inventarió cada tarea del equipo, su frecuencia y las horas/semana que consume. Cuatro perfiles de líder operan los canales digitales de Habi: dos en México (Performance y Growth) y dos en Colombia (Performance y Growth).</p>
 
 <table>
@@ -186,7 +223,7 @@
 
 <p>El patrón es consistente: <strong>~80% del tiempo va a Mantenimiento</strong> (operativo y reactivo). Análisis, Planeación, Estratégico y Coordinación juntos no llegan al 20%. La oportunidad con IA no es eliminar Mantenimiento — es hacerlo en mucho menos tiempo cognitivo del líder, dejando capacidad libre para las otras etapas.</p>
 
-<h3>1.2 Qué de esto puede asumir IA — y qué no</h3>
+<h3>1.3 Qué de esto puede asumir IA — y qué no</h3>
 <p>Tomamos el rol más sobrecargado (Líder Performance MX, 44.4 h/sem, 33 tareas) y clasificamos cada tarea en tres baldes: <strong>IA ejecuta</strong> (la tarea sale del calendario humano), <strong>IA asiste</strong> (el líder sigue decidiendo, pero más rápido y con más volumen), y <strong>Solo humano</strong> (criterio, relación, decisión estratégica).</p>
 
 <div class="chart-card">
@@ -214,8 +251,8 @@
 <h4>Los 3 destinos de la capacidad liberada</h4>
 <div class="dest-grid" id="dest-grid"></div>
 
-<h3 id="proyectos">1.3 Los 3 proyectos que vamos a ejecutar — una sola cadena</h3>
-<p>Los 3 proyectos no son independientes: forman una cadena técnica. El proyecto 1 alimenta al 2, y el 2 al 3. Cada paso suma una capa de inteligencia sobre la anterior.</p>
+<h3 id="proyectos">1.4 Los 4 proyectos que vamos a ejecutar — una cadena de capacidad</h3>
+<p>Los 3 primeros proyectos son una cadena técnica (cada paso alimenta al siguiente). El proyecto 4, Programa Brokers, es el destino estratégico: la capacidad que liberan los 3 primeros se reinvierte aquí, sumado al pivote del Cap. 2.</p>
 
 <div class="chain" id="chain-projects"></div>
 
@@ -264,8 +301,33 @@
 
 <div class="milestone-grid" id="mx-milestones"></div>
 
-<h3>2.4 Por qué Brokers crece (cuando todo lo demás baja)</h3>
-<p>De los 6 procesos del call center, Brokers es el único que sube. La razón: <strong>es la apuesta de crecimiento multiproducto</strong>. Un agente Brokers ya no solo capta brokers independientes — pasa a ofrecerles todo el portafolio Habi.</p>
+<h3>2.4 Brokers — de fuente de leads a comunidad multiproducto</h3>
+
+<div class="pivot-box">
+  <strong style="color:#9d174d">El pivote estratégico de marketing en Brokers.</strong>
+  <p style="margin:8px 0 0;font-size:14.5px"><span id="brokers-philosophy"></span></p>
+  <div class="from-to">
+    <div class="side">
+      <div class="label">Antes — Brokers</div>
+      <div class="v">Fuente de leads para Habi Sellers exclusivamente</div>
+    </div>
+    <div class="arrow">→</div>
+    <div class="side">
+      <div class="label">Ahora — Brokers</div>
+      <div class="v">Comunidad multiproducto: trae inmuebles, mueve inventario, opera franquicias, usa Pulppo</div>
+    </div>
+  </div>
+</div>
+
+<p>De los 6 procesos del call center, Brokers es el único que sube. Hoy son 2 brokers (1 CO + 1 MX). El plan Q3'26 los lleva a <strong>4 brokers (2 + 2)</strong>: <strong>no es operativo, es comercial</strong>. La inversión va al rol que toca cuentas de mayor valor y articula los 5 productos Habi.</p>
+
+<h4 style="margin-top:28px">Los 3 pilares del Programa Brokers (Proyecto 4 del Cap. 1)</h4>
+<div class="pillar-grid" id="brokers-pillars"></div>
+
+<h4 style="margin-top:24px">Segmentación: qué producto le ofrecemos a qué broker</h4>
+<div class="segment-grid" id="brokers-segments"></div>
+
+<p>El broker independiente capta Sellers para Habi y mueve nuestro inventario Buyers. La inmobiliaria grande encuentra en Pulppo la plataforma para escalar su operación. El broker maduro con equipo migra a franquicia Habi. Un solo canal humano sirve a los 5 productos según el perfil del broker.</p>
 
 <div class="brokers-flow">
   <div class="arrow">
@@ -281,14 +343,12 @@
   </div>
 </div>
 
-<p>Hoy son 2 brokers (1 CO + 1 MX). El plan Q3'26 los lleva a <strong>4 brokers (2 + 2)</strong>: <strong>no es operativo, es comercial</strong>. La inversión va al rol que toca cuentas de mayor valor (Pulppo tickets altos, franquicias, sellers MM+Inmo).</p>
-
 <h3 id="meta">2.5 La meta: 3 + 3 al cierre de Q3 2026</h3>
 
 <div class="meta-3x3">
   <div class="label">Plan Q3 2026 — equipo agentes</div>
   <div class="val">3 <span>+</span> 3</div>
-  <p class="desc"><strong>CO:</strong> 1 agente CRM residual + 2 Brokers dedicados. &nbsp;·&nbsp; <strong>MX:</strong> 1 supervisor transición Lead Forms + 2 Brokers dedicados. <br>La palanca para llegar ahí: <strong>automatizar la completitud Lead Forms</strong> (120 h/sem en MX + 40 h/sem en CO de Incompletos Lead Forms — el grueso del trabajo manual desaparece).</p>
+  <p class="desc"><strong>CO:</strong> 1 agente CRM residual + 2 Brokers dedicados. &nbsp;·&nbsp; <strong>MX:</strong> 1 Entrenador de IA Lead Forms + 2 Brokers dedicados. <br>El humano que queda en Lead Forms es <strong>entrenador y complemento del agente IA</strong>: afina prompts, evalúa calidad de respuestas y atiende los casos que la IA no resuelve. <br>La palanca para llegar ahí: <strong>automatizar la completitud Lead Forms</strong> (120 h/sem en MX + 40 h/sem en CO — el grueso del trabajo manual desaparece).</p>
 </div>
 
 <div class="callout ok">
@@ -303,6 +363,15 @@
 
 <script>
 fetch('data.json').then(r => r.json()).then(D => {
+  // ---------- Leaders evolution ----------
+  document.getElementById('evo-narrative').textContent = D.leaders_evolution.narrative;
+  const evo = document.getElementById('evo-grid');
+  D.leaders_evolution.timeline.forEach(t => {
+    const cls = t.today ? 'today' : '';
+    const prods = t.products.map(p => `<span class="prod">${p}</span>`).join('');
+    evo.insertAdjacentHTML('beforeend', `<div class="evo-card ${cls}"><div class="period">${t.period}</div><div class="struct">${t.structure}</div><div class="prods">${prods}</div><div class="note">${t.note}</div></div>`);
+  });
+
   // ---------- Table: leaders ----------
   const tBody = document.getElementById('t-leaders');
   D.leaders.forEach(l => {
@@ -476,6 +545,17 @@ fetch('data.json').then(r => r.json()).then(D => {
   };
   renderMilestones('co-milestones', D.co_milestones);
   renderMilestones('mx-milestones', D.mx_milestones);
+
+  // ---------- Brokers program ----------
+  document.getElementById('brokers-philosophy').textContent = D.brokers_program.philosophy;
+  const pillars = document.getElementById('brokers-pillars');
+  D.brokers_program.pillars.forEach(p => {
+    pillars.insertAdjacentHTML('beforeend', `<div class="pillar"><div class="t">${p.title}</div><div class="d">${p.desc}</div></div>`);
+  });
+  const segs = document.getElementById('brokers-segments');
+  D.brokers_program.segments.forEach(s => {
+    segs.insertAdjacentHTML('beforeend', `<div class="segment"><div class="type">${s.type}</div><div class="offer">${s.offer}</div></div>`);
+  });
 
   // ---------- Brokers flow ----------
   D.brokers_multiproducto.today.forEach(t => document.getElementById('brokers-today').insertAdjacentHTML('beforeend', `<li>${t}</li>`));

@@ -1,6 +1,15 @@
 {
   "source": "ABC COSTING PEOPLE MAYO 2026 (MARKETING) — Habi",
   "as_of": "2026-05",
+  "leaders_evolution": {
+    "narrative": "El equipo de marketing pasó en menos de un año de ser un área de Performance puro al servicio de un solo producto (Habi Sellers), a una estructura de Growth multi-producto que atiende hoy 5 verticales del ecosistema Habi.",
+    "timeline": [
+      { "period": "Hasta 2025 Q3", "structure": "4 líderes Performance (perfil homogéneo)", "products": ["Habi Sellers"], "note": "Foco único: atraer vendedores de vivienda para que Habi compre." },
+      { "period": "2025 Q3–Q4", "structure": "Split a 2 Performance + 2 Growth", "products": ["Habi Sellers", "Habi Buyers"], "note": "Surge la función Growth diferenciada de Performance. Marketing recibe Habi Buyers (mover el inventario)." },
+      { "period": "2026 Q1", "structure": "2 Performance + 2 Growth", "products": ["Habi Sellers", "Habi Buyers"], "note": "Consolidación del modelo dual." },
+      { "period": "2026 Q2 (hoy)", "structure": "2 Performance + 2 Growth", "products": ["Habi Sellers", "Habi Buyers", "propiedades.com", "Pulppo", "Franquicias Habi"], "today": true, "note": "Marketing absorbe propiedades.com, Pulppo y Franquicias en un solo trimestre." }
+    ]
+  },
   "leaders": [
     {
       "id": "lider_performance_mx",
@@ -191,7 +200,7 @@
     { "quarter": "2025 Q1", "modalidad": "Internos (BPO cancelado)", "LeadForms": 6, "Brokers": 0, "total": 6 },
     { "quarter": "2025 Q2", "modalidad": "Internos", "LeadForms": 5, "Brokers": 1, "total": 6 },
     { "quarter": "2026 Q1", "modalidad": "Internos", "LeadForms": 4, "Brokers": 1, "total": 5, "today": true, "note": "4 dedicados a Lead Forms MX + 1 Brokers MX" },
-    { "quarter": "Plan Q3'26", "modalidad": "Internos + IA", "LeadForms": 1, "Brokers": 2, "total": 3, "plan": true, "note": "1 supervisor transición Lead Forms + 2 Brokers dedicados MX" },
+    { "quarter": "Plan Q3'26", "modalidad": "Internos + IA", "LeadForms": 1, "Brokers": 2, "total": 3, "plan": true, "note": "1 Entrenador de IA Lead Forms + 2 Brokers dedicados MX" },
     { "quarter": "Visión 2027", "modalidad": "100% IA", "LeadForms": 0, "Brokers": 2, "total": 2, "vision": true }
   ],
   "co_milestones": [
@@ -208,7 +217,7 @@
     { "q": "2025 Q1", "title": "BPO cancelado", "text": "Equipo interno de 6 reemplaza al BPO. Calidad sube, costo baja." },
     { "q": "2025 Q2", "title": "Nace Brokers MX", "text": "Primer agente dedicado a Brokers en MX — apuesta de crecimiento." },
     { "q": "2026 Q1", "title": "Foco en Lead Forms", "text": "4 agentes operan 100% Lead Forms + 1 Brokers MX." },
-    { "q": "Plan Q3'26", "title": "1 supervisor + 2 Brokers", "text": "Lead Forms con agentes IA, 1 humano supervisa la transición. 2 Brokers dedicados MX." },
+    { "q": "Plan Q3'26", "title": "1 Entrenador de IA + 2 Brokers", "text": "Lead Forms con agentes IA. 1 humano como Entrenador de IA — afina prompts, evalúa calidad de respuestas y complementa al agente en casos complejos. 2 Brokers dedicados MX." },
     { "q": "Visión 2027", "title": "0 humanos en Lead Forms", "text": "Lead Forms gestionado al 100% por agentes IA. Equipo Brokers crece." }
   ],
   "brokers_multiproducto": {
@@ -233,6 +242,25 @@
       "title": "Renovación de creativos guiada por performance",
       "outcome": "Itera hacia lo que funciona, sin briefing manual",
       "desc": "Cierre del loop: el agente lee qué creativos performan, identifica patrones (formato, copy, hook, audiencia), genera variantes con IA y las rota. La \"renovación de creativos\" deja de ser una tarea calendarizada cada 2 días y se vuelve un loop continuo guiado por la data del paso 1."
+    },
+    {
+      "n": 4,
+      "title": "Programa Brokers — BBDD consolidada + formación + comunidad",
+      "outcome": "De fuente de leads a comunidad multiproducto",
+      "desc": "Pivote estratégico de marketing: dejar de tratar a los brokers como fuente de leads para Habi Sellers exclusivamente, y construir una comunidad de brokers alrededor del ecosistema completo. Tres pilares: (1) consolidar la BBDD de brokers hoy fragmentada; (2) lanzar cursos de formación inmobiliaria sobre los 5 productos Habi; (3) construir comunidad (hub + eventos) para que los brokers se vinculen con Habi y entre ellos."
     }
-  ]
+  ],
+  "brokers_program": {
+    "philosophy": "Marketing pivotea de tratar a los brokers como una fuente de leads para Habi Sellers exclusivamente, a construir una comunidad holística de brokers que entiende y vende todo el portafolio Habi.",
+    "pillars": [
+      { "title": "BBDD consolidada", "desc": "Unificar todos los brokers que ya conocemos (hoy fragmentados en múltiples fuentes) en una sola base utilizable para marketing y formación segmentados." },
+      { "title": "Cursos de formación inmobiliaria", "desc": "Programa formativo que profesionaliza al broker en los productos Habi: Sellers con Market Maker, Sellers con Inmo, Sellers con tercerías, mover inventario de Buyers, Franquicia Habi y plataforma Pulppo." },
+      { "title": "Comunidad de brokers", "desc": "Hub + eventos donde los brokers se conocen, aprenden de Habi y de sus pares, y migran del broker independiente al ecosistema Habi." }
+    ],
+    "segments": [
+      { "type": "Broker independiente (chico / mid)", "offer": "Cursos + comunidad. Capta Sellers para Habi y mueve inventario Buyers." },
+      { "type": "Inmobiliaria grande / ticket alto", "offer": "Plataforma Pulppo para gestionar su operación inmobiliaria propia." },
+      { "type": "Broker maduro con equipo", "offer": "Franquicia Habi — abre oficina con la marca y el ecosistema." }
+    ]
+  }
 }
