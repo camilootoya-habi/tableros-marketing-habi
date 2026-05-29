@@ -55,11 +55,22 @@
   tbody tr:nth-child(even) { background: var(--table-alt); }
   td:not(:first-child), th:not(:first-child) { text-align: right; font-variant-numeric: tabular-nums; }
   tr.highlight td { background: #fef3c7 !important; font-weight: 600; }
+  /* tabla sin scroll horizontal: ancho del contenedor, texto que envuelve */
+  table.wide { display: table; overflow: visible; width: 100%; font-size: 12px; }
+  table.wide th, table.wide td { white-space: normal; padding: 7px 9px; }
+  table.wide th { vertical-align: bottom; }
 
   .chart-card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 20px; margin: 18px 0; box-shadow: 0 1px 2px rgba(0,0,0,0.04); }
   .chart-title { font-size: 16px; font-weight: 600; color: var(--text-title); margin-bottom: 4px; }
   .chart-subtitle { font-size: 12px; color: var(--text-muted); margin-bottom: 14px; }
   .chart-wrap { position: relative; height: 360px; width: 100%; }
+  .chart-grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 18px 0; }
+  .chart-grid2 .chart-wrap { height: 260px; }
+  .chart-grid2 .chart-card { margin: 0; }
+  @media (max-width: 720px) { .chart-grid2 { grid-template-columns: 1fr; } }
+  .legend-inline { font-size: 12.5px; color: var(--text-muted); margin: 6px 0 0; display: flex; gap: 18px; flex-wrap: wrap; }
+  .legend-inline span { display: inline-flex; align-items: center; gap: 6px; }
+  .legend-inline i { width: 12px; height: 12px; border-radius: 3px; display: inline-block; }
 
   .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; margin: 18px 0; }
   .kpi { background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 12px 16px; }
@@ -89,6 +100,12 @@
   .ex-head { display:flex; align-items:baseline; gap:10px; flex-wrap:wrap; margin:28px 0 4px; }
   .ex-head h3 { margin:0; }
   .ex-head .tag { font-size:11px; background:var(--ok-bg); color:#065f46; padding:2px 8px; border-radius:999px; font-weight:600; }
+  .nochange { background:#fff; border:1px dashed var(--danger-border); border-radius:8px; padding:12px 16px; margin:8px 0 4px; font-size:13px; }
+  .nochange .row { display:flex; gap:8px; margin:3px 0; align-items:baseline; }
+  .nochange .lbl { width:96px; color:var(--text-muted); flex:none; font-size:12px; }
+  .nochange .vals { font-variant-numeric:tabular-nums; }
+  .nochange .same { color:#991b1b; }
+  .nochange p { margin:9px 0 0; font-size:13px; }
 </style>
 </head>
 <body>
@@ -215,6 +232,46 @@
 <h3>Conexión con los cierres</h3>
 <p>De los <strong>104 cierres "Cierre - Comprado"</strong> de Lead Forms ocurridos en 2026, César figura como completador en <strong>42 (40%)</strong> — concentración muy por encima de cualquier par. De esos 42, <strong>23</strong> habían sido tipificados por un bot antes de que él marcara "Completo".</p>
 
+<h3>Evolución mensual — completitud real vs. atribución</h3>
+<p>Para ver si esto es un patrón sostenido y no un evento aislado, abajo está la serie mensual de cada agente (leads Lead Forms agrupados por su <strong>mes de creación</strong>). Cada columna es el total de leads que el agente marcó como "Completo"; en <strong style="color:#6b7280">gris</strong>, los que completó de verdad (entró antes que cualquier tipificación de Backbone); en <strong style="color:#dc2626">rojo</strong>, los que <strong>ya estaban completos</strong> —un bot ya los había tipificado— y a los que solo se les tocó algo en Nexus para quedar sellados a su nombre como agente gestor.</p>
+<div class="legend-inline">
+  <span><i style="background:#9ca3af"></i> Completados por el agente (trabajo real)</span>
+  <span><i style="background:#dc2626"></i> Ya estaban completos · atribución sin trabajo</span>
+</div>
+<div class="chart-grid2">
+  <div class="chart-card">
+    <div class="chart-title">César Álvarez</div>
+    <div class="chart-subtitle">Lead Forms MX · por mes de creación del lead</div>
+    <div class="chart-wrap"><canvas id="chCesar"></canvas></div>
+  </div>
+  <div class="chart-card">
+    <div class="chart-title">Débora Vázquez</div>
+    <div class="chart-subtitle">Lead Forms MX · por mes de creación del lead</div>
+    <div class="chart-wrap"><canvas id="chDebora"></canvas></div>
+  </div>
+  <div class="chart-card">
+    <div class="chart-title">Bruno Arredondo</div>
+    <div class="chart-subtitle">Lead Forms MX · por mes de creación del lead</div>
+    <div class="chart-wrap"><canvas id="chBruno"></canvas></div>
+  </div>
+  <div class="chart-card">
+    <div class="chart-title">Eduardo Leal</div>
+    <div class="chart-subtitle">Lead Forms MX · por mes de creación del lead</div>
+    <div class="chart-wrap"><canvas id="chEduardo"></canvas></div>
+  </div>
+  <div class="chart-card">
+    <div class="chart-title">José Ramírez</div>
+    <div class="chart-subtitle">Lead Forms MX · por mes de creación del lead</div>
+    <div class="chart-wrap"><canvas id="chJose"></canvas></div>
+  </div>
+  <div class="chart-card">
+    <div class="chart-title">Aldo Caballero</div>
+    <div class="chart-subtitle">Lead Forms MX · por mes de creación del lead</div>
+    <div class="chart-wrap"><canvas id="chAldo"></canvas></div>
+  </div>
+</div>
+<p>El contraste es visual e inmediato: en César el bloque rojo es <strong>la mayor parte de cada columna, mes tras mes</strong> (≈60% del total), mientras que en Débora, Bruno y Eduardo el rojo es una franja delgada sobre una base gris dominante. No es un repunte puntual: es el modo de operar de un agente frente al resto del equipo.</p>
+
 <h2 id="cap-4">Capítulo 4 — Ejemplos puntuales</h2>
 <p>Los tres casos siguientes terminaron en <strong>Cierre - Comprado</strong> y comparten exactamente la misma secuencia. En cada uno se ve, con marca de tiempo y agente:</p>
 <ol>
@@ -223,6 +280,7 @@
   <li><strong>Horas después</strong>, César ejecuta <strong>"Completo" (state 13)</strong> — un estado <em>anterior</em> en el flujo. La acción era <strong>innecesaria</strong>: el lead ya estaba calificado.</li>
   <li>Tras su intervención, el lead <strong>vuelve al mismo estado ("No gestionado")</strong> que ya tenía. <strong>Nada operativo cambia</strong> — lo único que cambia es que el campo <strong>agente gestor</strong> queda sellado con su nombre.</li>
 </ol>
+<p>Para cada caso revisamos además el <strong>log de características del inmueble</strong> (<code>habi_db_property_history</code>, ordenado por <code>date_update</code>): qué tenía el registro <em>justo antes</em> de que César guardara, y qué quedó <em>después</em> de su "Completo". La pregunta concreta es <strong>qué dato aportó él</strong> al inmueble para merecer la atribución de completitud. La respuesta, en los tres, es la misma: <strong>ninguno</strong>. Cada característica (área, habitaciones, baños, garaje, antigüedad, precio de venta del propietario) ya estaba capturada por el bot, y el registro que guardó César es <strong>idéntico</strong> campo por campo. Los únicos valores que se mueven son la <code>oferta Habi</code> y el <code>pricing</code>, que el <strong>motor de pricing</strong> (<code>valor@habi.co</code> / <code>algoritmo@backbone.co</code>) recalcula solo al guardar — no son datos del agente. Cuando un "Completo" no actualiza <em>nada relevante</em>, no hay trabajo de completitud que atribuir: ese es, precisamente, el indicio de apropiación de crédito.</p>
 
 <div class="ex-head"><h3>Ejemplo A — nid 56844945927</h3><span class="tag">Cierre - Comprado · 2026-03-23</span></div>
 <ul class="timeline">
@@ -232,6 +290,11 @@
   <li class="grab"><span class="ts">02-23 09:10:29</span><span class="dot"></span> <strong>"Completo" (state 13)</strong> <span class="who">· César Álvarez <span class="badge grab">atribución</span></span><span class="ann">~14 h después. Intervención innecesaria: el lead ya estaba calificado desde la noche anterior.</span></li>
   <li class="grab"><span class="ts">02-23 09:10:37</span><span class="dot"></span> No gestionado <span class="who">· César Álvarez</span><span class="ann">El lead vuelve al MISMO estado que ya tenía. No cambió nada — salvo el sello de agente gestor.</span></li>
 </ul>
+<div class="nochange">
+  <div class="row"><span class="lbl">Bot dejó →</span><span class="vals">50 m² · 2 hab · 1 baño · 2 garaje · 16 años · ask propietario $150.000</span></div>
+  <div class="row"><span class="lbl">César guardó →</span><span class="vals">50 m² · 2 hab · 1 baño · 2 garaje · 16 años · ask propietario $150.000</span></div>
+  <p><strong class="same">Idéntico campo por campo — César no capturó ni una característica nueva.</strong> MabiMX ya había cargado todo el inmueble (último guardado 18:43:34 del día anterior). Lo único que difiere en el registro de César es la <code>oferta Habi</code> / <code>pricing manual</code>, que el motor (<code>HesH-I-algoritmo@backbone.co</code>, <code>valor@habi.co</code>) ya había calculado <em>antes</em> de su "Completo". <strong>No actualizó nada relevante → indicio de apropiación de crédito.</strong></p>
+</div>
 <p class="seal">Resultado en HubSpot · <code>agente_gestor_crm = cesaralvarezs@tuhabi.mx</code> · <code>lead_completo_ = true</code> · <code>oportunidad_del_negocio = Cierre - Comprado</code></p>
 
 <div class="ex-head"><h3>Ejemplo B — nid 59989861484</h3><span class="tag">Cierre - Comprado · 2026-05-22</span></div>
@@ -241,6 +304,11 @@
   <li class="grab"><span class="ts">05-03 08:50:13</span><span class="dot"></span> <strong>"Completo" (state 13)</strong> <span class="who">· César Álvarez <span class="badge grab">atribución</span></span><span class="ann">~7 h después. El lead ya estaba calificado; la acción no era necesaria.</span></li>
   <li class="grab"><span class="ts">05-03 08:50:18</span><span class="dot"></span> No gestionado <span class="who">· César Álvarez</span><span class="ann">Vuelve al mismo estado. Único efecto real: queda sellado como agente gestor.</span></li>
 </ul>
+<div class="nochange">
+  <div class="row"><span class="lbl">Bot dejó →</span><span class="vals">79 m² · 2 hab · 2 baños · 1 garaje · 19 años · ask propietario $2.000.000</span></div>
+  <div class="row"><span class="lbl">César guardó →</span><span class="vals">79 m² · 2 hab · 2 baños · 1 garaje · 19 años · ask propietario $2.000.000</span></div>
+  <p><strong class="same">Idéntico campo por campo — César no capturó ni una característica nueva.</strong> <code>docking-backbone</code> había cargado el inmueble completo a las 01:47:16 (4 min después de entrar el lead). El registro de César (07 h después) repite los mismos valores; lo único que aparece es la <code>oferta Habi</code> ($1.425.005), calculada por el algoritmo, no por él. <strong>No actualizó nada relevante → indicio de apropiación de crédito.</strong></p>
+</div>
 <p class="seal">Resultado en HubSpot · <code>agente_gestor_crm = cesaralvarezs@tuhabi.mx</code> · <code>lead_completo_ = true</code> · <code>oportunidad_del_negocio = Cierre - Comprado</code></p>
 
 <div class="ex-head"><h3>Ejemplo C — nid 55677434890</h3><span class="tag">Cierre - Comprado · 2026-03-25</span></div>
@@ -251,10 +319,59 @@
   <li class="grab"><span class="ts">02-06 13:21:14</span><span class="dot"></span> <strong>"Completo" (state 13)</strong> <span class="who">· César Álvarez <span class="badge grab">atribución</span></span><span class="ann">~2 h después, lead ya calificado. Acción innecesaria.</span></li>
   <li class="grab"><span class="ts">02-06 13:21:22</span><span class="dot"></span> No gestionado <span class="who">· César Álvarez</span><span class="ann">Vuelve al mismo estado. Solo cambia el agente gestor.</span></li>
 </ul>
+<div class="nochange">
+  <div class="row"><span class="lbl">Bot dejó →</span><span class="vals">60 m² · 2 hab · 1 baño · 0 garaje · 15 años · ask propietario $2.200.000</span></div>
+  <div class="row"><span class="lbl">César guardó →</span><span class="vals">60 m² · 2 hab · 1 baño · 0 garaje · 15 años · ask propietario $2.200.000</span></div>
+  <p><strong class="same">Idéntico campo por campo — César no capturó ni una característica nueva.</strong> MabiMX completó todo el inmueble a las 11:30:50; la <code>oferta Habi</code> / <code>pricing manual</code> ($1.534.430) ya la había calculado <code>HesH-I-algoritmo@backbone.co</code> a las 12:29, casi una hora <em>antes</em> de que César guardara. Su "Completo" solo disparó un revalúo automático (<code>valor@habi.co</code>). <strong>No actualizó nada relevante → indicio de apropiación de crédito.</strong></p>
+</div>
 <p class="seal">Resultado en HubSpot · <code>agente_gestor_crm = cesaralvarezs@tuhabi.mx</code> · <code>lead_completo_ = true</code> · <code>oportunidad_del_negocio = Cierre - Comprado</code></p>
 
 <div class="callout danger">
-  <p><strong>Cómo leer estos casos.</strong> En los tres, Backbone ya había <strong>calificado</strong> el lead — prueba de que ya estaba completo — <strong>antes</strong> de que César interviniera por Nexus. Su transición a "Completo" no avanzó ni cambió el estado del negocio (el lead regresa exactamente a "No gestionado"); su único efecto observable es que el campo <strong>agente gestor</strong> del negocio queda con su nombre. Los tres negocios terminaron comprados, momento en el que esa atribución tiene valor de comisión.</p>
+  <p><strong>Cómo leer estos casos.</strong> En los tres, Backbone ya había <strong>calificado</strong> el lead — prueba de que ya estaba completo — <strong>antes</strong> de que César interviniera por Nexus. Su transición a "Completo" no avanzó ni cambió el estado del negocio (el lead regresa exactamente a "No gestionado"), y el <strong>log de características del inmueble confirma que no aportó ningún dato</strong>: área, habitaciones, baños, garaje, antigüedad y precio del propietario son <strong>idénticos</strong> a los que el bot ya había cargado. Su único efecto observable es que el campo <strong>agente gestor</strong> del negocio queda con su nombre. Los tres negocios terminaron comprados, momento en el que esa atribución tiene valor de comisión.</p>
+  <p style="margin-top:8px">Que el "Completo" <strong>no actualice nada relevante</strong> es lo que convierte el patrón en algo más que una redundancia de proceso: si hubiera habido trabajo real (una llamada que confirma o corrige datos), esperaríamos ver al menos un campo modificado por él. No hay ninguno.</p>
+</div>
+
+<h3>Los 23 cierres atribuidos a César sobre leads ya tipificados por un bot</h3>
+<p>Estos son los <strong>23 cierres "Cierre - Comprado"</strong> (ocurridos en 2026) en los que César figura como completador <strong>aunque un bot ya había tipificado el lead antes</strong> de su "Completo". Las dos fechas acotan su intervención: la <strong>1ª fecha</strong> es el primer estado en que el lead <em>sale de "Incompleto"</em> (la tipificación que hizo el bot); la <strong>2ª fecha</strong> es cuando <strong>Backbone vuelve a correr por un cambio de César</strong>. La última columna es el tiempo entre ambas: cuánto llevaba el lead ya fuera de incompleto cuando César lo re-tocó para quedar sellado como agente gestor.</p>
+<table class="wide">
+  <thead><tr>
+    <th>NID</th>
+    <th>Bot que tipificó</th>
+    <th>Estado en 1ª fecha</th>
+    <th>1ª fecha (sale de Incompleto)</th>
+    <th>Estado en 2ª fecha</th>
+    <th>2ª fecha (Backbone corre por César)</th>
+    <th>Tiempo transcurrido</th>
+  </tr></thead>
+  <tbody>
+    <tr><td style="text-align:left">52850010213</td><td style="text-align:left"><code>MabiMX</code></td><td style="text-align:left"><span style="color:#991b1b">No hay suficientes datos para comparar</span></td><td>2025-12-31 15:34:40</td><td style="text-align:left"><span style="color:#065f46">No gestionado</span></td><td>2026-02-27 12:46:28</td><td><strong>57 d 21 h</strong></td></tr>
+    <tr><td style="text-align:left">54424080184</td><td style="text-align:left"><code>MabiMX</code></td><td style="text-align:left"><span style="color:#991b1b">Descartado por precio bajo</span></td><td>2026-01-31 11:39:19</td><td style="text-align:left"><span style="color:#065f46">No gestionado</span></td><td>2026-02-23 14:41:39</td><td><strong>23 d 3 h</strong></td></tr>
+    <tr><td style="text-align:left">56027591181</td><td style="text-align:left"><code>MabiMX</code></td><td style="text-align:left"><span style="color:#065f46">No gestionado</span></td><td>2026-02-11 17:12:42</td><td style="text-align:left"><span style="color:#065f46">No gestionado</span></td><td>2026-02-24 14:31:11</td><td><strong>12 d 21 h</strong></td></tr>
+    <tr><td style="text-align:left">47896135990</td><td style="text-align:left"><code>docking_whatsapp</code></td><td style="text-align:left"><span style="color:#065f46">No gestionado</span></td><td>2025-10-31 20:22:29</td><td style="text-align:left"><span style="color:#065f46">No gestionado</span></td><td>2025-11-03 09:43:33</td><td><strong>2 d 13 h</strong></td></tr>
+    <tr><td style="text-align:left">56293590127</td><td style="text-align:left"><code>MabiMX</code></td><td style="text-align:left"><span style="color:#065f46">No gestionado</span></td><td>2026-02-13 21:27:33</td><td style="text-align:left"><span style="color:#065f46">No gestionado</span></td><td>2026-02-15 09:53:34</td><td><strong>1 d 12 h</strong></td></tr>
+    <tr><td style="text-align:left">59376523881</td><td style="text-align:left"><code>MabiMX</code></td><td style="text-align:left"><span style="color:#991b1b">Fuera de la zona</span></td><td>2026-04-21 08:41:52</td><td style="text-align:left"><span style="color:#065f46">No gestionado</span></td><td>2026-04-22 17:32:03</td><td><strong>1 d 8 h</strong></td></tr>
+    <tr><td style="text-align:left">57247790971</td><td style="text-align:left"><code>MabiMX</code></td><td style="text-align:left"><span style="color:#065f46">No gestionado</span></td><td>2026-03-04 10:25:21</td><td style="text-align:left"><span style="color:#065f46">No gestionado</span></td><td>2026-03-05 11:52:02</td><td><strong>1 d 1 h</strong></td></tr>
+    <tr><td style="text-align:left">56644752011</td><td style="text-align:left"><code>MabiMX</code></td><td style="text-align:left"><span style="color:#991b1b">Descartado por precio bajo</span></td><td>2026-02-19 15:49:05</td><td style="text-align:left"><span style="color:#065f46">No gestionado</span></td><td>2026-02-20 09:51:49</td><td><strong>18 h 2 m</strong></td></tr>
+    <tr><td style="text-align:left">54362242447</td><td style="text-align:left"><code>MabiMX</code></td><td style="text-align:left"><span style="color:#065f46">No gestionado</span></td><td>2026-01-23 17:55:02</td><td style="text-align:left"><span style="color:#065f46">No gestionado</span></td><td>2026-01-24 11:16:33</td><td><strong>17 h 21 m</strong></td></tr>
+    <tr><td style="text-align:left">56950166094</td><td style="text-align:left"><code>MabiMX</code></td><td style="text-align:left"><span style="color:#991b1b">Descartado por precio bajo</span></td><td>2026-02-25 18:18:17</td><td style="text-align:left"><span style="color:#065f46">No gestionado</span></td><td>2026-02-26 10:47:05</td><td><strong>16 h 28 m</strong></td></tr>
+    <tr class="highlight"><td style="text-align:left">56844945927 <span class="tag" style="background:var(--info-bg);color:#3730a3">Ej. A</span></td><td style="text-align:left"><code>MabiMX</code></td><td style="text-align:left"><span style="color:#065f46">No gestionado</span></td><td>2026-02-22 18:43:46</td><td style="text-align:left"><span style="color:#065f46">No gestionado</span></td><td>2026-02-23 09:10:37</td><td><strong>14 h 26 m</strong></td></tr>
+    <tr><td style="text-align:left">55510486594</td><td style="text-align:left"><code>docking_whatsapp</code></td><td style="text-align:left"><span style="color:#065f46">No gestionado</span></td><td>2026-02-03 20:01:15</td><td style="text-align:left"><span style="color:#065f46">No gestionado</span></td><td>2026-02-04 09:19:09</td><td><strong>13 h 17 m</strong></td></tr>
+    <tr><td style="text-align:left">55431707048</td><td style="text-align:left"><code>MabiMX</code></td><td style="text-align:left"><span style="color:#065f46">No gestionado</span></td><td>2026-02-02 19:58:52</td><td style="text-align:left"><span style="color:#065f46">No gestionado</span></td><td>2026-02-03 09:15:52</td><td><strong>13 h 17 m</strong></td></tr>
+    <tr class="highlight"><td style="text-align:left">59989861484 <span class="tag" style="background:var(--info-bg);color:#3730a3">Ej. B</span></td><td style="text-align:left"><code>docking-backbone</code></td><td style="text-align:left"><span style="color:#065f46">No gestionado</span></td><td>2026-05-03 01:47:59</td><td style="text-align:left"><span style="color:#065f46">No gestionado</span></td><td>2026-05-03 08:50:18</td><td><strong>7 h 2 m</strong></td></tr>
+    <tr><td style="text-align:left">53691375877</td><td style="text-align:left"><code>MabiMX</code></td><td style="text-align:left"><span style="color:#065f46">No gestionado</span></td><td>2026-01-14 12:57:53</td><td style="text-align:left"><span style="color:#065f46">No gestionado</span></td><td>2026-01-14 17:12:34</td><td><strong>4 h 14 m</strong></td></tr>
+    <tr class="highlight"><td style="text-align:left">55677434890 <span class="tag" style="background:var(--info-bg);color:#3730a3">Ej. C</span></td><td style="text-align:left"><code>MabiMX</code></td><td style="text-align:left"><span style="color:#065f46">No gestionado</span></td><td>2026-02-06 11:31:02</td><td style="text-align:left"><span style="color:#065f46">No gestionado</span></td><td>2026-02-06 13:21:22</td><td><strong>1 h 50 m</strong></td></tr>
+    <tr><td style="text-align:left">56926328981</td><td style="text-align:left"><code>MabiMX</code></td><td style="text-align:left"><span style="color:#991b1b">Fuera de la zona</span></td><td>2026-02-24 10:24:53</td><td style="text-align:left"><span style="color:#065f46">No gestionado</span></td><td>2026-02-24 11:24:00</td><td><strong>59 m 7 s</strong></td></tr>
+    <tr><td style="text-align:left">57052527780</td><td style="text-align:left"><code>MabiMX</code></td><td style="text-align:left"><span style="color:#065f46">No gestionado</span></td><td>2026-02-26 12:02:10</td><td style="text-align:left"><span style="color:#065f46">No gestionado</span></td><td>2026-02-26 12:34:00</td><td><strong>31 m 50 s</strong></td></tr>
+    <tr><td style="text-align:left">54207284109</td><td style="text-align:left"><code>MabiMX</code></td><td style="text-align:left"><span style="color:#065f46">No gestionado</span></td><td>2026-01-20 13:28:25</td><td style="text-align:left"><span style="color:#065f46">No gestionado</span></td><td>2026-01-20 13:59:54</td><td><strong>31 m 29 s</strong></td></tr>
+    <tr><td style="text-align:left">58955803299</td><td style="text-align:left"><code>MabiMX</code></td><td style="text-align:left"><span style="color:#065f46">No gestionado</span></td><td>2026-04-08 09:05:36</td><td style="text-align:left"><span style="color:#065f46">No gestionado</span></td><td>2026-04-08 09:25:26</td><td><strong>19 m 50 s</strong></td></tr>
+    <tr><td style="text-align:left">55674286849</td><td style="text-align:left"><code>docking_whatsapp</code></td><td style="text-align:left"><span style="color:#991b1b">No hay suficientes datos para comparar</span></td><td>2026-02-06 09:29:27</td><td style="text-align:left"><span style="color:#991b1b">No hay suficientes datos para comparar</span></td><td>2026-02-06 09:47:26</td><td><strong>17 m 59 s</strong></td></tr>
+    <tr><td style="text-align:left">53900406282</td><td style="text-align:left"><code>MabiMX</code></td><td style="text-align:left"><span style="color:#065f46">No gestionado</span></td><td>2026-01-15 09:10:19</td><td style="text-align:left"><span style="color:#065f46">No gestionado</span></td><td>2026-01-15 09:23:24</td><td><strong>13 m 5 s</strong></td></tr>
+    <tr><td style="text-align:left">54409905256</td><td style="text-align:left"><code>MabiMX</code></td><td style="text-align:left"><span style="color:#991b1b">No hay suficientes datos para comparar</span></td><td>2026-01-23 11:20:12</td><td style="text-align:left"><span style="color:#991b1b">No hay suficientes datos para comparar</span></td><td>2026-01-23 11:23:18</td><td><strong>3 m 6 s</strong></td></tr>
+  </tbody>
+</table>
+<div class="callout warn">
+  <p>El rango de tiempos es revelador: en varios casos el lead llevaba <strong>días o semanas</strong> fuera de incompleto (hasta <strong>57 días</strong> en el NID 52850010213) cuando César lo "completó" — un lead que ya estaba tipificado desde hace semanas no necesita completarse. En el otro extremo, gaps de <strong>pocos minutos</strong> muestran al agente entrando casi inmediatamente tras el bot.</p>
+  <p style="margin-top:8px">Las columnas de estado revelan dos sub-patrones: en la mayoría el estado <strong>no cambia</strong> (<span style="color:#065f46">No gestionado</span> → <span style="color:#065f46">No gestionado</span>): puro sello de atribución sin trabajo. Pero en <strong>6 casos</strong> el lead pasó de un <span style="color:#991b1b">descarte</span> ("Descartado por precio bajo", "Fuera de la zona", "No hay suficientes datos") a <span style="color:#065f46">No gestionado (calificado)</span> tras la intervención de César — ahí sí hubo un cambio, pero típicamente <strong>un ajuste de precio que voltea un descarte en calificado</strong>, no la captura original de las características. Ese subconjunto conecta con el patrón de forzado de calificación (ask &lt; oferta) y merece revisión aparte.</p>
 </div>
 
 <h2 id="cap-5">Capítulo 5 — Cómo revisarlo en BigQuery</h2>
@@ -267,6 +384,8 @@
     <tr><td><code>sellers-main-prod.mx_rds_staging.habi_db_history_state</code></td><td>deal_id, state_id, agent, date_create</td><td>Log de transiciones de estado (quién y cuándo)</td></tr>
     <tr><td><code>sellers-main-prod.mx_rds_staging.habi_db_state</code></td><td>id, stage_id, label</td><td>Catálogo: 7=Incompleto, 13=Completo, 68=Backbone, stage_id=3=tipificación</td></tr>
     <tr><td><code>sellers-main-prod.mx_rds_staging.habi_db_property_deal</code></td><td>id, nid, property_id</td><td>Puente deal_id ↔ nid</td></tr>
+    <tr><td><code>sellers-main-prod.mx_rds_staging.habi_db_property_history</code></td><td>property_id, agent, date_update, area, bath, room_num, garage, years_old, last_ask_price</td><td>Log de características del inmueble (qué campo tocó cada agente). Ordenar por <code>date_update</code>, no por <code>date_create</code> (este viene colapsado)</td></tr>
+    <tr><td><code>sellers-main-prod.mx_rds_staging.habi_db_history_pricing</code></td><td>property_id, agent, date_create, ask_price_habi, manual_price</td><td>Confirma que la <code>oferta Habi</code>/<code>pricing</code> la escriben agentes algorítmicos (<code>algoritmo@…</code>, <code>valor@habi.co</code>), no el gestor</td></tr>
     <tr><td><code>papyrus-data-mx.habi_wh_bi.tabla_inmuebles_general</code></td><td>nid, fuente_id, agente_primer_completo, estado</td><td>Fuente del lead y completador acreditado (analítica)</td></tr>
     <tr><td><code>sellers-main-prod.hubspot.deals</code></td><td>nid, agente_gestor_crm, agente_completo, lead_completo_, oportunidad_del_negocio</td><td>Atribución en HubSpot y estado de cierre</td></tr>
     <tr><td><code>sellers-main-prod.hubspot.owners</code></td><td>hubspot_id, email, teams</td><td>Mapeo owner_id → persona (82004373 = César, equipo Leadforms MX)</td></tr>
@@ -302,6 +421,20 @@ SELECT f13.agent AS completador,
 FROM per_deal
 WHERE f13 IS NOT NULL AND STARTS_WITH(IFNULL(f13.agent,""),"nexus:")
 GROUP BY 1 ORDER BY total_completados_por_el DESC;</code></pre>
+
+<h3>Query — ¿qué característica tocó el agente? (un nid)</h3>
+<p>Para auditar un caso puntual: lista el log de características ordenado por <code>date_update</code> y compara el snapshot del bot (justo antes) contra el que guardó el agente. Si las características son idénticas, el "Completo" no aportó dato alguno.</p>
+<pre><code>SELECT ph.agent, ph.date_update,
+       ph.area, ph.bath, ph.room_num, ph.garage, ph.years_old,
+       ph.last_ask_price, ph.last_ask_price_habi, ph.last_manual_pricing
+FROM `sellers-main-prod.mx_rds_staging.habi_db_property_history` ph
+JOIN `sellers-main-prod.mx_rds_staging.habi_db_property_deal` pd
+  ON pd.property_id = ph.property_id
+WHERE pd.nid = 55677434890        -- nid a auditar
+  AND ph.agent IS NOT NULL
+ORDER BY ph.date_update;
+-- La oferta Habi / pricing se confirma como algorítmica en habi_db_history_pricing
+-- (agent IN 'algoritmo@backbone.co','algoritmo@habi.co','valor@habi.co',...).</code></pre>
 
 <h2 id="cap-6">Capítulo 6 — Límites y siguientes pasos</h2>
 <div class="callout warn">
@@ -346,6 +479,50 @@ new Chart(document.getElementById('chartAgentes'), {
     }
   }
 });
+
+// --- Series mensuales por agente (columnas apiladas: gris=real, rojo=atribución) ---
+const MESES = ['Ene','Feb','Mar','Abr','May'];
+function serieAgente(canvasId, real, truco) {
+  new Chart(document.getElementById(canvasId), {
+    type: 'bar',
+    data: {
+      labels: MESES,
+      datasets: [
+        { label: 'Completados por el agente', data: real,
+          backgroundColor: '#9ca3af', stack: 's', borderRadius: 3 },
+        { label: 'Ya estaban completos (atribución)', data: truco,
+          backgroundColor: '#dc2626', stack: 's', borderRadius: 3 }
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            label: c => `${c.dataset.label}: ${c.parsed.y}`,
+            footer: items => {
+              const tot = items.reduce((a,i)=>a+i.parsed.y,0);
+              const rojo = items.find(i=>i.dataset.borderColor==='#dc2626'||i.datasetIndex===1);
+              const r = rojo ? rojo.parsed.y : 0;
+              return `Total: ${tot}  ·  atribución: ${tot? Math.round(r/tot*100):0}%`;
+            }
+          }
+        }
+      },
+      scales: {
+        x: { stacked: true, grid: { display: false } },
+        y: { stacked: true, beginAtZero: true, title: { display: true, text: 'Leads completados' } }
+      }
+    }
+  });
+}
+serieAgente('chCesar',   [193,122,175,182,104], [164,262,231,247,250]);
+serieAgente('chDebora',  [1,24,200,183,152],    [2,0,11,18,16]);
+serieAgente('chBruno',   [0,0,3,113,94],        [0,0,0,10,24]);
+serieAgente('chEduardo', [0,0,0,37,70],         [0,0,0,8,4]);
+serieAgente('chJose',    [0,0,147,169,129],     [0,0,1,10,12]);
+serieAgente('chAldo',    [114,177,175,0,0],     [23,11,15,0,0]);
 </script>
 </body>
 </html>
