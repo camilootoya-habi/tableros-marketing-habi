@@ -2,5 +2,12 @@
   "title": "Growth & Marketing",
   "subtitle": "Lo que no se mide no se mejora — y acá buscamos mejora continua.",
   "general": { "title": "General · Marketing", "order": 0 },
-  "external_cards": []
+  "external_cards": [],
+  "tabs": [
+    { "id": "marketing-general",    "label": "Marketing General",    "order": 0 },
+    { "id": "performance-colombia", "label": "Performance Colombia", "order": 1 },
+    { "id": "growth-colombia",      "label": "Growth Colombia",      "order": 2 },
+    { "id": "performance-mexico",   "label": "Performance Mexico",   "order": 3 },
+    { "id": "growth-mexico",        "label": "Growth Mexico",        "order": 4 }
+  ]
 }
