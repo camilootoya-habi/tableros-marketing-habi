@@ -65,6 +65,51 @@ def test_build_page_renders_external_card_under_analysis():
     assert "Informe externo" in html
     assert ">Analysis<" in html
 
+def test_slugify_strips_accents_and_spaces():
+    assert build_hub.slugify("Performance Colombia") == "performance-colombia"
+    assert build_hub.slugify("Growth México") == "growth-mexico"
+
+def test_resolve_tab_priority():
+    leaders = {"sebastian-ciendua": {"channel": "Performance Colombia"}}
+    assert build_hub.resolve_tab({"owner": "general", "tab": "growth-mexico"}, leaders) == "growth-mexico"
+    assert build_hub.resolve_tab({"owner": "general", "tab": None}, leaders) == "marketing-general"
+    assert build_hub.resolve_tab({"owner": "sebastian-ciendua", "tab": None}, leaders) == "performance-colombia"
+
+def test_discover_dashboards_includes_tab_key():
+    by_slug = {d["slug"]: d for d in build_hub.discover_dashboards(REPO)}
+    assert by_slug["incompletos-colombia"]["tab"] is None
+
+TABS = [
+    {"id": "marketing-general", "label": "Marketing General", "order": 0},
+    {"id": "performance-colombia", "label": "Performance Colombia", "order": 1},
+    {"id": "growth-mexico", "label": "Growth Mexico", "order": 2},
+]
+
+def _cfg_tabs():
+    return {"title": "T", "subtitle": "s", "general": {"title": "General · Marketing", "order": 0},
+            "external_cards": [], "tabs": TABS}
+
+def _page_tabs():
+    return build_hub.build_page(build_hub.discover_dashboards(REPO), build_hub.discover_leaders(REPO),
+                                _cfg_tabs(), build_hub.load_template())
+
+def _panel(html, tab_id):
+    return html.split(f'id="panel-{tab_id}"')[1].split('id="panel-')[0]
+
+def test_tab_bar_renders_all_tabs_in_order():
+    html = _page_tabs()
+    assert html.index('data-tab="marketing-general"') < html.index('data-tab="performance-colombia"') < html.index('data-tab="growth-mexico"')
+    assert "Marketing General" in html and "Growth Mexico" in html
+
+def test_general_dashboards_land_in_marketing_general_panel():
+    assert "incompletos-colombia/" in _panel(_page_tabs(), "marketing-general")
+
+def test_leader_dashboard_lands_in_channel_panel():
+    assert "cpa-diario/" in _panel(_page_tabs(), "performance-colombia")
+
+def test_empty_tab_shows_coming_soon():
+    assert "Próximamente" in _panel(_page_tabs(), "growth-mexico")
+
 def test_render_owner_block_groups_by_section_in_order():
     cards = [
         {"title": "B dash", "description": "", "country": "CO", "link": "b/", "section": "dashboard", "order": 2},

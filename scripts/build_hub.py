@@ -1,5 +1,6 @@
 import json
 import sys
+import unicodedata
 from html import escape
 from pathlib import Path
 
@@ -9,6 +10,24 @@ TEMPLATE_PATH = Path(__file__).parent / "templates" / "hub.html"
 
 SECTION_ORDER = ["analysis", "dashboard", "reference"]
 SECTION_LABELS = {"analysis": "Analysis", "dashboard": "Dashboards", "reference": "Reference"}
+
+DEFAULT_TABS = [{"id": "marketing-general", "label": "Marketing General", "order": 0}]
+
+
+def slugify(text: str) -> str:
+    norm = unicodedata.normalize("NFKD", text).encode("ascii", "ignore").decode("ascii")
+    return "-".join(norm.lower().split())
+
+
+def resolve_tab(dashboard: dict, leaders: dict) -> str:
+    """Pestaña de un tablero: override `tab` explícito → general → marketing-general;
+    líder → slug de su `channel`. Sin channel, cae a marketing-general."""
+    if dashboard.get("tab"):
+        return dashboard["tab"]
+    if dashboard["owner"] == "general":
+        return "marketing-general"
+    channel = leaders.get(dashboard["owner"], {}).get("channel", "")
+    return slugify(channel) if channel else "marketing-general"
 
 
 def render_card(d: dict) -> str:
@@ -70,6 +89,7 @@ def discover_dashboards(repo_root: Path):
                 "title": meta["title"], "description": meta["description"],
                 "country": meta["country"], "section": meta.get("section", "dashboard"),
                 "order": meta.get("order", 9999), "query": meta.get("query"),
+                "tab": meta.get("tab"),
             })
         except (ValueError, KeyError, OSError) as e:
             print(f"  ⚠ meta inválido, se salta: {meta_path} ({e})", file=sys.stderr)
@@ -91,23 +111,60 @@ def load_template() -> str:
     return TEMPLATE_PATH.read_text(encoding="utf-8")
 
 
-def build_page(dashboards, leaders, config, template) -> str:
+def render_empty_panel() -> str:
+    return ('    <div class="empty-state">Próximamente — aún no hay tableros en '
+            'esta sección.</div>')
+
+
+def render_tab_content(tab_id, dashboards, leaders, config) -> str:
+    """Owner-blocks dentro de una pestaña: general primero, luego líderes por order.
+    Las external_cards solo cuelgan de la pestaña marketing-general."""
     blocks = []
-    general_cards = [d for d in dashboards if d["owner"] == "general"] + [
-        {**c, "link": c["url"]} for c in config.get("external_cards", [])
-    ]
-    blocks.append(render_owner_block(config["general"]["title"], general_cards))
+    general_cards = [d for d in dashboards if d["owner"] == "general"]
+    if tab_id == "marketing-general":
+        general_cards = general_cards + [
+            {**c, "link": c["url"]} for c in config.get("external_cards", [])
+        ]
+    if general_cards:
+        blocks.append(render_owner_block(config["general"]["title"], general_cards))
     for lid in sorted(leaders, key=lambda k: leaders[k].get("order", 9999)):
-        ld = leaders[lid]
-        heading = f'{ld["name"]} · {ld["channel"]}'
         lcards = [d for d in dashboards if d["owner"] == lid]
         if lcards:
-            blocks.append(render_owner_block(heading, lcards))
-    content = "\n".join(blocks)
+            ld = leaders[lid]
+            blocks.append(render_owner_block(f'{ld["name"]} · {ld["channel"]}', lcards))
+    return "\n".join(blocks) if blocks else render_empty_panel()
+
+
+def build_page(dashboards, leaders, config, template) -> str:
+    tabs = sorted(config.get("tabs", DEFAULT_TABS), key=lambda t: t.get("order", 9999))
+    valid_ids = {t["id"] for t in tabs}
+    for d in dashboards:
+        tid = resolve_tab(d, leaders)
+        if tid not in valid_ids:
+            print(f"  ⚠ tab '{tid}' no está en config.tabs; {d['slug']} → marketing-general",
+                  file=sys.stderr)
+            tid = "marketing-general"
+        d["_tab"] = tid
+
+    tab_bar, panels = [], []
+    for i, t in enumerate(tabs):
+        active = " active" if i == 0 else ""
+        tab_bar.append(
+            f'    <button type="button" class="tab-btn{active}" '
+            f'data-tab="{escape(t["id"])}">{escape(t["label"])}</button>'
+        )
+        in_tab = [d for d in dashboards if d["_tab"] == t["id"]]
+        content = render_tab_content(t["id"], in_tab, leaders, config)
+        panels.append(
+            f'  <div class="tab-panel{active}" id="panel-{escape(t["id"])}">\n'
+            f'{content}\n  </div>'
+        )
+
     return (template
             .replace("{{TITLE}}", escape(config["title"]))
             .replace("{{SUBTITLE}}", escape(config["subtitle"]))
-            .replace("{{CONTENT}}", content))
+            .replace("{{TABS}}", "\n".join(tab_bar))
+            .replace("{{PANELS}}", "\n".join(panels)))
 
 
 def main():
