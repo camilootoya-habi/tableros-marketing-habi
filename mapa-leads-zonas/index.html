@@ -1,0 +1,430 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🗺️</text></svg>">
+<title>Mapa de leads por zona (H3)</title>
+<link href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css" rel="stylesheet">
+<script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
+<script src="https://unpkg.com/h3-js@4.1.0/dist/h3-js.umd.js"></script>
+<script src="https://unpkg.com/deck.gl@9.0.33/dist.min.js"></script>
+<style>
+  :root {
+    --bg: #0f172a; --card: #1e293b; --card-hover: #263348;
+    --border: #334155; --row-border: #283548;
+    --text: #e2e8f0; --text-title: #f8fafc; --muted: #94a3b8; --muted-2: #64748b;
+    --accent: #818cf8;
+  }
+  body.light {
+    --bg: #f5f7fa; --card: #ffffff; --card-hover: #f1f5f9;
+    --border: #e2e8f0; --row-border: #f1f5f9;
+    --text: #334155; --text-title: #0f172a; --muted: #64748b; --muted-2: #94a3b8;
+    --accent: #6366f1;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; background: var(--bg); color: var(--text); padding: 18px; }
+  a { color: var(--accent); text-decoration: none; }
+  code { font-size: 12px; background: var(--card-hover); padding: 1px 5px; border-radius: 4px; }
+  .back-link { display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; background: var(--card); border: 1px solid var(--border); border-radius: 6px; color: var(--muted); font-size: 13px; margin-bottom: 14px; }
+  .back-link:hover { color: var(--accent); border-color: var(--accent); }
+  .header { display: flex; justify-content: space-between; align-items: baseline; flex-wrap: wrap; gap: 10px; margin-bottom: 14px; }
+  .header h1 { font-size: 21px; font-weight: 600; color: var(--text-title); }
+  .header h1 span { color: var(--accent); }
+  .header p { color: var(--muted); font-size: 13px; max-width: 780px; margin-top: 4px; line-height: 1.5; }
+  .theme-btn { background: var(--card); border: 1px solid var(--border); color: var(--muted); border-radius: 6px; padding: 4px 10px; font-size: 14px; cursor: pointer; }
+
+  .controls { display: flex; flex-wrap: wrap; gap: 16px; align-items: flex-end; background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 12px 14px; margin-bottom: 14px; }
+  .ctrl { display: flex; flex-direction: column; gap: 5px; }
+  .ctrl label { font-size: 10.5px; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); font-weight: 600; }
+  .chip-group { display: inline-flex; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
+  .chip { padding: 6px 13px; cursor: pointer; background: transparent; color: var(--text); border: 0; font-size: 13px; }
+  .chip.active { background: var(--accent); color: #fff; font-weight: 600; }
+  .chip + .chip { border-left: 1px solid var(--border); }
+  .kpi-sel { background: var(--card); color: var(--text); border: 1px solid var(--border); border-radius: 8px; padding: 7px 10px; font-size: 13px; cursor: pointer; min-width: 210px; }
+  .src-group { display: flex; flex-wrap: wrap; gap: 6px; max-width: 460px; }
+  .src { padding: 4px 11px; font-size: 12.5px; border: 1px solid var(--border); border-radius: 999px; cursor: pointer; color: var(--muted); background: transparent; user-select: none; }
+  .src.on { color: #fff; background: var(--accent); border-color: var(--accent); }
+  input[type=range] { width: 170px; accent-color: var(--accent); }
+  .range-val { font-size: 12px; color: var(--text); font-variant-numeric: tabular-nums; }
+
+  .kpis { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 12px; }
+  .kpi { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 9px 14px; min-width: 120px; cursor: pointer; transition: border-color .1s; }
+  .kpi:hover { border-color: var(--accent); }
+  .kpi.sel { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent) inset; }
+  .kpi .v { font-size: 19px; font-weight: 700; color: var(--text-title); font-variant-numeric: tabular-nums; }
+  .kpi .l { font-size: 11px; color: var(--muted); margin-top: 2px; }
+
+  #map-wrap { position: relative; height: 70vh; min-height: 460px; border-radius: 12px; overflow: hidden; border: 1px solid var(--border); }
+  #map { position: absolute; inset: 0; }
+  .coverage { position: absolute; top: 14px; left: 14px; background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 8px 12px; font-size: 11px; color: var(--muted); z-index: 2; box-shadow: 0 2px 12px rgba(0,0,0,.25); line-height: 1.5; }
+  .coverage .big { font-size: 15px; font-weight: 700; color: var(--text-title); font-variant-numeric: tabular-nums; }
+  .coverage .miss { color: #f59e0b; font-weight: 600; }
+  .legend { position: absolute; bottom: 14px; left: 14px; background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 9px 12px; font-size: 11px; color: var(--muted); z-index: 2; box-shadow: 0 2px 12px rgba(0,0,0,.25); }
+  .legend .bar { height: 9px; width: 170px; border-radius: 4px; margin: 6px 0 3px; }
+  .legend .ends { display: flex; justify-content: space-between; color: var(--text); font-variant-numeric: tabular-nums; }
+  .legend .title { color: var(--text-title); font-weight: 600; font-size: 11.5px; }
+  .tip { position: absolute; z-index: 3; pointer-events: none; background: rgba(15,23,42,.95); color: #f8fafc; border: 1px solid #334155; border-radius: 7px; padding: 8px 11px; font-size: 12px; line-height: 1.5; display: none; box-shadow: 0 4px 16px rgba(0,0,0,.4); min-width: 168px; }
+  .tip .row { display: flex; justify-content: space-between; gap: 14px; }
+  .tip b { color: #fff; } .tip .a { color: #a5b4fc; }
+  .tip .hx { color: #64748b; font-size: 10.5px; margin-top: 4px; }
+  .note { color: var(--muted-2); font-size: 11.5px; margin-top: 10px; }
+</style>
+</head>
+<body>
+<a href="../" class="back-link">← Volver al hub</a>
+<div class="header">
+  <div>
+    <h1>Mapa de leads por zona — <span id="paisTitle">Colombia</span></h1>
+    <p>Registros absolutos (nid único de <code>tabla_inmuebles_general</code>) en hexágonos H3 de Uber, con su funnel hasta cierre. Etapa <b>Asignado</b> = nid presente en el mart de asignados del WBR. Cohorte por fecha de registro. Pasa el cursor sobre un hexágono para ver todos los indicadores de la zona.</p>
+  </div>
+  <button class="theme-btn" id="themeToggle" onclick="toggleTheme()">🌙</button>
+</div>
+
+<div class="controls">
+  <div class="ctrl">
+    <label>País</label>
+    <div class="chip-group" id="paisCtrl">
+      <button class="chip active" data-v="0">🇨🇴 Colombia</button>
+      <button class="chip" data-v="1">🇲🇽 México</button>
+    </div>
+  </div>
+  <div class="ctrl">
+    <label>Resolución H3</label>
+    <div class="chip-group" id="resCtrl">
+      <button class="chip" data-v="8">8 · ciudad</button>
+      <button class="chip active" data-v="9">9 · barrio</button>
+      <button class="chip" data-v="10">10 · manzana</button>
+    </div>
+  </div>
+  <div class="ctrl">
+    <label>KPI (color del hexágono)</label>
+    <select class="kpi-sel" id="kpiCtrl"></select>
+  </div>
+  <div class="ctrl">
+    <label>Zonas Habi <span id="zonasHint" style="text-transform:none;color:var(--muted-2)">(solo CO)</span></label>
+    <div class="chip-group" id="zonasCtrl">
+      <button class="chip active" data-v="off">Ocultar</button>
+      <button class="chip" data-v="abiertas">Abiertas</button>
+      <button class="chip" data-v="cerradas">Cerradas</button>
+      <button class="chip" data-v="todas">Todas</button>
+    </div>
+  </div>
+  <div class="ctrl">
+    <label>Ventana (últimos meses): <span class="range-val" id="mesesVal"></span></label>
+    <input type="range" id="mesesCtrl" min="1" max="12" value="12">
+  </div>
+  <div class="ctrl" style="flex:1; min-width:300px;">
+    <label>Fuente de lead (filtra todos los niveles)</label>
+    <div class="src-group" id="srcCtrl"></div>
+  </div>
+</div>
+
+<div class="kpis" id="kpis"></div>
+
+<div id="map-wrap">
+  <div id="map"></div>
+  <div class="coverage" id="coverage"></div>
+  <div class="legend" id="legend"></div>
+  <div class="tip" id="tip"></div>
+</div>
+<p class="note" id="note"></p>
+
+<script>
+function toggleTheme(){
+  const light = document.body.classList.toggle('light');
+  localStorage.setItem('tablero-theme', light ? 'light':'dark');
+  document.getElementById('themeToggle').textContent = light ? '☀️':'🌙';
+  if (window.__setBasemap) window.__setBasemap(light);
+}
+if (localStorage.getItem('tablero-theme') === 'light') document.body.classList.add('light');
+
+(async () => {
+  document.getElementById('themeToggle').textContent =
+    document.body.classList.contains('light') ? '☀️':'🌙';
+
+  const DATA = await (await fetch('data.json')).json();
+  // rows:  [paisIdx, mesIdx, fuenteIdx, lat, lng, reg, calif, asig, cierre]  (geo)
+  // nogeo: [paisIdx, mesIdx, fuenteIdx, reg, calif, asig, cierre]            (sin coords)
+  const ROWS = DATA.rows, NOGEO = DATA.nogeo || [], FUENTES = DATA.fuentes, MESES = DATA.meses, NM = MESES.length;
+  const G = { reg:5, calif:6, asig:7, cierre:8 };   // cols fila geo
+  const N = { reg:3, calif:4, asig:5, cierre:6 };    // cols fila nogeo
+
+  const srcByPais = [new Set(), new Set()];
+  for (const r of ROWS) srcByPais[r[0]].add(r[2]);
+  for (const r of NOGEO) srcByPais[r[0]].add(r[2]);
+
+  // ---- KPIs ----
+  const KPIS = {
+    reg:    { label:'Registros',                type:'vol',   col:'reg' },
+    calif:  { label:'Calificados',              type:'vol',   col:'calif' },
+    asig:   { label:'Asignados',                type:'vol',   col:'asig' },
+    cierre: { label:'Cierres',                  type:'vol',   col:'cierre' },
+    r2c:    { label:'Conversión Registro→Calificado', type:'rate', num:'calif', den:'reg' },
+    c2a:    { label:'Conversión Calificado→Asignado', type:'rate', num:'asig',  den:'calif' },
+    rpc:    { label:'Registros por cierre',     type:'ratio', num:'reg', den:'cierre' },
+  };
+  const KPI_ORDER = ['reg','calif','asig','cierre','r2c','c2a','rpc'];
+  const COVCOL = { reg:'reg', calif:'calif', asig:'asig', cierre:'cierre', r2c:'reg', c2a:'calif', rpc:'reg' };
+
+  const VIEW = { 0:{center:[-74.08,4.66],zoom:9.2}, 1:{center:[-99.14,19.42],zoom:9.2} };
+  const STYLE = l => `https://basemaps.cartocdn.com/gl/${l?'positron':'dark-matter'}-gl-style/style.json`;
+
+  const st = { pais:0, res:9, kpi:'reg', meses:NM, zonas:'off', srcOn:new Set([...srcByPais[0]]) };
+  let ZONES = null, zonesLoading = false;   // GeoJSON de zonas Habi CO (carga diferida)
+  async function loadZones(){
+    if (ZONES || zonesLoading) return;
+    zonesLoading = true;
+    try { ZONES = await (await fetch('zonas-co.json')).json(); }
+    catch(e){ ZONES = {type:'FeatureCollection', features:[]}; }
+    zonesLoading = false; render();
+  }
+
+  const map = new maplibregl.Map({
+    container:'map', style:STYLE(document.body.classList.contains('light')),
+    center:VIEW[0].center, zoom:VIEW[0].zoom, attributionControl:true,
+  });
+  map.addControl(new maplibregl.NavigationControl({showCompass:false}), 'top-right');
+  const overlay = new deck.MapboxOverlay({ interleaved:false, layers:[] });
+  map.addControl(overlay);
+  window.__setBasemap = (light) => { map.setStyle(STYLE(light)); map.once('styledata', render); };
+
+  // ---- color ramps ----
+  const RAMP_VOL  = [[255,247,188],[254,196,79],[252,127,44],[227,74,51],[153,15,40]];
+  const RAMP_RATE = [[239,243,255],[158,202,225],[66,146,198],[33,113,181],[8,48,107]];
+  const RAMP_RPC  = [[26,152,80],[166,217,106],[254,224,139],[253,141,60],[215,48,39]]; // verde(eficiente)→rojo
+  function lerp(ramp, t){
+    t = Math.max(0, Math.min(1, t));
+    const s = t*(ramp.length-1), i = Math.floor(s), f = s-i;
+    if (i >= ramp.length-1) return ramp[ramp.length-1];
+    const a = ramp[i], b = ramp[i+1];
+    return [a[0]+(b[0]-a[0])*f, a[1]+(b[1]-a[1])*f, a[2]+(b[2]-a[2])*f];
+  }
+  const GREY = [140,140,150,55];
+
+  function aggregate(){
+    const minMes = NM - st.meses, cells = new Map();
+    for (let k=0; k<ROWS.length; k++){
+      const r = ROWS[k];
+      if (r[0] !== st.pais || r[1] < minMes || !st.srcOn.has(r[2])) continue;
+      const h = h3.latLngToCell(r[3], r[4], st.res);
+      let c = cells.get(h);
+      if (!c){ c = {reg:0,calif:0,asig:0,cierre:0}; cells.set(h, c); }
+      c.reg += r[G.reg]; c.calif += r[G.calif]; c.asig += r[G.asig]; c.cierre += r[G.cierre];
+    }
+    return cells;
+  }
+
+  function buildLayer(cells){
+    const k = KPIS[st.kpi];
+    const arr = []; let maxVal = 0; const T = {reg:0,calif:0,asig:0,cierre:0};
+    for (const [h,c] of cells){
+      arr.push({ hex:h, ...c });
+      T.reg+=c.reg; T.calif+=c.calif; T.asig+=c.asig; T.cierre+=c.cierre;
+      let v = 0;
+      if (k.type==='vol')        v = c[k.col];
+      else if (k.type==='rate')  v = c[k.den] >= 3 ? c[k.num]/c[k.den] : -1;
+      else                       v = c[k.den] >= 1 ? c[k.num]/c[k.den] : -1; // ratio
+      if (v > maxVal) maxVal = v;
+    }
+    const volScale = maxVal>0 ? 1/Math.sqrt(maxVal) : 0;
+    const ratScale = maxVal>0 ? 1/maxVal : 0;
+    // ¿el hexágono queda sin relleno? (volumen 0, o ratio/tasa sin base) -> solo contorno
+    function empty(d){
+      if (k.type==='vol')  return d[k.col] === 0;
+      if (k.type==='rate') return d[k.den] < 3;
+      return d[k.den] < 1;  // ratio: sin cierres
+    }
+    const layer = new deck.H3HexagonLayer({
+      id:'h3', data:arr, extruded:false, filled:true, stroked:true, lineWidthMinPixels:0.5,
+      getHexagon: d => d.hex,
+      getLineColor: d => empty(d) ? [148,163,184,90] : [255,255,255,28],  // contorno marcado si vacío
+      getFillColor: d => {
+        if (empty(d)) return [0,0,0,0];                                    // sin relleno, hexágono visible
+        if (k.type==='vol')  return [...lerp(RAMP_VOL, Math.sqrt(d[k.col])*volScale).map(x=>x|0), 205];
+        if (k.type==='rate') return [...lerp(RAMP_RATE, d[k.num]/d[k.den]).map(x=>x|0), 210];
+        return [...lerp(RAMP_RPC, (d[k.num]/d[k.den])*ratScale).map(x=>x|0), 210]; // reg/cierre
+      },
+      pickable:true, autoHighlight:true, highlightColor:[129,140,248,90],
+      updateTriggers:{ getFillColor:[st.kpi, maxVal], getLineColor:[st.kpi] },
+      onHover: showTip,
+    });
+    return { layer, maxVal, T, nCells:arr.length };
+  }
+
+  const tip = document.getElementById('tip');
+  function showTip(info){
+    if (!info.object){ tip.style.display='none'; return; }
+    const d = info.object;
+    const rc = d.reg ? d.calif/d.reg*100 : 0;
+    const ca = d.calif ? d.asig/d.calif*100 : 0;
+    const rpc = d.cierre ? (d.reg/d.cierre).toFixed(1) : '—';
+    const fmt = n => n.toLocaleString('es');
+    tip.style.display='block';
+    tip.style.left=(info.x+14)+'px'; tip.style.top=(info.y+14)+'px';
+    tip.innerHTML =
+        `<div class="row"><span>Registros</span><b>${fmt(d.reg)}</b></div>`
+      + `<div class="row"><span>Calificados</span><b>${fmt(d.calif)}</b></div>`
+      + `<div class="row"><span>Asignados</span><b>${fmt(d.asig)}</b></div>`
+      + `<div class="row"><span>Cierres</span><b>${fmt(d.cierre)}</b></div>`
+      + `<div class="row"><span class="a">Conv. Reg→Calif</span><span class="a">${rc.toFixed(1)}%</span></div>`
+      + `<div class="row"><span class="a">Conv. Calif→Asig</span><span class="a">${ca.toFixed(1)}%</span></div>`
+      + `<div class="row"><span class="a">Reg / Cierre</span><span class="a">${rpc}</span></div>`
+      + `<div class="hx">${d.hex}</div>`;
+  }
+
+  function renderLegend(maxVal){
+    const el = document.getElementById('legend'), k = KPIS[st.kpi];
+    let ramp, lo, hi, extra='';
+    if (k.type==='vol'){ ramp=RAMP_VOL; lo='0'; hi=maxVal.toLocaleString('es'); }
+    else if (k.type==='rate'){ ramp=RAMP_RATE; lo='0%'; hi='100%'; extra='gris = <3 en denominador'; }
+    else { ramp=RAMP_RPC; lo='0'; hi=maxVal? Math.round(maxVal).toLocaleString('es'):'—'; extra='verde = eficiente · gris = sin cierres'; }
+    const stops = ramp.map((c,i)=>`rgb(${c[0]},${c[1]},${c[2]}) ${i/(ramp.length-1)*100}%`).join(',');
+    el.innerHTML = `<div class="title">${k.label}</div>`
+      + `<div class="bar" style="background:linear-gradient(90deg,${stops})"></div>`
+      + `<div class="ends"><span>${lo}</span><span>${hi}</span></div>`
+      + (extra ? `<div style="margin-top:4px;color:var(--muted-2)">${extra}</div>` : '');
+  }
+
+  function renderKpis(T){
+    const rc = T.reg?(T.calif/T.reg*100):0, ca = T.calif?(T.asig/T.calif*100):0;
+    const rpc = T.cierre? (T.reg/T.cierre).toFixed(0):'—';
+    const cards = [
+      {col:'reg',    v:T.reg.toLocaleString('es'),    l:'Registrados (absolutos)', kpis:['reg']},
+      {col:'calif',  v:T.calif.toLocaleString('es'),  l:`Calificados · ${rc.toFixed(0)}%`, kpis:['calif','r2c']},
+      {col:'asig',   v:T.asig.toLocaleString('es'),   l:`Asignados · ${ca.toFixed(0)}%`, kpis:['asig','c2a']},
+      {col:'cierre', v:T.cierre.toLocaleString('es'), l:`Cierres · ${rpc} reg/cierre`, kpis:['cierre','rpc']},
+    ];
+    document.getElementById('kpis').innerHTML = cards.map(c =>
+      `<div class="kpi${c.kpis.includes(st.kpi)?' sel':''}" data-kpi="${c.kpis[0]}">`
+      + `<div class="v">${c.v}</div><div class="l">${c.l}</div></div>`).join('');
+    document.querySelectorAll('#kpis .kpi').forEach(el => el.onclick = () => {
+      st.kpi = el.dataset.kpi; document.getElementById('kpiCtrl').value = st.kpi; render();
+    });
+  }
+
+  function nogeoTotals(){
+    const minMes = NM - st.meses, T={reg:0,calif:0,asig:0,cierre:0};
+    for (const r of NOGEO){
+      if (r[0]!==st.pais || r[1]<minMes || !st.srcOn.has(r[2])) continue;
+      T.reg+=r[N.reg]; T.calif+=r[N.calif]; T.asig+=r[N.asig]; T.cierre+=r[N.cierre];
+    }
+    return T;
+  }
+  function renderCoverage(geoT){
+    const ng = nogeoTotals(), col = COVCOL[st.kpi];
+    const onMap = geoT[col], miss = ng[col], tot = onMap+miss, pct = tot?(onMap/tot*100):0;
+    const lbl = {reg:'registrados',calif:'calificados',asig:'asignados',cierre:'cierres'}[col];
+    document.getElementById('coverage').innerHTML =
+        `<div class="big">${onMap.toLocaleString('es')}</div>`
+      + `<div>${lbl} en el mapa · ${pct.toFixed(1)}% georreferenciados</div>`
+      + `<div class="miss">⚠ ${miss.toLocaleString('es')} sin coordenadas (no mostrados)</div>`;
+  }
+
+  function buildZonesLayer(){
+    if (st.pais !== 0 || st.zonas === 'off' || !ZONES) return null;  // solo CO
+    const feats = ZONES.features.filter(f =>
+      st.zonas === 'todas' ? true
+      : st.zonas === 'abiertas' ? f.properties.activo === 1
+      : f.properties.activo === 0);
+    return new deck.GeoJsonLayer({
+      id:'zonas', data:{ type:'FeatureCollection', features:feats },
+      stroked:true, filled:true, pickable:false,
+      getFillColor: f => f.properties.activo ? [34,197,94,26] : [148,163,184,16],
+      getLineColor: f => f.properties.activo ? [34,197,94,205] : [239,68,68,165],
+      lineWidthUnits:'pixels', getLineWidth:1.5, lineWidthMinPixels:1.2,
+      updateTriggers:{ getFillColor:[st.zonas], getLineColor:[st.zonas] },
+    });
+  }
+
+  function render(){
+    const r = buildLayer(aggregate());
+    const zl = buildZonesLayer();
+    overlay.setProps({ layers: zl ? [r.layer, zl] : [r.layer] });
+    renderLegend(r.maxVal);
+    renderKpis(r.T);
+    renderCoverage(r.T);
+    const win = st.meses===NM ? `${MESES[0]} → ${MESES[NM-1]}`
+                              : `últimos ${st.meses} meses (desde ${MESES[NM-st.meses]})`;
+    document.getElementById('note').textContent =
+      `KPI: ${KPIS[st.kpi].label} · ${r.nCells.toLocaleString('es')} hexágonos · ${win} · res H3 ${st.res} · `
+      + `registros absolutos (nid único) · Asignado = mart WBR · cierres por fecha_cierre. Actualizado ${DATA.generated.slice(0,10)}.`;
+  }
+
+  // ---- controls ----
+  function chipGroup(id, key, cast, after){
+    const g = document.getElementById(id);
+    g.addEventListener('click', e => {
+      const b = e.target.closest('.chip'); if(!b || b.disabled) return;
+      [...g.children].forEach(c=>c.classList.remove('active'));
+      b.classList.add('active'); st[key] = cast(b.dataset.v);
+      if (after) after(); render();
+    });
+  }
+  function syncZonasCtrl(){
+    const dis = st.pais !== 0;
+    document.querySelectorAll('#zonasCtrl .chip').forEach(c=>{
+      c.disabled = dis; c.style.opacity = dis ? .4 : ''; c.style.cursor = dis ? 'not-allowed' : '';
+    });
+    document.getElementById('zonasHint').textContent = dis ? '(solo CO — N/D en MX)' : '(solo CO)';
+  }
+  chipGroup('paisCtrl','pais', Number, () => {
+    document.getElementById('paisTitle').textContent = st.pais?'México':'Colombia';
+    map.flyTo({ ...VIEW[st.pais], duration:700 }); renderSrcChips(); syncZonasCtrl();
+  });
+  chipGroup('resCtrl','res', Number);
+  chipGroup('zonasCtrl','zonas', String, () => { if (st.zonas !== 'off') loadZones(); });
+  syncZonasCtrl();
+
+  const kpiSel = document.getElementById('kpiCtrl');
+  kpiSel.innerHTML = KPI_ORDER.map(id => `<option value="${id}">${KPIS[id].label}</option>`).join('');
+  kpiSel.value = st.kpi;
+  kpiSel.onchange = () => { st.kpi = kpiSel.value; render(); };
+
+  const srcEl = document.getElementById('srcCtrl');
+  function syncTodas(){
+    const all = srcByPais[st.pais], todas = srcEl.querySelector('[data-todas]');
+    if (todas) todas.classList.toggle('on', st.srcOn.size === all.size && all.size > 0);
+  }
+  function renderSrcChips(){
+    st.srcOn = new Set([...srcByPais[st.pais]]);
+    srcEl.innerHTML = '';
+    // botón "Todas": on = todas seleccionadas; click alterna todas <-> ninguna
+    const todas = document.createElement('button');
+    todas.className = 'src on'; todas.textContent = 'Todas'; todas.dataset.todas = '1';
+    todas.style.fontWeight = '600';
+    todas.onclick = () => {
+      const all = srcByPais[st.pais];
+      if (st.srcOn.size === all.size) st.srcOn = new Set();        // estaba todo -> ninguna
+      else st.srcOn = new Set([...all]);                           // -> todas
+      srcEl.querySelectorAll('[data-i]').forEach(el => el.classList.toggle('on', st.srcOn.has(Number(el.dataset.i))));
+      syncTodas(); render();
+    };
+    srcEl.appendChild(todas);
+    [...srcByPais[st.pais]].sort((a,b)=>FUENTES[a].localeCompare(FUENTES[b])).forEach(i=>{
+      const b = document.createElement('button');
+      b.className='src on'; b.textContent = FUENTES[i]; b.dataset.i = i;
+      b.onclick = () => {
+        if (st.srcOn.has(i)){ st.srcOn.delete(i); b.classList.remove('on'); }
+        else { st.srcOn.add(i); b.classList.add('on'); }
+        syncTodas(); render();
+      };
+      srcEl.appendChild(b);
+    });
+    syncTodas();
+  }
+  renderSrcChips();
+
+  const mesesCtrl = document.getElementById('mesesCtrl'), mesesVal = document.getElementById('mesesVal');
+  mesesCtrl.max = NM; mesesCtrl.value = NM;
+  const setLabel = () => mesesVal.textContent = st.meses===NM ? `${NM} (todo)` : st.meses;
+  let deb;
+  mesesCtrl.oninput = () => { st.meses = Number(mesesCtrl.value); setLabel();
+    clearTimeout(deb); deb = setTimeout(render, 120); };
+  setLabel();
+
+  map.on('load', render);
+})();
+</script>
+</body>
+</html>

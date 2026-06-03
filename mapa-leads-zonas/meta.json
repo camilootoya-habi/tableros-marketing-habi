@@ -1,0 +1,7 @@
+{
+  "title": "Mapa de leads por zona (H3)",
+  "description": "Registros absolutos (nid único de tabla_inmuebles_general) en hexágonos H3 de Uber, con funnel hasta cierre. Selector de KPI (registros/calificados/asignados=mart WBR/cierres + conversiones + reg por cierre), CO/MX, resolución 8/9/10, filtro por fuente en todos los niveles, ventana de meses, tooltip completo por zona, indicador de cobertura geo y overlay de zonas de compra Habi (abierta/cerrada, CO).",
+  "country": "CO & MX",
+  "section": "dashboard",
+  "order": 120
+}

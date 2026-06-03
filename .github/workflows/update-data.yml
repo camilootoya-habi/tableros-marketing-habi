@@ -399,6 +399,28 @@ jobs:
         run: |
           python3 asignados-creacion/build_data.py /tmp/asignados-creacion-raw.json asignados-creacion/data.json
 
+      - name: Query BigQuery — mapa de leads por zona H3 (CO + MX)
+        if: always()
+        run: |
+          bq query --use_legacy_sql=false --format=json --max_rows=200000 \
+            < mapa-leads-zonas/query.sql > /tmp/mapa-leads-zonas-raw.json
+
+      - name: Build mapa-leads-zonas/data.json
+        if: always()
+        run: |
+          python3 mapa-leads-zonas/build_data.py /tmp/mapa-leads-zonas-raw.json mapa-leads-zonas/data.json
+
+      - name: Query BigQuery — zonas Habi CO (polígonos + activo)
+        if: always()
+        run: |
+          bq query --use_legacy_sql=false --format=json --max_rows=5000 \
+            < mapa-leads-zonas/zonas_query.sql > /tmp/mapa-leads-zonas-zonas-raw.json
+
+      - name: Build mapa-leads-zonas/zonas-co.json
+        if: always()
+        run: |
+          python3 mapa-leads-zonas/build_zonas.py /tmp/mapa-leads-zonas-zonas-raw.json mapa-leads-zonas/zonas-co.json
+
       - name: Query BigQuery — prioridad MM (CO + MX)
         if: always()
         run: |
