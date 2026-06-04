@@ -4,10 +4,10 @@
   "leaders_evolution": {
     "narrative": "El equipo de marketing pasó en menos de un año de ser un área de Performance puro al servicio de un solo producto (Habi Sellers), a una estructura de Growth multi-producto que atiende hoy 5 verticales del ecosistema Habi.",
     "timeline": [
-      { "period": "Hasta 2025 Q3", "structure": "4 líderes Performance (perfil homogéneo)", "products": ["Habi Sellers"], "note": "Foco único: atraer vendedores de vivienda para que Habi compre." },
-      { "period": "2025 Q3–Q4", "structure": "Split a 2 Performance + 2 Growth", "products": ["Habi Sellers", "Habi Buyers"], "note": "Surge la función Growth diferenciada de Performance. Marketing recibe Habi Buyers (mover el inventario)." },
-      { "period": "2026 Q1", "structure": "2 Performance + 2 Growth", "products": ["Habi Sellers", "Habi Buyers"], "note": "Consolidación del modelo dual." },
-      { "period": "2026 Q2 (hoy)", "structure": "2 Performance + 2 Growth", "products": ["Habi Sellers", "Habi Buyers", "propiedades.com", "Pulppo", "Franquicias Habi"], "today": true, "note": "Marketing absorbe propiedades.com, Pulppo y Franquicias en un solo trimestre." }
+      { "period": "Hasta 2025 Q3", "structure": "4 líderes Performance (perfil homogéneo) + 1 de SEO", "products": ["Habi Sellers"], "note": "Foco único: atraer vendedores de vivienda para que Habi compre." },
+      { "period": "2025 Q3–Q4", "structure": "Split a 2 Performance + 2 Growth + 1 SEO", "products": ["Habi Sellers", "Habi Buyers"], "note": "Surge la función Growth diferenciada de Performance. Marketing recibe Habi Buyers (mover el inventario)." },
+      { "period": "2026 Q1", "structure": "2 Performance + 2 Growth", "products": ["Habi Sellers", "Habi Buyers"], "note": "Consolidación del modelo dual + integración de los procesos de SEO en la estrategia SEM: SEO queda bajo el equipo de Performance." },
+      { "period": "2026 Q2 (objetivo)", "structure": "2 Performance + 2 Growth", "products": ["Habi Sellers", "Habi Buyers", "propiedades.com", "Pulppo", "Franquicias Habi"], "today": true, "note": "Marketing absorbe propiedades.com, Pulppo y Franquicias en un solo trimestre." }
     ]
   },
   "leaders": [
@@ -25,8 +25,8 @@
         "Estratégico": 1.9
       },
       "ai_buckets_week": {
-        "IA ejecuta": 11.0,
-        "IA asiste (humano decide)": 15.0,
+        "IA ejecuta": 6.0,
+        "IA asiste (humano decide)": 20.0,
         "Solo humano": 18.4
       },
       "scope": "Performance Sellers + Pulppo + Brokers + Franquicias + Buyers + Funnel"
@@ -87,7 +87,7 @@
     }
   ],
   "lider_mx_tasks": [
-    { "task": "Renovación de creativos (apagar saturados, lanzar nuevos)", "etapa": "Mantenimiento — Performance Sellers", "freq": "Cada 2 días", "hours_week": 3.0, "ai": "IA ejecuta", "how": "Pipeline de Marketing Agents que lee performance, propone variantes y rota" },
+    { "task": "Renovación de creativos (apagar saturados, lanzar nuevos)", "etapa": "Mantenimiento — Performance Sellers", "freq": "Cada 2 días", "hours_week": 3.0, "ai": "IA asiste (humano decide)", "how": "Pipeline de Marketing Agents que lee performance, propone variantes y rota" },
     { "task": "Daily Growth & Acquisition: despliegue + indicadores", "etapa": "Mantenimiento — Performance Sellers", "freq": "Diario", "hours_week": 5.0, "ai": "Solo humano", "how": "Se mantiene como espacio diario de lectura activa del líder — no se automatiza" },
     { "task": "Pacing de presupuesto vs meta mensual", "etapa": "Mantenimiento — Performance Sellers", "freq": "Semanal", "hours_week": 1.0, "ai": "IA ejecuta", "how": "Alarmas automáticas de desviación" },
     { "task": "Optimización de bids / audiencias / segmentación", "etapa": "Mantenimiento — Performance Sellers", "freq": "Semanal", "hours_week": 1.0, "ai": "IA asiste (humano decide)", "how": "IA propone, humano aprueba" },
@@ -97,7 +97,7 @@
     { "task": "Seguimiento Finanzas/Tesorería (pagos, facturas)", "etapa": "Mantenimiento — Performance Sellers", "freq": "Semanal", "hours_week": 1.0, "ai": "Solo humano", "how": "Negociación administrativa" },
     { "task": "Setup y seguimiento Performance Pulppo MX", "etapa": "Mantenimiento — Pulppo MX", "freq": "Semanal", "hours_week": 4.5, "ai": "IA asiste (humano decide)", "how": "Reporting automático + decisiones humanas" },
     { "task": "Setup y seguimiento campañas Brokers", "etapa": "Mantenimiento — Brokers", "freq": "Semanal", "hours_week": 4.0, "ai": "IA asiste (humano decide)", "how": "Plantillas + reporting automático" },
-    { "task": "Planeación, Reporting y control Budget Buyers", "etapa": "Mantenimiento — Buyers", "freq": "Semanal", "hours_week": 2.0, "ai": "IA ejecuta", "how": "Dashboard automático + alarmas" },
+    { "task": "Planeación, Reporting y control Budget Buyers", "etapa": "Mantenimiento — Buyers", "freq": "Semanal", "hours_week": 2.0, "ai": "IA asiste (humano decide)", "how": "Dashboard automático + alarmas" },
     { "task": "Setup campañas Franquicias", "etapa": "Mantenimiento — Franquicias", "freq": "Semanal", "hours_week": 1.0, "ai": "IA asiste (humano decide)", "how": "Plantillas" },
     { "task": "Auditoría anuncios con CX (sentiment, comentarios)", "etapa": "Mantenimiento — CX", "freq": "Quincenal", "hours_week": 0.5, "ai": "IA asiste (humano decide)", "how": "Análisis de sentiment automatizado" },
     { "task": "Tráfico Creativo: solicitudes contenido", "etapa": "Mantenimiento — Orgánico", "freq": "Por posición", "hours_week": 1.0, "ai": "IA ejecuta", "how": "Generación de copys/títulos con IA" },
@@ -131,7 +131,7 @@
       "hours_used": 200,
       "overcapacity": 80,
       "tasks": [
-        { "task": "Ventana a CRM", "hours_week": 160, "ai": "IA asiste (humano decide)", "how": "Triage automatizado del flujo; escalación humana solo casos complejos" },
+        { "task": "Ventana a CRM", "hours_week": 160, "ai": "IA ejecuta", "how": "Triage automatizado del flujo; escalación humana solo casos complejos" },
         { "task": "Revisar dirección", "hours_week": 20, "ai": "IA ejecuta", "how": "Geocoding + validación automatizada" },
         { "task": "Incompletos desde WEB", "hours_week": 20, "ai": "IA ejecuta", "how": "Agente IA completa por llamada saliente + WhatsApp" }
       ]
@@ -190,7 +190,7 @@
     { "quarter": "2023 Q4", "CRM": 6,  "Direccion": 1, "Incompletos": 1, "LeadForms": 0, "Brokers": 0, "total": 8 },
     { "quarter": "2024 Q1", "CRM": 6,  "Direccion": 1, "Incompletos": 1, "LeadForms": 1, "Brokers": 0, "total": 9 },
     { "quarter": "2025 Q1", "CRM": 4,  "Direccion": 1, "Incompletos": 0, "LeadForms": 1, "Brokers": 0, "total": 6, "note": "1 persona cubre Dirección + Brokers" },
-    { "quarter": "2026 Q2", "CRM": 3,  "Direccion": 0, "Incompletos": 0, "LeadForms": 1, "Brokers": 1, "total": 5, "today": true, "note": "3 Ventanas (CRM) + 1 Lead Forms CO + 1 Brokers CO" },
+    { "quarter": "2026 Q2", "CRM": 4,  "Direccion": 0, "Incompletos": 0, "LeadForms": 1, "Brokers": 1, "total": 6, "today": true, "note": "4 Ventanas (CRM) + 1 Lead Forms CO + 1 Brokers CO" },
     { "quarter": "Plan Q3'26", "CRM": 1, "Direccion": 0, "Incompletos": 0, "LeadForms": 0, "Brokers": 2, "total": 3, "plan": true, "note": "1 CRM residual + 2 Brokers dedicados CO" }
   ],
   "history_mx": [
@@ -199,7 +199,7 @@
     { "quarter": "2024 Q1", "modalidad": "BPO", "LeadForms": 10, "Brokers": 0, "total": 10 },
     { "quarter": "2025 Q1", "modalidad": "Internos (BPO cancelado)", "LeadForms": 6, "Brokers": 0, "total": 6 },
     { "quarter": "2025 Q2", "modalidad": "Internos", "LeadForms": 5, "Brokers": 1, "total": 6 },
-    { "quarter": "2026 Q1", "modalidad": "Internos", "LeadForms": 4, "Brokers": 1, "total": 5, "today": true, "note": "4 dedicados a Lead Forms MX + 1 Brokers MX" },
+    { "quarter": "2026 Q1", "modalidad": "Internos", "LeadForms": 5, "Brokers": 1, "total": 6, "today": true, "note": "5 dedicados a Lead Forms MX + 1 Brokers MX" },
     { "quarter": "Plan Q3'26", "modalidad": "Internos + IA", "LeadForms": 1, "Brokers": 2, "total": 3, "plan": true, "note": "1 Entrenador de IA Lead Forms + 2 Brokers dedicados MX" },
     { "quarter": "Visión 2027", "modalidad": "100% IA", "LeadForms": 0, "Brokers": 2, "total": 2, "vision": true }
   ],
@@ -229,25 +229,49 @@
       "n": 1,
       "title": "Lectura conectada — agentes Claude con acceso a Meta, TikTok y Google Ads",
       "outcome": "Capacidad de monitoreo continuo",
-      "desc": "Conectar agentes IA con read access a las APIs de las 3 plataformas. Hoy el líder consulta cada cuenta manualmente y arma el panorama mentalmente. Con esto, el dato vive en el agente y está disponible para todo lo que sigue (reporting, alarmas, decisiones)."
+      "desc": "Conectar agentes IA con read access a las APIs de las 3 plataformas. Hoy el líder consulta cada cuenta manualmente y arma el panorama mentalmente. Con esto, el dato vive en el agente y está disponible para todo lo que sigue (reporting, alarmas, decisiones).",
+      "tasks": [
+        "Crear los accesos read-only (system users / tokens) a las APIs de Meta, TikTok y Google Ads",
+        "Conectar los agentes IA para que lean campañas, gasto y métricas a diario",
+        "Definir el esquema unificado de métricas cross-plataforma (naming, monedas, atribución)",
+        "QA de cifras: validar que el dato del agente cuadre con el de cada plataforma"
+      ]
     },
     {
       "n": 2,
       "title": "Reportes + alarmas + sugerencias de cambios automatizadas",
       "outcome": "El líder decide, no calcula",
-      "desc": "Sobre la lectura conectada del paso 1, el agente arma el daily, dispara alarmas de pacing / CPL / saturación y propone cambios accionables (\"subir bid en X audiencia\", \"apagar Y creativo\", \"redistribuir 15% del budget a Z\"). El líder aprueba o descarta — no construye el reporte ni hace el cálculo manual."
+      "desc": "Sobre la lectura conectada del paso 1, el agente arma el daily, dispara alarmas de pacing / CPL / saturación y propone cambios accionables (\"subir bid en X audiencia\", \"apagar Y creativo\", \"redistribuir 15% del budget a Z\"). El líder aprueba o descarta — no construye el reporte ni hace el cálculo manual.",
+      "tasks": [
+        "Definir el daily estándar: métricas, formato y hora de entrega",
+        "Configurar alarmas de pacing, CPL y saturación con umbrales por canal",
+        "Prototipar las sugerencias accionables (subir bid, apagar creativo, redistribuir budget)",
+        "Iterar con los líderes hasta que reemplace el reporte manual"
+      ]
     },
     {
       "n": 3,
       "title": "Renovación de creativos guiada por performance",
       "outcome": "Itera hacia lo que funciona, sin briefing manual",
-      "desc": "Cierre del loop: el agente lee qué creativos performan, identifica patrones (formato, copy, hook, audiencia), genera variantes con IA y las rota. La \"renovación de creativos\" deja de ser una tarea calendarizada cada 2 días y se vuelve un loop continuo guiado por la data del paso 1."
+      "desc": "Cierre del loop: el agente lee qué creativos performan, identifica patrones (formato, copy, hook, audiencia), genera variantes con IA y las rota. La \"renovación de creativos\" deja de ser una tarea calendarizada cada 2 días y se vuelve un loop continuo guiado por la data del paso 1.",
+      "tasks": [
+        "Definir las métricas de fatiga/saturación por creativo y audiencia",
+        "Pipeline que identifica patrones ganadores (formato, copy, hook)",
+        "Generación de variantes con IA + flujo de aprobación humana",
+        "Automatizar la rotación: apagar saturados y lanzar aprobados"
+      ]
     },
     {
       "n": 4,
       "title": "Programa Brokers — BBDD consolidada + formación + comunidad",
       "outcome": "De fuente de leads a comunidad multiproducto",
-      "desc": "Pivote estratégico de marketing: dejar de tratar a los brokers como fuente de leads para Habi Sellers exclusivamente, y construir una comunidad de brokers alrededor del ecosistema completo. Tres pilares: (1) consolidar la BBDD de brokers hoy fragmentada; (2) lanzar cursos de formación inmobiliaria sobre los 5 productos Habi; (3) construir comunidad (hub + eventos) para que los brokers se vinculen con Habi y entre ellos."
+      "desc": "Pivote estratégico de marketing: dejar de tratar a los brokers como fuente de leads para Habi Sellers exclusivamente, y construir una comunidad de brokers alrededor del ecosistema completo. Tres pilares: (1) consolidar la BBDD de brokers hoy fragmentada; (2) lanzar cursos de formación inmobiliaria sobre los 5 productos Habi; (3) construir comunidad (hub + eventos) para que los brokers se vinculen con Habi y entre ellos.",
+      "tasks": [
+        "Consolidar la BBDD de brokers (hoy fragmentada) en una sola fuente",
+        "Diseñar la formación inmobiliaria sobre los 5 productos Habi",
+        "Lanzar el hub + eventos de comunidad para vincular brokers con Habi y entre ellos",
+        "Definir el modelo de servicio multimarca para aliados (Sellers, Buyers, propiedades.com, Pulppo, Franquicias)"
+      ]
     }
   ],
   "brokers_program": {

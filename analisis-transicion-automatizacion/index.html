@@ -72,14 +72,6 @@
   .kpi.flag .val { color: var(--danger-border); }
   .kpi.ok .val { color: var(--ok-border); }
 
-  .milestone-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 14px; margin: 22px 0; }
-  .milestone { background: var(--card); border: 1px solid var(--border); border-left: 3px solid var(--accent); border-radius: 0 10px 10px 0; padding: 14px 18px; }
-  .milestone .q { color: var(--accent); font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; }
-  .milestone .t { font-weight: 600; color: var(--text-title); margin-top: 4px; margin-bottom: 6px; }
-  .milestone .d { font-size: 13.5px; color: var(--text); }
-  .milestone.today { border-left-color: var(--ok-border); }
-  .milestone.plan { border-left-color: #818cf8; background: #f5f3ff; }
-  .milestone.vision { border-left-color: #db2777; background: #fdf4ff; }
 
   .pill { display: inline-block; font-size: 11px; padding: 2px 9px; border-radius: 999px; font-weight: 600; margin-right: 6px; vertical-align: middle; }
   .pill.ia { background: #d1fae5; color: #065f46; }
@@ -94,17 +86,18 @@
   .chain-step .title { font-weight: 700; color: var(--text-title); font-size: 16px; }
   .chain-step .outcome { font-size: 12px; color: var(--ok-border); font-weight: 600; text-transform: uppercase; letter-spacing: 0.4px; margin-left: 40px; }
   .chain-step .desc { margin-left: 40px; margin-top: 8px; font-size: 14px; color: var(--text); }
+  .chain-step .tasks { margin: 10px 0 0 40px; padding-left: 0; list-style: none; }
+  .chain-step .tasks li { font-size: 13px; color: var(--text-muted); padding: 3px 0 3px 22px; position: relative; }
+  .chain-step .tasks li::before { content: '☐'; position: absolute; left: 0; color: var(--accent); font-size: 14px; }
   .chain-step::after { content: '↓'; display: block; text-align: center; color: var(--accent); font-size: 22px; line-height: 1; margin-top: 12px; }
   .chain-step:last-child::after { display: none; }
 
-  .dest-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px; margin: 18px 0 6px; }
-  .dest-card { background: var(--card); border: 1px solid var(--border); border-top: 3px solid var(--ok-border); border-radius: 0 0 10px 10px; padding: 14px 18px; }
-  .dest-card .t { font-weight: 600; color: var(--text-title); font-size: 14.5px; margin-bottom: 6px; }
-  .dest-card .d { font-size: 13px; color: var(--text); }
 
   /* Evolution timeline */
-  .evo-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; margin: 22px 0; }
+  .evo-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 26px; margin: 22px 0; }
   .evo-card { background: var(--card); border: 1px solid var(--border); border-top: 3px solid var(--border); border-radius: 0 0 10px 10px; padding: 14px 16px; position: relative; }
+  .evo-card + .evo-card::before { content: '→'; position: absolute; left: -13px; top: 50%; transform: translate(-50%, -50%); color: var(--accent); font-weight: 700; font-size: 17px; }
+  @media (max-width: 760px) { .evo-grid { grid-template-columns: 1fr; gap: 28px; } .evo-card + .evo-card::before { content: '↓'; left: 50%; top: -14px; transform: translate(-50%, -50%); } }
   .evo-card.today { border-top-color: var(--ok-border); background: #f0fdf4; }
   .evo-card .period { color: var(--accent); font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; }
   .evo-card.today .period { color: var(--ok-border); }
@@ -154,6 +147,11 @@
     .transition-flow { grid-template-columns: 1fr; gap: 8px; }
     .t-arrow { transform: rotate(90deg); margin: 0 auto; }
   }
+  /* Card existente (70%) + card resumen verde pegado a la derecha (30%) */
+  .transition-pair { display: grid; grid-template-columns: 7fr 3fr; gap: 14px; align-items: stretch; }
+  .transition-summary { background: #f0fdf4; border: 1px solid #86efac; border-radius: 12px; padding: 18px 22px; display: flex; align-items: center; justify-content: center; text-align: center; }
+  .transition-summary p { margin: 0; font-size: 15px; font-weight: 700; color: #15803d; line-height: 1.45; }
+  @media (max-width: 760px) { .transition-pair { grid-template-columns: 1fr; } }
 
   .brokers-flow { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 18px; margin: 22px 0; }
   .brokers-flow .arrow { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 20px; }
@@ -193,35 +191,18 @@
 
 <section id="resumen">
 <h2 style="margin-top:32px;padding-top:0;border-top:none">Plan de transición Q1 → Q3 2026</h2>
-<p>Tres ejes simultáneos: <strong>agentes</strong> que se reducen apoyados en IA, <strong>líderes</strong> que se especializan en Performance + Growth, y <strong>productos</strong> que se multiplican bajo un modelo de hub de marketing con servicios transversales.</p>
+<p>Tres ejes simultáneos: <strong>líderes</strong> que se especializan en Performance + Growth, <strong>productos</strong> que se multiplican bajo un modelo de hub de marketing con servicios transversales automatizados, y <strong>agentes</strong> que se reducen apoyados en IA.</p>
 
 <div class="transition-grid">
 
-  <div class="transition-row">
-    <div class="eje-title">Agentes de marketing</div>
-    <div class="transition-flow">
-      <div class="t-state from">
-        <div class="when">Q1 2026</div>
-        <div class="value">12 agentes</div>
-        <div class="detail">6 MX + 6 CO operando completitud manual</div>
-      </div>
-      <div class="t-arrow">→</div>
-      <div class="t-state to">
-        <div class="when">Q3 2026</div>
-        <div class="value">6 agentes</div>
-        <div class="detail">3 MX + 3 CO, foco en Brokers + entrenamiento de IA</div>
-      </div>
-    </div>
-    <p class="t-how"><strong>Cómo:</strong> automatizar la completitud de Lead Forms (agente IA por llamada + WhatsApp) y el flujo de Ventanas a CRM (triage automatizado), y fortalecer el rol de Brokers como canal multiproducto del ecosistema Habi.</p>
-  </div>
-
+  <div class="transition-pair">
   <div class="transition-row">
     <div class="eje-title">Líderes de canal</div>
     <div class="transition-flow">
       <div class="t-state from">
         <div class="when">Q1 2026</div>
-        <div class="value">4 Performance</div>
-        <div class="detail">Perfil homogéneo, foco en pauta</div>
+        <div class="value">5 líderes de canal</div>
+        <div class="detail">4 líderes Performance, perfil homogéneo, foco en pauta + 1 líder SEO y orgánico</div>
       </div>
       <div class="t-arrow">→</div>
       <div class="t-state to">
@@ -232,7 +213,10 @@
     </div>
     <p class="t-how"><strong>Cómo:</strong> automatizar y estandarizar los procesos de pauta Performance — para que mantener el motor cueste menos horas — y crecer en iteración y experimentación de nuevos canales (lo que pasa a ser responsabilidad de los nuevos líderes de Growth).</p>
   </div>
+    <div class="transition-summary"><p>Optimización en 1/5 del equipo y reducción de horas de mantenimiento para escalar en capacidades de crecimiento</p></div>
+  </div>
 
+  <div class="transition-pair">
   <div class="transition-row">
     <div class="eje-title">Infra y modelo operativo</div>
     <div class="transition-flow">
@@ -250,17 +234,42 @@
     </div>
     <p class="t-how"><strong>Cómo:</strong> pasar de un área-función a un <strong>hub de marketing</strong> con <strong>Performance + Brand + Growth</strong> como servicios transversales que sirven a múltiples productos. La capacidad no escala sumando personas — escala consolidando capacidades.</p>
   </div>
+    <div class="transition-summary"><p>Optimización por crecimiento en marcas impactadas, automatización de procesos nos permite replicar a otras marcas y centrarnos en estrategia</p></div>
+  </div>
+
+  <div class="transition-pair">
+  <div class="transition-row">
+    <div class="eje-title">Agentes de marketing</div>
+    <div class="transition-flow">
+      <div class="t-state from">
+        <div class="when">Q1 2026</div>
+        <div class="value">14 agentes</div>
+        <div class="detail">7 MX + 7 CO operando completitud manual</div>
+      </div>
+      <div class="t-arrow">→</div>
+      <div class="t-state to">
+        <div class="when">Q3 2026</div>
+        <div class="value">6 agentes</div>
+        <div class="detail">3 MX + 3 CO, foco en Brokers + entrenamiento de IA</div>
+      </div>
+    </div>
+    <p class="t-how"><strong>Cómo:</strong> automatizar la completitud de Lead Forms (agente IA por llamada + WhatsApp) y el flujo de Ventanas a CRM (triage automatizado), y fortalecer el rol del canal de Brokers, con los agentes remanentes, con objetivo de construcción de comunidad como canal multiproducto del ecosistema Habi.</p>
+  </div>
+    <div class="transition-summary"><p>Optimización con IA Agent GABI y reducción de equipo en más de un 50%</p></div>
+  </div>
 
 </div>
 </section>
 
 <!-- ============================================ CAPÍTULO 1 ============================================ -->
-<h2 id="cap-1" class="chapter"><span class="num">Capítulo 1</span>Líderes de canal — IA para ganar capacidad, no para bajar horas</h2>
+<h2 id="cap-1" class="chapter"><span class="num">Capítulo 1</span>Líderes de canal — IA para ganar capacidad, del mantenimiento a la estrategia de crecimiento</h2>
 
 <h3>1.1 De Performance puro a Growth multi-producto</h3>
 <p id="evo-narrative" style="margin-bottom:14px"></p>
 <div class="evo-grid" id="evo-grid"></div>
 <p style="font-size:13.5px;color:var(--text-muted)">Este salto explica el contexto del análisis: estamos midiendo la carga del equipo en el momento exacto en el que más responsabilidades cayeron — Pulppo, propiedades.com y Franquicias entraron <strong>en el mismo trimestre</strong>. Por eso la pregunta no es "cuánto sobra" sino "cómo escalamos sin sumar personas".</p>
+<p style="font-size:13.5px;color:var(--text-muted)">En paralelo llevamos a cabo una <strong>optimización en la redistribución de las funciones del equipo</strong> a partir de la automatización del mantenimiento: el SEO pasó a hacer parte de la estrategia de SEM y cayó dentro de las funciones del equipo de Performance Marketing. Esto nos permitió <strong>reducir los líderes de canal en 1/5 parte</strong>.</p>
+<p style="font-size:13.5px;color:var(--text-muted)"><strong>Hoy el canal está entre la tercera y la cuarta etapa</strong> de esta transición. Por eso medimos la dedicación de horas del equipo en el momento actual: para entender qué tenemos que hacer y adaptar para llegar a la cuarta etapa, creciendo a ser un <strong>hub de marketing multimarca</strong>.</p>
 
 <h3>1.2 La foto actual: cómo se distribuye la semana</h3>
 <p>El ejercicio ABC COSTING (mayo 2026) inventarió cada tarea del equipo, su frecuencia y las horas/semana que consume. Cuatro perfiles de líder operan los canales digitales de Habi: dos en México (Performance y Growth) y dos en Colombia (Performance y Growth).</p>
@@ -276,7 +285,7 @@
   <div class="chart-wrap"><canvas id="chart-leaders-stages"></canvas></div>
 </div>
 
-<p>El patrón es consistente: <strong>~80% del tiempo va a Mantenimiento</strong> (operativo y reactivo). Análisis, Planeación, Estratégico y Coordinación juntos no llegan al 20%. La oportunidad con IA no es eliminar Mantenimiento — es hacerlo en mucho menos tiempo cognitivo del líder, dejando capacidad libre para las otras etapas.</p>
+<p>El patrón es consistente: <strong>~80% del tiempo va a Mantenimiento</strong> (operativo y reactivo). Análisis, Planeación, Estratégico y Coordinación juntos no llegan al 20%. La oportunidad con IA no es eliminar Mantenimiento — es hacerlo en mucho menos tiempo cognitivo del líder, dejando capacidad libre para adquirir nuevas capacidades multimarca y consolidar el Hub de Marketing.</p>
 
 <h3>1.3 Qué de esto puede asumir IA — y qué no</h3>
 <p>Tomamos el rol más sobrecargado (Líder Performance MX, 44.4 h/sem, 33 tareas) y clasificamos cada tarea en tres baldes: <strong>IA ejecuta</strong> (la tarea sale del calendario humano), <strong>IA asiste</strong> (el líder sigue decidiendo, pero más rápido y con más volumen), y <strong>Solo humano</strong> (criterio, relación, decisión estratégica).</p>
@@ -299,64 +308,57 @@
   <ul style="margin:8px 0 0 0; padding-left:22px;">
     <li><strong>Líder Performance MX:</strong> regresa al rango de 40 h/sem (–4.4h, regularización del único rol sobre capacidad).</li>
     <li><strong>Los 4 líderes:</strong> liberan ~10% de su semana (~3.5–4 h cada uno).</li>
-    <li>Esa capacidad liberada se reinvierte — <strong>no se baja de jornada</strong> — en los 3 frentes estratégicos que hoy quedan cortos.</li>
+    <li>Esa capacidad liberada se reinvierte para generar la transición al <strong>Marketing Hub multimarca</strong> con capacidades para propiedades.com, Pulppo y Franquicias.</li>
   </ul>
 </div>
 
-<h4>Los 3 destinos de la capacidad liberada</h4>
-<div class="dest-grid" id="dest-grid"></div>
-
 <h3 id="proyectos">1.4 Los 4 proyectos que vamos a ejecutar — una cadena de capacidad</h3>
-<p>Los 3 primeros proyectos son una cadena técnica (cada paso alimenta al siguiente). El proyecto 4, Programa Brokers, es el destino estratégico: la capacidad que liberan los 3 primeros se reinvierte aquí, sumado al pivote del Cap. 2.</p>
+<p>Son proyectos para automatizar y aprovechar la creación de <strong>agentes de IA</strong> que simplifiquen el mantenimiento mecánico de las campañas de marketing actuales — no solo para reducir tiempo de dedicación humana, sino para ayudarnos a mejorar más rápido con <strong>alarmas en vivo</strong> e <strong>insights actualizados día a día</strong>. El proyecto 4 es la apuesta de crecimiento: el canal de <strong>Brokers de marketing</strong>, que nos permite darles un servicio multimarca con una mucho mejor experiencia de servicios Habi a nuestros aliados.</p>
 
 <div class="chain" id="chain-projects"></div>
-
-<div class="callout info">
-  <p><strong>Por qué importa el orden.</strong> Hoy hacemos los 3 pasos manualmente, pero cada uno arrancando de cero: el líder abre Meta, mira números, decide y solo ahí (a veces) brieea creativos. El proyecto encadena los tres en un loop continuo donde la lectura de performance dispara la acción creativa sin pasos intermedios manuales.</p>
-</div>
 
 <!-- ============================================ CAPÍTULO 2 ============================================ -->
 <h2 id="cap-2" class="chapter"><span class="num">Capítulo 2</span>Agentes de marketing — la maduración de 2022 a 2027</h2>
 
-<p>El equipo de agentes (call center) viene de un proceso de optimización progresiva desde 2022: menos personas, procesos más específicos, mayor especialización. Hoy son <strong>10 personas en total</strong>: 5 en Colombia (3 Ventanas + 1 Lead Forms + 1 Brokers) y 5 en México (4 Lead Forms + 1 Brokers). El plan Q3 2026 lo deja en <strong>3 + 3</strong>, vehiculizado por automatización de la completitud Lead Forms.</p>
+<p>El equipo de agentes (call center) viene de un <strong>proceso de optimización progresiva desde 2022</strong>: menos personas, procesos más específicos, mayor especialización. Pasamos de equipos masivos y tercerizados (14 personas en CO, un BPO con 20 en MX) a equipos internos compactos y especializados. La idea es <strong>continuar este mismo proceso</strong> hasta llegar a la estrategia: el plan Q3 2026 deja el equipo en <strong>3 + 3</strong>, vehiculizado por la automatización de la completitud Lead Forms y la automatización de CRM. Sumado a esas automatizaciones, sí queremos dejar <strong>2 agentes por país exclusivos para el canal de Brokers</strong>, para continuar la construcción de una <strong>comunidad multimarca bajo la sombrilla Habi</strong>, con multiproductos y servicios.</p>
 
-<h3>2.1 Carga actual — la palanca está en Ventana a CRM</h3>
+<h3>2.1 Evolución histórica de los equipos de agentes de marketing (call center) — CO y MX</h3>
+
+<h4>Colombia: del CRM masivo al equipo especializado</h4>
 <div class="chart-card">
-  <div class="chart-title">Equipos de agentes — horas ocupadas vs disponibles</div>
-  <div class="chart-subtitle">Ventanas CO concentra el exceso: 3 personas con 120h disponibles asumen 200h de trabajo (+80h). Lead Forms (5) está al límite. Brokers (2, 1 por país) al límite.</div>
-  <div class="chart-wrap"><canvas id="chart-agents-load"></canvas></div>
+  <div class="chart-title">Equipo de agentes Colombia — evolución 2022 Q4 → Plan Q3'26</div>
+  <div class="chart-subtitle">Columnas apiladas por proceso. De 14 personas (Q4'22) a 6 hoy. Plan Q3'26: <strong>3</strong> — 1 agente CRM residual + 2 Brokers dedicados.</div>
+  <div class="chart-wrap"><canvas id="chart-history-co"></canvas></div>
 </div>
 
+<p style="font-size:13.5px;color:var(--text-muted)">La gráfica resume cuatro años de optimización continua: del pico de <strong>14 personas en 2022 Q4</strong> (CRM masivo + revisar dirección + completitud manual desde la web), el equipo se fue reduciendo por escalones — optimización del CRM en 2023 (–30%), nacimiento del rol Lead Forms en 2024 con los formularios nativos de META/TikTok, fusión de Dirección + Brokers en 2025 — hasta los <strong>6 de hoy</strong>, con Brokers ya como rol dedicado. El plan Q3'26 cierra el ciclo en <strong>3 agentes</strong>: 1 CRM residual + 2 Brokers dedicados, con Lead Forms y completitud automatizados.</p>
+
+<h4>México: del BPO pago-por-lead al equipo interno + IA</h4>
+<div class="callout info">
+  <p><strong>Nota explicativa.</strong> Dos procesos de Colombia no existen en México:</p>
+  <ul style="margin:8px 0 0 0; padding-left:22px;">
+    <li><strong>"Revisar Dirección"</strong> — Colombia opera con lógica de lotes (subastas) que requiere validar la dirección antes de enrutar al backbone; México no, el funnel es directo lead → calificación.</li>
+    <li><strong>CRM</strong> — se probó en México y no es viable como canal: hay demasiada intervención de brokers y muy poca participación de cliente directo.</li>
+  </ul>
+</div>
+
+<div class="chart-card">
+  <div class="chart-title">Equipo de agentes México — del BPO tercerizado al equipo interno + IA</div>
+  <div class="chart-subtitle">Antes pagábamos por lead completado a un BPO con 20 agentes. Internalizamos en 2025. Plan Q3'26: <strong>3</strong> — 1 Entrenador de IA Lead Forms + 2 Brokers dedicados.</div>
+  <div class="chart-wrap"><canvas id="chart-history-mx"></canvas></div>
+</div>
+
+<p style="font-size:13.5px;color:var(--text-muted)">La historia de México es la de una internalización: en <strong>2022 Q4</strong> la completitud la operaba un <strong>BPO tercerizado de 20 agentes</strong> con modelo de pago por lead completado. El BPO se fue reduciendo gradualmente hasta cancelarse en <strong>2025 Q1</strong>, cuando un equipo interno de 6 lo reemplazó — subió la calidad y bajó el costo. En 2025 Q2 nace el primer rol Brokers MX, y hoy son <strong>6</strong>: 5 en Lead Forms + 1 Brokers. El plan Q3'26 cierra en <strong>3</strong>: 1 Entrenador de IA Lead Forms — afina prompts, evalúa calidad y complementa al agente IA en casos complejos — + 2 Brokers dedicados.</p>
+
+<h3>2.2 Carga actual — la palanca está en Ventana a CRM</h3>
 <table>
-<thead><tr><th>Tarea (Ventanas CO · 3 personas)</th><th>h/sem</th><th>IA</th></tr></thead>
+<thead><tr><th>Tarea (equipos de agentes CO + MX)</th><th>h/sem</th><th># agentes a simplificar</th><th>IA</th></tr></thead>
 <tbody id="t-co-tasks"></tbody>
 </table>
 
 <p style="font-size:13.5px;color:var(--text-muted)">Los 3 procesos del equipo Ventanas CO (Ventana a CRM + revisar dirección + incompletos web) suman <strong>200 h/sem</strong> — el 100% del trabajo es IA-ejecutable o asistible. La misma plataforma del Cap. 1 desarma esta carga.</p>
 
-<h3>2.2 Colombia: del CRM masivo al equipo especializado</h3>
-<div class="chart-card">
-  <div class="chart-title">Equipo de agentes Colombia — evolución 2022 Q4 → Plan Q3'26</div>
-  <div class="chart-subtitle">Área apilada por proceso. De 14 personas (Q4'22) a 5 hoy. Plan: 3.</div>
-  <div class="chart-wrap"><canvas id="chart-history-co"></canvas></div>
-</div>
-
-<div class="milestone-grid" id="co-milestones"></div>
-
-<h3>2.3 México: del BPO pago-por-lead al equipo interno + IA</h3>
-<div class="callout info">
-  <p><strong>Nota explicativa.</strong> MX no tiene proceso de "Revisar Dirección" — Colombia opera con lógica de lotes (subastas) que requiere validar la dirección antes de enrutar al backbone; México no, el funnel es directo lead → calificación.</p>
-</div>
-
-<div class="chart-card">
-  <div class="chart-title">Equipo de agentes México — del BPO tercerizado al equipo interno + IA</div>
-  <div class="chart-subtitle">Antes pagábamos por lead completado a un BPO con 20 agentes. Internalizamos en 2025; el plan Q3'26 reemplaza Lead Forms con agentes IA.</div>
-  <div class="chart-wrap"><canvas id="chart-history-mx"></canvas></div>
-</div>
-
-<div class="milestone-grid" id="mx-milestones"></div>
-
-<h3>2.4 Brokers — de fuente de leads a comunidad multiproducto</h3>
+<h3>2.3 Brokers — de fuente de leads a comunidad multiproducto</h3>
 
 <div class="pivot-box">
   <strong style="color:#9d174d">El pivote estratégico de marketing en Brokers.</strong>
@@ -398,16 +400,12 @@
   </div>
 </div>
 
-<h3 id="meta">2.5 La meta: 3 + 3 al cierre de Q3 2026</h3>
+<h3 id="meta">2.4 La meta: 3 + 3 al cierre de Q3 2026</h3>
 
 <div class="meta-3x3">
   <div class="label">Plan Q3 2026 — equipo agentes</div>
   <div class="val">3 <span>+</span> 3</div>
   <p class="desc"><strong>CO:</strong> 1 agente CRM residual + 2 Brokers dedicados. &nbsp;·&nbsp; <strong>MX:</strong> 1 Entrenador de IA Lead Forms + 2 Brokers dedicados. <br>El humano que queda en Lead Forms es <strong>entrenador y complemento del agente IA</strong>: afina prompts, evalúa calidad de respuestas y atiende los casos que la IA no resuelve. <br>La palanca para llegar ahí: <strong>automatizar la completitud Lead Forms</strong> (120 h/sem en MX + 40 h/sem en CO — el grueso del trabajo manual desaparece).</p>
-</div>
-
-<div class="callout ok">
-  <p><strong>El nexo con el Capítulo 1.</strong> Los 3 proyectos del Cap 1 (lectura conectada → reportes/alarmas → renovación de creativos) y el agente IA de completitud Lead Forms del Cap 2 corren sobre <strong>la misma plataforma técnica</strong>. No son dos proyectos separados: es una sola apuesta de infraestructura que sirve a líderes y agentes en paralelo.</p>
 </div>
 
 <div class="footer-note">
@@ -496,110 +494,73 @@ fetch('data.json').then(r => r.json()).then(D => {
     topBody.insertAdjacentHTML('beforeend', `<tr><td style="white-space:normal">${t.task}</td><td style="white-space:normal;font-size:12px;color:var(--text-muted);text-align:left">${t.etapa}</td><td>${t.hours_week.toFixed(1)}</td><td><span class="pill ${pillCls}">${t.ai}</span></td><td style="white-space:normal;font-size:12.5px;text-align:left">${t.how}</td></tr>`);
   });
 
-  // ---------- Destinations ----------
-  const dest = document.getElementById('dest-grid');
-  D.capacity_reallocation.destinations.forEach(d => {
-    dest.insertAdjacentHTML('beforeend', `<div class="dest-card"><div class="t">${d.title}</div><div class="d">${d.desc}</div></div>`);
-  });
-
   // ---------- Projects chain ----------
   const chain = document.getElementById('chain-projects');
   D.projects.forEach(p => {
-    chain.insertAdjacentHTML('beforeend', `<div class="chain-step"><div class="head"><span class="num">${p.n}</span><span class="title">${p.title}</span></div><div class="outcome">→ ${p.outcome}</div><div class="desc">${p.desc}</div></div>`);
-  });
-
-  // ---------- Chart 3: agents load ----------
-  new Chart(document.getElementById('chart-agents-load'), {
-    type: 'bar',
-    data: {
-      labels: D.agent_teams.map(t => t.label),
-      datasets: [
-        { label: 'Horas ocupadas', data: D.agent_teams.map(t => t.hours_used), backgroundColor: '#4f46e5' },
-        { label: 'Horas disponibles', data: D.agent_teams.map(t => t.hours_available), backgroundColor: '#cbd5e1' }
-      ]
-    },
-    options: {
-      responsive: true, maintainAspectRatio: false,
-      scales: {
-        x: { title: { display: true, text: 'horas / semana' }, beginAtZero: true },
-        y: {}
-      },
-      indexAxis: 'y',
-      plugins: {
-        legend: { position: 'bottom', labels: { boxWidth: 12, font: { size: 12 } } },
-        tooltip: {
-          callbacks: {
-            afterLabel: (ctx) => {
-              const t = D.agent_teams[ctx.dataIndex];
-              return `${t.headcount} persona${t.headcount > 1 ? 's' : ''}`;
-            }
-          }
-        }
-      }
-    }
+    const tasks = (p.tasks || []).map(t => `<li>${t}</li>`).join('');
+    chain.insertAdjacentHTML('beforeend', `<div class="chain-step"><div class="head"><span class="num">${p.n}</span><span class="title">${p.title}</span></div><div class="outcome">→ ${p.outcome}</div><div class="desc">${p.desc}</div>${tasks ? `<ul class="tasks">${tasks}</ul>` : ''}</div>`);
   });
 
   // ---------- Table: CO tasks ----------
   const coBody = document.getElementById('t-co-tasks');
-  D.agent_teams[0].tasks.forEach(t => {
+  const lfTasks = D.agent_teams[1].tasks;
+  const lfHours = suf => lfTasks.filter(t => t.task.includes(suf)).reduce((a, t) => a + t.hours_week, 0);
+  const agentRows = [
+    ...D.agent_teams[0].tasks.filter(t => t.task === 'Ventana a CRM').map(t => ({...t, agents: 4})),
+    { task: 'Lead Forms MX', hours_week: 160, agents: 4, ai: 'IA ejecuta' },
+    { task: 'Lead Forms CO', hours_week: lfHours('(CO)'), agents: 1, ai: 'IA ejecuta' }
+  ];
+  agentRows.forEach(t => {
     const pillCls = t.ai === 'IA ejecuta' ? 'ia' : t.ai === 'IA asiste (humano decide)' ? 'asiste' : 'humano';
-    coBody.insertAdjacentHTML('beforeend', `<tr><td style="white-space:normal">${t.task}</td><td>${t.hours_week}</td><td><span class="pill ${pillCls}">${t.ai}</span></td></tr>`);
+    coBody.insertAdjacentHTML('beforeend', `<tr><td style="white-space:normal">${t.task}</td><td>${t.hours_week}</td><td>${t.agents}</td><td><span class="pill ${pillCls}">${t.ai}</span></td></tr>`);
   });
 
   // ---------- Chart 4: history CO ----------
   const procCO = ['CRM','Direccion','Incompletos','LeadForms','Brokers'];
   const procColors = ['#4f46e5','#0ea5e9','#f59e0b','#10b981','#db2777'];
   new Chart(document.getElementById('chart-history-co'), {
-    type: 'line',
+    type: 'bar',
     data: {
       labels: D.history_co.map(r => r.quarter),
       datasets: procCO.map((p, i) => ({
         label: p === 'Direccion' ? 'Revisar Dirección' : p === 'LeadForms' ? 'Lead Forms' : p,
         data: D.history_co.map(r => r[p]),
-        backgroundColor: procColors[i] + 'cc',
-        borderColor: procColors[i],
-        fill: true, tension: 0.25, borderWidth: 2, pointRadius: 3
+        backgroundColor: D.history_co.map(r => r.plan ? procColors[i] + '80' : procColors[i]),
+        stack: 'a'
       }))
     },
     options: {
       responsive: true, maintainAspectRatio: false,
-      scales: { y: { stacked: true, title: { display: true, text: '# agentes' }, beginAtZero: true } },
-      plugins: { legend: { position: 'bottom', labels: { boxWidth: 12, font: { size: 12 } } }, tooltip: { mode: 'index', intersect: false } }
-    }
-  });
-
-  // ---------- Chart 5: history MX ----------
-  new Chart(document.getElementById('chart-history-mx'), {
-    type: 'bar',
-    data: {
-      labels: D.history_mx.map(r => r.quarter),
-      datasets: [
-        { label: 'Lead Forms', data: D.history_mx.map(r => r.LeadForms),
-          backgroundColor: D.history_mx.map(r => r.modalidad && r.modalidad.startsWith('BPO') ? '#94a3b8' : r.vision ? '#fdf4ff' : r.plan ? '#a5b4fc' : '#4f46e5'),
-          stack: 'a' },
-        { label: 'Brokers', data: D.history_mx.map(r => r.Brokers || 0), backgroundColor: '#db2777', stack: 'a' }
-      ]
-    },
-    options: {
-      responsive: true, maintainAspectRatio: false,
-      scales: { y: { stacked: true, title: { display: true, text: '# agentes' }, beginAtZero: true } },
+      scales: { x: { stacked: true }, y: { stacked: true, title: { display: true, text: '# agentes' }, beginAtZero: true } },
       plugins: {
         legend: { position: 'bottom', labels: { boxWidth: 12, font: { size: 12 } } },
-        tooltip: { callbacks: { afterLabel: (ctx) => { const r = D.history_mx[ctx.dataIndex]; return r.modalidad ? `Modalidad: ${r.modalidad}` : ''; } } }
+        tooltip: { mode: 'index', intersect: false, callbacks: { afterBody: (items) => { const r = D.history_co[items[0].dataIndex]; return r.note || ''; } } }
       }
     }
   });
 
-  // ---------- Milestones ----------
-  const renderMilestones = (id, items) => {
-    const el = document.getElementById(id);
-    items.forEach(m => {
-      const cls = m.q.startsWith('Plan') ? 'plan' : m.q.startsWith('Visión') ? 'vision' : (m.q === '2026 Q2' || m.q === '2026 Q1' ? 'today' : '');
-      el.insertAdjacentHTML('beforeend', `<div class="milestone ${cls}"><div class="q">${m.q}</div><div class="t">${m.title}</div><div class="d">${m.text}</div></div>`);
-    });
-  };
-  renderMilestones('co-milestones', D.co_milestones);
-  renderMilestones('mx-milestones', D.mx_milestones);
+  // ---------- Chart 5: history MX ----------
+  const histMX = D.history_mx.filter(r => !r.vision);
+  new Chart(document.getElementById('chart-history-mx'), {
+    type: 'bar',
+    data: {
+      labels: histMX.map(r => r.quarter),
+      datasets: [
+        { label: 'Lead Forms', data: histMX.map(r => r.LeadForms),
+          backgroundColor: histMX.map(r => r.plan ? '#10b98180' : '#10b981'),
+          stack: 'a' },
+        { label: 'Brokers', data: histMX.map(r => r.Brokers || 0), backgroundColor: histMX.map(r => r.plan ? '#db277780' : '#db2777'), stack: 'a' }
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      scales: { x: { stacked: true }, y: { stacked: true, title: { display: true, text: '# agentes' }, beginAtZero: true } },
+      plugins: {
+        legend: { position: 'bottom', labels: { boxWidth: 12, font: { size: 12 } } },
+        tooltip: { callbacks: { afterLabel: (ctx) => { const r = histMX[ctx.dataIndex]; return r.modalidad ? `Modalidad: ${r.modalidad}` : ''; } } }
+      }
+    }
+  });
 
   // ---------- Brokers program ----------
   document.getElementById('brokers-philosophy').textContent = D.brokers_program.philosophy;
