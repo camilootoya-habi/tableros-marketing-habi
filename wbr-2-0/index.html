@@ -135,6 +135,17 @@
   .chart-card svg { width: 100%; height: 53px; display: block; margin-top: 6px; }
   .chart-tooltip { position: fixed; pointer-events: none; background: var(--card); border: 1px solid var(--border); border-radius: 6px; padding: 5px 9px; font-size: 11px; color: var(--text-title); z-index: 100; opacity: 0; transition: opacity 0.1s; box-shadow: 0 4px 12px rgba(0,0,0,0.15); white-space: nowrap; }
   .chart-tooltip.visible { opacity: 1; }
+  /* Stacked asignados-by-source chart (headline) */
+  .stacked-wrap { max-width: 1200px; margin: 18px auto 0; background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 16px 18px; }
+  .stacked-wrap .sw-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+  .stacked-wrap .sw-title { font-size: 15px; font-weight: 600; color: var(--text-title); }
+  .stacked-wrap .sw-sub { font-size: 12px; color: var(--text-muted-2); }
+  .stacked-legend { display: flex; flex-wrap: wrap; gap: 8px 16px; margin: 10px 0 2px; }
+  .stacked-legend .lg-item { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text-muted); }
+  .stacked-legend .lg-swatch { width: 11px; height: 11px; border-radius: 2px; flex: none; }
+  .stacked-wrap svg { width: 100%; height: auto; display: block; margin-top: 4px; }
+  .stacked-wrap .sw-axis { fill: var(--text-muted-2); font-size: 9px; }
+  .stacked-wrap .sw-grid { stroke: var(--border); stroke-width: 1; opacity: 0.5; }
   .section-divider { max-width: 1200px; margin: 36px auto 6px; padding-top: 18px; border-top: 1px solid var(--border); }
   .section-title { margin: 0; font-size: 16px; font-weight: 600; color: var(--text); letter-spacing: -0.01em; }
   .section-sub   { margin: 4px 0 0; font-size: 12px; color: var(--text-muted-2); }
@@ -160,7 +171,7 @@
 
   <div class="header">
     <h1>WBR <span>2.0</span></h1>
-    <p>Asignados semanales por canal. Selecciona la semana a analizar; la variación compara contra la semana inmediatamente anterior.</p>
+    <p>Asignados por fuente y canal. Elige el <strong>corte</strong> (semana lun–dom o ciclo comercial mié–mar) y el periodo a analizar; la variación compara contra el periodo inmediatamente anterior.</p>
   </div>
 
   <div class="controls">
@@ -169,11 +180,25 @@
       <button type="button" class="pill active" data-country="co">Colombia</button>
       <button type="button" class="pill" data-country="mx">México</button>
     </div>
+    <div class="control-group">
+      <label>Corte:</label>
+      <button type="button" class="pill" data-gran="week">Lun–Dom</button>
+      <button type="button" class="pill" data-gran="cycle">Mié–Mar (ciclo)</button>
+    </div>
     <div class="control-group" id="weekPills">
-      <label>Semana:</label>
+      <label id="weekLabel">Semana:</label>
       <!-- pills injected by JS -->
     </div>
     <div class="period-info" id="periodInfo">cargando…</div>
+  </div>
+
+  <div class="stacked-wrap" id="stackedWrap">
+    <div class="sw-head">
+      <span class="sw-title" id="stackedTitle">Asignados por fuente · por semana</span>
+      <span class="sw-sub" id="stackedSub"></span>
+    </div>
+    <div class="stacked-legend" id="stackedLegend"></div>
+    <div id="stackedChart"></div>
   </div>
 
   <div class="matrix-wrap">
@@ -219,12 +244,27 @@
   // --- State ---
   const STATE = {
     country: localStorage.getItem('wbr2-country') || 'co',
-    weekStart: null,        // selected week's Monday, ISO date string. Null = "most recent"
+    granularity: localStorage.getItem('wbr2-granularity') || 'week',  // 'week' (lun-dom) | 'cycle' (mié-mar)
+    weekStart: null,        // selected bucket start (ISO date). Null = "most recent"
     fuenteFilter: null,     // null = TOTAL, else a fuente name
     channelFilter: null,    // null = TOTAL of channels, else a channel name (drives second chart row)
     platformFilter: null,   // null = TOTAL of platforms, else a platform name (drives third chart row)
     data: null,
   };
+
+  // Active dataset for the selected country + granularity (week|cycle).
+  // Returns { by_week, totals_by_week, by_week_channels, by_week_platforms }.
+  function cdata() {
+    const c = (STATE.data && STATE.data[STATE.country]) || {};
+    return c[STATE.granularity] || {};
+  }
+
+  // Wording that depends on the active granularity (used across tables/charts).
+  const GRAN_WORDS = {
+    week:  { sing: 'Semana', prev: 'semana anterior', avg7: 'prom. últimas 7 semanas', metaAdj: 'semanal',  plural: 'semanas' },
+    cycle: { sing: 'Ciclo',  prev: 'ciclo anterior',  avg7: 'prom. últimos 7 ciclos',  metaAdj: 'por ciclo', plural: 'ciclos'  },
+  };
+  function gw() { return GRAN_WORDS[STATE.granularity] || GRAN_WORDS.week; }
 
   // --- Fuentes (fixed row order + group color key) — diff CO/MX: CRM↔Propiedades ---
   const FUENTES_BY_COUNTRY = {
@@ -301,7 +341,7 @@
   // --- Build the model ---
   function availableWeeks() {
     if (!STATE.data) return [];
-    const byWeek = (STATE.data[STATE.country] || {}).by_week || {};
+    const byWeek = cdata().by_week || {};
     return Object.keys(byWeek).sort();
   }
 
@@ -313,7 +353,7 @@
 
   function buildModel() {
     if (!STATE.data) return null;
-    const country = STATE.data[STATE.country] || {};
+    const country = cdata();
     const byWeek = country.by_week || {};
     const totalsByWeek = country.totals_by_week || {};
     const weeks = Object.keys(byWeek).sort();
@@ -404,9 +444,11 @@
 
     const sel = model.selected;
     const prv = model.prev;
+    const periodWord = STATE.granularity === 'cycle' ? 'Ciclo' : 'Semana';
+    const prevWord   = STATE.granularity === 'cycle' ? 'ciclo anterior' : 'semana anterior';
     document.getElementById('periodInfo').innerHTML =
-      `Semana: <strong>${fmtRange(sel)}</strong>` +
-      (prv ? ` · vs <strong>${fmtRange(prv)}</strong>` : ' · sin semana anterior');
+      `${periodWord}: <strong>${fmtRange(sel)}</strong>` +
+      (prv ? ` · vs <strong>${fmtRange(prv)}</strong>` : ` · sin ${prevWord}`);
 
     // Compute aporte pp denominator = totAll.prev
     const denom = model.totAll.prev;
@@ -540,7 +582,7 @@
 
       const tipAsg = `Actual: ${fmtInt(row.actual)} · Anterior: ${fmtInt(row.prev)}` +
                      (delta != null && delta !== Infinity ? ` · Δ ${(delta * 100).toFixed(1)}%` : '');
-      const tipMeta = metaVal == null ? 'Sin meta' : `Meta semanal: ${metaVal}`;
+      const tipMeta = metaVal == null ? 'Sin meta' : `Meta ${gw().metaAdj}: ${metaVal}`;
       const tipCumpl = (metaVal != null && metaVal > 0)
         ? `${row.actual} / ${metaVal} = ${cumpl == null ? '—' : (cumpl * 100).toFixed(2)}%`
         : 'Sin meta';
@@ -560,7 +602,7 @@
       const metaPeso = (metaVal != null && totalMeta > 0) ? metaVal / totalMeta : null;
       const metaPesoStr = metaPeso == null ? '' : (metaPeso * 100).toFixed(1) + '%';
       const tipMetaFull = (metaVal == null) ? 'Sin meta'
-        : `Meta semanal: ${metaVal}` + (metaPeso != null ? ` · Peso: ${(metaPeso * 100).toFixed(1)}%` : '');
+        : `Meta ${gw().metaAdj}: ${metaVal}` + (metaPeso != null ? ` · Peso: ${(metaPeso * 100).toFixed(1)}%` : '');
       const delta7  = deltaAvg7(row.actual, row.avg7);
       const delta7Str = (delta7 == null || delta7 === Infinity) ? (delta7 === Infinity ? 'Δ nuevo' : '—') : 'Δ ' + (delta7 > 0 ? '+' : '') + (delta7 * 100).toFixed(1) + '%';
       const aporte7 = aporteAvg7(row.actual, row.avg7);
@@ -598,8 +640,8 @@
       '<tr class="supra">' +
         '<th class="supra-empty" colspan="3"></th>' +
         '<th class="supra-meta"  colspan="2">Vs Meta</th>' +
-        '<th class="supra-week"  colspan="2">Vs semana anterior</th>' +
-        '<th class="supra-7s"    colspan="2">Vs prom. últimas 7 semanas</th>' +
+        `<th class="supra-week"  colspan="2">Vs ${gw().prev}</th>` +
+        `<th class="supra-7s"    colspan="2">Vs ${gw().avg7}</th>` +
       '</tr>' +
       '<tr>' +
         '<th class="col-channel">Fuente</th>' +
@@ -628,6 +670,7 @@
       });
     });
 
+    renderStackedAsignados();
     renderCharts();
     renderChannels();
     renderPlatforms();
@@ -639,7 +682,7 @@
   const CHART_TOTAL = CHART_WEEKS + CHART_CONTEXT;
 
   function trendSeries(metric, fuente) {
-    const byWeek = (STATE.data[STATE.country] || {}).by_week || {};
+    const byWeek = cdata().by_week || {};
     const weeks = chartWeeks();
     return weeks.map(w => {
       const cells = byWeek[w] || {};
@@ -666,7 +709,7 @@
   }
 
   function chartWeeks() {
-    const byWeek = (STATE.data[STATE.country] || {}).by_week || {};
+    const byWeek = cdata().by_week || {};
     const all = Object.keys(byWeek).sort();
     if (!all.length) return [];
     const sel = STATE.weekStart && all.includes(STATE.weekStart) ? STATE.weekStart : all[all.length - 1];
@@ -763,6 +806,101 @@
     { title: 'CPL',            color: '#fb923c', kind: 'cpl',   chartType: 'line', series: f => ratioSeries('spend', 'reg', f) },
   ];
 
+  // --- Headline: asignados apilados por fuente, por semana ---
+  // Color por fuente (CRM y Propiedades comparten color: misma celda en la tabla por país).
+  const SOURCE_COLORS = {
+    'WEB':              '#818cf8',
+    'Estudio Inmueble': '#22d3ee',
+    'lead_forms':       '#34d399',
+    'CRM':              '#fbbf24',
+    'Propiedades':      '#fbbf24',
+    'Broker':           '#f472b6',
+    'Comercial':        '#fb923c',
+  };
+  const colorForFuente = name => SOURCE_COLORS[name] || '#94a3b8';
+
+  function niceCeil(v) {
+    if (v <= 0) return 1;
+    const mag = Math.pow(10, Math.floor(Math.log10(v)));
+    const norm = v / mag;
+    let nice;
+    if (norm <= 1) nice = 1; else if (norm <= 2) nice = 2; else if (norm <= 2.5) nice = 2.5; else if (norm <= 5) nice = 5; else nice = 10;
+    return nice * mag;
+  }
+
+  function renderStackedAsignados() {
+    const byWeek = cdata().by_week || {};
+    const weeks = chartWeeks();                       // ventana de 20 semanas terminando en la seleccionada
+    const fuentes = fuentesForCountry().map(f => f.name);
+    const selected = (STATE.weekStart && weeks.includes(STATE.weekStart)) ? STATE.weekStart : weeks[weeks.length - 1];
+
+    document.getElementById('stackedTitle').textContent =
+      'Asignados por fuente · por ' + (STATE.granularity === 'cycle' ? 'ciclo (mié–mar)' : 'semana (lun–dom)');
+
+    document.getElementById('stackedLegend').innerHTML = fuentes.map(name =>
+      `<span class="lg-item"><span class="lg-swatch" style="background:${colorForFuente(name)}"></span>${escapeHtml(name)}</span>`
+    ).join('');
+
+    const totals = weeks.map(w => {
+      const cells = byWeek[w] || {};
+      return fuentes.reduce((s, name) => s + ((cells[name] && cells[name].asg) || 0), 0);
+    });
+    const maxTotal = Math.max(...totals, 0);
+
+    document.getElementById('stackedSub').textContent =
+      weeks.length ? `${fmtRange(weeks[0])} → ${fmtRange(weeks[weeks.length - 1])} · ${weeks.length} ${gw().plural}` : '';
+
+    const chartEl = document.getElementById('stackedChart');
+    if (!weeks.length || maxTotal <= 0) {
+      chartEl.innerHTML = '<div style="padding:24px;color:var(--text-muted)">sin datos</div>';
+      return;
+    }
+
+    const W = 1100, H = 320, mL = 48, mR = 14, mT = 14, mB = 42;
+    const plotW = W - mL - mR, plotH = H - mT - mB;
+    const n = weeks.length;
+    const barW = plotW / n;
+    const innerW = Math.min(barW * 0.74, 48);
+    const niceMax = niceCeil(maxTotal);
+    const yOf = v => mT + plotH - (v / niceMax) * plotH;
+
+    const ticks = 4;
+    let grid = '';
+    for (let t = 0; t <= ticks; t++) {
+      const val = niceMax * t / ticks;
+      const y = yOf(val);
+      grid += `<line class="sw-grid" x1="${mL}" y1="${y.toFixed(1)}" x2="${W - mR}" y2="${y.toFixed(1)}"/>`;
+      grid += `<text class="sw-axis" x="${mL - 6}" y="${(y + 3).toFixed(1)}" text-anchor="end">${fmtInt(val)}</text>`;
+    }
+
+    let bars = '', xlabels = '';
+    weeks.forEach((w, i) => {
+      const cells = byWeek[w] || {};
+      const cx = mL + i * barW + (barW - innerW) / 2;
+      const isSel = w === selected;
+      let acc = 0;
+      fuentes.forEach(name => {
+        const v = (cells[name] && cells[name].asg) || 0;
+        if (v <= 0) return;
+        const y0 = yOf(acc), y1 = yOf(acc + v);
+        acc += v;
+        const tip = `${name} · ${fmtRange(w)}: ${fmtInt(v)}`;
+        bars += `<rect x="${cx.toFixed(1)}" y="${y1.toFixed(1)}" width="${innerW.toFixed(1)}" height="${(y0 - y1).toFixed(1)}" fill="${colorForFuente(name)}" data-tip="${escapeHtml(tip)}"/>`;
+      });
+      const yTop = yOf(acc);
+      if (isSel && acc > 0) {
+        bars += `<rect x="${(cx - 2).toFixed(1)}" y="${(yTop - 2).toFixed(1)}" width="${(innerW + 4).toFixed(1)}" height="${(mT + plotH - yTop + 2).toFixed(1)}" fill="none" stroke="${HIGHLIGHT}" stroke-width="2" rx="2"/>`;
+      }
+      if (totals[i] > 0) {
+        bars += `<text class="sw-axis" x="${(cx + innerW / 2).toFixed(1)}" y="${(yTop - 4).toFixed(1)}" text-anchor="middle" style="font-size:8px${isSel ? ';fill:' + HIGHLIGHT + ';font-weight:700' : ''}">${fmtInt(totals[i])}</text>`;
+      }
+      const [, mm, dd] = w.split('-');
+      xlabels += `<text class="sw-axis" x="${(cx + innerW / 2).toFixed(1)}" y="${(H - mB + 14).toFixed(1)}" text-anchor="middle"${isSel ? ' style="fill:' + HIGHLIGHT + ';font-weight:700"' : ''}>${dd}/${mm}</text>`;
+    });
+
+    chartEl.innerHTML = `<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMid meet">${grid}${bars}${xlabels}</svg>`;
+  }
+
   function renderCharts() {
     const filter = STATE.fuenteFilter;
     const info = document.getElementById('chartsFilter');
@@ -824,7 +962,7 @@
 
   function renderChannels() {
     const wrap = document.getElementById('channelsWrap');
-    const country = (STATE.data && STATE.data[STATE.country]) || {};
+    const country = cdata();
     const byWeekChannels = country.by_week_channels || {};
     const allWeeks = Object.keys(byWeekChannels).sort();
     if (!allWeeks.length) { wrap.className = 'channels-wrap empty'; wrap.innerHTML = ''; return; }
@@ -943,13 +1081,13 @@
 
     const titleSuffix = filter ? `Fuente: <strong>${escapeHtml(filter)}</strong>` : `Todas las fuentes`;
 
-    let html = `<div class="channels-title">Detalle por canal — ${titleSuffix} · Semana <strong>${escapeHtml(fmtRange(sel))}</strong></div>` +
+    let html = `<div class="channels-title">Detalle por canal — ${titleSuffix} · ${gw().sing} <strong>${escapeHtml(fmtRange(sel))}</strong></div>` +
       '<table class="matrix"><thead>' +
         '<tr class="supra">' +
           '<th class="supra-empty" colspan="3"></th>' +
           '<th class="supra-meta"  colspan="2">Vs Meta</th>' +
-          '<th class="supra-week"  colspan="2">Vs semana anterior</th>' +
-          '<th class="supra-7s"    colspan="2">Vs prom. últimas 7 semanas</th>' +
+          `<th class="supra-week"  colspan="2">Vs ${gw().prev}</th>` +
+          `<th class="supra-7s"    colspan="2">Vs ${gw().avg7}</th>` +
         '</tr>' +
         '<tr>' +
           '<th class="col-channel">Canal</th>' +
@@ -983,7 +1121,7 @@
 
   // --- Channel chart row (drilldown) ---
   function trendSeriesChannel(metric, channel) {
-    const byWeekChannels = (STATE.data[STATE.country] || {}).by_week_channels || {};
+    const byWeekChannels = cdata().by_week_channels || {};
     const weeks = chartWeeks();
     const fuenteFilter = STATE.fuenteFilter;
     return weeks.map(w => {
@@ -1021,7 +1159,7 @@
   // Charts paid (fila 4): clicks/impressions/derivadas leyendo de by_week_platforms.
   // Respeta los 3 filtros activos: fuente (tabla 1) + canal (tabla 2) + plataforma (tabla 3).
   function trendSeriesPaid(metric) {
-    const byWeekPlatforms = (STATE.data[STATE.country] || {}).by_week_platforms || {};
+    const byWeekPlatforms = cdata().by_week_platforms || {};
     const weeks = chartWeeks();
     const fF = STATE.fuenteFilter, cF = STATE.channelFilter, pF = STATE.platformFilter;
     return weeks.map(w => {
@@ -1197,7 +1335,7 @@
 
   function renderPlatforms() {
     const wrap = document.getElementById('platformsWrap');
-    const country = (STATE.data && STATE.data[STATE.country]) || {};
+    const country = cdata();
     const byWeekPlatforms = country.by_week_platforms || {};
     const allWeeks = Object.keys(byWeekPlatforms).sort();
     if (!allWeeks.length) { wrap.className = 'channels-wrap empty'; wrap.innerHTML = ''; return; }
@@ -1313,13 +1451,13 @@
     if (cF) scopeBits.push(`Canal: <strong>${escapeHtml(cF)}</strong>`);
     if (!scopeBits.length) scopeBits.push(`Todas las fuentes y canales`);
 
-    let html = `<div class="channels-title">Detalle por plataforma — ${scopeBits.join(' · ')} · Semana <strong>${escapeHtml(fmtRange(sel))}</strong></div>` +
+    let html = `<div class="channels-title">Detalle por plataforma — ${scopeBits.join(' · ')} · ${gw().sing} <strong>${escapeHtml(fmtRange(sel))}</strong></div>` +
       '<table class="matrix"><thead>' +
         '<tr class="supra">' +
           '<th class="supra-empty" colspan="3"></th>' +
           '<th class="supra-meta"  colspan="2">Vs Meta</th>' +
-          '<th class="supra-week"  colspan="2">Vs semana anterior</th>' +
-          '<th class="supra-7s"    colspan="2">Vs prom. últimas 7 semanas</th>' +
+          `<th class="supra-week"  colspan="2">Vs ${gw().prev}</th>` +
+          `<th class="supra-7s"    colspan="2">Vs ${gw().avg7}</th>` +
         '</tr>' +
         '<tr>' +
           '<th class="col-channel">Plataforma</th>' +
@@ -1351,7 +1489,7 @@
 
   // --- Platform chart row (third drilldown) ---
   function trendSeriesPlatform(metric, platform) {
-    const byWeekPlatforms = (STATE.data[STATE.country] || {}).by_week_platforms || {};
+    const byWeekPlatforms = cdata().by_week_platforms || {};
     const weeks = chartWeeks();
     const fF = STATE.fuenteFilter;
     const cF = STATE.channelFilter;
@@ -1459,10 +1597,31 @@
     });
   });
 
+  // --- Pill wiring (granularity: lun-dom vs ciclo mié-mar) ---
+  function syncGranPills() {
+    document.querySelectorAll('.pill[data-gran]').forEach(b => {
+      b.classList.toggle('active', b.dataset.gran === STATE.granularity);
+    });
+    const lbl = document.getElementById('weekLabel');
+    if (lbl) lbl.textContent = STATE.granularity === 'cycle' ? 'Ciclo:' : 'Semana:';
+  }
+  document.querySelectorAll('.pill[data-gran]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      STATE.granularity = btn.dataset.gran;
+      localStorage.setItem('wbr2-granularity', STATE.granularity);
+      // selected bucket may not exist in the other granularity → let renderWeekPills re-default
+      STATE.weekStart = null;
+      syncGranPills();
+      renderWeekPills();
+      render();
+    });
+  });
+  syncGranPills();
+
   // --- Chart hover tooltip (delegated, both chart rows) ---
   (function wireChartTooltip() {
     const tip = document.getElementById('chartTooltip');
-    const roots = [document.getElementById('chartsRow'), document.getElementById('chartsRowCh'), document.getElementById('chartsRowPl'), document.getElementById('chartsRowChPaid'), document.getElementById('chartsRowChPaid2')];
+    const roots = [document.getElementById('stackedChart'), document.getElementById('chartsRow'), document.getElementById('chartsRowCh'), document.getElementById('chartsRowPl'), document.getElementById('chartsRowChPaid'), document.getElementById('chartsRowChPaid2')];
     roots.forEach(root => {
       root.addEventListener('mouseover', e => {
         const t = e.target.getAttribute && e.target.getAttribute('data-tip');

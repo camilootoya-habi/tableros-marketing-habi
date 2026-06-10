@@ -1,5 +1,5 @@
--- WBR 2.0 — Métricas semanales por canal (MX)
--- Output: one row per (week_start, channel, fuente) with reg, cal, asg, spend.
+-- WBR 2.0 — Métricas diarias por canal (MX)
+-- Output: one row per (day, channel, fuente) with reg, cal, asg, spend.
 -- Window: últimas 20 semanas ISO (lun-dom), excluye semana actual.
 -- Volumes are EVENT-based.
 -- Notas MX vs CO: ver query_mx.sql cabecera.
@@ -45,38 +45,38 @@ WITH
     FROM `sellers-main-prod.mx_rds_staging.habi_db_history_state`
     WHERE state_id IN (20, 63)
     GROUP BY 1
-    HAVING MIN(date_create) >= DATE_SUB(CURRENT_DATE(), INTERVAL 140 DAY)
-      AND MIN(date_create) < DATE_TRUNC(CURRENT_DATE(), ISOWEEK)
+    HAVING MIN(date_create) >= DATE_SUB(CURRENT_DATE(), INTERVAL 175 DAY)
+      AND MIN(date_create) < CURRENT_DATE()
   ),
   reg_agg AS (
-    SELECT DATE_TRUNC(reg_date, ISOWEEK) AS week, channel, fuente_canon AS fuente, COUNT(*) AS n
+    SELECT reg_date AS day, channel, fuente_canon AS fuente, COUNT(*) AS n
     FROM leads
-    WHERE reg_date >= DATE_TRUNC(DATE_SUB(CURRENT_DATE(), INTERVAL 140 DAY), ISOWEEK)
-      AND reg_date < DATE_TRUNC(CURRENT_DATE(), ISOWEEK)
+    WHERE reg_date >= DATE_SUB(CURRENT_DATE(), INTERVAL 175 DAY)
+      AND reg_date < CURRENT_DATE()
     GROUP BY 1, 2, 3
   ),
   cal_agg AS (
-    SELECT DATE_TRUNC(DATE(c.cal_ts), ISOWEEK) AS week, l.channel, l.fuente_canon AS fuente, COUNT(*) AS n
+    SELECT DATE(c.cal_ts) AS day, l.channel, l.fuente_canon AS fuente, COUNT(*) AS n
     FROM cal c
     JOIN leads l ON l.negocio_id = c.negocio_id
     GROUP BY 1, 2, 3
   ),
   asg_agg AS (
     SELECT
-      DATE_TRUNC(a.dia, ISOWEEK) AS week,
+      a.dia AS day,
       l.channel, l.fuente_canon AS fuente,
       COUNT(*) AS n
     FROM `papyrus-master.sellers_data_mart.sellers_leads_asignados_marketing_wbr_mart` a
     JOIN leads l ON l.nid = a.nid
     WHERE a.pais = 'mexico'
       AND a.fuente_id_tig IN (3, 7, 35, 39, 46, 47)
-      AND a.dia >= DATE_TRUNC(DATE_SUB(CURRENT_DATE(), INTERVAL 140 DAY), ISOWEEK)
-      AND a.dia < DATE_TRUNC(CURRENT_DATE(), ISOWEEK)
+      AND a.dia >= DATE_SUB(CURRENT_DATE(), INTERVAL 175 DAY)
+      AND a.dia < CURRENT_DATE()
     GROUP BY 1, 2, 3
   ),
   spend_agg AS (
     SELECT
-      DATE_TRUNC(i.date, ISOWEEK) AS week,
+      i.date AS day,
       CASE
         WHEN m.mkt_channel_medium IN ('lead_forms Paid', 'lead_forms Direct', 'Lead Forms Paid') THEN 'lead_forms'
         ELSE m.mkt_channel_medium
@@ -92,21 +92,21 @@ WITH
       ROUND(SUM(i.impressions), 0) AS impressions
     FROM `papyrus-data-mx.habi_wh_bi.resumen_inversiones_mkt_mx` i
     LEFT JOIN utm_dedup_camp m ON i.campana = m.mkt_campaign_name
-    WHERE i.date >= DATE_TRUNC(DATE_SUB(CURRENT_DATE(), INTERVAL 140 DAY), ISOWEEK)
-      AND i.date < DATE_TRUNC(CURRENT_DATE(), ISOWEEK)
+    WHERE i.date >= DATE_SUB(CURRENT_DATE(), INTERVAL 175 DAY)
+      AND i.date < CURRENT_DATE()
       AND m.mkt_channel_medium IS NOT NULL
     GROUP BY 1, 2, 3
     HAVING fuente IS NOT NULL
   ),
   weeks_channels AS (
-    SELECT week, channel, fuente FROM reg_agg
-    UNION DISTINCT SELECT week, channel, fuente FROM cal_agg
-    UNION DISTINCT SELECT week, channel, fuente FROM asg_agg
-    UNION DISTINCT SELECT week, channel, fuente FROM spend_agg
+    SELECT day, channel, fuente FROM reg_agg
+    UNION DISTINCT SELECT day, channel, fuente FROM cal_agg
+    UNION DISTINCT SELECT day, channel, fuente FROM asg_agg
+    UNION DISTINCT SELECT day, channel, fuente FROM spend_agg
   )
 
 SELECT
-  CAST(wc.week AS STRING) AS week_start,
+  CAST(wc.day AS STRING) AS day,
   wc.channel,
   wc.fuente,
   COALESCE(r.n, 0)              AS reg,
@@ -116,8 +116,8 @@ SELECT
   COALESCE(s.clicks, NULL)      AS clicks,
   COALESCE(s.impressions, NULL) AS impressions
 FROM weeks_channels wc
-LEFT JOIN reg_agg   r USING (week, channel, fuente)
-LEFT JOIN cal_agg   c USING (week, channel, fuente)
-LEFT JOIN asg_agg   a USING (week, channel, fuente)
-LEFT JOIN spend_agg s USING (week, channel, fuente)
-ORDER BY week_start, channel
+LEFT JOIN reg_agg   r USING (day, channel, fuente)
+LEFT JOIN cal_agg   c USING (day, channel, fuente)
+LEFT JOIN asg_agg   a USING (day, channel, fuente)
+LEFT JOIN spend_agg s USING (day, channel, fuente)
+ORDER BY day, channel

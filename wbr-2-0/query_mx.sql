@@ -1,7 +1,7 @@
--- WBR 2.0 — Métricas semanales por fuente (MX)
--- Output: one row per (week_start, fuente) with reg, cal, asg, spend.
+-- WBR 2.0 — Métricas diarias por fuente (MX)
+-- Output: one row per (day, fuente) with reg, cal, asg, spend.
 -- Window: últimas 20 semanas ISO (lun-dom), excluye semana actual.
--- Volumes are EVENT-based (each metric counted in the week it happened).
+-- Volumes are EVENT-based (each metric counted in the day it happened).
 -- Notas MX vs CO:
 --   - TIG MX usa `id_negocio` (no `negocio_id`)
 --   - history_state MX: tabla `mx_rds_staging.habi_db_history_state` con cols `deal_id`, `state_id`, `date_create`
@@ -20,55 +20,55 @@ WITH
     FROM `sellers-main-prod.mx_rds_staging.habi_db_history_state`
     WHERE state_id IN (20, 63)
     GROUP BY 1
-    HAVING MIN(date_create) >= DATE_SUB(CURRENT_DATE(), INTERVAL 140 DAY)
-      AND MIN(date_create) < DATE_TRUNC(CURRENT_DATE(), ISOWEEK)
+    HAVING MIN(date_create) >= DATE_SUB(CURRENT_DATE(), INTERVAL 175 DAY)
+      AND MIN(date_create) < CURRENT_DATE()
   ),
   reg_agg AS (
-    SELECT DATE_TRUNC(reg_date, ISOWEEK) AS week, fuente_id, COUNT(*) AS n
+    SELECT reg_date AS day, fuente_id, COUNT(*) AS n
     FROM leads
-    WHERE reg_date >= DATE_TRUNC(DATE_SUB(CURRENT_DATE(), INTERVAL 140 DAY), ISOWEEK)
-      AND reg_date < DATE_TRUNC(CURRENT_DATE(), ISOWEEK)
+    WHERE reg_date >= DATE_SUB(CURRENT_DATE(), INTERVAL 175 DAY)
+      AND reg_date < CURRENT_DATE()
     GROUP BY 1, 2
   ),
   cal_agg AS (
-    SELECT DATE_TRUNC(DATE(c.cal_ts), ISOWEEK) AS week, l.fuente_id, COUNT(*) AS n
+    SELECT DATE(c.cal_ts) AS day, l.fuente_id, COUNT(*) AS n
     FROM cal c
     JOIN leads l ON l.negocio_id = c.negocio_id
     GROUP BY 1, 2
   ),
   asg_agg AS (
-    SELECT DATE_TRUNC(a.dia, ISOWEEK) AS week, a.fuente_id_tig AS fuente_id, COUNT(*) AS n
+    SELECT a.dia AS day, a.fuente_id_tig AS fuente_id, COUNT(*) AS n
     FROM `papyrus-master.sellers_data_mart.sellers_leads_asignados_marketing_wbr_mart` a
     WHERE a.pais = 'mexico'
       AND a.fuente_id_tig IN (3, 7, 35, 39, 46, 47)
-      AND a.dia >= DATE_TRUNC(DATE_SUB(CURRENT_DATE(), INTERVAL 140 DAY), ISOWEEK)
-      AND a.dia < DATE_TRUNC(CURRENT_DATE(), ISOWEEK)
+      AND a.dia >= DATE_SUB(CURRENT_DATE(), INTERVAL 175 DAY)
+      AND a.dia < CURRENT_DATE()
     GROUP BY 1, 2
   ),
   -- Spend mapped to fuente via canal_adquisicion (limitado en MX: solo Web y Lead Form tienen mapeo claro)
   spend_agg AS (
     SELECT
-      DATE_TRUNC(i.date, ISOWEEK) AS week,
+      i.date AS day,
       CASE
         WHEN i.canal_adquisicion = 'Web' THEN 3
         WHEN i.canal_adquisicion = 'Lead Form' THEN 47
       END AS fuente_id,
       ROUND(SUM(i.spend), 0) AS spend
     FROM `papyrus-data-mx.habi_wh_bi.resumen_inversiones_mkt_mx` i
-    WHERE i.date >= DATE_TRUNC(DATE_SUB(CURRENT_DATE(), INTERVAL 140 DAY), ISOWEEK)
-      AND i.date < DATE_TRUNC(CURRENT_DATE(), ISOWEEK)
+    WHERE i.date >= DATE_SUB(CURRENT_DATE(), INTERVAL 175 DAY)
+      AND i.date < CURRENT_DATE()
     GROUP BY 1, 2
     HAVING fuente_id IS NOT NULL
   ),
   weeks_fuentes AS (
-    SELECT week, fuente_id FROM reg_agg
-    UNION DISTINCT SELECT week, fuente_id FROM cal_agg
-    UNION DISTINCT SELECT week, fuente_id FROM asg_agg
-    UNION DISTINCT SELECT week, fuente_id FROM spend_agg
+    SELECT day, fuente_id FROM reg_agg
+    UNION DISTINCT SELECT day, fuente_id FROM cal_agg
+    UNION DISTINCT SELECT day, fuente_id FROM asg_agg
+    UNION DISTINCT SELECT day, fuente_id FROM spend_agg
   )
 
 SELECT
-  CAST(wf.week AS STRING) AS week_start,
+  CAST(wf.day AS STRING) AS day,
   CASE wf.fuente_id
     WHEN 3  THEN 'WEB'
     WHEN 7  THEN 'Estudio Inmueble'
@@ -82,8 +82,8 @@ SELECT
   COALESCE(a.n, 0)        AS asg,
   COALESCE(s.spend, NULL) AS spend
 FROM weeks_fuentes wf
-LEFT JOIN reg_agg   r USING (week, fuente_id)
-LEFT JOIN cal_agg   c USING (week, fuente_id)
-LEFT JOIN asg_agg   a USING (week, fuente_id)
-LEFT JOIN spend_agg s USING (week, fuente_id)
-ORDER BY week_start, fuente
+LEFT JOIN reg_agg   r USING (day, fuente_id)
+LEFT JOIN cal_agg   c USING (day, fuente_id)
+LEFT JOIN asg_agg   a USING (day, fuente_id)
+LEFT JOIN spend_agg s USING (day, fuente_id)
+ORDER BY day, fuente
