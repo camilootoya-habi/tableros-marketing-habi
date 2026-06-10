@@ -135,12 +135,16 @@ def _int_or_none(v):
     return int(float(v)) if v is not None else None
 
 
-def build_country(bq_json, sheet_csv, channels_json, platforms_json, country):
+def build_country(bq_json, sheet_csv, channels_json, platforms_json, traffic_json, country):
     fuentes_row = FUENTES_ROW_BY_COUNTRY[country]
     daily = json.load(open(bq_json))
     channels = json.load(open(channels_json))
     platforms = json.load(open(platforms_json))
     metas_daily = parse_sheet_daily(sheet_csv, country)
+    # Tráfico web (visitantes únicos), ya bucketeado por SQL en ambos cortes: {gran: {bucket: visitantes}}
+    traffic_by_gran = defaultdict(dict)
+    for r in json.load(open(traffic_json)):
+        traffic_by_gran[r['gran']][r['bucket']] = int(r['visitantes'])
     today = date.today()
 
     def complete_recent_buckets(bucket_keys):
@@ -151,13 +155,18 @@ def build_country(bq_json, sheet_csv, channels_json, platforms_json, country):
 
     def build_for(gran):
         # --- main: by (bucket, fuente) ---
-        agg = defaultdict(lambda: defaultdict(lambda: {'reg': 0, 'cal': 0, 'asg': 0, 'spend': None}))
+        agg = defaultdict(lambda: defaultdict(
+            lambda: {'reg': 0, 'cal': 0, 'asg': 0, 'spend': None,
+                     'completos': 0, 'paso65': 0, 'paso65_calif': 0}))
         for r in daily:
             b = bucket_start(date.fromisoformat(r['day']), gran)
             cell = agg[b][r['fuente']]
             cell['reg'] += int(r['reg'])
             cell['cal'] += int(r['cal'])
             cell['asg'] += int(r['asg'])
+            cell['completos'] += int(r.get('completos') or 0)
+            cell['paso65'] += int(r.get('paso65') or 0)
+            cell['paso65_calif'] += int(r.get('paso65_calif') or 0)
             sp = _int_or_none(r.get('spend'))
             if sp is not None:
                 cell['spend'] = (cell['spend'] or 0) + sp
@@ -178,9 +187,13 @@ def build_country(bq_json, sheet_csv, channels_json, platforms_json, country):
         for b in keep:
             cells = {}
             for fuente in fuentes_row:
-                cell = dict(agg[b].get(fuente, {'reg': 0, 'cal': 0, 'asg': 0, 'spend': None}))
+                cell = dict(agg[b].get(fuente, {'reg': 0, 'cal': 0, 'asg': 0, 'spend': None,
+                                                'completos': 0, 'paso65': 0, 'paso65_calif': 0}))
                 cell['meta'] = meta_agg.get(b, {}).get(fuente)
                 cells[fuente] = cell
+            # Tráfico (visitantes únicos) es indicador WEB-only → va en la celda WEB.
+            if 'WEB' in cells:
+                cells['WEB']['traffic'] = traffic_by_gran.get(gran, {}).get(b)
             by_week[b] = cells
             totals_by_week[b] = {
                 'TOTAL': {'meta': meta_agg.get(b, {}).get('TOTAL')},
@@ -246,17 +259,18 @@ def build_country(bq_json, sheet_csv, channels_json, platforms_json, country):
 
 
 def main():
-    if len(sys.argv) != 10:
-        print(f"Usage: {sys.argv[0]} <bq_co> <sheet_co> <bq_ch_co> <bq_pl_co> "
-              f"<bq_mx> <sheet_mx> <bq_ch_mx> <bq_pl_mx> <output>")
+    if len(sys.argv) != 12:
+        print(f"Usage: {sys.argv[0]} <bq_co> <sheet_co> <bq_ch_co> <bq_pl_co> <traffic_co> "
+              f"<bq_mx> <sheet_mx> <bq_ch_mx> <bq_pl_mx> <traffic_mx> <output>")
         sys.exit(1)
 
-    bq_co, sheet_co, bq_ch_co, bq_pl_co, bq_mx, sheet_mx, bq_ch_mx, bq_pl_mx, output = sys.argv[1:]
+    (bq_co, sheet_co, bq_ch_co, bq_pl_co, traffic_co,
+     bq_mx, sheet_mx, bq_ch_mx, bq_pl_mx, traffic_mx, output) = sys.argv[1:]
 
     data = {
         'updated': date.today().isoformat(),
-        'co': build_country(bq_co, sheet_co, bq_ch_co, bq_pl_co, 'co'),
-        'mx': build_country(bq_mx, sheet_mx, bq_ch_mx, bq_pl_mx, 'mx'),
+        'co': build_country(bq_co, sheet_co, bq_ch_co, bq_pl_co, traffic_co, 'co'),
+        'mx': build_country(bq_mx, sheet_mx, bq_ch_mx, bq_pl_mx, traffic_mx, 'mx'),
     }
 
     with open(output, 'w') as f:

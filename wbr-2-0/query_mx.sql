@@ -11,7 +11,7 @@
 
 WITH
   leads AS (
-    SELECT g.id_negocio AS negocio_id, g.fuente_id, DATE(g.fecha_creacion) AS reg_date
+    SELECT g.id_negocio AS negocio_id, g.fuente_id, DATE(g.fecha_creacion) AS reg_date, g.id_ultimo_estado AS last_estado_id
     FROM `papyrus-data-mx.habi_wh_bi.tabla_inmuebles_general` g
     WHERE g.fuente_id IN (3, 7, 35, 39, 46, 47)
   ),
@@ -45,6 +45,26 @@ WITH
       AND a.dia < CURRENT_DATE()
     GROUP BY 1, 2
   ),
+  -- Flags por negocio (un solo scan): pasó por 65 (habimetro_sin_gestion) o calificó (20/63).
+  flags AS (
+    SELECT deal_id AS negocio_id,
+      LOGICAL_OR(state_id = 65)         AS hit65,
+      LOGICAL_OR(state_id IN (20, 63))  AS calif
+    FROM `sellers-main-prod.mx_rds_staging.habi_db_history_state`
+    WHERE state_id IN (20, 63, 65)
+    GROUP BY 1
+  ),
+  extra_agg AS (
+    SELECT l.reg_date AS day, l.fuente_id,
+      COUNTIF(l.last_estado_id NOT IN (7, 39))  AS completos,
+      COUNTIF(f.hit65)                          AS paso65,
+      COUNTIF(f.hit65 AND f.calif)              AS paso65_calif
+    FROM leads l
+    LEFT JOIN flags f ON f.negocio_id = l.negocio_id
+    WHERE l.reg_date >= DATE_SUB(CURRENT_DATE(), INTERVAL 600 DAY)
+      AND l.reg_date < CURRENT_DATE()
+    GROUP BY 1, 2
+  ),
   -- Spend mapped to fuente via canal_adquisicion (limitado en MX: solo Web y Lead Form tienen mapeo claro)
   spend_agg AS (
     SELECT
@@ -65,6 +85,7 @@ WITH
     UNION DISTINCT SELECT day, fuente_id FROM cal_agg
     UNION DISTINCT SELECT day, fuente_id FROM asg_agg
     UNION DISTINCT SELECT day, fuente_id FROM spend_agg
+    UNION DISTINCT SELECT day, fuente_id FROM extra_agg
   )
 
 SELECT
@@ -77,13 +98,17 @@ SELECT
     WHEN 46 THEN 'Propiedades'
     WHEN 47 THEN 'lead_forms'
   END AS fuente,
-  COALESCE(r.n, 0)        AS reg,
-  COALESCE(c.n, 0)        AS cal,
-  COALESCE(a.n, 0)        AS asg,
-  COALESCE(s.spend, NULL) AS spend
+  COALESCE(r.n, 0)            AS reg,
+  COALESCE(c.n, 0)            AS cal,
+  COALESCE(a.n, 0)            AS asg,
+  COALESCE(s.spend, NULL)     AS spend,
+  COALESCE(e.completos, 0)    AS completos,
+  COALESCE(e.paso65, 0)       AS paso65,
+  COALESCE(e.paso65_calif, 0) AS paso65_calif
 FROM weeks_fuentes wf
 LEFT JOIN reg_agg   r USING (day, fuente_id)
 LEFT JOIN cal_agg   c USING (day, fuente_id)
 LEFT JOIN asg_agg   a USING (day, fuente_id)
 LEFT JOIN spend_agg s USING (day, fuente_id)
+LEFT JOIN extra_agg e USING (day, fuente_id)
 ORDER BY day, fuente

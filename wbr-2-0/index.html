@@ -131,6 +131,7 @@
   .channels-wrap .channels-title strong { color: var(--text-title); }
   /* Charts row */
   .charts-row { max-width: 1200px; margin: 18px auto 0; display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; }
+  #chartsRow { grid-template-columns: repeat(3, 1fr); }  /* fila 1: Inversión · CPL · Registros */
   .chart-card { background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 12px 14px; }
   .chart-card .title { font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.04em; }
   .chart-card .last-val { font-size: 18px; color: var(--text-title); font-weight: 600; margin-top: 4px; }
@@ -150,9 +151,14 @@
   .stacked-legend .lg-item.off .lg-swatch { background: var(--text-muted-2) !important; }
   .stacked-legend .lg-item.off span:last-child { text-decoration: line-through; }
   .stacked-legend .lg-swatch { width: 11px; height: 11px; border-radius: 2px; flex: none; }
+  .stacked-legend .lg-rate { cursor: default; }
+  .stacked-legend .lg-rate:hover { border-color: transparent; background: transparent; }
+  .stacked-legend .lg-line-swatch { width: 16px; height: 0; border-top: 2px solid var(--text-title); flex: none; }
   .stacked-wrap svg { width: 100%; height: auto; display: block; margin-top: 4px; }
   .stacked-wrap .sw-axis { fill: var(--text-muted-2); font-size: 9px; }
   .stacked-wrap .sw-grid { stroke: var(--border); stroke-width: 1; opacity: 0.5; }
+  .stacked-wrap .sw-rate-line { fill: none; stroke: var(--text-title); stroke-width: 1.8; }
+  .stacked-wrap .sw-rate-dot { fill: var(--text-title); }
   .section-divider { max-width: 1200px; margin: 36px auto 6px; padding-top: 18px; border-top: 1px solid var(--border); }
   .section-title { margin: 0; font-size: 16px; font-weight: 600; color: var(--text); letter-spacing: -0.01em; }
   .section-sub   { margin: 4px 0 0; font-size: 12px; color: var(--text-muted-2); }
@@ -199,6 +205,10 @@
     <div class="period-info" id="periodInfo">cargando…</div>
   </div>
 
+  <div class="matrix-wrap">
+    <div id="matrix" class="matrix-empty">cargando datos…</div>
+  </div>
+
   <div class="stacked-wrap" id="stackedWrap">
     <div class="sw-head">
       <span class="sw-title" id="stackedTitle">Asignados por fuente · por semana</span>
@@ -206,10 +216,6 @@
     </div>
     <div class="stacked-legend" id="stackedLegend"></div>
     <div id="stackedChart"></div>
-  </div>
-
-  <div class="matrix-wrap">
-    <div id="matrix" class="matrix-empty">cargando datos…</div>
   </div>
 
   <div class="charts-filter-info" id="chartsFilter"></div>
@@ -256,7 +262,6 @@
     fuenteFilter: null,     // null = TOTAL, else a fuente name
     channelFilter: null,    // null = TOTAL of channels, else a channel name (drives second chart row)
     platformFilter: null,   // null = TOTAL of platforms, else a platform name (drives third chart row)
-    stackedOnly: null,      // null = todas las fuentes; else nombre de la única fuente aislada en la gráfica apilada
     data: null,
   };
 
@@ -633,7 +638,10 @@
       const aporte7CellHtml  = `<td${styleAporte7} title="${escapeHtml(tipAporte7)}"><span class="val">${aporte7Str}</span></td>`;
       const dataAttr = isTotal ? '' : ` data-fuente="${escapeHtml(row.channel)}"`;
       const selected = (!isTotal && STATE.fuenteFilter === row.channel) ? ' row-selected' : '';
-      return `<tr class="${trCls}${selected}"${dataAttr}><td class="col-channel">${escapeHtml(row.channel)}</td>${valCellHtml}${metaCellHtml}${cumplCellHtml}${aporteMCellHtml}${deltaCellHtml}${aporteCellHtml}${delta7CellHtml}${aporte7CellHtml}</tr>`;
+      // Color de la fuente igual al de la gráfica apilada (SOURCE_COLORS): tinte + borde izquierdo.
+      const fc = (!isTotal && SOURCE_COLORS[row.channel]) ? SOURCE_COLORS[row.channel] : null;
+      const chStyle = fc ? ` style="background:${fc}33;border-left:3px solid ${fc}"` : '';
+      return `<tr class="${trCls}${selected}"${dataAttr}><td class="col-channel"${chStyle}>${escapeHtml(row.channel)}</td>${valCellHtml}${metaCellHtml}${cumplCellHtml}${aporteMCellHtml}${deltaCellHtml}${aporteCellHtml}${delta7CellHtml}${aporte7CellHtml}</tr>`;
     }
 
     let html = '<table class="matrix"><thead>' +
@@ -678,7 +686,7 @@
 
   // --- Charts ---
   const CHART_WEEKS = 8;          // active (used for avg, full-color)
-  const CHART_CONTEXT = 12;       // additional historical weeks shown in gray
+  const CHART_CONTEXT = 22;       // additional historical weeks shown in gray (total 30, como la apilada)
   const CHART_TOTAL = CHART_WEEKS + CHART_CONTEXT;
 
   function trendSeries(metric, fuente) {
@@ -798,13 +806,28 @@
     return FMT_INT.format(Math.round(v));
   }
 
-  const CHARTS = [
-    { title: 'Asignados',      color: '#818cf8', kind: 'int',   chartType: 'bar',  series: f => trendSeries('asg', f) },
-    { title: 'Tasa Reg → Asg', color: '#a78bfa', kind: 'pct',   chartType: 'line', series: f => ratioSeries('asg', 'reg', f) },
-    { title: 'Registros',      color: '#60a5fa', kind: 'int',   chartType: 'bar',  series: f => trendSeries('reg', f) },
-    { title: 'Inversión',      color: '#fbbf24', kind: 'money', chartType: 'line', series: f => trendSeries('spend', f) },
-    { title: 'CPL',            color: '#fb923c', kind: 'cpl',   chartType: 'line', series: f => ratioSeries('spend', 'reg', f) },
-  ];
+  // KPIs disponibles. Asignados y Tasa Reg→Asg viven en la gráfica apilada (no se repiten aquí).
+  const KPI = {
+    trafico:      { title: 'Tráfico (visitantes)', color: '#38bdf8', kind: 'int',   chartType: 'bar',  series: f => trendSeries('traffic', f) },
+    tasaTrafReg:  { title: 'Tasa Tráfico → Reg',   color: '#22d3ee', kind: 'pct',   chartType: 'line', series: f => ratioSeries('reg', 'traffic', f) },
+    inversion:    { title: 'Inversión',            color: '#fbbf24', kind: 'money', chartType: 'line', series: f => trendSeries('spend', f) },
+    cpl:          { title: 'CPL',                  color: '#fb923c', kind: 'cpl',   chartType: 'line', series: f => ratioSeries('spend', 'reg', f) },
+    registros:    { title: 'Registros',            color: '#60a5fa', kind: 'int',   chartType: 'bar',  series: f => trendSeries('reg', f) },
+    calificados:  { title: 'Calificados',          color: '#a78bfa', kind: 'int',   chartType: 'bar',  series: f => trendSeries('cal', f) },
+    tasaRegCalif: { title: 'Tasa Reg → Calif',     color: '#c084fc', kind: 'pct',   chartType: 'line', series: f => ratioSeries('cal', 'reg', f) },
+    tasaCalifAsg: { title: 'Tasa Calif → Asg',     color: '#34d399', kind: 'pct',   chartType: 'line', series: f => ratioSeries('asg', 'cal', f) },
+    tasaRegCompletos: { title: 'Tasa Reg → Completos', color: '#2dd4bf', kind: 'pct', chartType: 'line', series: f => ratioSeries('completos', 'reg', f) },
+    habimetroCalif:   { title: '% Habímetro s/g calificados', color: '#f59e0b', kind: 'pct', chartType: 'line', series: f => ratioSeries('paso65_calif', 'paso65', f) },
+  };
+
+  // Cards de KPI según la fuente seleccionada (sincronizada tabla/gráfica).
+  function chartsForFuente(f) {
+    if (!f) return [KPI.inversion, KPI.cpl, KPI.registros];                                  // TOTAL
+    if (f === 'WEB') return [KPI.trafico, KPI.tasaTrafReg, KPI.inversion, KPI.cpl, KPI.registros];
+    if (f === 'lead_forms') return [KPI.inversion, KPI.cpl, KPI.registros, KPI.tasaRegCompletos];
+    if (f === 'Estudio Inmueble') return [KPI.inversion, KPI.cpl, KPI.registros, KPI.habimetroCalif];
+    return [KPI.registros, KPI.calificados, KPI.tasaRegCalif, KPI.tasaCalifAsg];             // directas (sin pauta)
+  }
 
   // --- Headline: asignados apilados por fuente, por semana ---
   // Color por fuente (CRM y Propiedades comparten color: misma celda en la tabla por país).
@@ -847,20 +870,29 @@
     document.getElementById('stackedTitle').textContent =
       'Asignados por fuente · por ' + (STATE.granularity === 'cycle' ? 'ciclo (mié–mar)' : 'semana (lun–dom)');
 
-    // Click en la leyenda AÍSLA esa fuente (única activa). Click de nuevo en ella → vuelven todas.
-    const only = STATE.stackedOnly;
+    // Filtro sincronizado con la Tabla 1: click en la leyenda = click en la fila de esa fuente.
+    const only = STATE.fuenteFilter;
     const visible = only ? fuentes.filter(n => n === only) : fuentes;
-    document.getElementById('stackedLegend').innerHTML = fuentes.map(name => {
+    const legendFuentes = fuentes.map(name => {
       const off = (only && name !== only) ? ' off' : '';
-      const tip = only === name ? 'Click para ver todas' : 'Click para aislar esta fuente';
+      const tip = only === name ? 'Click para ver todas las fuentes' : 'Click para filtrar a esta fuente (sincroniza con la tabla)';
       return `<span class="lg-item${off}" data-fuente="${escapeHtml(name)}" title="${tip}">` +
              `<span class="lg-swatch" style="background:${colorForFuente(name)}"></span><span>${escapeHtml(name)}</span></span>`;
     }).join('');
+    const legendRate = `<span class="lg-item lg-rate" title="Tasa Reg → Asg del total de cada columna (eje derecho)">` +
+                       `<span class="lg-line-swatch"></span><span>Tasa Reg → Asg</span></span>`;
+    document.getElementById('stackedLegend').innerHTML = legendFuentes + legendRate;
 
     const totals = weeks.map(w => {
       const cells = byWeek[w] || {};
       return visible.reduce((s, name) => s + ((cells[name] && cells[name].asg) || 0), 0);
     });
+    const regTotals = weeks.map(w => {
+      const cells = byWeek[w] || {};
+      return visible.reduce((s, name) => s + ((cells[name] && cells[name].reg) || 0), 0);
+    });
+    // Tasa Reg→Asg del total (asg/reg) por periodo; null si no hubo registros.
+    const ratios = totals.map((a, i) => regTotals[i] > 0 ? a / regTotals[i] : null);
     const maxTotal = Math.max(...totals, 0);
 
     const subBase = weeks.length ? `${fmtRange(weeks[0])} → ${fmtRange(weeks[weeks.length - 1])} · ${weeks.length} ${gw().plural}` : '';
@@ -877,13 +909,18 @@
       return;
     }
 
-    const W = 1100, H = 320, mL = 48, mR = 14, mT = 14, mB = 42;
+    const W = 1100, H = 320, mL = 48, mR = 48, mT = 14, mB = 42;
     const plotW = W - mL - mR, plotH = H - mT - mB;
     const n = weeks.length;
     const barW = plotW / n;
     const innerW = Math.min(barW * 0.74, 48);
     const niceMax = niceCeil(maxTotal);
     const yOf = v => mT + plotH - (v / niceMax) * plotH;
+
+    // Eje secundario derecho para la tasa (asg/reg, %).
+    const maxRatio = Math.max(...ratios.filter(r => r != null), 0);
+    const niceMaxRate = niceCeil(maxRatio) || 1;
+    const yRateOf = r => mT + plotH - (r / niceMaxRate) * plotH;
 
     const ticks = 4;
     let grid = '';
@@ -892,6 +929,9 @@
       const y = yOf(val);
       grid += `<line class="sw-grid" x1="${mL}" y1="${y.toFixed(1)}" x2="${W - mR}" y2="${y.toFixed(1)}"/>`;
       grid += `<text class="sw-axis" x="${mL - 6}" y="${(y + 3).toFixed(1)}" text-anchor="end">${fmtInt(val)}</text>`;
+      // etiqueta del eje derecho (tasa)
+      const rval = niceMaxRate * t / ticks;
+      grid += `<text class="sw-axis" x="${W - mR + 6}" y="${(y + 3).toFixed(1)}" text-anchor="start">${(rval * 100).toFixed(0)}%</text>`;
     }
 
     let bars = '', xlabels = '';
@@ -919,7 +959,21 @@
       xlabels += `<text class="sw-axis" x="${(cx + innerW / 2).toFixed(1)}" y="${(H - mB + 14).toFixed(1)}" text-anchor="middle"${isSel ? ' style="fill:' + HIGHLIGHT + ';font-weight:700"' : ''}>${dd}/${mm}</text>`;
     });
 
-    chartEl.innerHTML = `<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMid meet">${grid}${bars}${xlabels}</svg>`;
+    // Línea de tasa Reg→Asg (eje derecho) sobre las barras.
+    const ratePts = weeks.map((w, i) => ratios[i] == null ? null
+      : [mL + i * barW + barW / 2, yRateOf(ratios[i]), i, w]).filter(Boolean);
+    let rateLine = '';
+    if (ratePts.length) {
+      const path = 'M ' + ratePts.map(p => `${p[0].toFixed(1)},${p[1].toFixed(1)}`).join(' L ');
+      rateLine += `<path class="sw-rate-line" d="${path}"/>`;
+      rateLine += ratePts.map(p => {
+        const isSel = p[3] === selected;
+        const tip = `Tasa Reg → Asg · ${fmtRange(p[3])}: ${(ratios[p[2]] * 100).toFixed(1)}%`;
+        return `<circle class="sw-rate-dot" cx="${p[0].toFixed(1)}" cy="${p[1].toFixed(1)}" r="${isSel ? 3.5 : 2.4}"${isSel ? ' stroke="' + HIGHLIGHT + '" stroke-width="1.5"' : ''} data-tip="${escapeHtml(tip)}"/>`;
+      }).join('');
+    }
+
+    chartEl.innerHTML = `<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMid meet">${grid}${bars}${rateLine}${xlabels}</svg>`;
   }
 
   function renderCharts() {
@@ -927,13 +981,15 @@
     const info = document.getElementById('chartsFilter');
     info.innerHTML = filter
       ? `Tendencias filtradas a <strong>${escapeHtml(filter)}</strong> <button class="pill-clear" id="clearFilter">limpiar filtro</button>`
-      : `Tendencias del TOTAL (haz click en una fuente de la tabla para filtrar)`;
+      : `Tendencias del TOTAL de las 6 fuentes (haz click en una fuente de la tabla o de la gráfica apilada para filtrar)`;
     const clearBtn = document.getElementById('clearFilter');
     if (clearBtn) clearBtn.addEventListener('click', e => { e.stopPropagation(); STATE.fuenteFilter = null; render(); });
 
     const weeks = chartWeeks();
     const row = document.getElementById('chartsRow');
-    row.innerHTML = CHARTS.map(c => {
+    const cards = chartsForFuente(filter);
+    row.style.gridTemplateColumns = `repeat(${cards.length}, 1fr)`;  // adaptativo al nº de KPIs de la fuente
+    row.innerHTML = cards.map(c => {
       const series = c.series(filter);
       const lastIdx = series.map((v, i) => v != null ? i : -1).filter(i => i >= 0).pop();
       const lastVal = lastIdx == null ? null : series[lastIdx];
@@ -1656,8 +1712,8 @@
     const item = e.target.closest('.lg-item');
     if (!item || !item.dataset.fuente) return;
     const f = item.dataset.fuente;
-    STATE.stackedOnly = (STATE.stackedOnly === f) ? null : f;  // aísla; click de nuevo → todas
-    renderStackedAsignados();
+    STATE.fuenteFilter = (STATE.fuenteFilter === f) ? null : f;  // sincroniza con la tabla y demás charts
+    render();
   });
 
   // --- Chart hover tooltip (delegated, both chart rows) ---
