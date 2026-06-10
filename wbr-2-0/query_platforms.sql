@@ -38,21 +38,21 @@ WITH
     WHERE g.fuente_id IN (3, 7, 20, 35, 39, 47)
       AND m.mkt_platform IS NOT NULL
       AND m.mkt_platform != ''
-      AND DATE(g.fecha_creacion) >= DATE_SUB(CURRENT_DATE(), INTERVAL 365 DAY)
+      AND DATE(g.fecha_creacion) >= DATE_SUB(CURRENT_DATE(), INTERVAL 760 DAY)
   ),
   cal AS (
     SELECT negocio_id, MIN(fecha_actualizacion) AS cal_ts
     FROM `sellers-main-prod.co_rds_staging.habi_db_tabla_historico_estado_v2`
     WHERE estado_id IN (20, 63)
     GROUP BY 1
-    HAVING MIN(fecha_actualizacion) >= DATE_SUB(CURRENT_DATE(), INTERVAL 175 DAY)
+    HAVING MIN(fecha_actualizacion) >= DATE_SUB(CURRENT_DATE(), INTERVAL 600 DAY)
       AND MIN(fecha_actualizacion) < CURRENT_DATE()
   ),
   reg_agg AS (
     SELECT reg_date AS day,
       platform, channel, fuente_canon AS fuente, COUNT(*) AS n
     FROM leads
-    WHERE reg_date >= DATE_SUB(CURRENT_DATE(), INTERVAL 175 DAY)
+    WHERE reg_date >= DATE_SUB(CURRENT_DATE(), INTERVAL 600 DAY)
       AND reg_date < CURRENT_DATE()
     GROUP BY 1, 2, 3, 4
   ),
@@ -70,7 +70,7 @@ WITH
     JOIN leads l ON l.nid = a.nid
     WHERE a.pais = 'colombia'
       AND a.fuente_id_tig IN (3, 7, 20, 35, 39, 47)
-      AND a.dia >= DATE_SUB(CURRENT_DATE(), INTERVAL 175 DAY)
+      AND a.dia >= DATE_SUB(CURRENT_DATE(), INTERVAL 600 DAY)
       AND a.dia < CURRENT_DATE()
     GROUP BY 1, 2, 3, 4
   ),
@@ -92,7 +92,7 @@ WITH
       ROUND(SUM(i.impressions), 0) AS impressions
     FROM `papyrus-data.habi_wh_bi.resumen_inversiones_mkt_co` i
     JOIN utm_dedup_camp m ON i.campana = m.mkt_campaign_name
-    WHERE i.date >= DATE_SUB(CURRENT_DATE(), INTERVAL 175 DAY)
+    WHERE i.date >= DATE_SUB(CURRENT_DATE(), INTERVAL 600 DAY)
       AND i.date < CURRENT_DATE()
       AND m.mkt_channel_medium IS NOT NULL
       AND m.mkt_platform IS NOT NULL

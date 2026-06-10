@@ -43,7 +43,9 @@ FUENTES_ROW_BY_COUNTRY = {
 }
 
 # How many buckets to keep (most recent complete) per granularity.
-KEEP_BUCKETS = 20
+# Dropdown muestra los últimos 52; los ~30 más antiguos quedan como historia
+# para que la gráfica apilada pueda mostrar 30 periodos atrás desde el seleccionado.
+KEEP_BUCKETS = 82
 GRANULARITIES = ('week', 'cycle')
 
 

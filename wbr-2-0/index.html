@@ -54,6 +54,9 @@
   .pill:hover { border-color: var(--accent); color: var(--accent); }
   .pill.active { background: var(--accent); color: #0f172a; border-color: var(--accent); font-weight: 600; }
   .pill:disabled { opacity: 0.45; cursor: not-allowed; }
+  .period-select { background: var(--card); border: 1px solid var(--border); color: var(--text); padding: 6px 12px; border-radius: 8px; cursor: pointer; font-size: 13px; min-width: 170px; }
+  .period-select:hover { border-color: var(--accent); }
+  .period-select:focus { outline: none; border-color: var(--accent); }
 
   .period-info { font-size: 13px; color: var(--text-muted-2); margin-left: auto; }
   .period-info strong { color: var(--text); }
@@ -140,8 +143,12 @@
   .stacked-wrap .sw-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
   .stacked-wrap .sw-title { font-size: 15px; font-weight: 600; color: var(--text-title); }
   .stacked-wrap .sw-sub { font-size: 12px; color: var(--text-muted-2); }
-  .stacked-legend { display: flex; flex-wrap: wrap; gap: 8px 16px; margin: 10px 0 2px; }
-  .stacked-legend .lg-item { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text-muted); }
+  .stacked-legend { display: flex; flex-wrap: wrap; gap: 8px 14px; margin: 10px 0 2px; }
+  .stacked-legend .lg-item { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text-muted); cursor: pointer; user-select: none; padding: 2px 6px; border-radius: 12px; border: 1px solid transparent; transition: background 0.12s, border-color 0.12s, opacity 0.12s; }
+  .stacked-legend .lg-item:hover { border-color: var(--border); background: rgba(148,163,184,0.08); }
+  .stacked-legend .lg-item.off { opacity: 0.4; }
+  .stacked-legend .lg-item.off .lg-swatch { background: var(--text-muted-2) !important; }
+  .stacked-legend .lg-item.off span:last-child { text-decoration: line-through; }
   .stacked-legend .lg-swatch { width: 11px; height: 11px; border-radius: 2px; flex: none; }
   .stacked-wrap svg { width: 100%; height: auto; display: block; margin-top: 4px; }
   .stacked-wrap .sw-axis { fill: var(--text-muted-2); font-size: 9px; }
@@ -187,7 +194,7 @@
     </div>
     <div class="control-group" id="weekPills">
       <label id="weekLabel">Semana:</label>
-      <!-- pills injected by JS -->
+      <select id="weekSelect" class="period-select"><!-- options injected by JS --></select>
     </div>
     <div class="period-info" id="periodInfo">cargando…</div>
   </div>
@@ -249,6 +256,7 @@
     fuenteFilter: null,     // null = TOTAL, else a fuente name
     channelFilter: null,    // null = TOTAL of channels, else a channel name (drives second chart row)
     platformFilter: null,   // null = TOTAL of platforms, else a platform name (drives third chart row)
+    stackedOnly: null,      // null = todas las fuentes; else nombre de la única fuente aislada en la gráfica apilada
     data: null,
   };
 
@@ -345,10 +353,11 @@
     return Object.keys(byWeek).sort();
   }
 
+  const DROPDOWN_PERIODS = 52;   // periodos seleccionables en el dropdown (último año)
   function selectableWeeks() {
-    // 6 most recent; need an additional prior week as comparison reference
+    // Las últimas 52 (los buckets más antiguos quedan como historia para la gráfica apilada).
     const all = availableWeeks();
-    return all.slice(-6);
+    return all.slice(-DROPDOWN_PERIODS);
   }
 
   function buildModel() {
@@ -413,27 +422,18 @@
   // --- Render ---
   function renderWeekPills() {
     const weeks = selectableWeeks();
-    const container = document.getElementById('weekPills');
-    // Clear existing pills (keep label)
-    container.querySelectorAll('.pill').forEach(p => p.remove());
-    // If selected week not in selectable, default to most recent
+    const sel = document.getElementById('weekSelect');
+    if (!sel) return;
+    // If selected period not in selectable, default to most recent
     const selected = (STATE.weekStart && weeks.includes(STATE.weekStart)) ? STATE.weekStart : weeks[weeks.length - 1];
     if (selected !== STATE.weekStart) STATE.weekStart = selected;
 
-    for (const w of weeks) {
-      const btn = document.createElement('button');
-      btn.type = 'button';
-      btn.className = 'pill' + (w === STATE.weekStart ? ' active' : '');
-      btn.dataset.week = w;
-      btn.textContent = fmtRange(w);
-      btn.addEventListener('click', () => {
-        STATE.weekStart = w;
-        localStorage.setItem('wbr2-week', w);
-        renderWeekPills();
-        render();
-      });
-      container.appendChild(btn);
-    }
+    // Newest first; label includes year to distinguish (ej. jun 2025 vs jun 2026).
+    sel.innerHTML = weeks.slice().reverse().map(w => {
+      const year = w.split('-')[0];
+      return `<option value="${w}"${w === STATE.weekStart ? ' selected' : ''}>${fmtRange(w)} · ${year}</option>`;
+    }).join('');
+    sel.value = STATE.weekStart;
   }
 
   function render() {
@@ -828,29 +828,50 @@
     return nice * mag;
   }
 
+  const STACKED_BUCKETS = 30;   // ventana de la gráfica apilada (más larga que las sparklines)
+  function stackedWeeks() {
+    const byWeek = cdata().by_week || {};
+    const all = Object.keys(byWeek).sort();
+    if (!all.length) return [];
+    const sel = (STATE.weekStart && all.includes(STATE.weekStart)) ? STATE.weekStart : all[all.length - 1];
+    const idx = all.indexOf(sel);
+    return all.slice(Math.max(0, idx - (STACKED_BUCKETS - 1)), idx + 1);
+  }
+
   function renderStackedAsignados() {
     const byWeek = cdata().by_week || {};
-    const weeks = chartWeeks();                       // ventana de 20 semanas terminando en la seleccionada
+    const weeks = stackedWeeks();                     // últimos 30 periodos terminando en el seleccionado
     const fuentes = fuentesForCountry().map(f => f.name);
     const selected = (STATE.weekStart && weeks.includes(STATE.weekStart)) ? STATE.weekStart : weeks[weeks.length - 1];
 
     document.getElementById('stackedTitle').textContent =
       'Asignados por fuente · por ' + (STATE.granularity === 'cycle' ? 'ciclo (mié–mar)' : 'semana (lun–dom)');
 
-    document.getElementById('stackedLegend').innerHTML = fuentes.map(name =>
-      `<span class="lg-item"><span class="lg-swatch" style="background:${colorForFuente(name)}"></span>${escapeHtml(name)}</span>`
-    ).join('');
+    // Click en la leyenda AÍSLA esa fuente (única activa). Click de nuevo en ella → vuelven todas.
+    const only = STATE.stackedOnly;
+    const visible = only ? fuentes.filter(n => n === only) : fuentes;
+    document.getElementById('stackedLegend').innerHTML = fuentes.map(name => {
+      const off = (only && name !== only) ? ' off' : '';
+      const tip = only === name ? 'Click para ver todas' : 'Click para aislar esta fuente';
+      return `<span class="lg-item${off}" data-fuente="${escapeHtml(name)}" title="${tip}">` +
+             `<span class="lg-swatch" style="background:${colorForFuente(name)}"></span><span>${escapeHtml(name)}</span></span>`;
+    }).join('');
 
     const totals = weeks.map(w => {
       const cells = byWeek[w] || {};
-      return fuentes.reduce((s, name) => s + ((cells[name] && cells[name].asg) || 0), 0);
+      return visible.reduce((s, name) => s + ((cells[name] && cells[name].asg) || 0), 0);
     });
     const maxTotal = Math.max(...totals, 0);
 
-    document.getElementById('stackedSub').textContent =
-      weeks.length ? `${fmtRange(weeks[0])} → ${fmtRange(weeks[weeks.length - 1])} · ${weeks.length} ${gw().plural}` : '';
+    const subBase = weeks.length ? `${fmtRange(weeks[0])} → ${fmtRange(weeks[weeks.length - 1])} · ${weeks.length} ${gw().plural}` : '';
+    const subFiltro = only ? ` · solo ${only}` : '';
+    document.getElementById('stackedSub').textContent = subBase + subFiltro;
 
     const chartEl = document.getElementById('stackedChart');
+    if (!visible.length) {
+      chartEl.innerHTML = '<div style="padding:24px;color:var(--text-muted)">Selecciona al menos una fuente en la leyenda</div>';
+      return;
+    }
     if (!weeks.length || maxTotal <= 0) {
       chartEl.innerHTML = '<div style="padding:24px;color:var(--text-muted)">sin datos</div>';
       return;
@@ -879,7 +900,7 @@
       const cx = mL + i * barW + (barW - innerW) / 2;
       const isSel = w === selected;
       let acc = 0;
-      fuentes.forEach(name => {
+      visible.forEach(name => {
         const v = (cells[name] && cells[name].asg) || 0;
         if (v <= 0) return;
         const y0 = yOf(acc), y1 = yOf(acc + v);
@@ -1584,6 +1605,11 @@
   }
 
   // --- Pill wiring (country) ---
+  function syncCountryPills() {
+    document.querySelectorAll('.pill[data-country]').forEach(b => {
+      b.classList.toggle('active', b.dataset.country === STATE.country);
+    });
+  }
   document.querySelectorAll('.pill[data-country]').forEach(btn => {
     btn.addEventListener('click', () => {
       if (btn.disabled) return;
@@ -1618,6 +1644,22 @@
   });
   syncGranPills();
 
+  // --- Period dropdown wiring ---
+  document.getElementById('weekSelect').addEventListener('change', e => {
+    STATE.weekStart = e.target.value;
+    localStorage.setItem('wbr2-week', STATE.weekStart);
+    render();
+  });
+
+  // --- Stacked chart legend: toggle visibilidad de fuente ---
+  document.getElementById('stackedLegend').addEventListener('click', e => {
+    const item = e.target.closest('.lg-item');
+    if (!item || !item.dataset.fuente) return;
+    const f = item.dataset.fuente;
+    STATE.stackedOnly = (STATE.stackedOnly === f) ? null : f;  // aísla; click de nuevo → todas
+    renderStackedAsignados();
+  });
+
   // --- Chart hover tooltip (delegated, both chart rows) ---
   (function wireChartTooltip() {
     const tip = document.getElementById('chartTooltip');
@@ -1648,6 +1690,7 @@
       STATE.data = d;
       const lsWeek = localStorage.getItem('wbr2-week');
       if (lsWeek) STATE.weekStart = lsWeek;
+      syncCountryPills();   // píldoras reflejan el país real (localStorage), no el hardcodeado del HTML
       renderWeekPills();
       render();
     })

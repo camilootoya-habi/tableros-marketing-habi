@@ -14,13 +14,13 @@ WITH
     FROM `sellers-main-prod.co_rds_staging.habi_db_tabla_historico_estado_v2`
     WHERE estado_id IN (20, 63)
     GROUP BY 1
-    HAVING MIN(fecha_actualizacion) >= DATE_SUB(CURRENT_DATE(), INTERVAL 175 DAY)
+    HAVING MIN(fecha_actualizacion) >= DATE_SUB(CURRENT_DATE(), INTERVAL 600 DAY)
       AND MIN(fecha_actualizacion) < CURRENT_DATE()
   ),
   reg_agg AS (
     SELECT reg_date AS day, fuente_id, COUNT(*) AS n
     FROM leads
-    WHERE reg_date >= DATE_SUB(CURRENT_DATE(), INTERVAL 175 DAY)
+    WHERE reg_date >= DATE_SUB(CURRENT_DATE(), INTERVAL 600 DAY)
       AND reg_date < CURRENT_DATE()
     GROUP BY 1, 2
   ),
@@ -35,7 +35,7 @@ WITH
     FROM `papyrus-master.sellers_data_mart.sellers_leads_asignados_marketing_wbr_mart` a
     WHERE a.pais = 'colombia'
       AND a.fuente_id_tig IN (3, 7, 20, 35, 39, 47)
-      AND a.dia >= DATE_SUB(CURRENT_DATE(), INTERVAL 175 DAY)
+      AND a.dia >= DATE_SUB(CURRENT_DATE(), INTERVAL 600 DAY)
       AND a.dia < CURRENT_DATE()
     GROUP BY 1, 2
   ),
@@ -50,7 +50,7 @@ WITH
       END AS fuente_id,
       ROUND(SUM(i.spend), 0) AS spend
     FROM `papyrus-data.habi_wh_bi.resumen_inversiones_mkt_co` i
-    WHERE i.date >= DATE_SUB(CURRENT_DATE(), INTERVAL 175 DAY)
+    WHERE i.date >= DATE_SUB(CURRENT_DATE(), INTERVAL 600 DAY)
       AND i.date < CURRENT_DATE()
     GROUP BY 1, 2
     HAVING fuente_id IS NOT NULL
