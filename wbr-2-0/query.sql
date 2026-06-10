@@ -39,28 +39,34 @@ WITH
       AND a.dia < CURRENT_DATE()
     GROUP BY 1, 2
   ),
-  -- Flags por negocio (un solo scan del histórico): pasó por 65 (habimetro_sin_gestion)
-  -- y/o calificó alguna vez (20/63). Para Estudio Inmueble.
-  flags AS (
-    SELECT negocio_id,
-      LOGICAL_OR(estado_id = 65)         AS hit65,
-      LOGICAL_OR(estado_id IN (20, 63))  AS calif
+  -- completos (lead_forms): leads que YA NO están incompletos (estado actual ≠ 7/39), por fecha
+  -- de registro. Es un ESTADO del lead, no un evento limpio; pero el completado ocurre a las horas
+  -- del registro, así que en la práctica no cambia tras cerrar la semana.
+  completos_agg AS (
+    SELECT l.reg_date AS day, l.fuente_id, COUNTIF(l.last_estado_id NOT IN (7, 39)) AS completos
+    FROM leads l
+    WHERE l.reg_date >= DATE_SUB(CURRENT_DATE(), INTERVAL 600 DAY) AND l.reg_date < CURRENT_DATE()
+    GROUP BY 1, 2
+  ),
+  -- Estudio Inmueble: paso por 65 contado por fecha de ENTRADA a 65 (evento); de esos, los calificados.
+  ev_65 AS (
+    SELECT negocio_id, MIN(fecha_actualizacion) AS ts
     FROM `sellers-main-prod.co_rds_staging.habi_db_tabla_historico_estado_v2`
-    WHERE estado_id IN (20, 63, 65)
+    WHERE estado_id = 65
     GROUP BY 1
   ),
-  -- Métricas de cohorte por fecha de registro.
-  -- completos (lead_forms): leads que YA NO están incompletos (estado actual ≠ 7/39).
-  -- paso65 / paso65_calif (Estudio Inmueble): pasaron por 65 (y de esos, los calificados).
-  extra_agg AS (
-    SELECT l.reg_date AS day, l.fuente_id,
-      COUNTIF(l.last_estado_id NOT IN (7, 39))  AS completos,
-      COUNTIF(f.hit65)                          AS paso65,
-      COUNTIF(f.hit65 AND f.calif)              AS paso65_calif
-    FROM leads l
-    LEFT JOIN flags f ON f.negocio_id = l.negocio_id
-    WHERE l.reg_date >= DATE_SUB(CURRENT_DATE(), INTERVAL 600 DAY)
-      AND l.reg_date < CURRENT_DATE()
+  calif_ever AS (
+    SELECT DISTINCT negocio_id
+    FROM `sellers-main-prod.co_rds_staging.habi_db_tabla_historico_estado_v2`
+    WHERE estado_id IN (20, 63)
+  ),
+  paso65_agg AS (
+    SELECT DATE(e.ts) AS day, l.fuente_id,
+      COUNT(*)                            AS paso65,
+      COUNTIF(c.negocio_id IS NOT NULL)   AS paso65_calif
+    FROM ev_65 e JOIN leads l ON l.negocio_id = e.negocio_id
+    LEFT JOIN calif_ever c ON c.negocio_id = e.negocio_id
+    WHERE DATE(e.ts) >= DATE_SUB(CURRENT_DATE(), INTERVAL 600 DAY) AND DATE(e.ts) < CURRENT_DATE()
     GROUP BY 1, 2
   ),
   -- Spend mapped to fuente via canal_adquisicion (Brand/Otro dropped → no fuente)
@@ -84,7 +90,8 @@ WITH
     UNION DISTINCT SELECT day, fuente_id FROM cal_agg
     UNION DISTINCT SELECT day, fuente_id FROM asg_agg
     UNION DISTINCT SELECT day, fuente_id FROM spend_agg
-    UNION DISTINCT SELECT day, fuente_id FROM extra_agg
+    UNION DISTINCT SELECT day, fuente_id FROM completos_agg
+    UNION DISTINCT SELECT day, fuente_id FROM paso65_agg
   )
 
 SELECT
@@ -101,13 +108,14 @@ SELECT
   COALESCE(c.n, 0)            AS cal,
   COALESCE(a.n, 0)            AS asg,
   COALESCE(s.spend, NULL)     AS spend,
-  COALESCE(e.completos, 0)    AS completos,
-  COALESCE(e.paso65, 0)       AS paso65,
-  COALESCE(e.paso65_calif, 0) AS paso65_calif
+  COALESCE(ec.completos, 0)     AS completos,
+  COALESCE(e65.paso65, 0)       AS paso65,
+  COALESCE(e65.paso65_calif, 0) AS paso65_calif
 FROM weeks_fuentes wf
-LEFT JOIN reg_agg   r USING (day, fuente_id)
-LEFT JOIN cal_agg   c USING (day, fuente_id)
-LEFT JOIN asg_agg   a USING (day, fuente_id)
-LEFT JOIN spend_agg s USING (day, fuente_id)
-LEFT JOIN extra_agg e USING (day, fuente_id)
+LEFT JOIN reg_agg      r   USING (day, fuente_id)
+LEFT JOIN cal_agg      c   USING (day, fuente_id)
+LEFT JOIN asg_agg      a   USING (day, fuente_id)
+LEFT JOIN spend_agg    s   USING (day, fuente_id)
+LEFT JOIN completos_agg ec USING (day, fuente_id)
+LEFT JOIN paso65_agg   e65 USING (day, fuente_id)
 ORDER BY day, fuente

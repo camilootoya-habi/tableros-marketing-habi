@@ -383,6 +383,16 @@ jobs:
         run: |
           bq query --use_legacy_sql=false --format=json --max_rows=200000 < wbr-2-0/query_traffic_mx.sql > /tmp/wbr2_traffic_mx.json
 
+      - name: Query WBR 2.0 — delay etapas (CO)
+        if: always()
+        run: |
+          bq query --use_legacy_sql=false --format=json --max_rows=200000 < wbr-2-0/query_delay.sql > /tmp/wbr2_delay.json
+
+      - name: Query WBR 2.0 — delay etapas (MX)
+        if: always()
+        run: |
+          bq query --use_legacy_sql=false --format=json --max_rows=200000 < wbr-2-0/query_delay_mx.sql > /tmp/wbr2_delay_mx.json
+
       - name: Download WBR 2.0 sheets (OKR CO + MX meta)
         if: always()
         run: |
@@ -394,8 +404,8 @@ jobs:
         if: always()
         run: |
           python3 wbr-2-0/build_data.py \
-            /tmp/wbr2_co.json /tmp/wbr2_sheet_co.csv /tmp/wbr2_channels.json /tmp/wbr2_platforms.json /tmp/wbr2_traffic.json \
-            /tmp/wbr2_mx.json /tmp/wbr2_sheet_mx.csv /tmp/wbr2_channels_mx.json /tmp/wbr2_platforms_mx.json /tmp/wbr2_traffic_mx.json \
+            /tmp/wbr2_co.json /tmp/wbr2_sheet_co.csv /tmp/wbr2_channels.json /tmp/wbr2_platforms.json /tmp/wbr2_traffic.json /tmp/wbr2_delay.json \
+            /tmp/wbr2_mx.json /tmp/wbr2_sheet_mx.csv /tmp/wbr2_channels_mx.json /tmp/wbr2_platforms_mx.json /tmp/wbr2_traffic_mx.json /tmp/wbr2_delay_mx.json \
             wbr-2-0/data.json
 
       - name: Query BigQuery — asignados por fecha de creación (CO)

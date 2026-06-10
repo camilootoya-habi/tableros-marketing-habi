@@ -132,6 +132,21 @@
   /* Charts row */
   .charts-row { max-width: 1200px; margin: 18px auto 0; display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; }
   #chartsRow { grid-template-columns: repeat(3, 1fr); }  /* fila 1: Inversión · CPL · Registros */
+  /* Bloque de delay Registro→Asignado: gráfica a la izquierda, texto a la derecha */
+  .delay-block { max-width: 1200px; margin: 14px auto 28px; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.6fr); gap: 18px; align-items: center; }
+  .delay-card { background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 12px 14px; }
+  .delay-card .dl-title { font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.04em; }
+  .delay-card svg { width: 100%; height: auto; display: block; margin-top: 6px; }
+  .delay-card .dl-x { fill: var(--text-muted-2); font-size: 8px; }
+  .delay-card .dl-y { fill: var(--text-muted-2); font-size: 8px; }
+  .delay-card .dl-grid { stroke: var(--border); stroke-width: 1; opacity: 0.4; }
+  .delay-card .dl-cap { font-size: 12px; color: var(--text-muted-2); margin-top: 6px; }
+  .delay-card .dl-cap strong { color: var(--text-title); }
+  .delay-text .dl-text-title { font-size: 14px; font-weight: 600; color: var(--text-title); margin-bottom: 6px; }
+  .delay-text p { font-size: 13px; color: var(--text-muted); line-height: 1.55; margin: 0 0 8px; }
+  .delay-text .delay-sub { font-size: 12px; color: var(--text-muted-2); }
+  .delay-text .delay-sub strong { color: var(--text-muted); }
+  @media (max-width: 720px) { .delay-block { grid-template-columns: 1fr; } }
   .chart-card { background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 12px 14px; }
   .chart-card .title { font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.04em; }
   .chart-card .last-val { font-size: 18px; color: var(--text-title); font-weight: 600; margin-top: 4px; }
@@ -203,6 +218,15 @@
       <select id="weekSelect" class="period-select"><!-- options injected by JS --></select>
     </div>
     <div class="period-info" id="periodInfo">cargando…</div>
+  </div>
+
+  <div class="delay-block" id="delayBlock">
+    <div class="delay-text">
+      <div class="dl-text-title">Por qué el tablero se mira por evento</div>
+      <p id="delayNote"></p>
+      <p id="delayInfo" class="delay-sub"></p>
+    </div>
+    <div class="delay-card" id="delayCard"><!-- chart injected by JS --></div>
   </div>
 
   <div class="matrix-wrap">
@@ -680,6 +704,7 @@
 
     renderStackedAsignados();
     renderCharts();
+    renderDelayCharts();
     renderChannels();
     renderPlatforms();
   }
@@ -817,7 +842,7 @@
     tasaRegCalif: { title: 'Tasa Reg → Calif',     color: '#c084fc', kind: 'pct',   chartType: 'line', series: f => ratioSeries('cal', 'reg', f) },
     tasaCalifAsg: { title: 'Tasa Calif → Asg',     color: '#34d399', kind: 'pct',   chartType: 'line', series: f => ratioSeries('asg', 'cal', f) },
     tasaRegCompletos: { title: 'Tasa Reg → Completos', color: '#2dd4bf', kind: 'pct', chartType: 'line', series: f => ratioSeries('completos', 'reg', f) },
-    habimetroCalif:   { title: '% Habímetro s/g calificados', color: '#f59e0b', kind: 'pct', chartType: 'line', series: f => ratioSeries('paso65_calif', 'paso65', f) },
+    habimetroCalif:   { title: '% Habimetro s/g calificados', color: '#f59e0b', kind: 'pct', chartType: 'line', series: f => ratioSeries('paso65_calif', 'paso65', f) },
   };
 
   // Cards de KPI según la fuente seleccionada (sincronizada tabla/gráfica).
@@ -974,6 +999,70 @@
     }
 
     chartEl.innerHTML = `<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMid meet">${grid}${bars}${rateLine}${xlabels}</svg>`;
+  }
+
+  // --- Distribución del tiempo Registro → Asignado (en horas, bins de 6h, cohorte últimas 5 semanas) ---
+  const DELAY_BINS = ['0-6', '6-12', '12-18', '18-24', '24-30', '30-36', '36-42', '42-48', '48+'];
+
+  function delayForFuente(f) {
+    const dd = (STATE.data.delay && STATE.data.delay[STATE.country]) || {};
+    const names = f ? [f] : fuentesForCountry().map(x => x.name);
+    const agg = { cohort: 0, calif: 0, reg_asg: {} };
+    for (const name of names) {
+      const d = dd[name];
+      if (!d) continue;
+      agg.cohort += d.cohort || 0;
+      agg.calif += d.calif || 0;
+      for (const [b, n] of Object.entries(d.reg_asg || {})) agg.reg_asg[b] = (agg.reg_asg[b] || 0) + n;
+    }
+    return agg;
+  }
+
+  function renderDelayCharts() {
+    const card = document.getElementById('delayCard');
+    if (!card) return;
+    const agg = delayForFuente(STATE.fuenteFilter);
+    const calif = agg.calif || 0;               // denominador = total calificados de la cohorte
+    const scope = STATE.fuenteFilter || 'las 6 fuentes';
+
+    document.getElementById('delayInfo').innerHTML =
+      `Cohorte: últimas 5 semanas de <strong>${escapeHtml(scope)}</strong> · ${fmtInt(agg.cohort)} registros → ${fmtInt(calif)} calificados. Barras = % de los calificados asignados en cada rango de 6h · línea = % acumulado.`;
+    document.getElementById('delayNote').textContent =
+      'Cada métrica se cuenta por la fecha de su evento (registro, completado, calificación, asignación), no por cohorte de registro — así una semana ya cerrada no cambia con el rezago. Esto se justifica porque el tiempo entre etapas es mínimo: la mayoría de los leads calificados se asignan en las primeras horas.';
+
+    if (!calif) { card.innerHTML = '<div style="padding:18px;color:var(--text-muted)">sin datos</div>'; return; }
+
+    const dist = agg.reg_asg || {};
+    const pcts = DELAY_BINS.map(b => (dist[b] || 0) / calif * 100);
+    const cum = []; pcts.reduce((s, p, i) => (cum[i] = s + p), 0);
+    const totalAsg = cum[cum.length - 1] || 0;
+    const niceMax = niceCeil(Math.max(...pcts, totalAsg, 1));
+
+    const W = 600, H = 78, mT = 8, mB = 16, mL = 28, mR = 8;
+    const plotH = H - mT - mB, plotW = W - mL - mR, bw = plotW / DELAY_BINS.length;
+    const yOf = v => mT + plotH - (v / niceMax) * plotH;
+
+    let grid = '';
+    for (let t = 0; t <= 2; t++) {
+      const v = niceMax * t / 2, y = yOf(v);
+      grid += `<line class="dl-grid" x1="${mL}" y1="${y.toFixed(1)}" x2="${W - mR}" y2="${y.toFixed(1)}"/>` +
+              `<text class="dl-y" x="${mL - 4}" y="${(y + 2.5).toFixed(1)}" text-anchor="end">${v.toFixed(0)}%</text>`;
+    }
+    const bars = DELAY_BINS.map((b, i) => {
+      const p = pcts[i], y = yOf(p), x = mL + i * bw + bw * 0.18;
+      const tip = `${b} h: ${p.toFixed(1)}% de calificados (${fmtInt(dist[b] || 0)})`;
+      return `<rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${(bw * 0.64).toFixed(1)}" height="${Math.max(mT + plotH - y, 0).toFixed(1)}" fill="#818cf8" rx="1" data-tip="${escapeHtml(tip)}"/>` +
+             `<text class="dl-x" x="${(mL + i * bw + bw / 2).toFixed(1)}" y="${(H - 8).toFixed(1)}" text-anchor="middle">${b}</text>`;
+    }).join('');
+    const linePts = DELAY_BINS.map((b, i) => [mL + i * bw + bw / 2, yOf(cum[i]), i]);
+    const linePath = 'M ' + linePts.map(p => `${p[0].toFixed(1)},${p[1].toFixed(1)}`).join(' L ');
+    const dots = linePts.map((p, i) =>
+      `<circle cx="${p[0].toFixed(1)}" cy="${p[1].toFixed(1)}" r="2.6" fill="#facc15" data-tip="${escapeHtml(DELAY_BINS[i] + ' h: ' + cum[i].toFixed(1) + '% acumulado')}"/>`).join('');
+
+    card.innerHTML = `<div class="dl-title">Registro → Asignado (horas) · % de calificados</div>
+      <svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMid meet">${grid}${bars}
+        <path d="${linePath}" fill="none" stroke="#facc15" stroke-width="1.8"/>${dots}</svg>
+      <div class="dl-cap"><strong>${pcts[0].toFixed(0)}% en las primeras 6h</strong> · ${totalAsg.toFixed(0)}% de los calificados se asigna (acumulado)</div>`;
   }
 
   function renderCharts() {
@@ -1719,7 +1808,7 @@
   // --- Chart hover tooltip (delegated, both chart rows) ---
   (function wireChartTooltip() {
     const tip = document.getElementById('chartTooltip');
-    const roots = [document.getElementById('stackedChart'), document.getElementById('chartsRow'), document.getElementById('chartsRowCh'), document.getElementById('chartsRowPl'), document.getElementById('chartsRowChPaid'), document.getElementById('chartsRowChPaid2')];
+    const roots = [document.getElementById('stackedChart'), document.getElementById('delayCard'), document.getElementById('chartsRow'), document.getElementById('chartsRowCh'), document.getElementById('chartsRowPl'), document.getElementById('chartsRowChPaid'), document.getElementById('chartsRowChPaid2')];
     roots.forEach(root => {
       root.addEventListener('mouseover', e => {
         const t = e.target.getAttribute && e.target.getAttribute('data-tip');

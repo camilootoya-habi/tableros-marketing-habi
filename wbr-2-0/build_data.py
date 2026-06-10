@@ -258,19 +258,37 @@ def build_country(bq_json, sheet_csv, channels_json, platforms_json, traffic_jso
     return {gran: build_for(gran) for gran in GRANULARITIES}
 
 
+def build_delay(delay_json):
+    """Distribución del tiempo Registro→Asignado (bins de 6h) por fuente:
+       { fuente: { cohort: N, calif: N, reg_asg: {bin: n} } }
+       El % en el front se calcula sobre `calif` (total de calificados de la cohorte)."""
+    out = {}
+    for r in json.load(open(delay_json)):
+        f, kind, b, n = r['fuente'], r['kind'], r['bin'], int(r['n'])
+        d = out.setdefault(f, {'cohort': 0, 'calif': 0, 'reg_asg': {}})
+        if kind == 'cohort':
+            d['cohort'] += n
+        elif kind == 'calif':
+            d['calif'] += n
+        else:
+            d['reg_asg'][b] = d['reg_asg'].get(b, 0) + n
+    return out
+
+
 def main():
-    if len(sys.argv) != 12:
-        print(f"Usage: {sys.argv[0]} <bq_co> <sheet_co> <bq_ch_co> <bq_pl_co> <traffic_co> "
-              f"<bq_mx> <sheet_mx> <bq_ch_mx> <bq_pl_mx> <traffic_mx> <output>")
+    if len(sys.argv) != 14:
+        print(f"Usage: {sys.argv[0]} <bq_co> <sheet_co> <bq_ch_co> <bq_pl_co> <traffic_co> <delay_co> "
+              f"<bq_mx> <sheet_mx> <bq_ch_mx> <bq_pl_mx> <traffic_mx> <delay_mx> <output>")
         sys.exit(1)
 
-    (bq_co, sheet_co, bq_ch_co, bq_pl_co, traffic_co,
-     bq_mx, sheet_mx, bq_ch_mx, bq_pl_mx, traffic_mx, output) = sys.argv[1:]
+    (bq_co, sheet_co, bq_ch_co, bq_pl_co, traffic_co, delay_co,
+     bq_mx, sheet_mx, bq_ch_mx, bq_pl_mx, traffic_mx, delay_mx, output) = sys.argv[1:]
 
     data = {
         'updated': date.today().isoformat(),
         'co': build_country(bq_co, sheet_co, bq_ch_co, bq_pl_co, traffic_co, 'co'),
         'mx': build_country(bq_mx, sheet_mx, bq_ch_mx, bq_pl_mx, traffic_mx, 'mx'),
+        'delay': {'co': build_delay(delay_co), 'mx': build_delay(delay_mx)},
     }
 
     with open(output, 'w') as f:
