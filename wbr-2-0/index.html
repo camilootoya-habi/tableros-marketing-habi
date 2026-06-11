@@ -248,6 +248,15 @@
 
   <div class="channels-wrap" id="channelsWrap"></div>
 
+  <div class="stacked-wrap" id="stackedWrapCanal">
+    <div class="sw-head">
+      <span class="sw-title" id="stackedTitleCanal">Asignados por canal · por semana</span>
+      <span class="sw-sub" id="stackedSubCanal"></span>
+    </div>
+    <div class="stacked-legend" id="stackedLegendCanal"></div>
+    <div id="stackedChartCanal"></div>
+  </div>
+
   <div class="charts-filter-info" id="chartsFilterCh"></div>
   <div class="charts-row" id="chartsRowCh"></div>
 
@@ -706,6 +715,7 @@
     renderCharts();
     renderDelayCharts();
     renderChannels();
+    renderStackedAsignadosCanal();
     renderPlatforms();
   }
 
@@ -991,6 +1001,127 @@
     if (ratePts.length) {
       const path = 'M ' + ratePts.map(p => `${p[0].toFixed(1)},${p[1].toFixed(1)}`).join(' L ');
       rateLine += `<path class="sw-rate-line" d="${path}"/>`;
+      rateLine += ratePts.map(p => {
+        const isSel = p[3] === selected;
+        const tip = `Tasa Reg → Asg · ${fmtRange(p[3])}: ${(ratios[p[2]] * 100).toFixed(1)}%`;
+        return `<circle class="sw-rate-dot" cx="${p[0].toFixed(1)}" cy="${p[1].toFixed(1)}" r="${isSel ? 3.5 : 2.4}"${isSel ? ' stroke="' + HIGHLIGHT + '" stroke-width="1.5"' : ''} data-tip="${escapeHtml(tip)}"/>`;
+      }).join('');
+    }
+
+    chartEl.innerHTML = `<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMid meet">${grid}${bars}${rateLine}${xlabels}</svg>`;
+  }
+
+  // --- Asignados apilados por CANAL (de la fuente seleccionada, o todos los canales) ---
+  const CHAN_COLORS = ['#818cf8', '#22d3ee', '#34d399', '#fbbf24', '#f472b6', '#fb923c',
+                       '#60a5fa', '#a78bfa', '#2dd4bf', '#f59e0b', '#c084fc', '#4ade80'];
+  const CHAN_OTROS = '#64748b';
+  const CHAN_CAP = 12;
+
+  function renderStackedAsignadosCanal() {
+    const chartEl = document.getElementById('stackedChartCanal');
+    if (!chartEl) return;
+    const byWk = cdata().by_week_channels || {};
+    const weeks = stackedWeeks();
+    const fF = STATE.fuenteFilter, cF = STATE.channelFilter;
+    const selected = (STATE.weekStart && weeks.includes(STATE.weekStart)) ? STATE.weekStart : weeks[weeks.length - 1];
+
+    // Canales en alcance (filtrados por fuente), ordenados por asg total desc → top N + 'Otros'.
+    const tot = {};
+    for (const w of weeks) for (const [ch, c] of Object.entries(byWk[w] || {})) {
+      if (fF && c.fuente !== fF) continue;
+      tot[ch] = (tot[ch] || 0) + (c.asg || 0);
+    }
+    const sorted = Object.keys(tot).sort((a, b) => tot[b] - tot[a]);
+    const top = sorted.slice(0, CHAN_CAP);
+    const tail = sorted.slice(CHAN_CAP);
+    const colorOf = {}; top.forEach((ch, i) => colorOf[ch] = CHAN_COLORS[i % CHAN_COLORS.length]);
+
+    // Serie a apilar: top (+ 'Otros' si hay cola). Si hay channelFilter, solo ese canal.
+    const displayed = top.map(ch => ({ name: ch, color: colorOf[ch] }));
+    if (tail.length) displayed.push({ name: 'Otros', color: CHAN_OTROS, tail });
+    const visibleSeries = cF ? [{ name: cF, color: colorOf[cF] || CHAN_OTROS }] : displayed;
+    const asgOf = (w, s) => {
+      const cells = byWk[w] || {};
+      if (s.tail) return s.tail.reduce((x, ch) => x + ((cells[ch] && cells[ch].asg) || 0), 0);
+      return (cells[s.name] && cells[s.name].asg) || 0;
+    };
+
+    document.getElementById('stackedTitleCanal').textContent =
+      'Asignados por canal · por ' + (STATE.granularity === 'cycle' ? 'ciclo (mié–mar)' : 'semana (lun–dom)');
+
+    // Leyenda (canales clickables → aíslan; sincroniza con channelFilter y la Tabla 2).
+    const legendCh = displayed.map(s => {
+      if (s.name === 'Otros') return `<span class="lg-item lg-rate" title="Canales fuera del top ${CHAN_CAP}"><span class="lg-swatch" style="background:${s.color}"></span><span>Otros (${tail.length})</span></span>`;
+      const off = (cF && s.name !== cF) ? ' off' : '';
+      const tip = cF === s.name ? 'Click para ver todos los canales' : 'Click para aislar este canal (sincroniza con la tabla)';
+      return `<span class="lg-item${off}" data-canal="${escapeHtml(s.name)}" title="${tip}"><span class="lg-swatch" style="background:${s.color}"></span><span>${escapeHtml(s.name)}</span></span>`;
+    }).join('');
+    const legendRate = `<span class="lg-item lg-rate" title="Tasa Reg → Asg del total de cada columna (eje derecho)"><span class="lg-line-swatch"></span><span>Tasa Reg → Asg</span></span>`;
+    document.getElementById('stackedLegendCanal').innerHTML = legendCh + legendRate;
+
+    const totals = weeks.map(w => {
+      const cells = byWk[w] || {};
+      if (cF) return (cells[cF] && cells[cF].asg) || 0;
+      return sorted.reduce((s, ch) => s + ((cells[ch] && cells[ch].asg) || 0), 0);
+    });
+    const regTotals = weeks.map(w => {
+      const cells = byWk[w] || {};
+      if (cF) return (cells[cF] && cells[cF].reg) || 0;
+      return sorted.reduce((s, ch) => s + ((cells[ch] && cells[ch].reg) || 0), 0);
+    });
+    const ratios = totals.map((a, i) => regTotals[i] > 0 ? a / regTotals[i] : null);
+    const maxTotal = Math.max(...totals, 0);
+
+    const scope = fF ? fF : 'todas las fuentes';
+    const subBase = weeks.length ? `${fmtRange(weeks[0])} → ${fmtRange(weeks[weeks.length - 1])} · ${sorted.length} canales de ${scope}` : '';
+    document.getElementById('stackedSubCanal').textContent = subBase + (cF ? ` · solo ${cF}` : '');
+
+    if (!sorted.length || maxTotal <= 0) {
+      chartEl.innerHTML = '<div style="padding:24px;color:var(--text-muted)">sin datos de canal para este filtro</div>';
+      return;
+    }
+
+    const W = 1100, H = 320, mL = 48, mR = 48, mT = 14, mB = 42;
+    const plotW = W - mL - mR, plotH = H - mT - mB;
+    const n = weeks.length, barW = plotW / n, innerW = Math.min(barW * 0.74, 48);
+    const niceMax = niceCeil(maxTotal);
+    const yOf = v => mT + plotH - (v / niceMax) * plotH;
+    const maxRatio = Math.max(...ratios.filter(r => r != null), 0);
+    const niceMaxRate = niceCeil(maxRatio) || 1;
+    const yRateOf = r => mT + plotH - (r / niceMaxRate) * plotH;
+
+    let grid = '';
+    for (let t = 0; t <= 4; t++) {
+      const val = niceMax * t / 4, y = yOf(val);
+      grid += `<line class="sw-grid" x1="${mL}" y1="${y.toFixed(1)}" x2="${W - mR}" y2="${y.toFixed(1)}"/>`;
+      grid += `<text class="sw-axis" x="${mL - 6}" y="${(y + 3).toFixed(1)}" text-anchor="end">${fmtInt(val)}</text>`;
+      grid += `<text class="sw-axis" x="${W - mR + 6}" y="${(y + 3).toFixed(1)}" text-anchor="start">${(niceMaxRate * t / 4 * 100).toFixed(0)}%</text>`;
+    }
+
+    let bars = '', xlabels = '';
+    weeks.forEach((w, i) => {
+      const cx = mL + i * barW + (barW - innerW) / 2;
+      const isSel = w === selected;
+      let acc = 0;
+      visibleSeries.forEach(s => {
+        const v = asgOf(w, s);
+        if (v <= 0) return;
+        const y0 = yOf(acc), y1 = yOf(acc + v);
+        acc += v;
+        const tip = `${s.name} · ${fmtRange(w)}: ${fmtInt(v)}`;
+        bars += `<rect x="${cx.toFixed(1)}" y="${y1.toFixed(1)}" width="${innerW.toFixed(1)}" height="${(y0 - y1).toFixed(1)}" fill="${s.color}" data-tip="${escapeHtml(tip)}"/>`;
+      });
+      const yTop = yOf(acc);
+      if (isSel && acc > 0) bars += `<rect x="${(cx - 2).toFixed(1)}" y="${(yTop - 2).toFixed(1)}" width="${(innerW + 4).toFixed(1)}" height="${(mT + plotH - yTop + 2).toFixed(1)}" fill="none" stroke="${HIGHLIGHT}" stroke-width="2" rx="2"/>`;
+      if (totals[i] > 0) bars += `<text class="sw-axis" x="${(cx + innerW / 2).toFixed(1)}" y="${(yTop - 4).toFixed(1)}" text-anchor="middle" style="font-size:8px${isSel ? ';fill:' + HIGHLIGHT + ';font-weight:700' : ''}">${fmtInt(totals[i])}</text>`;
+      const [, mm, dd] = w.split('-');
+      xlabels += `<text class="sw-axis" x="${(cx + innerW / 2).toFixed(1)}" y="${(H - mB + 14).toFixed(1)}" text-anchor="middle"${isSel ? ' style="fill:' + HIGHLIGHT + ';font-weight:700"' : ''}>${dd}/${mm}</text>`;
+    });
+
+    const ratePts = weeks.map((w, i) => ratios[i] == null ? null : [mL + i * barW + barW / 2, yRateOf(ratios[i]), i, w]).filter(Boolean);
+    let rateLine = '';
+    if (ratePts.length) {
+      rateLine += `<path class="sw-rate-line" d="M ${ratePts.map(p => `${p[0].toFixed(1)},${p[1].toFixed(1)}`).join(' L ')}"/>`;
       rateLine += ratePts.map(p => {
         const isSel = p[3] === selected;
         const tip = `Tasa Reg → Asg · ${fmtRange(p[3])}: ${(ratios[p[2]] * 100).toFixed(1)}%`;
@@ -1805,10 +1936,19 @@
     render();
   });
 
+  // --- Leyenda de la gráfica por canal: aislar canal (sincroniza con channelFilter y la Tabla 2) ---
+  document.getElementById('stackedLegendCanal').addEventListener('click', e => {
+    const item = e.target.closest('.lg-item');
+    if (!item || !item.dataset.canal) return;
+    const c = item.dataset.canal;
+    STATE.channelFilter = (STATE.channelFilter === c) ? null : c;
+    render();
+  });
+
   // --- Chart hover tooltip (delegated, both chart rows) ---
   (function wireChartTooltip() {
     const tip = document.getElementById('chartTooltip');
-    const roots = [document.getElementById('stackedChart'), document.getElementById('delayCard'), document.getElementById('chartsRow'), document.getElementById('chartsRowCh'), document.getElementById('chartsRowPl'), document.getElementById('chartsRowChPaid'), document.getElementById('chartsRowChPaid2')];
+    const roots = [document.getElementById('stackedChart'), document.getElementById('stackedChartCanal'), document.getElementById('delayCard'), document.getElementById('chartsRow'), document.getElementById('chartsRowCh'), document.getElementById('chartsRowPl'), document.getElementById('chartsRowChPaid'), document.getElementById('chartsRowChPaid2')];
     roots.forEach(root => {
       root.addEventListener('mouseover', e => {
         const t = e.target.getAttribute && e.target.getAttribute('data-tip');
