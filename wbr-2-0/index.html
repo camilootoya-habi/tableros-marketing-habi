@@ -152,6 +152,12 @@
   .chart-card .last-val { font-size: 18px; color: var(--text-title); font-weight: 600; margin-top: 4px; }
   .chart-card .sub { font-size: 11px; color: var(--text-muted-2); margin-top: 2px; }
   .chart-card svg { width: 100%; height: 53px; display: block; margin-top: 6px; }
+  /* Ejes de los sparkline cards */
+  .chart-card .spark { display: flex; gap: 5px; margin-top: 6px; align-items: stretch; }
+  .chart-card .spark-y { display: flex; flex-direction: column; justify-content: space-between; font-size: 8px; line-height: 1; color: var(--text-muted-2); text-align: right; min-width: 30px; height: 53px; }
+  .chart-card .spark-svg { flex: 1; min-width: 0; }
+  .chart-card .spark-svg svg { margin-top: 0; }
+  .chart-card .spark-x { display: flex; justify-content: space-between; font-size: 8px; color: var(--text-muted-2); margin-top: 3px; padding-left: 35px; }
   .chart-tooltip { position: fixed; pointer-events: none; background: var(--card); border: 1px solid var(--border); border-radius: 6px; padding: 5px 9px; font-size: 11px; color: var(--text-title); z-index: 100; opacity: 0; transition: opacity 0.1s; box-shadow: 0 4px 12px rgba(0,0,0,0.15); white-space: nowrap; }
   .chart-tooltip.visible { opacity: 1; }
   /* Stacked asignados-by-source chart (headline) */
@@ -841,6 +847,25 @@
     return FMT_INT.format(Math.round(v));
   }
 
+  function shortDay(iso) { const [, m, d] = iso.split('-'); return `${d}/${m}`; }
+
+  // Envuelve un sparkline con eje Y (máx/mín de la escala) y eje X (período inicial/final).
+  function sparkBlock(series, weeks, color, kind, chartType, contextCount) {
+    const svg = chartType === 'bar'
+      ? sparklineBar(series, weeks, color, kind, contextCount)
+      : sparklineLine(series, weeks, color, kind, contextCount);
+    const valid = series.filter(v => v != null);
+    const yMaxS = valid.length ? fmtCardValue(Math.max(...valid), kind) : '';
+    const yMinS = valid.length ? fmtCardValue(chartType === 'bar' ? 0 : Math.min(...valid), kind) : '';
+    const xFirst = weeks.length ? shortDay(weeks[0]) : '';
+    const xLast = weeks.length ? shortDay(weeks[weeks.length - 1]) : '';
+    return `<div class="spark">` +
+             `<div class="spark-y"><span>${yMaxS}</span><span>${yMinS}</span></div>` +
+             `<div class="spark-svg">${svg}</div>` +
+           `</div>` +
+           `<div class="spark-x"><span>${xFirst}</span><span>${xLast}</span></div>`;
+  }
+
   // KPIs disponibles. Asignados y Tasa Reg→Asg viven en la gráfica apilada (no se repiten aquí).
   const KPI = {
     trafico:      { title: 'Tráfico (visitantes)', color: '#38bdf8', kind: 'int',   chartType: 'bar',  series: f => trendSeries('traffic', f) },
@@ -1236,14 +1261,12 @@
         }
       }
       const contextCount = Math.max(0, series.length - CHART_WEEKS);
-      const chartSvg = c.chartType === 'bar'
-        ? sparklineBar(series, weeks, c.color, c.kind, contextCount)
-        : sparklineLine(series, weeks, c.color, c.kind, contextCount);
+      const chartBlock = sparkBlock(series, weeks, c.color, c.kind, c.chartType, contextCount);
       return `<div class="chart-card">
         <div class="title">${escapeHtml(c.title)}</div>
         <div class="last-val">${lastValStr}</div>
         <div class="sub">${escapeHtml(sub)}</div>
-        ${chartSvg}
+        ${chartBlock}
       </div>`;
     }).join('');
   }
@@ -1543,14 +1566,12 @@
         }
       }
       const contextCount = Math.max(0, series.length - CHART_WEEKS);
-      const chartSvg = c.chartType === 'bar'
-        ? sparklineBar(series, weeks, c.color, c.kind, contextCount)
-        : sparklineLine(series, weeks, c.color, c.kind, contextCount);
+      const chartBlock = sparkBlock(series, weeks, c.color, c.kind, c.chartType, contextCount);
       return `<div class="chart-card">
         <div class="title">${escapeHtml(c.title)}</div>
         <div class="last-val">${lastValStr}</div>
         <div class="sub">${escapeHtml(sub)}</div>
-        ${chartSvg}
+        ${chartBlock}
       </div>`;
     }).join('');
   }
@@ -1593,14 +1614,12 @@
         }
       }
       const contextCount = Math.max(0, series.length - CHART_WEEKS);
-      const chartSvg = c.chartType === 'bar'
-        ? sparklineBar(series, weeks, c.color, c.kind, contextCount)
-        : sparklineLine(series, weeks, c.color, c.kind, contextCount);
+      const chartBlock = sparkBlock(series, weeks, c.color, c.kind, c.chartType, contextCount);
       return `<div class="chart-card">
         <div class="title">${escapeHtml(c.title)}</div>
         <div class="last-val">${lastValStr}</div>
         <div class="sub">${escapeHtml(sub)}</div>
-        ${chartSvg}
+        ${chartBlock}
       </div>`;
     }
 
@@ -1868,14 +1887,12 @@
         }
       }
       const contextCount = Math.max(0, series.length - CHART_WEEKS);
-      const chartSvg = c.chartType === 'bar'
-        ? sparklineBar(series, weeks, c.color, c.kind, contextCount)
-        : sparklineLine(series, weeks, c.color, c.kind, contextCount);
+      const chartBlock = sparkBlock(series, weeks, c.color, c.kind, c.chartType, contextCount);
       return `<div class="chart-card">
         <div class="title">${escapeHtml(c.title)}</div>
         <div class="last-val">${lastValStr}</div>
         <div class="sub">${escapeHtml(sub)}</div>
-        ${chartSvg}
+        ${chartBlock}
       </div>`;
     }).join('');
   }
