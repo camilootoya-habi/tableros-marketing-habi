@@ -1,0 +1,11 @@
+[
+  {"date":"2026-05-18","label":"Festivo: Ascensión (Ley Emiliani)","tipo":"festivo"},
+  {"date":"2026-05-27","label":"Pico de CPM WEB (3.26) — saturación pauta pre-1ª vuelta","tipo":"costo"},
+  {"date":"2026-05-31","label":"1ª vuelta presidencial","tipo":"eleccion"},
+  {"date":"2026-06-08","label":"Festivo: Corpus Christi (Ley Emiliani)","tipo":"festivo"},
+  {"date":"2026-06-11","label":"Arranca el Mundial 2026","tipo":"mundial"},
+  {"date":"2026-06-15","label":"Festivo: Sagrado Corazón (Ley Emiliani)","tipo":"festivo"},
+  {"date":"2026-06-21","label":"2ª vuelta presidencial","tipo":"eleccion"},
+  {"date":"2026-06-29","label":"Festivo: San Pedro y San Pablo (Ley Emiliani)","tipo":"festivo"},
+  {"date":"2026-07-19","label":"Fin del Mundial 2026","tipo":"mundial"}
+]
