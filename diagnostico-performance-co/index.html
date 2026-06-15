@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚽</text></svg>">
+<title>Diagnóstico Performance CO — Mundial 2026</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<style>
+  :root {
+    --bg: #fafaf7; --card: #ffffff;
+    --text: #1f2937; --text-muted: #6b7280; --text-title: #111827;
+    --accent: #4f46e5; --accent-soft: #eef2ff;
+    --border: #e5e7eb; --code-bg: #f3f4f6; --table-alt: #f9fafb;
+    --warn-bg: #fef3c7; --warn-border: #f59e0b;
+    --info-bg: #eef2ff; --info-border: #4f46e5;
+    --ok-bg: #ecfdf5; --ok-border: #10b981;
+    --danger-bg: #fee2e2; --danger-border: #dc2626;
+    --web: #4f46e5; --lf: #0ea5e9; --hm: #f59e0b;
+    --cons: #dc2626; --opt: #10b981;
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: var(--bg); color: var(--text); line-height: 1.65; margin: 0; padding: 0; }
+  .topbar { position: sticky; top: 0; background: rgba(250,250,247,0.94); backdrop-filter: blur(8px); border-bottom: 1px solid var(--border); padding: 10px 20px; display: flex; justify-content: space-between; align-items: center; font-size: 13px; z-index: 100; flex-wrap: wrap; gap: 8px; }
+  .topbar a { color: var(--accent); text-decoration: none; margin-left: 14px; }
+  .topbar a:hover { text-decoration: underline; }
+  .topbar .back-hub { color: var(--text-muted); margin-left: 0; margin-right: 14px; padding: 3px 8px; border: 1px solid var(--border); border-radius: 6px; font-weight: 500; }
+  .topbar .back-hub:hover { color: var(--accent); border-color: var(--accent); text-decoration: none; }
+  .wrap { max-width: 920px; margin: 0 auto; padding: 40px 28px 96px; }
+  h1 { color: var(--text-title); font-size: 2rem; font-weight: 700; margin: 0 0 6px; padding-bottom: 12px; border-bottom: 2px solid var(--accent); }
+  h2 { color: var(--text-title); font-size: 1.5rem; font-weight: 700; margin: 44px 0 12px; padding-top: 20px; border-top: 1px solid var(--border); }
+  h3 { color: var(--text-title); font-size: 1.2rem; font-weight: 600; margin: 28px 0 10px; }
+  p, li { font-size: 15px; }
+  ul, ol { padding-left: 26px; }
+  li { margin-bottom: 6px; }
+  strong { color: var(--text-title); }
+  code { background: var(--code-bg); padding: 2px 6px; border-radius: 4px; font-size: 13px; font-family: 'SF Mono', Menlo, Monaco, Consolas, monospace; color: #be185d; }
+  .meta { font-size: 13px; color: var(--text-muted); margin: 8px 0 24px; }
+  .callout { padding: 14px 18px; border-radius: 0 8px 8px 0; margin: 18px 0; font-size: 14px; }
+  .callout.info { background: var(--info-bg); border-left: 3px solid var(--info-border); color: #1e1b4b; }
+  .callout.warn { background: var(--warn-bg); border-left: 3px solid var(--warn-border); color: #78350f; }
+  .callout.ok { background: var(--ok-bg); border-left: 3px solid var(--ok-border); color: #064e3b; }
+  .callout.danger { background: var(--danger-bg); border-left: 3px solid var(--danger-border); color: #7f1d1d; }
+  .callout strong { color: inherit; }
+  .callout p { margin: 6px 0; font-size: 14px; }
+  .callout p:first-child { margin-top: 0; }
+  .callout p:last-child { margin-bottom: 0; }
+  table { border-collapse: collapse; width: 100%; font-size: 13px; margin: 18px 0; display: block; overflow-x: auto; }
+  thead { background: var(--accent-soft); }
+  th { text-align: left; padding: 10px 12px; font-weight: 600; color: var(--text-title); border-bottom: 2px solid var(--accent); white-space: nowrap; }
+  td { padding: 8px 12px; border-bottom: 1px solid var(--border); white-space: nowrap; }
+  tbody tr:nth-child(even) { background: var(--table-alt); }
+  td:not(:first-child), th:not(:first-child) { text-align: right; font-variant-numeric: tabular-nums; }
+  .chart-card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 20px; margin: 18px 0; box-shadow: 0 1px 2px rgba(0,0,0,0.04); }
+  .chart-title { font-size: 16px; font-weight: 600; color: var(--text-title); margin-bottom: 4px; }
+  .chart-subtitle { font-size: 12px; color: var(--text-muted); margin-bottom: 14px; }
+  .chart-wrap { position: relative; height: 380px; width: 100%; }
+  .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; margin: 18px 0; }
+  .kpi { background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 12px 14px; }
+  .kpi .label { color: var(--text-muted); font-size: 11px; text-transform: uppercase; letter-spacing: 0.4px; margin-bottom: 4px; }
+  .kpi .val { font-weight: 700; color: var(--text-title); font-size: 22px; line-height: 1.15; }
+  .kpi .sub { color: var(--text-muted); font-size: 12px; margin-top: 4px; }
+  .toggle-row { display: flex; flex-wrap: wrap; gap: 6px; margin: 6px 0 14px; }
+  .toggle-row button { font: inherit; font-size: 13px; padding: 5px 12px; border: 1px solid var(--border); background: var(--card); color: var(--text-muted); border-radius: 999px; cursor: pointer; }
+  .toggle-row button.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .hito-legend { font-size: 12px; color: var(--text-muted); margin-top: 10px; display: flex; flex-wrap: wrap; gap: 12px; }
+  .hito-legend span { display: inline-flex; align-items: center; gap: 5px; }
+  .hito-legend i { width: 14px; height: 0; border-top: 2px dashed; display: inline-block; }
+</style>
+</head>
+<body>
+<div class="topbar">
+  <span>
+    <a href="../" class="back-hub">← Hub</a>
+    ⚽ Diagnóstico · Performance CO — Mundial 2026
+  </span>
+  <span>
+    <a href="#resumen">Resumen</a>
+    <a href="#cap-1">1. Varas</a>
+    <a href="#cap-2">2. Costos</a>
+    <a href="#cap-3">3. CPL</a>
+    <a href="#cap-4">4. Conversión</a>
+    <a href="#cap-5">5. Proyección</a>
+  </span>
+</div>
+
+<div class="wrap">
+
+<h1>Diagnóstico y proyección de performance — Colombia 2026</h1>
+<div class="meta">
+  <strong>Fecha:</strong> 2026-06-15 · <strong>Autor:</strong> Camilo Otoya — growth/marketing<br>
+  <strong>Scope:</strong> Colombia · fuentes de performance (WEB · Lead Forms · Habímetro) · datos hasta <span id="m-cutoff">2026-06-14</span>
+</div>
+
+<h2 id="resumen">Resumen ejecutivo</h2>
+
+<ul>
+  <li><strong>El incumplimiento es 100% una historia de performance — y dentro de performance, de WEB.</strong> En el Q2 a la fecha el total de marketing va <strong>−274</strong> asignados bajo meta, pero todo el hueco está en <strong>WEB (−713)</strong>: Lead Forms incluso sobre-cumple (+167) y las fuentes sin pauta (CRM/Broker/Comercial) van +390 sobre meta.</li>
+  <li><strong>El equipo no falla operativamente, falla contra un parámetro viejo.</strong> Contra la <strong>meta recalibrada −16%</strong> del documento de abril, las tres fuentes de performance superan el 100% (WEB +8%, Habímetro +32%, Lead Forms +68%). Contra la meta original WEB y Habímetro incumplen; contra 2025 caen −12% y −16%.</li>
+  <li><strong>Palanca 1 — conversión (Backbone).</strong> La tesis del −16% sigue viva: el CVR registro→asignado pasó de 27.3% (feb) a 21.8% (may), −20% relativo. Habímetro es el más golpeado (−21%); Lead Forms estable.</li>
+  <li><strong>Palanca 2 — costos (elecciones).</strong> La pauta política ya infló la subasta: el CPM de WEB subió <strong>+55%</strong> del piso de inicios de mayo (1.8) al pico pre-1ª vuelta (2.8–3.3 a fin de mayo). El CPC subió +50%.</li>
+  <li><strong>Palanca 3 — demanda (Mundial + festivos).</strong> El golpe <strong>apenas empezó</strong>: el Mundial arrancó el 11-jun y los registros de WEB ya cayeron a su piso el primer fin de semana mundialista (139–140/día vs ~180–215). Junio suma 3 lunes festivos (8, 15, 29).</li>
+</ul>
+
+<div class="callout info">
+  <p><strong>Lectura para la compañía:</strong> el gap del Q2 contra la meta original se explica por la caída de conversión del Backbone — ya conocida y recalibrada. El shock estacional nuevo (Mundial + pauta de 2ª vuelta) recién comenzó, así que su impacto pleno cae en la ventana de proyección (fin de junio – julio). Ahí es donde se juega el cierre de Q2 y la recuperación de Q3.</p>
+</div>
+
+<div class="kpi-grid" id="kpi-exec"></div>
+
+<h2 id="cap-1">Capítulo 1 — Dónde estamos frente a las tres varas</h2>
+<p>Medimos los leads asignados semanales de cada fuente de performance contra tres referencias: la <strong>meta original</strong> del año, la <strong>meta recalibrada −16%</strong> (post-Backbone, factor por fuente del documento de abril) y el <strong>año anterior</strong> (2025, mismo rango). El número de asignados es el oficial del WBR.</p>
+
+<div class="chart-card">
+  <div class="chart-title">Asignados semanales vs las 3 varas</div>
+  <div class="chart-subtitle">Elige fuente. Cada punto es una semana ISO, sin acumular.</div>
+  <div class="toggle-row" id="tg-varas"></div>
+  <div class="chart-wrap"><canvas id="c-varas"></canvas></div>
+</div>
+
+<div class="callout ok">
+  <p><strong>Contra la vara recalibrada, las 3 fuentes superan el 100%.</strong> El equipo está entregando lo que el nuevo perfil de lead permite; el incumplimiento aparece solo contra una meta fijada con tasas de conversión que ya no existen.</p>
+</div>
+
+<h2 id="cap-2">Capítulo 2 — Palanca costos: la pauta política infló la subasta</h2>
+<p>Las elecciones presidenciales (1ª vuelta 31-may, 2ª vuelta 21-jun) inyectaron una fuerte inversión de campañas políticas a la subasta de medios. El efecto es directo y medible en el costo por mil impresiones (CPM) y por clic (CPC) de WEB.</p>
+
+<div class="chart-card">
+  <div class="chart-title">CPM semanal por fuente (USD / 1.000 impresiones)</div>
+  <div class="chart-subtitle">2026, semanas ISO.</div>
+  <div class="chart-wrap"><canvas id="c-cpm-sem"></canvas></div>
+</div>
+
+<div class="chart-card">
+  <div class="chart-title">WEB · CPM y CPC diarios desde el 1-may con hitos</div>
+  <div class="chart-subtitle">El CPM escala hacia la 1ª vuelta y se mantiene elevado en junio.</div>
+  <div class="chart-wrap"><canvas id="c-cpm-dia"></canvas></div>
+  <div class="hito-legend" id="leg-cpm"></div>
+</div>
+
+<div class="callout warn">
+  <p><strong>El CPM de WEB pasó de ~1.8 (inicio de mayo) a 2.8–3.3 a fin de mayo (+55%), con pico el 27-may, en plena saturación pre-1ª vuelta.</strong> Bajó el día de la elección y se mantiene elevado. La 2ª vuelta del 21-jun probablemente repita el pico — está dentro de la ventana de proyección.</p>
+</div>
+
+<h2 id="cap-3">Capítulo 3 — Palanca CPL y captación: cuánto cuesta cada registro</h2>
+<p>El CPL (costo por registro = inversión / registros, por fuente vía UTM) combina el efecto de costos con el de demanda. Habímetro tiene CPL bajísimo (mucho volumen barato) pero de baja calidad; WEB es el motor de volumen calificado.</p>
+
+<div class="chart-card">
+  <div class="chart-title">CPL semanal por fuente (USD / registro)</div>
+  <div class="chart-subtitle">2026, semanas ISO.</div>
+  <div class="chart-wrap"><canvas id="c-cpl-sem"></canvas></div>
+</div>
+
+<div class="chart-card">
+  <div class="chart-title">Registros semanales por fuente</div>
+  <div class="chart-subtitle">WEB sostiene volumen hasta W23; la caída arranca con el Mundial.</div>
+  <div class="chart-wrap"><canvas id="c-reg-sem"></canvas></div>
+</div>
+
+<div class="chart-card">
+  <div class="chart-title">WEB · registros diarios desde el 1-may con hitos</div>
+  <div class="chart-subtitle">Festivos y arranque de Mundial visibles en la demanda diaria.</div>
+  <div class="chart-wrap"><canvas id="c-reg-dia"></canvas></div>
+  <div class="hito-legend" id="leg-reg"></div>
+</div>
+
+<h2 id="cap-4">Capítulo 4 — Palanca conversión: la tesis del −16% sigue viva</h2>
+<p>El CVR registro→asignado (cohorte por fecha de registro) confirma la caída estructural del Backbone documentada en abril. Habímetro es la fuente más afectada; Lead Forms se mantiene.</p>
+
+<div class="chart-card">
+  <div class="chart-title">CVR registro→asignado semanal por fuente (%)</div>
+  <div class="chart-subtitle">Cohorte por fecha de registro. Línea: Backbone (12-mar).</div>
+  <div class="chart-wrap"><canvas id="c-cvr-sem"></canvas></div>
+  <div class="hito-legend" id="leg-cvr"></div>
+</div>
+
+<div class="callout warn">
+  <p><strong>Caveat de maduración:</strong> las cohortes recientes (mayo–junio) aún no maduran a asignación, así que su CVR se ve artificialmente bajo. Léase la serie como tendencia, no como nivel absoluto del último mes. El número de asignados vs meta usa el dato oficial del WBR (event-based), no la cohorte.</p>
+</div>
+
+<h2 id="cap-5">Capítulo 5 — Proyección Q2 + Q3</h2>
+<p>Proyectamos los asignados de performance desde la semana en curso hasta fin de Q3, en dos escenarios. Parten del run-rate de las últimas 4 semanas completas por fuente y aplican factores por palanca según el calendario.</p>
+
+<div class="chart-card">
+  <div class="chart-title">Cono de proyección — total performance (asignados/semana)</div>
+  <div class="chart-subtitle">Histórico real + bandas conservador / optimista hasta sep.</div>
+  <div class="chart-wrap"><canvas id="c-cono"></canvas></div>
+</div>
+
+<h3>Supuestos por palanca (factores sobre el run-rate)</h3>
+<table id="t-scen"><thead><tr><th>Escenario</th><th>Bloque</th><th>Demanda</th><th>CVR</th><th>CPL</th></tr></thead><tbody></tbody></table>
+<p class="meta">Bloque <strong>mundial</strong>: semanas que se traslapan con 11-jun→19-jul (incluye 2ª vuelta y festivos). Bloque <strong>post</strong>: tras el 19-jul hasta fin de Q3.</p>
+
+<h3>Cierre de Q2 y Q3 proyectados vs metas</h3>
+<table id="t-proy"><thead><tr><th>Fuente</th><th>Q2 conserv.</th><th>Q2 optim.</th><th>Meta Q2</th><th>Q3 conserv.</th><th>Q3 optim.</th><th>Meta Q3</th></tr></thead><tbody></tbody></table>
+
+<div class="callout info" id="cl-proy"></div>
+
+<p class="meta">Atribución de inversión por UTM (diccionario <code>registro_unico_utm_mkt_colombia</code>). Registros/asignados/CVR por <code>fuente</code> sobre <code>tabla_inmuebles_general</code> + funnel. Metas del sheet Cumplimiento Fuentes (WBR oficial). Complementa <em>Análisis de asignados de marketing — Colombia 2026</em>.</p>
+
+</div>
+
+<script>
+const FCOL = { 'WEB':'#4f46e5', 'lead_forms':'#0ea5e9', 'Estudio Inmueble':'#f59e0b' };
+const FNAME = { 'WEB':'WEB', 'lead_forms':'Lead Forms', 'Estudio Inmueble':'Habímetro' };
+const HCOL = { mundial:'#16a34a', eleccion:'#dc2626', festivo:'#a855f7', costo:'#f59e0b' };
+const fmt = n => n==null ? '—' : n.toLocaleString('es-CO');
+
+Object.assign(Chart.defaults.plugins.tooltip, {
+  backgroundColor: 'rgba(15, 23, 42, 0.95)', borderColor: 'rgba(99,102,241,0.4)', borderWidth: 1,
+  titleColor: '#f8fafc', bodyColor: '#e2e8f0', padding: 10, cornerRadius: 8, boxPadding: 4
+});
+Chart.defaults.font.family = "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
+Chart.defaults.plugins.legend.labels.usePointStyle = true;
+Chart.defaults.plugins.legend.labels.boxWidth = 8;
+
+// Plugin: líneas verticales de hitos sobre charts diarios (labels = fechas ISO).
+const hitoLines = {
+  id: 'hitoLines',
+  afterDraw(chart, args, opts) {
+    const hitos = opts.hitos || [];
+    const { ctx, chartArea: { top, bottom }, scales: { x } } = chart;
+    hitos.forEach(h => {
+      const idx = chart.data.labels.indexOf(h.date);
+      if (idx < 0) return;
+      const xp = x.getPixelForValue(idx);
+      ctx.save();
+      ctx.strokeStyle = HCOL[h.tipo] || '#999';
+      ctx.lineWidth = 1.5; ctx.setLineDash([4, 3]);
+      ctx.beginPath(); ctx.moveTo(xp, top); ctx.lineTo(xp, bottom); ctx.stroke();
+      ctx.restore();
+    });
+  }
+};
+Chart.register(hitoLines);
+
+const dayTick = v => { const d = v.split('-'); return `${d[2]}/${d[1]}`; };
+
+fetch('./data.json').then(r => r.json()).then(D => {
+  document.getElementById('m-cutoff').textContent = D.updated;
+  const F = D.fuentes;
+
+  // ---------- KPIs ejecutivos ----------
+  // Última semana completa por fuente (con actual).
+  const lastWk = f => [...D.semanal[f]].reverse().find(w => w.actual != null);
+  const kpis = [];
+  F.forEach(f => {
+    const w = lastWk(f);
+    if (!w) return;
+    const pct = w.meta_orig ? Math.round(w.actual / w.meta_orig * 100) : null;
+    kpis.push(`<div class="kpi"><div class="label">${FNAME[f]} · última semana</div>
+      <div class="val">${fmt(w.actual)}</div>
+      <div class="sub">${pct}% de meta · ${w.cpl!=null?'CPL '+w.cpl:''}</div></div>`);
+  });
+  document.getElementById('kpi-exec').innerHTML = kpis.join('');
+
+  // ---------- Cap 1: varas (toggle) ----------
+  const opts1 = [...F, 'TOTAL'];
+  const tg = document.getElementById('tg-varas');
+  let varasChart = null;
+  function totalPerfoSeries() {
+    const base = D.semanal[F[0]];
+    return base.map((_, i) => {
+      const agg = { w: base[i].w, label: base[i].label, actual: 0, meta_orig: 0, meta_recal: 0, prev: 0, _has: false };
+      F.forEach(f => {
+        const r = D.semanal[f][i];
+        if (r.actual != null) { agg.actual += r.actual; agg._has = true; }
+        if (r.meta_orig != null) agg.meta_orig += r.meta_orig;
+        if (r.meta_recal != null) agg.meta_recal += r.meta_recal;
+        if (r.prev != null) agg.prev += r.prev;
+      });
+      return agg;
+    });
+  }
+  function renderVaras(sel) {
+    const rows = (sel === 'TOTAL' ? totalPerfoSeries() : D.semanal[sel])
+      .filter(r => sel === 'TOTAL' ? r._has : r.actual != null);
+    const labels = rows.map(r => r.label);
+    const mk = (lbl, key, color, dash) => ({
+      label: lbl, data: rows.map(r => r[key] ?? null), borderColor: color,
+      backgroundColor: color, borderDash: dash || [], tension: 0.25, pointRadius: 2, borderWidth: 2
+    });
+    const cfg = {
+      type: 'line',
+      data: { labels, datasets: [
+        mk('Asignados (real)', 'actual', '#111827'),
+        mk('Meta original', 'meta_orig', '#4f46e5', [6, 4]),
+        mk('Meta recalibrada −16%', 'meta_recal', '#10b981', [3, 3]),
+        mk('Año anterior (2025)', 'prev', '#9ca3af', [2, 2]),
+      ]},
+      options: { responsive: true, maintainAspectRatio: false, interaction: { mode: 'index', intersect: false },
+        scales: { x: { ticks: { maxRotation: 60, minRotation: 45, font: { size: 10 } } }, y: { beginAtZero: false } } }
+    };
+    if (varasChart) varasChart.destroy();
+    varasChart = new Chart(document.getElementById('c-varas'), cfg);
+  }
+  opts1.forEach((f, i) => {
+    const b = document.createElement('button');
+    b.textContent = f === 'TOTAL' ? 'Total performance' : FNAME[f];
+    if (i === 0) b.classList.add('active');
+    b.onclick = () => { tg.querySelectorAll('button').forEach(x => x.classList.remove('active')); b.classList.add('active'); renderVaras(f); };
+    tg.appendChild(b);
+  });
+  renderVaras(F[0]);
+
+  // ---------- helper: línea multi-fuente semanal ----------
+  function weeklyMulti(canvasId, key, opts={}) {
+    const base = D.semanal[F[0]];
+    const labels = base.map(r => r.label);
+    const datasets = F.map(f => ({
+      label: FNAME[f], data: D.semanal[f].map(r => r[key] ?? null),
+      borderColor: FCOL[f], backgroundColor: FCOL[f], tension: 0.25, pointRadius: 2, borderWidth: 2, spanGaps: true
+    }));
+    new Chart(document.getElementById(canvasId), {
+      type: 'line', data: { labels, datasets },
+      options: { responsive: true, maintainAspectRatio: false, interaction: { mode: 'index', intersect: false },
+        plugins: opts.plugins || {},
+        scales: { x: { ticks: { maxRotation: 60, minRotation: 45, font: { size: 10 } } },
+                  y: { beginAtZero: opts.zero !== false, title: { display: !!opts.ytitle, text: opts.ytitle } } } }
+    });
+  }
+  weeklyMulti('c-cpm-sem', 'cpm', { ytitle: 'USD/1000', zero: false });
+  weeklyMulti('c-cpl-sem', 'cpl', { ytitle: 'USD/registro' });
+  weeklyMulti('c-reg-sem', 'registros', { ytitle: 'registros' });
+
+  // CVR con línea Backbone (12-mar) usando el plugin de hitos sobre labels semanales.
+  // Convertimos la fecha del Backbone a la semana correspondiente.
+  const cvrPlugin = {
+    id: 'bbLine',
+    afterDraw(chart) {
+      const lbls = chart.data.labels;
+      const idx = lbls.findIndex(l => l === '09/03 - 15/03');
+      if (idx < 0) return;
+      const { ctx, chartArea: { top, bottom }, scales: { x } } = chart;
+      const xp = x.getPixelForValue(idx);
+      ctx.save(); ctx.strokeStyle = '#dc2626'; ctx.lineWidth = 1.5; ctx.setLineDash([5, 3]);
+      ctx.beginPath(); ctx.moveTo(xp, top); ctx.lineTo(xp, bottom); ctx.stroke();
+      ctx.fillStyle = '#dc2626'; ctx.font = '11px sans-serif'; ctx.fillText('Backbone 12-mar', xp + 4, top + 12);
+      ctx.restore();
+    }
+  };
+  (function renderCvr() {
+    const base = D.semanal[F[0]];
+    const labels = base.map(r => r.label);
+    const datasets = F.map(f => ({
+      label: FNAME[f], data: D.semanal[f].map(r => r.cvr ?? null),
+      borderColor: FCOL[f], backgroundColor: FCOL[f], tension: 0.25, pointRadius: 2, borderWidth: 2, spanGaps: true
+    }));
+    new Chart(document.getElementById('c-cvr-sem'), {
+      type: 'line', data: { labels, datasets },
+      options: { responsive: true, maintainAspectRatio: false, interaction: { mode: 'index', intersect: false },
+        scales: { x: { ticks: { maxRotation: 60, minRotation: 45, font: { size: 10 } } },
+                  y: { title: { display: true, text: '% reg→asg' } } } },
+      plugins: [cvrPlugin]
+    });
+  })();
+
+  // ---------- charts diarios WEB con hitos ----------
+  const dWeb = D.diario['WEB'];
+  const dLabels = dWeb.map(r => r.d);
+  new Chart(document.getElementById('c-cpm-dia'), {
+    type: 'line',
+    data: { labels: dLabels, datasets: [
+      { label: 'CPM', data: dWeb.map(r => r.cpm), borderColor: '#4f46e5', backgroundColor: '#4f46e5', yAxisID: 'y', tension: 0.3, pointRadius: 0, borderWidth: 2 },
+      { label: 'CPC', data: dWeb.map(r => r.cpc), borderColor: '#f59e0b', backgroundColor: '#f59e0b', yAxisID: 'y1', tension: 0.3, pointRadius: 0, borderWidth: 2 },
+    ]},
+    options: { responsive: true, maintainAspectRatio: false, interaction: { mode: 'index', intersect: false },
+      plugins: { hitoLines: { hitos: D.hitos } },
+      scales: { x: { ticks: { callback: function(v){ return dayTick(this.getLabelForValue(v)); }, maxRotation: 60, minRotation: 45, font: { size: 9 }, autoSkip: true, maxTicksLimit: 18 } },
+                y: { position: 'left', title: { display: true, text: 'CPM' } },
+                y1: { position: 'right', title: { display: true, text: 'CPC' }, grid: { drawOnChartArea: false } } } }
+  });
+  new Chart(document.getElementById('c-reg-dia'), {
+    type: 'line',
+    data: { labels: dLabels, datasets: [
+      { label: 'Registros WEB', data: dWeb.map(r => r.registros), borderColor: '#4f46e5', backgroundColor: 'rgba(79,70,229,0.08)', fill: true, tension: 0.3, pointRadius: 0, borderWidth: 2 },
+    ]},
+    options: { responsive: true, maintainAspectRatio: false, interaction: { mode: 'index', intersect: false },
+      plugins: { hitoLines: { hitos: D.hitos } },
+      scales: { x: { ticks: { callback: function(v){ return dayTick(this.getLabelForValue(v)); }, maxRotation: 60, minRotation: 45, font: { size: 9 }, autoSkip: true, maxTicksLimit: 18 } },
+                y: { beginAtZero: true, title: { display: true, text: 'registros' } } } }
+  });
+  // leyenda de hitos
+  const legHtml = D.hitos.map(h => `<span><i style="border-color:${HCOL[h.tipo]||'#999'}"></i>${dayTick(h.date)} ${h.label}</span>`).join('');
+  document.getElementById('leg-cpm').innerHTML = legHtml;
+  document.getElementById('leg-reg').innerHTML = legHtml;
+  document.getElementById('leg-cvr').innerHTML = '<span><i style="border-color:#dc2626"></i>Backbone (12-mar): recalibración del lead calificado</span>';
+
+  // ---------- Cap 5: cono ----------
+  const P = D.proyeccion;
+  // histórico total perfo (actual) por semana
+  const hist = totalPerfoSeries().filter(r => r._has);
+  // semanas de proyección (todas las fuentes comparten labels)
+  const projWeeks = P.fuentes[F[0]].conservador.map(x => x.label);
+  const sumScen = scen => P.fuentes[F[0]][scen].map((_, i) =>
+    F.reduce((s, f) => s + P.fuentes[f][scen][i].asignados, 0));
+  const consSerie = sumScen('conservador');
+  const optSerie = sumScen('optimista');
+  const allLabels = hist.map(r => r.label).concat(projWeeks);
+  const nh = hist.length;
+  const pad = arr => Array(nh).fill(null).concat(arr);
+  // conector: el último real arranca las bandas
+  const lastReal = hist[nh - 1].actual;
+  const consData = pad(consSerie); const optData = pad(optSerie);
+  consData[nh - 1] = lastReal; optData[nh - 1] = lastReal;
+  new Chart(document.getElementById('c-cono'), {
+    type: 'line',
+    data: { labels: allLabels, datasets: [
+      { label: 'Real', data: hist.map(r => r.actual).concat(Array(projWeeks.length).fill(null)), borderColor: '#111827', backgroundColor: '#111827', tension: 0.2, pointRadius: 1.5, borderWidth: 2 },
+      { label: 'Optimista', data: optData, borderColor: '#10b981', backgroundColor: 'rgba(16,185,129,0.10)', borderDash: [4, 3], tension: 0.2, pointRadius: 0, borderWidth: 2, fill: '+1' },
+      { label: 'Conservador', data: consData, borderColor: '#dc2626', backgroundColor: 'rgba(220,38,38,0.06)', borderDash: [4, 3], tension: 0.2, pointRadius: 0, borderWidth: 2 },
+    ]},
+    options: { responsive: true, maintainAspectRatio: false, interaction: { mode: 'index', intersect: false },
+      scales: { x: { ticks: { maxRotation: 60, minRotation: 45, font: { size: 9 }, autoSkip: true, maxTicksLimit: 20 } },
+                y: { beginAtZero: false, title: { display: true, text: 'asignados/sem' } } } }
+  });
+
+  // tabla de supuestos
+  const tb = document.querySelector('#t-scen tbody');
+  Object.entries(D.scen_factores).forEach(([scen, blocks]) => {
+    Object.entries(blocks).forEach(([blk, v]) => {
+      tb.innerHTML += `<tr><td>${scen}</td><td>${blk}</td><td>×${v[0]}</td><td>×${v[1]}</td><td>×${v[2]}</td></tr>`;
+    });
+  });
+
+  // tabla proyección vs metas (metas trimestrales completas del sheet)
+  const tp = document.querySelector('#t-proy tbody');
+  let q2c = 0, q2o = 0, q2m = 0, q3c = 0, q3o = 0, q3m = 0;
+  F.forEach(f => {
+    const c2 = P.totales.conservador.q2_close[f], o2 = P.totales.optimista.q2_close[f];
+    const c3 = P.totales.conservador.q3_total[f], o3 = P.totales.optimista.q3_total[f];
+    const m2 = D.metas_quarter[f].Q2, m3 = D.metas_quarter[f].Q3;
+    q2c += c2; q2o += o2; q2m += (m2 || 0); q3c += c3; q3o += o3; q3m += (m3 || 0);
+    tp.innerHTML += `<tr><td>${FNAME[f]}</td><td>${fmt(c2)}</td><td>${fmt(o2)}</td><td>${fmt(m2)}</td><td>${fmt(c3)}</td><td>${fmt(o3)}</td><td>${fmt(m3)}</td></tr>`;
+  });
+  tp.innerHTML += `<tr style="font-weight:700"><td>Total</td><td>${fmt(q2c)}</td><td>${fmt(q2o)}</td><td>${fmt(q2m)}</td><td>${fmt(q3c)}</td><td>${fmt(q3o)}</td><td>${q3m?fmt(q3m):'—'}</td></tr>`;
+
+  const pc2 = q2m ? Math.round(q2c / q2m * 100) : 0, po2 = q2m ? Math.round(q2o / q2m * 100) : 0;
+  document.getElementById('cl-proy').innerHTML =
+    `<p><strong>Cierre de Q2:</strong> entre <strong>${fmt(q2c)}</strong> (conservador, ${pc2}% de meta) y <strong>${fmt(q2o)}</strong> (optimista, ${po2}% de meta) asignados de performance. El grueso del Q2 ya está realizado; los escenarios solo difieren en las últimas semanas (Mundial + 2ª vuelta).</p>
+     <p><strong>Q3:</strong> la recuperación depende de qué tan rápido normalice el CPM tras la 2ª vuelta (21-jun) y el cierre del Mundial (19-jul). El optimista asume rebote de demanda + CVR recuperando conforme el modelo del Backbone termina de aprender.</p>`;
+});
+</script>
+</body>
+</html>

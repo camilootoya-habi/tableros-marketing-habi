@@ -138,6 +138,13 @@ def main():
                 'registros': int(reg),
             })
 
+    # ---- Metas trimestrales completas (sheet) por fuente ----
+    metas_q = {f: {} for f in PERF}
+    for q in ('Q2', 'Q3'):
+        qd = sheet['quarters'].get(q, {})
+        for f in PERF:
+            metas_q[f][q] = qd.get(f, {}).get('meta')
+
     # ---- Proyección Q2+Q3 por fuente y escenario ----
     proyeccion = build_projection(semanal)
 
@@ -148,6 +155,7 @@ def main():
         'semanal': semanal,
         'diario': diario,
         'hitos': hitos,
+        'metas_quarter': metas_q,
         'proyeccion': proyeccion,
         'scen_factores': SCEN,
     }
