@@ -422,7 +422,7 @@ jobs:
       - name: Query BigQuery — mapa de leads por zona H3 (CO + MX)
         if: always()
         run: |
-          bq query --use_legacy_sql=false --format=json --max_rows=200000 \
+          bq query --use_legacy_sql=false --format=json --max_rows=600000 \
             < mapa-leads-zonas/query.sql > /tmp/mapa-leads-zonas-raw.json
 
       - name: Build mapa-leads-zonas/data.json
