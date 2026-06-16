@@ -125,13 +125,14 @@
     <p class="sub">Documentación de datos</p>
     <nav>
       <a href="#tablas" data-section="tablas" class="active">📊 Tablas</a>
+      <a href="#tipificaciones" data-section="tipificaciones">🏷️ Tipificaciones</a>
       <a href="#fuentes" data-section="fuentes">📥 Fuentes</a>
       <a href="#canales" data-section="canales">🛤️ Canales</a>
       <a href="#utm" data-section="utm">🔗 Cruce UTM</a>
     </nav>
     <div class="meta">
-      Actualizado: 2026-05-13<br>
-      Versión: 1.0 (inicial)<br>
+      Actualizado: 2026-06-16<br>
+      Versión: 1.1 (+ tipificaciones)<br>
       Sin auto-update (manual).
       <button class="theme-btn" id="themeToggle" onclick="toggleTheme()" aria-label="Tema">🌙</button>
     </div>
@@ -244,6 +245,109 @@
 
       <div class="callout">
         <strong>Volúmenes (~2026-04):</strong> CO leads ~4M, MX leads ~1.66M, HubSpot deals global ~5.4M. <code>web_global_api_business</code> ~17M sesiones.
+      </div>
+    </section>
+
+    <!-- ========== SECCIÓN: TIPIFICACIONES ========== -->
+    <section id="tipificaciones" class="hidden">
+      <h2>Tipificaciones de <span class="accent">Market Maker</span> e Inmo</h2>
+      <p class="lead">Un mismo lead tiene varias "tipificaciones" en paralelo, que vienen de sistemas distintos. No confundirlas: el <strong>backbone</strong> manda un estado automático, el funnel tiene una <strong>etapa</strong> macro, y el agente comercial registra una <strong>oportunidad</strong> (disposición manual) en HubSpot. Habi opera dos funnels: <strong>Market Maker</strong> (compra directa) e <strong>Inmobiliaria</strong> (Inmo).</p>
+
+      <div class="callout">
+        <strong>La diferencia clave:</strong> <code>estado</code> = máquina de estados del <em>backbone</em> (objetivo, automático). <code>etapa</code> = fase macro del funnel. <code>oportunidad_del_negocio</code> / <code>oportunidad_inmobiliaria</code> = <em>disposición comercial</em> que tipifica el agente en HubSpot (subjetiva). Para "¿calificó?" se usa el backbone; para "¿qué pasó en la gestión?" la oportunidad.
+      </div>
+
+      <h3>1. Estado del backbone (máquina de estados)</h3>
+      <table>
+        <thead><tr><th>Tipificación</th><th>Qué es</th><th>CO — tabla · campo</th><th>MX — tabla · campo</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><strong>Estado actual MM</strong></td>
+            <td>Estado vigente del lead en el funnel Market Maker (<code>no_gestionado</code>, <code>sin_pricing_inicial</code>, <code>vendido</code>, <code>cierre</code>, <code>descartado_*</code>…). <strong>Calificado = estado 20 ó 63.</strong></td>
+            <td><span class="mono-sm">tabla_inmuebles_general</span> · <code>estado</code> (id en <code>last_estado_id</code>)</td>
+            <td><span class="mono-sm">tabla_inmuebles_general</span> · <code>estado</code> (id en <code>id_ultimo_estado</code>)</td>
+          </tr>
+          <tr>
+            <td><strong>Histórico estado MM</strong></td>
+            <td>Log append-only de transiciones (para saber si <em>alguna vez</em> calificó). Join por <code>negocio_id</code>.</td>
+            <td><span class="mono-sm">co_rds_staging.habi_db_tabla_historico_estado_v2</span> · <code>estado_id</code></td>
+            <td><span class="mono-sm">mx_rds_staging.habi_db_history_state</span> · <code>state_id</code></td>
+          </tr>
+          <tr>
+            <td><strong>Estado del negocio Inmo</strong></td>
+            <td>Estado del backbone en el funnel Inmobiliaria. ⚠ <strong>En CO el pipeline Inmo solo existe desde 2026-03-12</strong>; antes está vacío.</td>
+            <td colspan="2"><span class="mono-sm">hubspot.deals</span> · <code>estado_del_negocio_inmo</code> <span class="badge badge-both">Global</span></td>
+          </tr>
+          <tr>
+            <td><strong>Histórico estado Inmo</strong></td>
+            <td>Log del funnel Inmo (desde mar-2026).</td>
+            <td><span class="mono-sm">co_rds_staging.habi_db_history_state_real_estate</span> · <code>estado_id</code></td>
+            <td><span class="mono-sm">mx_rds_staging.habi_db_history_state_real_estate</span> · <code>state_id</code></td>
+          </tr>
+          <tr>
+            <td><strong>Catálogo de estados</strong></td>
+            <td>Diccionario <code>id → label</code>. IDs compartidos MM/Inmo; el significado depende del funnel.</td>
+            <td><span class="mono-sm">co_rds_staging.habi_db_tabla_estados</span></td>
+            <td><span class="mono-sm">mx_rds_staging.habi_db_state</span></td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h3>2. Etapa (fase macro del funnel)</h3>
+      <table>
+        <thead><tr><th>Tipificación</th><th>Qué es</th><th>CO — tabla · campo</th><th>MX — tabla · campo</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><strong>Etapa MM</strong></td>
+            <td>Fase macro del funnel Market Maker. CO: <code>callcenter · pricing · registro · sales · venta</code>. MX: <code>Call Center · Pricing · Registro · Sales · Venta</code>.</td>
+            <td><span class="mono-sm">tabla_inmuebles_general</span> · <code>etapa</code> (id en <code>etapas_id</code>)</td>
+            <td><span class="mono-sm">tabla_inmuebles_general</span> · <code>etapa</code> (id en <code>id_etapa</code>)</td>
+          </tr>
+          <tr>
+            <td><strong>Etapa CRM (MM / Inmo)</strong></td>
+            <td>Stage del deal en HubSpot. La pipeline (MM vs Inmo) la distingue <code>pipeline</code> / <code>tipo_de_pipeline</code>.</td>
+            <td colspan="2"><span class="mono-sm">hubspot.deals</span> · <code>dealstage</code> (id en <code>dealstage_id</code>, pipeline en <code>pipeline</code>) <span class="badge badge-both">Global</span></td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h3>3. Oportunidad (disposición comercial del agente)</h3>
+      <table>
+        <thead><tr><th>Tipificación</th><th>Qué es</th><th>CO — tabla · campo</th><th>MX — tabla · campo</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><strong>Oportunidad del negocio (MM)</strong></td>
+            <td>Disposición que registra el agente Market Maker (<code>No interesado</code>, <code>Volver a llamar</code>, <code>Rechazó Oferta</code>, <code>Cierre - Comprado</code>, <code>Descartado por comité</code>…).</td>
+            <td colspan="2"><span class="mono-sm">tabla_inmuebles_general</span> · <code>oportunidad_del_negocio</code> &nbsp;·&nbsp; también en <span class="mono-sm">hubspot.deals</span> · <code>oportunidad_del_negocio</code></td>
+          </tr>
+          <tr>
+            <td><strong>Oportunidad inmobiliaria (Inmo)</strong></td>
+            <td>Disposición comercial del flujo Inmobiliaria (<code>No interesado</code>, <code>Contrato firmado</code>, <code>Ya vendio</code>, <code>Pricing Realizado</code>…).</td>
+            <td colspan="2"><span class="mono-sm">hubspot.deals</span> · <code>oportunidad_inmobiliaria</code> <span class="badge badge-both">Global</span></td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h3>4. Remodelaciones (¿el inmueble es comprable?)</h3>
+      <table>
+        <thead><tr><th>Tipificación</th><th>Qué es</th><th>CO — campo</th><th>MX — campo</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><strong>Estado comité remo</strong></td>
+            <td>Resultado limpio del comité de remodelaciones: <code>COMPLETED</code> (aprobado) · <code>IN_PROGRESS</code> · <code>REJECTED</code>. <strong><code>REJECTED</code> = inmueble NO comprable</strong> (no re-gestionar).</td>
+            <td colspan="2"><span class="mono-sm">hubspot.deals</span> · <code>estado_comite_remodelaciones</code> <span class="badge badge-both">Global</span></td>
+          </tr>
+          <tr>
+            <td><strong>Razón de rechazo remo</strong></td>
+            <td>El detalle del veredicto (incluye también "Aprobado…"). CO: <code>Humedad Grave</code>, <code>Grietas, fallas estructurales</code>, <code>Ampliaciones ilegales</code>, <code>Rechazado Mayor 40 años</code>… &nbsp; MX: <code>Aprobado</code>, <code>Daños estructurales</code>, <code>Rechazado Humedad Grave</code>…</td>
+            <td><span class="mono-sm">hubspot.deals</span> · <code>razon_rechazo_remodelaciones</code></td>
+            <td><span class="mono-sm">hubspot.deals</span> · <code>comite_remodelaciones_mx</code></td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="callout">
+        <strong>Para re-gestión de leads:</strong> un lead es "recuperable" si calificó (histórico estado 20/63), su <code>estado</code> actual no es terminal (vendido/cierre/arrendado/desistió/duplicado/descartado_*), su <code>oportunidad_del_negocio</code> y <code>oportunidad_inmobiliaria</code> no son cierre/descarte, y <code>estado_comite_remodelaciones ≠ REJECTED</code>.
       </div>
     </section>
 
