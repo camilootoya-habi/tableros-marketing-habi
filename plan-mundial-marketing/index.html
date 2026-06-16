@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚽</text></svg>">
+<title>Plan Mundial 2026 — diagnóstico y 3 pilares</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<style>
+  :root {
+    --bg: #fafaf7; --card: #ffffff;
+    --text: #1f2937; --text-muted: #6b7280; --text-title: #111827;
+    --accent: #4f46e5; --accent-soft: #eef2ff;
+    --border: #e5e7eb; --code-bg: #f3f4f6; --table-alt: #f9fafb;
+    --warn-bg: #fef3c7; --warn-border: #f59e0b;
+    --info-bg: #eef2ff; --info-border: #4f46e5;
+    --ok-bg: #ecfdf5; --ok-border: #10b981;
+    --danger-bg: #fee2e2; --danger-border: #dc2626;
+    --web: #4f46e5; --lf: #0ea5e9; --hm: #f59e0b;
+    --co: #4f46e5; --mx: #dc2626;
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: var(--bg); color: var(--text); line-height: 1.65; margin: 0; padding: 0; }
+  .topbar { position: sticky; top: 0; background: rgba(250,250,247,0.94); backdrop-filter: blur(8px); border-bottom: 1px solid var(--border); padding: 10px 20px; display: flex; justify-content: space-between; align-items: center; font-size: 13px; z-index: 100; flex-wrap: wrap; gap: 8px; }
+  .topbar a { color: var(--accent); text-decoration: none; margin-left: 14px; }
+  .topbar a:hover { text-decoration: underline; }
+  .topbar .back-hub { color: var(--text-muted); margin-left: 0; margin-right: 14px; padding: 3px 8px; border: 1px solid var(--border); border-radius: 6px; font-weight: 500; }
+  .topbar .back-hub:hover { color: var(--accent); border-color: var(--accent); text-decoration: none; }
+  .wrap { max-width: 920px; margin: 0 auto; padding: 40px 28px 96px; }
+  h1 { color: var(--text-title); font-size: 2rem; font-weight: 700; margin: 0 0 6px; padding-bottom: 12px; border-bottom: 2px solid var(--accent); }
+  h2 { color: var(--text-title); font-size: 1.5rem; font-weight: 700; margin: 44px 0 12px; padding-top: 20px; border-top: 1px solid var(--border); }
+  h3 { color: var(--text-title); font-size: 1.2rem; font-weight: 600; margin: 28px 0 10px; }
+  .pill-num { display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px; border-radius: 999px; background: var(--accent); color: #fff; font-size: 15px; font-weight: 700; margin-right: 8px; vertical-align: middle; }
+  p, li { font-size: 15px; }
+  ul, ol { padding-left: 26px; }
+  li { margin-bottom: 6px; }
+  strong { color: var(--text-title); }
+  code { background: var(--code-bg); padding: 2px 6px; border-radius: 4px; font-size: 13px; font-family: 'SF Mono', Menlo, Monaco, Consolas, monospace; color: #be185d; }
+  .meta { font-size: 13px; color: var(--text-muted); margin: 8px 0 24px; }
+  .lead { font-size: 16px; color: var(--text); }
+  .callout { padding: 14px 18px; border-radius: 0 8px 8px 0; margin: 18px 0; font-size: 14px; }
+  .callout.info { background: var(--info-bg); border-left: 3px solid var(--info-border); color: #1e1b4b; }
+  .callout.warn { background: var(--warn-bg); border-left: 3px solid var(--warn-border); color: #78350f; }
+  .callout.ok { background: var(--ok-bg); border-left: 3px solid var(--ok-border); color: #064e3b; }
+  .callout.danger { background: var(--danger-bg); border-left: 3px solid var(--danger-border); color: #7f1d1d; }
+  .callout strong { color: inherit; }
+  .callout p { margin: 6px 0; font-size: 14px; }
+  .callout p:first-child { margin-top: 0; }
+  .callout p:last-child { margin-bottom: 0; }
+  table { border-collapse: collapse; width: 100%; font-size: 13px; margin: 18px 0; display: block; overflow-x: auto; }
+  thead { background: var(--accent-soft); }
+  th { text-align: left; padding: 10px 12px; font-weight: 600; color: var(--text-title); border-bottom: 2px solid var(--accent); white-space: nowrap; }
+  td { padding: 8px 12px; border-bottom: 1px solid var(--border); white-space: nowrap; }
+  tbody tr:nth-child(even) { background: var(--table-alt); }
+  td:not(:first-child), th:not(:first-child) { text-align: right; font-variant-numeric: tabular-nums; }
+  .chart-card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 20px; margin: 18px 0; box-shadow: 0 1px 2px rgba(0,0,0,0.04); }
+  .chart-title { font-size: 16px; font-weight: 600; color: var(--text-title); margin-bottom: 4px; }
+  .chart-subtitle { font-size: 12px; color: var(--text-muted); margin-bottom: 14px; }
+  .chart-wrap { position: relative; height: 340px; width: 100%; }
+  .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; margin: 18px 0; }
+  .kpi { background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 12px 14px; }
+  .kpi.accent { border-left: 3px solid var(--accent); }
+  .kpi.danger { border-left: 3px solid var(--danger-border); }
+  .kpi.ok { border-left: 3px solid var(--ok-border); }
+  .kpi .label { color: var(--text-muted); font-size: 11px; text-transform: uppercase; letter-spacing: 0.4px; margin-bottom: 4px; }
+  .kpi .val { font-weight: 700; color: var(--text-title); font-size: 22px; line-height: 1.15; }
+  .kpi .sub { color: var(--text-muted); font-size: 12px; margin-top: 4px; }
+  .pillar { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 4px 24px 24px; margin: 18px 0; box-shadow: 0 1px 2px rgba(0,0,0,0.04); }
+  .tag { display: inline-block; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.4px; padding: 3px 9px; border-radius: 999px; background: var(--accent-soft); color: var(--accent); margin-top: 18px; }
+  .src { font-size: 12px; color: var(--text-muted); font-style: italic; margin-top: 4px; }
+</style>
+</head>
+<body>
+<div class="topbar">
+  <span>
+    <a href="../" class="back-hub">← Hub</a>
+    ⚽ Plan Mundial 2026 · Marketing
+  </span>
+  <span>
+    <a href="#diagnostico">Diagnóstico</a>
+    <a href="#pilar-1">1. Marca</a>
+    <a href="#pilar-2">2. Leadforms</a>
+    <a href="#pilar-3">3. Re-gestión</a>
+  </span>
+</div>
+
+<div class="wrap">
+
+<h1>Plan Mundial 2026 — diagnóstico y 3 pilares</h1>
+<div class="meta">Análisis general de marketing · Colombia + México · Corte 14-jun-2026 · Mundial 11-jun → 19-jul</div>
+
+<p class="lead">Estamos en la <strong>primera semana del Mundial</strong>. La subasta publicitaria se infló, los costos de adquisición suben y la atracción de leads nuevos se vuelve cara —y el golpe se concentra en la fuente <strong>WEB</strong>, en los dos países. Este documento diagnostica el problema y plantea <strong>tres jugadas</strong> para convertir una temporada cara en una oportunidad de eficiencia.</p>
+
+<div class="callout info">
+  <p><strong>La tesis en una línea.</strong> Cuando comprar leads nuevos en WEB se encarece, la respuesta no es pagar de más: es <strong>(1)</strong> sostener la marca con un canal barato de awareness, <strong>(2)</strong> escalar la fuente que sí resiste con ayuda de IA, y <strong>(3)</strong> exprimir el valor que ya pagamos en leads calificados que no cerraron.</p>
+</div>
+
+<!-- ===================== DIAGNÓSTICO ===================== -->
+<h2 id="diagnostico">El diagnóstico: el costo sube y se concentra en WEB</h2>
+
+<p>En CO el detonante es doble —pauta de segunda vuelta presidencial (21-jun) + arranque del Mundial—; en MX, la inflación de subasta del Mundial. En ambos casos el <strong>CPM de WEB</strong> escaló mientras el volumen de registros empezó a ceder: mismo presupuesto, leads más caros.</p>
+
+<div class="kpi-grid">
+  <div class="kpi danger"><div class="label">CO · CPM WEB</div><div class="val">+55%</div><div class="sub">piso may → pico fin de may</div></div>
+  <div class="kpi danger"><div class="label">CO · CPC WEB</div><div class="val">+50%</div><div class="sub">$0.19 → $0.29–0.36</div></div>
+  <div class="kpi danger"><div class="label">MX · CPM WEB</div><div class="val">+52%</div><div class="sub">3.91 (feb) → 5.95 (jun)</div></div>
+  <div class="kpi danger"><div class="label">MX · CPL WEB</div><div class="val">+35%</div><div class="sub">$17.85 → $24 · registros −28%</div></div>
+</div>
+
+<div class="chart-card">
+  <div class="chart-title">Costo de medios WEB en rampa — CO y MX</div>
+  <div class="chart-subtitle">Índice de CPM de WEB, base semana del 30-mar = 100. Ambos países suben hacia la ventana del Mundial.</div>
+  <div class="chart-wrap"><canvas id="chartCpm"></canvas></div>
+</div>
+
+<div class="callout warn">
+  <p><strong>Y la demanda ya cede.</strong> En CO los registros WEB cayeron a 1.385 en la semana del 8-jun (apertura del Mundial + festivo de Corpus) desde ~1.700–1.900 típicos; en MX bajaron de ~1.800 a ~1.300/semana. El grueso del choque de demanda está <strong>por delante</strong> (resto de junio + julio).</p>
+</div>
+
+<div class="callout danger">
+  <p><strong>La consecuencia: junio viene duro.</strong> La caída en la captación de leads se está sintiendo con fuerza y nos tiene <strong>por debajo del ritmo necesario para cumplir la meta del mes</strong>. No es un problema operativo del equipo: es el costo y la demanda jugando en contra en plena ventana de Mundial. Los tres pilares que siguen son la respuesta para recortar esa brecha <strong>sin sobre-pagar por WEB</strong>.</p>
+</div>
+
+<!-- ===================== PILARES ===================== -->
+<h2>El Plan Mundial: tres pilares</h2>
+
+<!-- PILAR 1 -->
+<div class="pillar" id="pilar-1">
+  <span class="tag">Pilar 1 · Marca</span>
+  <h3><span class="pill-num">1</span>Marca en la calle (UBER): blindaje de Mundial</h3>
+  <p>La campaña de branding OOH móvil con UBER <strong>ya está en la calle</strong>. La extendimos <strong>6 meses</strong> —que cubren junio y julio, el corazón del Mundial— y la escalamos de 100 a <strong>400 vehículos</strong>: entramos a CDMX (la plaza de mayor volumen) y reforzamos Monterrey.</p>
+
+  <table>
+    <thead><tr><th>Ciudad</th><th>Antes (Q1)</th><th>Plan Mundial</th></tr></thead>
+    <tbody>
+      <tr><td>CDMX</td><td>—</td><td>250 autos</td></tr>
+      <tr><td>Monterrey</td><td>50 autos</td><td>100 autos</td></tr>
+      <tr><td>Guadalajara</td><td>50 autos</td><td>50 autos</td></tr>
+      <tr><td><strong>Total</strong></td><td><strong>100</strong></td><td><strong>400</strong></td></tr>
+    </tbody>
+  </table>
+
+  <p><strong>Por qué ahora.</strong> Cuando el performance WEB se encarece, la marca es el canal de awareness más costo-eficiente. El informe de impacto de la fase Q1 lo validó: la presencia física rompe la curva de eficiencia y <em>baja</em> el costo por visita del canal digital. La marca es la pólvora; el performance, la mecha.</p>
+
+  <p><strong>Amplificada en digital.</strong> Para multiplicar el impacto, produjimos <strong>material audiovisual</strong> con la flota brandeada y lo replicamos en <strong>campañas de alcance en redes sociales</strong>: la presencia física en la calle se conecta con el prospecting social, llevando el mismo mensaje de marca de la calle al smartphone.</p>
+
+  <div class="kpi-grid">
+    <div class="kpi accent"><div class="label">Flota Mundial</div><div class="val">400</div><div class="sub">autos / mes (250 CDMX) · jun–jul</div></div>
+    <div class="kpi ok"><div class="label">Brand Lift Meta</div><div class="val">+16.3 pts</div><div class="sub">récord · recordación expuesta 33.6%</div></div>
+    <div class="kpi ok"><div class="label">Atribución declarada UBER</div><div class="val">0% → 2%</div><div class="sub">exit-poll, crecimiento Q1 2026</div></div>
+    <div class="kpi accent"><div class="label">Estado</div><div class="val">En vivo</div><div class="sub">100% implementado</div></div>
+  </div>
+
+  <div class="callout info">
+    <p><strong>Cómo se mide.</strong> No es un motor de leads (CPL): es <strong>Brand Equity y consideración</strong> que reduce el CPV digital y engrasa la conversión del pipeline. Se evalúa por recordación (Brand Lift, exit-poll) y por eficiencia del funnel, no por costo por registro.</p>
+  </div>
+  <div class="callout ok">
+    <p><strong>Pilar 1 · 100% implementado.</strong> Flota activa en CDMX, Monterrey y Guadalajara, y contenido audiovisual ya amplificado en campañas de alcance en RRSS. La marca queda cubierta durante toda la ventana del Mundial.</p>
+  </div>
+  <div class="src">Fuente: Informe de Evaluación de Impacto — Campaña Branding OOH Móvil (Uber), MTY/GDL Q1 2026.</div>
+</div>
+
+<!-- PILAR 2 -->
+<div class="pillar" id="pilar-2">
+  <span class="tag">Pilar 2 · Performance + IA</span>
+  <h3><span class="pill-num">2</span>Escalar Leadforms con GABI (completitud por IA)</h3>
+  <p>Leadforms es la fuente que <strong>sí resiste</strong> la inflación del Mundial, y en <strong>Colombia la estamos escalando con fuerza</strong>. Lo que lo habilita es una <strong>baja del costo por lead</strong>, que viene de cambiar el modelo de completitud: dejamos atrás al agente de callcenter y pasamos a un <strong>speech semicomercial</strong>, una <strong>oferta multiproducto</strong> y la nueva implementación de <strong>GABI completitud</strong> —nuestro bot de IA que contacta y completa los leads de los formularios nativos. Más leads completos, a menor costo y sin crecer el equipo humano.</p>
+
+  <div class="chart-card">
+    <div class="chart-title">Leadforms Colombia: inversión escalando + leads por encima de meta</div>
+    <div class="chart-subtitle">Inversión semanal (barras) y leads asignados vs. meta recalibrada (líneas). Sobre-cumple semana a semana.</div>
+    <div class="chart-wrap"><canvas id="chartLf"></canvas></div>
+  </div>
+
+  <div class="kpi-grid">
+    <div class="kpi ok"><div class="label">CO · Leadforms vs meta</div><div class="val">+41%</div><div class="sub">cumplimiento MTD del trimestre</div></div>
+    <div class="kpi ok"><div class="label">CO · Inversión Leadforms</div><div class="val">+123%</div><div class="sub">$1.075 → $2.400 / semana</div></div>
+    <div class="kpi accent"><div class="label">CO · CPL Leadforms</div><div class="val">~$8–10</div><div class="sub">resiste mientras WEB sube</div></div>
+    <div class="kpi"><div class="label">MX · Leadforms</div><div class="val">Plano</div><div class="sub">aún no escala → oportunidad</div></div>
+  </div>
+
+  <div class="callout ok">
+    <p><strong>Colombia ya lo probó —y hay más espacio.</strong> Mientras WEB se encarece, Leadforms CO escaló su inversión 2,2× y sus leads asignados van consistentemente <strong>al doble de la meta</strong>, con GABI sosteniendo la completitud sin sumar headcount. Como el costo por lead bajó, <strong>todavía hay margen para subir aún más la inversión en Colombia —y lo seguimos haciendo</strong>.</p>
+  </div>
+  <div class="callout warn">
+    <p><strong>México es el siguiente paso.</strong> Hoy Leadforms MX está plano (inversión y CPL estables, sin escalar). Replicar el playbook CO —escalar inversión + GABI— es la palanca compensatoria que MX todavía no está usando contra el encarecimiento de WEB.</p>
+  </div>
+</div>
+
+<!-- PILAR 3 -->
+<div class="pillar" id="pilar-3">
+  <span class="tag">Pilar 3 · Eficiencia</span>
+  <h3><span class="pill-num">3</span>Re-gestión de calificados no cerrados</h3>
+  <p>Cuando el lead nuevo está caro, el activo más barato es el que <strong>ya pagamos</strong>: leads que calificaron pero no cerraron ni fueron descartados. Construimos la base depurada, contactable y deduplicada —teléfono validado para canal masivo— en los dos países.</p>
+
+  <div class="chart-card">
+    <div class="chart-title">Base de re-gestión: 61.100 calificados recuperables</div>
+    <div class="chart-subtitle">Leads contactables (teléfono válido, deduplicados) por país y fuente de origen.</div>
+    <div class="chart-wrap"><canvas id="chartReg"></canvas></div>
+  </div>
+
+  <div class="kpi-grid">
+    <div class="kpi accent"><div class="label">Base total</div><div class="val">61.100</div><div class="sub">MX 44.487 · CO 16.613</div></div>
+    <div class="kpi"><div class="label">Conversión histórica a cierre</div><div class="val">~3%</div><div class="sub">sobre calificados gestionados</div></div>
+    <div class="kpi ok"><div class="label">Cierres potenciales</div><div class="val">~1.800</div><div class="sub">a costo de adquisición ≈ 0</div></div>
+    <div class="kpi"><div class="label">Costo de adquisición</div><div class="val">$0</div><div class="sub">ya se pagó; solo costo de contacto</div></div>
+  </div>
+
+  <div class="callout info">
+    <p><strong>Por qué encaja con el Mundial.</strong> No depende de la subasta inflada: es una campaña de rehabilitación sobre base propia que rinde justo cuando adquirir leads nuevos en WEB es más caro. Costo marginal bajo, conversión conocida.</p>
+  </div>
+  <div class="callout warn">
+    <p><strong>Cómo lo activamos —y por qué no por WhatsApp.</strong> Esta re-gestión es una <strong>medida de contingencia</strong> para la temporada cara; el objetivo es luego <strong>estandarizarla a un volumen sano y sostenible</strong>. Para el piloto contactamos vía <strong>SMS y llamada con IA</strong>, evitando al máximo WhatsApp: el envío masivo de plantillas de marketing tendría un <strong>respond rate bajo</strong> y expone la cuenta a <strong>penalizaciones de META</strong>.</p>
+  </div>
+</div>
+
+<!-- ===================== SÍNTESIS ===================== -->
+<h2>Síntesis</h2>
+<div class="callout ok">
+  <p>Una temporada de <strong>costos altos y demanda deprimida</strong> no se gana pagando de más por WEB. Se gana con tres jugadas coordinadas: <strong>(1)</strong> proteger la marca a bajo costo con UBER durante todo el Mundial, <strong>(2)</strong> escalar Leadforms con GABI —la fuente eficiente, sin sumar callcenter— y llevar el playbook a México, y <strong>(3)</strong> rehabilitar 61.100 calificados que ya pagamos. Defensa de marca, eficiencia de canal y valor recuperado: el plan para que el Mundial juegue a nuestro favor.</p>
+</div>
+
+</div><!-- /wrap -->
+
+<script>
+const FMT = { font: { family: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" } };
+const GRID = '#e5e7eb', TICK = '#6b7280';
+const weeks = ['30/03','06/04','13/04','20/04','27/04','04/05','11/05','18/05','25/05','01/06','08/06'];
+
+// --- Chart 1: CPM WEB index CO vs MX ---
+const cpmCO = [1.84,1.74,2.45,1.81,1.76,1.77,2.34,2.61,2.81,2.77,2.45];
+const cpmMX = [4.06,3.44,3.86,4.54,4.86,4.61,5.20,5.63,5.76,5.95,5.80];
+const idx = a => a.map(v => Math.round(v / a[0] * 100));
+new Chart(document.getElementById('chartCpm'), {
+  type: 'line',
+  data: { labels: weeks, datasets: [
+    { label: 'CO (índice CPM WEB)', data: idx(cpmCO), borderColor: '#4f46e5', backgroundColor: 'rgba(79,70,229,.08)', tension: .3, borderWidth: 2.5, pointRadius: 3, fill: true, _raw: cpmCO },
+    { label: 'MX (índice CPM WEB)', data: idx(cpmMX), borderColor: '#dc2626', backgroundColor: 'rgba(220,38,38,.06)', tension: .3, borderWidth: 2.5, pointRadius: 3, fill: false, _raw: cpmMX },
+  ]},
+  options: { maintainAspectRatio: false, interaction: { mode: 'index', intersect: false },
+    plugins: { legend: { labels: FMT }, tooltip: { callbacks: { afterLabel: c => 'CPM real: $' + c.dataset._raw[c.dataIndex].toFixed(2) } } },
+    scales: {
+      y: { title: { display: true, text: 'Índice (base 30-mar = 100)', color: TICK }, grid: { color: GRID }, ticks: { color: TICK } },
+      x: { grid: { display: false }, ticks: { color: TICK } }
+    } }
+});
+
+// --- Chart 2: Leadforms CO investment + leads vs meta ---
+const lfSpend = [1075,1963,1910,2134,2075,1961,1813,1621,1933,2401,2395];
+const lfLeads = [16,63,58,59,39,46,53,37,58,76,74];
+const lfMeta  = [16,34,34,34,29,36,36,29,36,34,28];
+new Chart(document.getElementById('chartLf'), {
+  data: { labels: weeks, datasets: [
+    { type: 'bar', label: 'Inversión semanal (USD)', data: lfSpend, backgroundColor: 'rgba(14,165,233,.35)', borderColor: '#0ea5e9', borderWidth: 1, yAxisID: 'y1', order: 3 },
+    { type: 'line', label: 'Leads asignados', data: lfLeads, borderColor: '#10b981', backgroundColor: '#10b981', tension: .3, borderWidth: 2.5, pointRadius: 3, yAxisID: 'y', order: 1 },
+    { type: 'line', label: 'Meta (recalibrada)', data: lfMeta, borderColor: '#9ca3af', borderDash: [5,4], tension: .3, borderWidth: 2, pointRadius: 0, yAxisID: 'y', order: 2 },
+  ]},
+  options: { maintainAspectRatio: false, interaction: { mode: 'index', intersect: false },
+    plugins: { legend: { labels: FMT } },
+    scales: {
+      y: { position: 'left', title: { display: true, text: 'Leads asignados', color: TICK }, grid: { color: GRID }, ticks: { color: TICK }, beginAtZero: true },
+      y1: { position: 'right', title: { display: true, text: 'Inversión USD', color: TICK }, grid: { drawOnChartArea: false }, ticks: { color: TICK }, beginAtZero: true },
+      x: { grid: { display: false }, ticks: { color: TICK } }
+    } }
+});
+
+// --- Chart 3: re-gestión base by country & fuente (stacked) ---
+new Chart(document.getElementById('chartReg'), {
+  type: 'bar',
+  data: { labels: ['México', 'Colombia'], datasets: [
+    { label: 'WEB', data: [29403, 12322], backgroundColor: '#4f46e5' },
+    { label: 'Lead Forms', data: [8386, 841], backgroundColor: '#0ea5e9' },
+    { label: 'Estudio Inmueble', data: [6699, 3450], backgroundColor: '#f59e0b' },
+  ]},
+  options: { maintainAspectRatio: false, indexAxis: 'y',
+    plugins: { legend: { labels: FMT }, tooltip: { callbacks: { footer: items => 'Total: ' + items.reduce((s,i)=>s+i.parsed.x,0).toLocaleString('es') } } },
+    scales: {
+      x: { stacked: true, grid: { color: GRID }, ticks: { color: TICK, callback: v => v.toLocaleString('es') } },
+      y: { stacked: true, grid: { display: false }, ticks: { color: TICK } }
+    } }
+});
+</script>
+</body>
+</html>
