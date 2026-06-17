@@ -6,7 +6,7 @@
     "timeline": [
       { "period": "Hasta 2025 Q3", "structure": "4 líderes Performance (perfil homogéneo) + 1 de SEO", "products": ["Habi Sellers"], "note": "Foco único: atraer vendedores de vivienda para que Habi compre." },
       { "period": "2025 Q3–Q4", "structure": "Split a 2 Performance + 2 Growth + 1 SEO", "products": ["Habi Sellers", "Habi Buyers"], "note": "Surge la función Growth diferenciada de Performance. Marketing recibe Habi Buyers (mover el inventario)." },
-      { "period": "2026 Q1", "structure": "2 Performance + 2 Growth", "products": ["Habi Sellers", "Habi Buyers"], "note": "Consolidación del modelo dual + integración de los procesos de SEO en la estrategia SEM: SEO queda bajo el equipo de Performance." },
+      { "period": "2026 Q1", "structure": "2 Performance + 2 Growth", "products": ["Habi Sellers", "Habi Buyers"], "current": true, "note": "Consolidación del modelo dual + integración de los procesos de SEO en la estrategia SEM: SEO queda bajo el equipo de Performance." },
       { "period": "2026 Q2 (objetivo)", "structure": "2 Performance + 2 Growth", "products": ["Habi Sellers", "Habi Buyers", "propiedades.com", "Pulppo", "Franquicias Habi"], "today": true, "note": "Marketing absorbe propiedades.com, Pulppo y Franquicias en un solo trimestre." }
     ]
   },

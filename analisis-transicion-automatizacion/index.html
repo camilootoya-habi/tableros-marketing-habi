@@ -99,6 +99,9 @@
   .evo-card + .evo-card::before { content: '→'; position: absolute; left: -13px; top: 50%; transform: translate(-50%, -50%); color: var(--accent); font-weight: 700; font-size: 17px; }
   @media (max-width: 760px) { .evo-grid { grid-template-columns: 1fr; gap: 28px; } .evo-card + .evo-card::before { content: '↓'; left: 50%; top: -14px; transform: translate(-50%, -50%); } }
   .evo-card.today { border-top-color: var(--ok-border); background: #f0fdf4; }
+  .evo-card.current { border-top-color: #f59e0b; background: #fff7ed; }
+  .evo-card.current .period { color: #b45309; }
+  .evo-card.current .prod { background: #ffedd5; color: #b45309; }
   .evo-card .period { color: var(--accent); font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; }
   .evo-card.today .period { color: var(--ok-border); }
   .evo-card .struct { font-weight: 600; color: var(--text-title); font-size: 13.5px; margin: 6px 0; }
@@ -200,8 +203,8 @@
   <div class="transition-row">
     <div class="eje-title">Líderes de canal</div>
     <div class="transition-flow">
-      <div class="t-state from" style="background:#fff7ed;border:1px solid #f59e0b">
-        <div class="when" style="color:#b45309">Q1 2026 (Actualidad)</div>
+      <div class="t-state from">
+        <div class="when">Q1 2026</div>
         <div class="value">5 líderes de canal</div>
         <div class="detail">4 líderes Performance, perfil homogéneo, foco en pauta + 1 líder SEO y orgánico</div>
       </div>
@@ -497,9 +500,10 @@ fetch('data.json').then(r => r.json()).then(D => {
   document.getElementById('evo-narrative').textContent = D.leaders_evolution.narrative;
   const evo = document.getElementById('evo-grid');
   D.leaders_evolution.timeline.forEach(t => {
-    const cls = t.today ? 'today' : '';
+    const cls = t.current ? 'current' : (t.today ? 'today' : '');
+    const periodLabel = t.period + (t.current ? ' (Actualidad)' : '');
     const prods = t.products.map(p => `<span class="prod">${p}</span>`).join('');
-    evo.insertAdjacentHTML('beforeend', `<div class="evo-card ${cls}"><div class="period">${t.period}</div><div class="struct">${t.structure}</div><div class="prods">${prods}</div><div class="note">${t.note}</div></div>`);
+    evo.insertAdjacentHTML('beforeend', `<div class="evo-card ${cls}"><div class="period">${periodLabel}</div><div class="struct">${t.structure}</div><div class="prods">${prods}</div><div class="note">${t.note}</div></div>`);
   });
 
   // ---------- Table: leaders ----------
