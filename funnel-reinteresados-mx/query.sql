@@ -1,13 +1,15 @@
--- Funnel + antifunnel de la campaña de retargeting "reinteresados" (WEB, MX).
--- Universo: leads con utm_campaign de la campaña, fuente WEB (fuente_id=3), MX.
--- Etapas: Registros = NIDs únicos · Calificado = estado ACTUAL 20/63 · Antifunnel = resto de estados.
+-- Funnel + antifunnel + evolución diaria de la campaña de retargeting "reinteresados" (WEB, MX).
+-- Universo: utm_campaign de la campaña, fuente WEB (fuente_id=3), MX.
+-- Emite dos tipos de fila (col `kind`):
+--   'estado' = breakdown por estado ACTUAL (funnel: 20/63 = Calificado · resto = Antifunnel).
+--   'diario' = cohorte por fecha de creación: registros (NIDs) y calificados (estado 20/63) por día.
 WITH ea AS (
   SELECT deal_id, ARRAY_AGG(state_id ORDER BY date_create DESC, id DESC LIMIT 1)[OFFSET(0)] AS sid
   FROM `sellers-main-prod.mx_rds_staging.habi_db_history_state`
   GROUP BY deal_id
 ),
 base AS (
-  SELECT g.nid, ea.sid
+  SELECT g.nid, ea.sid, CAST(g.fecha_creacion AS DATE) AS fc
   FROM `papyrus-data-mx.habi_wh_bi.tabla_inmuebles_general` g
   JOIN `sellers-main-prod.hubspot.deals` hd
     ON hd.nid = g.nid AND hd.country = "México"
@@ -16,12 +18,19 @@ base AS (
     AND g.fuente_id = 3
   QUALIFY ROW_NUMBER() OVER (PARTITION BY g.nid ORDER BY CAST(g.fecha_creacion AS DATE) DESC) = 1
 )
-SELECT
-  IF(b.sid IN (20, 63), "Calificado", "Antifunnel") AS grupo,
-  CAST(b.sid AS STRING)                              AS state_id,
-  COALESCE(st.label, "Sin estado")                  AS label,
-  COUNT(*)                                           AS nids
+SELECT 'estado' AS kind,
+       IF(b.sid IN (20,63), "Calificado", "Antifunnel") AS grupo,
+       CAST(b.sid AS STRING) AS state_id,
+       COALESCE(st.label, "Sin estado") AS label,
+       CAST(NULL AS STRING) AS fecha,
+       COUNT(*) AS n, 0 AS n_calif
 FROM base b
 LEFT JOIN `sellers-main-prod.mx_rds_staging.habi_db_state` st ON st.id = b.sid
-GROUP BY 1, 2, 3
-ORDER BY grupo, nids DESC
+GROUP BY 1,2,3,4
+UNION ALL
+SELECT 'diario' AS kind, NULL, NULL, NULL,
+       CAST(fc AS STRING) AS fecha,
+       COUNT(*) AS n, COUNTIF(sid IN (20,63)) AS n_calif
+FROM base
+GROUP BY fc
+ORDER BY kind, fecha, n DESC

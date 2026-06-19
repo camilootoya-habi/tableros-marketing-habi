@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📢</text></svg>">
 <title>Funnel campaña Reinteresados — WEB MX</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 <style>
   :root{
     --bg:#fafaf7; --card:#fff; --text:#1f2937; --text-muted:#6b7280; --text-title:#111827;
@@ -29,6 +30,7 @@
   .kpi .val{font-weight:800;color:var(--text-title);font-size:26px;line-height:1.1}
   .kpi .sub{color:var(--text-muted);font-size:12px;margin-top:5px}
   .card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:20px 22px;margin:18px 0;box-shadow:0 1px 2px rgba(0,0,0,.04)}
+  .chart-wrap{position:relative;height:300px;width:100%}
   /* funnel */
   .funnel-row{margin:14px 0}
   .funnel-row .head{display:flex;justify-content:space-between;font-size:14px;margin-bottom:5px}
@@ -59,6 +61,10 @@
   <p class="note">De los registros (NIDs únicos de la campaña), cuántos están hoy en estado <b>Calificado</b> (20 No gestionado / 63 Sin pricing inicial).</p>
   <div class="card" id="funnel"></div>
 
+  <h2>Evolución diaria</h2>
+  <p class="note">Registros y calificados por <b>día de creación</b> del lead (cohorte). La serie se llena a medida que la campaña corre.</p>
+  <div class="card"><div class="chart-wrap"><canvas id="chartDaily"></canvas></div></div>
+
   <h2>Antifunnel</h2>
   <p class="note">Dónde quedaron los leads que <b>no</b> están en estado calificado (estados ≠ 20/63), por estado actual.</p>
   <div class="card"><table><thead><tr><th>Estado actual</th><th style="text-align:right">Leads</th><th style="text-align:right">% de registros</th></tr></thead><tbody id="anti"></tbody></table></div>
@@ -68,14 +74,20 @@
 <script>
 const N = v => parseInt(v,10) || 0;
 const fmt = v => v.toLocaleString('es-CO');
-fetch('data.json').then(r=>r.json()).then(rows=>{
-  rows = rows.map(r => ({...r, nids:N(r.nids)}));
-  const registros = rows.reduce((a,r)=>a+r.nids,0);
-  const calif = rows.filter(r=>r.grupo==='Calificado').reduce((a,r)=>a+r.nids,0);
-  const anti = rows.filter(r=>r.grupo==='Antifunnel').sort((a,b)=>b.nids-a.nids);
+const FONT = { family:"-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif" };
+fetch('data.json').then(r=>r.json()).then(all=>{
+  const estado = all.filter(r=>r.kind==='estado').map(r=>({...r, n:N(r.n)}));
+  const diario = all.filter(r=>r.kind==='diario').map(r=>({fecha:r.fecha, n:N(r.n), c:N(r.n_calif)}))
+                    .sort((a,b)=> a.fecha < b.fecha ? -1 : 1);
+  const registros = estado.reduce((a,r)=>a+r.n,0);
+  const calif = estado.filter(r=>r.grupo==='Calificado').reduce((a,r)=>a+r.n,0);
+  const anti = estado.filter(r=>r.grupo==='Antifunnel').sort((a,b)=>b.n-a.n);
   const antiTotal = registros - calif;
   const cvr = registros ? (calif/registros*100) : 0;
   const pct = n => registros ? (n/registros*100) : 0;
+
+  if (diario.length) document.getElementById('asof').textContent =
+    diario.length > 1 ? `${diario[0].fecha} → ${diario[diario.length-1].fecha}` : diario[0].fecha;
 
   // KPIs
   document.getElementById('kpis').innerHTML = [
@@ -85,7 +97,7 @@ fetch('data.json').then(r=>r.json()).then(rows=>{
     ['warn','En antifunnel', fmt(antiTotal), pct(antiTotal).toFixed(1)+'% de registros'],
   ].map(([c,l,v,s])=>`<div class="kpi ${c}"><div class="label">${l}</div><div class="val">${v}</div><div class="sub">${s}</div></div>`).join('');
 
-  // Funnel (Registros 100% -> Calificados X%)
+  // Funnel
   const calW = Math.max(pct(calif), 4);
   document.getElementById('funnel').innerHTML = `
     <div class="funnel-row"><div class="head"><span>Registros</span><b>${fmt(registros)} · 100%</b></div>
@@ -94,12 +106,26 @@ fetch('data.json').then(r=>r.json()).then(rows=>{
       <div class="bar cal" style="width:${calW}%">${fmt(calif)}</div>
       <div class="drop">↳ ${fmt(antiTotal)} leads (${pct(antiTotal).toFixed(1)}%) no llegaron a calificado → antifunnel</div></div>`;
 
-  // Antifunnel table
-  const maxA = anti.length ? anti[0].nids : 1;
+  // Evolución diaria
+  if (diario.length) {
+    new Chart(document.getElementById('chartDaily'), {
+      data: { labels: diario.map(d=>d.fecha), datasets: [
+        { type:'bar', label:'Registros', data:diario.map(d=>d.n), backgroundColor:'rgba(79,70,229,.85)', borderRadius:4 },
+        { type:'bar', label:'Calificados', data:diario.map(d=>d.c), backgroundColor:'rgba(16,185,129,.9)', borderRadius:4 },
+      ]},
+      options: { maintainAspectRatio:false, interaction:{mode:'index',intersect:false},
+        plugins:{ legend:{labels:{font:FONT}},
+          tooltip:{callbacks:{afterBody:items=>{const i=items[0].dataIndex; const d=diario[i]; const c=d.n?(d.c/d.n*100).toFixed(1):0; return `CVR día: ${c}%`;}}} },
+        scales:{ y:{beginAtZero:true, grid:{color:'#e5e7eb'}, ticks:{font:FONT,precision:0}}, x:{grid:{display:false}, ticks:{font:FONT}} } }
+    });
+  }
+
+  // Antifunnel
+  const maxA = anti.length ? anti[0].n : 1;
   document.getElementById('anti').innerHTML = anti.map(r=>`
     <tr><td>${r.label} <span style="color:var(--text-muted);font-size:12px">· ${r.state_id}</span>
-      <div class="minibar-wrap"><div class="minibar" style="width:${(r.nids/maxA*100).toFixed(1)}%"></div></div></td>
-      <td class="num">${fmt(r.nids)}</td><td class="num">${pct(r.nids).toFixed(1)}%</td></tr>`).join('')
+      <div class="minibar-wrap"><div class="minibar" style="width:${(r.n/maxA*100).toFixed(1)}%"></div></div></td>
+      <td class="num">${fmt(r.n)}</td><td class="num">${pct(r.n).toFixed(1)}%</td></tr>`).join('')
     + `<tr style="font-weight:700"><td>Total antifunnel</td><td class="num">${fmt(antiTotal)}</td><td class="num">${pct(antiTotal).toFixed(1)}%</td></tr>`;
 
   document.getElementById('footer').textContent = `${anti.length} estados en el antifunnel. Registros = Calificados + Antifunnel = ${fmt(calif)} + ${fmt(antiTotal)} = ${fmt(registros)}.`;
