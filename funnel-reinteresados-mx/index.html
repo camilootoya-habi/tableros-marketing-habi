@@ -23,6 +23,7 @@
   .meta{font-size:13px;color:var(--text-muted);margin:8px 0 8px}
   .campaign{font-size:12px;color:var(--text-muted);font-family:'SF Mono',Menlo,monospace;background:#f3f4f6;padding:3px 8px;border-radius:5px;display:inline-block;word-break:break-all}
   p{font-size:15px}
+  .muted{color:var(--text-muted);font-size:12px}
   .kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin:20px 0}
   .kpi{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:14px 16px}
   .kpi.accent{border-left:3px solid var(--accent)} .kpi.ok{border-left:3px solid var(--ok)} .kpi.warn{border-left:3px solid var(--warn)}
@@ -38,13 +39,19 @@
   .bar{height:30px;border-radius:6px;display:flex;align-items:center;padding-left:12px;color:#fff;font-weight:700;font-size:14px;min-width:42px}
   .bar.reg{background:var(--accent)} .bar.cal{background:var(--ok)}
   .drop{font-size:12.5px;color:var(--text-muted);margin:4px 0 0 2px}
-  /* antifunnel table */
-  table{border-collapse:collapse;width:100%;font-size:14px;margin:12px 0}
-  th{text-align:left;padding:9px 10px;font-weight:600;color:var(--text-title);border-bottom:2px solid var(--warn);background:var(--warn-soft);font-size:12px;text-transform:uppercase;letter-spacing:.3px}
+  /* split tables */
+  .legend{font-size:12.5px;color:var(--text-muted);margin:2px 0 6px;display:flex;gap:16px}
+  .legend span{display:inline-flex;align-items:center;gap:5px}
+  .dot{width:11px;height:11px;border-radius:3px;display:inline-block}
+  .dot.og{background:var(--warn)} .dot.gr{background:var(--ok)}
+  table{border-collapse:collapse;width:100%;font-size:14px;margin:8px 0}
+  th{text-align:left;padding:9px 10px;font-weight:600;color:var(--text-title);border-bottom:2px solid var(--border);font-size:12px;text-transform:uppercase;letter-spacing:.3px}
   td{padding:8px 10px;border-bottom:1px solid var(--border);vertical-align:middle}
   td.num{text-align:right;font-variant-numeric:tabular-nums;font-weight:600;white-space:nowrap}
-  .minibar-wrap{background:#f3f4f6;border-radius:4px;height:9px;width:100%;overflow:hidden;margin-top:4px}
-  .minibar{height:9px;background:var(--warn);border-radius:4px}
+  .og-t{color:#b45309} .gr-t{color:#047857}
+  .splitbar{display:flex;height:10px;border-radius:4px;overflow:hidden;background:#f3f4f6;margin-top:5px}
+  .splitbar .seg{height:10px}
+  .splitbar .seg.og{background:var(--warn)} .splitbar .seg.gr{background:var(--ok)}
   .note{font-size:13px;color:var(--text-muted)}
 </style>
 </head>
@@ -61,13 +68,19 @@
   <p class="note">De los registros (NIDs únicos de la campaña), cuántos están hoy en estado <b>Calificado</b> (20 No gestionado / 63 Sin pricing inicial).</p>
   <div class="card" id="funnel"></div>
 
+  <h2>Calificados (20/63) — ¿asignados?</h2>
+  <p class="note">Solo los estados calificados, partidos por asignación en el WBR mart de asignados.</p>
+  <div class="legend"><span><i class="dot gr"></i>Asignados (WBR mart)</span><span><i class="dot og"></i>No asignados</span></div>
+  <div class="card"><table><thead><tr><th>Estado calificado</th><th style="text-align:right">No asig.</th><th style="text-align:right">Asig.</th><th style="text-align:right">Total</th><th style="text-align:right">% reg</th></tr></thead><tbody id="calif"></tbody></table></div>
+
+  <h2>Antifunnel — ¿asignados?</h2>
+  <p class="note">Dónde quedaron los leads que <b>no</b> están en estado calificado (estados ≠ 20/63), partidos por asignación.</p>
+  <div class="legend"><span><i class="dot gr"></i>Asignados (WBR mart)</span><span><i class="dot og"></i>No asignados</span></div>
+  <div class="card"><table><thead><tr><th>Estado actual</th><th style="text-align:right">No asig.</th><th style="text-align:right">Asig.</th><th style="text-align:right">Total</th><th style="text-align:right">% reg</th></tr></thead><tbody id="anti"></tbody></table></div>
+
   <h2>Evolución diaria</h2>
   <p class="note">Registros y calificados por <b>día de creación</b> del lead (cohorte). La serie se llena a medida que la campaña corre.</p>
   <div class="card"><div class="chart-wrap"><canvas id="chartDaily"></canvas></div></div>
-
-  <h2>Antifunnel</h2>
-  <p class="note">Dónde quedaron los leads que <b>no</b> están en estado calificado (estados ≠ 20/63), por estado actual.</p>
-  <div class="card"><table><thead><tr><th>Estado actual</th><th style="text-align:right">Leads</th><th style="text-align:right">% de registros</th></tr></thead><tbody id="anti"></tbody></table></div>
 
   <p class="note" id="footer"></p>
 </div>
@@ -76,13 +89,15 @@ const N = v => parseInt(v,10) || 0;
 const fmt = v => v.toLocaleString('es-CO');
 const FONT = { family:"-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif" };
 fetch('data.json').then(r=>r.json()).then(all=>{
-  const estado = all.filter(r=>r.kind==='estado').map(r=>({...r, n:N(r.n)}));
+  const estado = all.filter(r=>r.kind==='estado').map(r=>({...r, n:N(r.n), a:N(r.n_asig)}));
   const diario = all.filter(r=>r.kind==='diario').map(r=>({fecha:r.fecha, n:N(r.n), c:N(r.n_calif)}))
-                    .sort((a,b)=> a.fecha < b.fecha ? -1 : 1);
+                    .sort((x,y)=> x.fecha < y.fecha ? -1 : 1);
   const registros = estado.reduce((a,r)=>a+r.n,0);
-  const calif = estado.filter(r=>r.grupo==='Calificado').reduce((a,r)=>a+r.n,0);
-  const anti = estado.filter(r=>r.grupo==='Antifunnel').sort((a,b)=>b.n-a.n);
+  const califRows = estado.filter(r=>r.grupo==='Calificado').sort((a,b)=>b.n-a.n);
+  const antiRows  = estado.filter(r=>r.grupo==='Antifunnel').sort((a,b)=>b.n-a.n);
+  const calif = califRows.reduce((a,r)=>a+r.n,0);
   const antiTotal = registros - calif;
+  const asigTotal = estado.reduce((a,r)=>a+r.a,0);
   const cvr = registros ? (calif/registros*100) : 0;
   const pct = n => registros ? (n/registros*100) : 0;
 
@@ -92,9 +107,9 @@ fetch('data.json').then(r=>r.json()).then(all=>{
   // KPIs
   document.getElementById('kpis').innerHTML = [
     ['accent','Registros', fmt(registros), 'NIDs únicos de la campaña'],
-    ['ok','Calificados', fmt(calif), 'estado 20 / 63'],
-    ['ok','CVR Reg → Calif', cvr.toFixed(1)+'%', 'tasa de calificación'],
-    ['warn','En antifunnel', fmt(antiTotal), pct(antiTotal).toFixed(1)+'% de registros'],
+    ['ok','Calificados', fmt(calif), `estado 20/63 · ${cvr.toFixed(1)}%`],
+    ['ok','Asignados (WBR)', fmt(asigTotal), `${pct(asigTotal).toFixed(1)}% de registros`],
+    ['warn','En antifunnel', fmt(antiTotal), `${pct(antiTotal).toFixed(1)}% de registros`],
   ].map(([c,l,v,s])=>`<div class="kpi ${c}"><div class="label">${l}</div><div class="val">${v}</div><div class="sub">${s}</div></div>`).join('');
 
   // Funnel
@@ -106,29 +121,35 @@ fetch('data.json').then(r=>r.json()).then(all=>{
       <div class="bar cal" style="width:${calW}%">${fmt(calif)}</div>
       <div class="drop">↳ ${fmt(antiTotal)} leads (${pct(antiTotal).toFixed(1)}%) no llegaron a calificado → antifunnel</div></div>`;
 
+  // Split table renderer (🟠 no asignado / 🟢 asignado)
+  const maxN = Math.max(1, ...estado.map(r=>r.n));
+  const splitRows = rows => rows.map(r=>{
+    const no = r.n - r.a, w = (r.n/maxN*100).toFixed(1);
+    const ogw = r.n ? (no/r.n*100).toFixed(1) : 0, grw = r.n ? (r.a/r.n*100).toFixed(1) : 0;
+    return `<tr><td>${r.label} <span class="muted">· ${r.state_id}</span>
+      <div class="splitbar" style="width:${w}%"><span class="seg og" style="width:${ogw}%"></span><span class="seg gr" style="width:${grw}%"></span></div></td>
+      <td class="num og-t">${fmt(no)}</td><td class="num gr-t">${fmt(r.a)}</td><td class="num">${fmt(r.n)}</td><td class="num">${pct(r.n).toFixed(1)}%</td></tr>`;
+  }).join('');
+  const totalRow = (rows,label) => {
+    const t = rows.reduce((a,r)=>a+r.n,0), a = rows.reduce((s,r)=>s+r.a,0);
+    return `<tr style="font-weight:700"><td>${label}</td><td class="num og-t">${fmt(t-a)}</td><td class="num gr-t">${fmt(a)}</td><td class="num">${fmt(t)}</td><td class="num">${pct(t).toFixed(1)}%</td></tr>`;
+  };
+  document.getElementById('calif').innerHTML = (califRows.length? splitRows(califRows)+totalRow(califRows,'Total calificados') : '<tr><td colspan="5" class="note">Sin leads calificados aún.</td></tr>');
+  document.getElementById('anti').innerHTML  = splitRows(antiRows)+totalRow(antiRows,'Total antifunnel');
+
   // Evolución diaria
-  if (diario.length) {
-    new Chart(document.getElementById('chartDaily'), {
-      data: { labels: diario.map(d=>d.fecha), datasets: [
-        { type:'bar', label:'Registros', data:diario.map(d=>d.n), backgroundColor:'rgba(79,70,229,.85)', borderRadius:4 },
-        { type:'bar', label:'Calificados', data:diario.map(d=>d.c), backgroundColor:'rgba(16,185,129,.9)', borderRadius:4 },
-      ]},
-      options: { maintainAspectRatio:false, interaction:{mode:'index',intersect:false},
-        plugins:{ legend:{labels:{font:FONT}},
-          tooltip:{callbacks:{afterBody:items=>{const i=items[0].dataIndex; const d=diario[i]; const c=d.n?(d.c/d.n*100).toFixed(1):0; return `CVR día: ${c}%`;}}} },
-        scales:{ y:{beginAtZero:true, grid:{color:'#e5e7eb'}, ticks:{font:FONT,precision:0}}, x:{grid:{display:false}, ticks:{font:FONT}} } }
-    });
-  }
+  if (diario.length) new Chart(document.getElementById('chartDaily'), {
+    data: { labels: diario.map(d=>d.fecha), datasets: [
+      { type:'bar', label:'Registros', data:diario.map(d=>d.n), backgroundColor:'rgba(79,70,229,.85)', borderRadius:4 },
+      { type:'bar', label:'Calificados', data:diario.map(d=>d.c), backgroundColor:'rgba(16,185,129,.9)', borderRadius:4 },
+    ]},
+    options: { maintainAspectRatio:false, interaction:{mode:'index',intersect:false},
+      plugins:{ legend:{labels:{font:FONT}},
+        tooltip:{callbacks:{afterBody:items=>{const d=diario[items[0].dataIndex]; return `CVR día: ${d.n?(d.c/d.n*100).toFixed(1):0}%`;}}} },
+      scales:{ y:{beginAtZero:true, grid:{color:'#e5e7eb'}, ticks:{font:FONT,precision:0}}, x:{grid:{display:false}, ticks:{font:FONT}} } }
+  });
 
-  // Antifunnel
-  const maxA = anti.length ? anti[0].n : 1;
-  document.getElementById('anti').innerHTML = anti.map(r=>`
-    <tr><td>${r.label} <span style="color:var(--text-muted);font-size:12px">· ${r.state_id}</span>
-      <div class="minibar-wrap"><div class="minibar" style="width:${(r.n/maxA*100).toFixed(1)}%"></div></div></td>
-      <td class="num">${fmt(r.n)}</td><td class="num">${pct(r.n).toFixed(1)}%</td></tr>`).join('')
-    + `<tr style="font-weight:700"><td>Total antifunnel</td><td class="num">${fmt(antiTotal)}</td><td class="num">${pct(antiTotal).toFixed(1)}%</td></tr>`;
-
-  document.getElementById('footer').textContent = `${anti.length} estados en el antifunnel. Registros = Calificados + Antifunnel = ${fmt(calif)} + ${fmt(antiTotal)} = ${fmt(registros)}.`;
+  document.getElementById('footer').textContent = `Asignación: ${fmt(asigTotal)} de ${fmt(registros)} registros están en el WBR mart de asignados (${pct(asigTotal).toFixed(1)}%). Registros = Calificados + Antifunnel = ${fmt(calif)} + ${fmt(antiTotal)} = ${fmt(registros)}.`;
 }).catch(e=>{document.getElementById('funnel').innerHTML='<p class="note">No se pudo cargar data.json: '+e+'</p>';});
 </script>
 </body>
