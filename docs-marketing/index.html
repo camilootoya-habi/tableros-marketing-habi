@@ -129,10 +129,11 @@
       <a href="#fuentes" data-section="fuentes">📥 Fuentes</a>
       <a href="#canales" data-section="canales">🛤️ Canales</a>
       <a href="#utm" data-section="utm">🔗 Cruce UTM</a>
+      <a href="#seguridad" data-section="seguridad">🔒 Seguridad</a>
     </nav>
     <div class="meta">
-      Actualizado: 2026-06-16<br>
-      Versión: 1.1 (+ tipificaciones)<br>
+      Actualizado: 2026-06-19<br>
+      Versión: 1.2 (+ seguridad)<br>
       Sin auto-update (manual).
       <button class="theme-btn" id="themeToggle" onclick="toggleTheme()" aria-label="Tema">🌙</button>
     </div>
@@ -485,6 +486,43 @@ WHERE DATE(g.fecha_creacion) >= DATE_SUB(CURRENT_DATE(), INTERVAL 7 DAY);</code>
 
       <h3>Atribución para WBR / OKR</h3>
       <p>Los tableros oficiales (Marketing WBR, WBR 2.0, OKR Marketing) usan <strong>siempre</strong> el resolver del diccionario para clasificar el canal — nunca el campo <code>canal_mercadeo</code> ni los <code>utm_*</code> crudos. Esto asegura consistencia y permite recalcular history cuando se actualiza el sheet.</p>
+    </section>
+
+    <!-- ========== SECCIÓN: SEGURIDAD ========== -->
+    <section id="seguridad" class="hidden">
+      <h2>Estado de <span class="accent">seguridad</span></h2>
+      <p class="lead">Resumen de la postura de seguridad del hub: en qué <strong>no</strong> corremos riesgo, en qué <strong>sí</strong>, y qué vamos a implementar para cerrarlo. Estado al <strong>19-jun-2026</strong>.</p>
+
+      <h3>✅ Lo que está cubierto (sin riesgo)</h3>
+      <div class="callout" style="border-left-color:#10b981">
+        <ul style="margin:4px 0; padding-left:20px">
+          <li><strong>No exponemos credenciales de base de datos.</strong> Las queries corren en el cron de <strong>GitHub Actions</strong>, no en el navegador. La credencial de BigQuery vive como <strong>secret encriptado de GitHub Actions</strong> (<code>GCP_CREDENTIALS</code>); se inyecta solo dentro del runner y nunca llega al repositorio ni al sitio.</li>
+          <li><strong>El navegador no se conecta a la BD.</strong> Cada tablero solo hace <code>fetch('data.json')</code> sobre datos ya precomputados. No hay llaves, tokens ni conexiones en el front (el mapa usa basemap CARTO público sin token).</li>
+          <li><strong>Nadie externo puede ejecutar las queries.</strong> El cron es server-side y usa secrets que solo el workflow puede leer; un visitante no puede dispararlo ni acceder a las credenciales.</li>
+          <li><strong>Sin PII de leads en lo publicado.</strong> Los <code>data.json</code> son agregados; las consultas que extraen teléfono/correo no viven en este repositorio.</li>
+        </ul>
+      </div>
+
+      <h3>⚠️ El riesgo actual</h3>
+      <div class="callout" style="border-left-color:#f59e0b">
+        <p>El repositorio es <strong>público</strong> y GitHub Pages sirve el sitio <strong>sin autenticación</strong>. Hoy, cualquier persona con el enlace puede ver:</p>
+        <ul style="margin:8px 0 0; padding-left:20px">
+          <li>Todos los tableros y sus <code>data.json</code> — <strong>métricas de negocio agregadas</strong> (inversión, CAC, leads, metas, conversiones, OKRs).</li>
+          <li>Los <code>query.sql</code> → los <strong>nombres de proyectos, datasets y tablas</strong> de BigQuery (mapa del warehouse). No son ejecutables sin credenciales, pero revelan la estructura.</li>
+          <li>Análisis internos que pueden contener <strong>datos sensibles</strong> (no para audiencia externa).</li>
+        </ul>
+        <p style="margin:8px 0 0">No hay fuga de credenciales — el riesgo es de <strong>confidencialidad/visibilidad</strong>: información de negocio interna accesible públicamente.</p>
+      </div>
+
+      <h3>🔒 Lo que vamos a implementar</h3>
+      <p>Cerrar el acceso para que <strong>solo personas con correo @habi.co o @tuhabi</strong> puedan ver el hub:</p>
+      <ol style="padding-left:22px">
+        <li><strong>Configurar un dominio en Cloudflare</strong> para el hub.</li>
+        <li><strong>Poner el sitio detrás de Cloudflare Access</strong> con <strong>login de Google + allowlist</strong> de los dominios <code>@habi.co</code> y <code>@tuhabi</code>, asegurando la autenticación en la puerta de entrada (sin cambiar el hosting ni el cron).</li>
+      </ol>
+      <div class="callout">
+        <strong>Resultado esperado:</strong> el cron y los datos siguen igual; lo único que cambia es que para abrir cualquier tablero habrá que iniciar sesión con un correo autorizado de Habi/TuHabi.
+      </div>
     </section>
 
   </main>
