@@ -9,54 +9,65 @@
 <style>
   :root{
     --bg:#fafaf7; --card:#fff; --text:#1f2937; --text-muted:#6b7280; --text-title:#111827;
-    --accent:#4f46e5; --accent-soft:#eef2ff; --border:#e5e7eb; --table-alt:#f9fafb;
-    --ok:#10b981; --ok-soft:#ecfdf5; --warn:#f59e0b; --warn-soft:#fff7ed; --danger:#dc2626;
+    --accent:#4f46e5; --accent-soft:#eef2ff; --border:#e5e7eb;
+    --ok:#10b981; --warn:#f59e0b; --sky:#0ea5e9; --violet:#8b5cf6;
   }
   *{box-sizing:border-box}
-  body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:var(--bg);color:var(--text);line-height:1.6;margin:0}
-  .topbar{position:sticky;top:0;background:rgba(250,250,247,.94);backdrop-filter:blur(8px);border-bottom:1px solid var(--border);padding:10px 20px;font-size:13px;display:flex;gap:12px;align-items:center;z-index:10}
+  body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:var(--bg);color:var(--text);line-height:1.6;margin:0;-webkit-text-size-adjust:100%}
+  .topbar{position:sticky;top:0;background:rgba(250,250,247,.94);backdrop-filter:blur(8px);border-bottom:1px solid var(--border);padding:10px 16px;font-size:13px;display:flex;gap:10px;align-items:center;z-index:10;flex-wrap:wrap}
   .topbar a{color:var(--text-muted);text-decoration:none;border:1px solid var(--border);border-radius:6px;padding:3px 8px}
   .topbar a:hover{color:var(--accent);border-color:var(--accent)}
-  .wrap{max-width:860px;margin:0 auto;padding:36px 24px 90px}
-  h1{color:var(--text-title);font-size:1.9rem;font-weight:700;margin:0 0 6px;padding-bottom:12px;border-bottom:2px solid var(--accent)}
-  h2{color:var(--text-title);font-size:1.3rem;margin:38px 0 6px}
-  .meta{font-size:13px;color:var(--text-muted);margin:8px 0 8px}
-  .campaign{font-size:12px;color:var(--text-muted);font-family:'SF Mono',Menlo,monospace;background:#f3f4f6;padding:3px 8px;border-radius:5px;display:inline-block;word-break:break-all}
+  .wrap{max-width:860px;margin:0 auto;padding:32px 22px 80px}
+  h1{color:var(--text-title);font-size:1.85rem;font-weight:700;margin:0 0 6px;padding-bottom:12px;border-bottom:2px solid var(--accent);line-height:1.2}
+  h2{color:var(--text-title);font-size:1.25rem;margin:34px 0 6px}
+  .meta{font-size:13px;color:var(--text-muted);margin:8px 0}
+  .campaign{font-size:11.5px;color:var(--text-muted);font-family:'SF Mono',Menlo,monospace;background:#f3f4f6;padding:4px 8px;border-radius:5px;display:block;word-break:break-all;line-height:1.4}
   p{font-size:15px}
   .muted{color:var(--text-muted);font-size:12px}
-  .kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin:20px 0}
-  .kpi{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:14px 16px}
-  .kpi.accent{border-left:3px solid var(--accent)} .kpi.ok{border-left:3px solid var(--ok)} .kpi.warn{border-left:3px solid var(--warn)}
-  .kpi .label{color:var(--text-muted);font-size:11px;text-transform:uppercase;letter-spacing:.4px;margin-bottom:5px}
-  .kpi .val{font-weight:800;color:var(--text-title);font-size:26px;line-height:1.1}
-  .kpi .sub{color:var(--text-muted);font-size:12px;margin-top:5px}
-  .card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:20px 22px;margin:18px 0;box-shadow:0 1px 2px rgba(0,0,0,.04)}
+  .kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin:18px 0}
+  .kpi{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:13px 15px}
+  .kpi.s1{border-left:3px solid var(--accent)} .kpi.s2{border-left:3px solid var(--ok)}
+  .kpi.s3{border-left:3px solid var(--sky)} .kpi.s4{border-left:3px solid var(--violet)}
+  .kpi .label{color:var(--text-muted);font-size:11px;text-transform:uppercase;letter-spacing:.4px;margin-bottom:4px}
+  .kpi .val{font-weight:800;color:var(--text-title);font-size:25px;line-height:1.1}
+  .kpi .sub{color:var(--text-muted);font-size:12px;margin-top:4px}
+  .card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:18px 20px;margin:16px 0;box-shadow:0 1px 2px rgba(0,0,0,.04)}
   .chart-wrap{position:relative;height:300px;width:100%}
   /* funnel */
-  .funnel-row{margin:14px 0}
-  .funnel-row .head{display:flex;justify-content:space-between;font-size:14px;margin-bottom:5px}
-  .funnel-row .head b{color:var(--text-title)}
-  .bar{height:30px;border-radius:6px;display:flex;align-items:center;padding-left:12px;color:#fff;font-weight:700;font-size:14px;min-width:42px}
-  .bar.reg{background:var(--accent)} .bar.cal{background:var(--ok)}
-  .drop{font-size:12.5px;color:var(--text-muted);margin:4px 0 0 2px}
+  .fstep{margin:13px 0}
+  .fstep .head{display:flex;justify-content:space-between;gap:8px;font-size:14px;margin-bottom:5px;flex-wrap:wrap}
+  .fstep .head b{color:var(--text-title);white-space:nowrap}
+  .bar{height:30px;border-radius:6px;display:flex;align-items:center;padding:0 12px;color:#fff;font-weight:700;font-size:14px;min-width:38px;transition:width .3s}
+  .drop{font-size:12px;color:var(--text-muted);margin:4px 0 0 2px}
   /* split tables */
-  .legend{font-size:12.5px;color:var(--text-muted);margin:2px 0 6px;display:flex;gap:16px}
+  .legend{font-size:12.5px;color:var(--text-muted);margin:2px 0 6px;display:flex;gap:14px;flex-wrap:wrap}
   .legend span{display:inline-flex;align-items:center;gap:5px}
   .dot{width:11px;height:11px;border-radius:3px;display:inline-block}
   .dot.og{background:var(--warn)} .dot.gr{background:var(--ok)}
-  table{border-collapse:collapse;width:100%;font-size:14px;margin:8px 0}
-  th{text-align:left;padding:9px 10px;font-weight:600;color:var(--text-title);border-bottom:2px solid var(--border);font-size:12px;text-transform:uppercase;letter-spacing:.3px}
+  .tbl-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
+  table{border-collapse:collapse;width:100%;font-size:14px;margin:6px 0;min-width:430px}
+  th{text-align:left;padding:9px 10px;font-weight:600;color:var(--text-title);border-bottom:2px solid var(--border);font-size:11.5px;text-transform:uppercase;letter-spacing:.3px}
   td{padding:8px 10px;border-bottom:1px solid var(--border);vertical-align:middle}
   td.num{text-align:right;font-variant-numeric:tabular-nums;font-weight:600;white-space:nowrap}
   .og-t{color:#b45309} .gr-t{color:#047857}
-  .splitbar{display:flex;height:10px;border-radius:4px;overflow:hidden;background:#f3f4f6;margin-top:5px}
+  .splitbar{display:flex;height:10px;border-radius:4px;overflow:hidden;background:#f3f4f6;margin-top:5px;min-width:60px}
   .splitbar .seg{height:10px}
   .splitbar .seg.og{background:var(--warn)} .splitbar .seg.gr{background:var(--ok)}
   .note{font-size:13px;color:var(--text-muted)}
+  @media (max-width:600px){
+    .wrap{padding:22px 14px 60px}
+    h1{font-size:1.45rem} h2{font-size:1.12rem;margin:28px 0 6px}
+    .kpi-grid{grid-template-columns:1fr 1fr;gap:8px}
+    .kpi{padding:11px 12px} .kpi .val{font-size:21px}
+    .card{padding:14px 14px}
+    .chart-wrap{height:260px}
+    table{font-size:13px} th,td{padding:7px 8px}
+    .fstep .head{font-size:13px}
+  }
 </style>
 </head>
 <body>
-<div class="topbar"><a href="../">← Hub</a><span>📢 Funnel · Campaña Reinteresados (WEB MX)</span></div>
+<div class="topbar"><a href="../">← Hub</a><span>📢 Funnel · Reinteresados (WEB MX)</span></div>
 <div class="wrap">
   <h1>Funnel campaña Reinteresados — WEB MX</h1>
   <div class="meta">Fuente WEB · México · estado actual del backbone · <span id="asof"></span></div>
@@ -65,18 +76,18 @@
   <div class="kpi-grid" id="kpis"></div>
 
   <h2>Funnel</h2>
-  <p class="note">De los registros (NIDs únicos de la campaña), cuántos están hoy en estado <b>Calificado</b> (20 No gestionado / 63 Sin pricing inicial).</p>
+  <p class="note">Progresión de la campaña: Registros → Calificados (alguna vez 20/63) → Asignados (WBR mart) → Citas agendadas (estado 27).</p>
   <div class="card" id="funnel"></div>
 
   <h2>Calificados (20/63) — ¿asignados?</h2>
-  <p class="note">Solo los estados calificados, partidos por asignación en el WBR mart de asignados.</p>
-  <div class="legend"><span><i class="dot gr"></i>Asignados (WBR mart)</span><span><i class="dot og"></i>No asignados</span></div>
-  <div class="card"><table><thead><tr><th>Estado calificado</th><th style="text-align:right">No asig.</th><th style="text-align:right">Asig.</th><th style="text-align:right">Total</th><th style="text-align:right">% reg</th></tr></thead><tbody id="calif"></tbody></table></div>
+  <p class="note">Estados calificados (actuales), partidos por asignación en el WBR mart.</p>
+  <div class="legend"><span><i class="dot gr"></i>Asignados (WBR)</span><span><i class="dot og"></i>No asignados</span></div>
+  <div class="card"><div class="tbl-wrap"><table><thead><tr><th>Estado calificado</th><th style="text-align:right">No asig.</th><th style="text-align:right">Asig.</th><th style="text-align:right">Total</th><th style="text-align:right">% reg</th></tr></thead><tbody id="calif"></tbody></table></div></div>
 
   <h2>Antifunnel — ¿asignados?</h2>
-  <p class="note">Dónde quedaron los leads que <b>no</b> están en estado calificado (estados ≠ 20/63), partidos por asignación.</p>
-  <div class="legend"><span><i class="dot gr"></i>Asignados (WBR mart)</span><span><i class="dot og"></i>No asignados</span></div>
-  <div class="card"><table><thead><tr><th>Estado actual</th><th style="text-align:right">No asig.</th><th style="text-align:right">Asig.</th><th style="text-align:right">Total</th><th style="text-align:right">% reg</th></tr></thead><tbody id="anti"></tbody></table></div>
+  <p class="note">Dónde quedaron los leads que <b>no</b> están en estado calificado (≠ 20/63), por estado actual y asignación.</p>
+  <div class="legend"><span><i class="dot gr"></i>Asignados (WBR)</span><span><i class="dot og"></i>No asignados</span></div>
+  <div class="card"><div class="tbl-wrap"><table><thead><tr><th>Estado actual</th><th style="text-align:right">No asig.</th><th style="text-align:right">Asig.</th><th style="text-align:right">Total</th><th style="text-align:right">% reg</th></tr></thead><tbody id="anti"></tbody></table></div></div>
 
   <h2>Evolución diaria</h2>
   <p class="note">Registros y calificados por <b>día de creación</b> del lead (cohorte). La serie se llena a medida que la campaña corre.</p>
@@ -88,68 +99,65 @@
 const N = v => parseInt(v,10) || 0;
 const fmt = v => v.toLocaleString('es-CO');
 const FONT = { family:"-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif" };
+const COLORS = { 'Registros':'var(--accent)', 'Calificados':'var(--ok)', 'Asignados':'var(--sky)', 'Citas agendadas':'var(--violet)' };
+const KCLS   = { 'Registros':'s1', 'Calificados':'s2', 'Asignados':'s3', 'Citas agendadas':'s4' };
 fetch('data.json').then(r=>r.json()).then(all=>{
+  const funnel = all.filter(r=>r.kind==='funnel').map(r=>({orden:N(r.grupo), label:r.label, n:N(r.n)})).sort((a,b)=>a.orden-b.orden);
   const estado = all.filter(r=>r.kind==='estado').map(r=>({...r, n:N(r.n), a:N(r.n_asig)}));
-  const diario = all.filter(r=>r.kind==='diario').map(r=>({fecha:r.fecha, n:N(r.n), c:N(r.n_calif)}))
-                    .sort((x,y)=> x.fecha < y.fecha ? -1 : 1);
-  const registros = estado.reduce((a,r)=>a+r.n,0);
+  const diario = all.filter(r=>r.kind==='diario').map(r=>({fecha:r.fecha, n:N(r.n), c:N(r.n_calif)})).sort((x,y)=> x.fecha < y.fecha ? -1 : 1);
+  const registros = funnel.length ? funnel[0].n : estado.reduce((a,r)=>a+r.n,0);
+  const pct = n => registros ? (n/registros*100) : 0;
   const califRows = estado.filter(r=>r.grupo==='Calificado').sort((a,b)=>b.n-a.n);
   const antiRows  = estado.filter(r=>r.grupo==='Antifunnel').sort((a,b)=>b.n-a.n);
-  const calif = califRows.reduce((a,r)=>a+r.n,0);
-  const antiTotal = registros - calif;
-  const asigTotal = estado.reduce((a,r)=>a+r.a,0);
-  const cvr = registros ? (calif/registros*100) : 0;
-  const pct = n => registros ? (n/registros*100) : 0;
+  const antiTotal = estado.filter(r=>r.grupo==='Antifunnel').reduce((a,r)=>a+r.n,0);
 
   if (diario.length) document.getElementById('asof').textContent =
     diario.length > 1 ? `${diario[0].fecha} → ${diario[diario.length-1].fecha}` : diario[0].fecha;
 
-  // KPIs
-  document.getElementById('kpis').innerHTML = [
-    ['accent','Registros', fmt(registros), 'NIDs únicos de la campaña'],
-    ['ok','Calificados', fmt(calif), `estado 20/63 · ${cvr.toFixed(1)}%`],
-    ['ok','Asignados (WBR)', fmt(asigTotal), `${pct(asigTotal).toFixed(1)}% de registros`],
-    ['warn','En antifunnel', fmt(antiTotal), `${pct(antiTotal).toFixed(1)}% de registros`],
-  ].map(([c,l,v,s])=>`<div class="kpi ${c}"><div class="label">${l}</div><div class="val">${v}</div><div class="sub">${s}</div></div>`).join('');
+  // KPIs = las 4 etapas del funnel
+  document.getElementById('kpis').innerHTML = funnel.map(f=>
+    `<div class="kpi ${KCLS[f.label]||'s1'}"><div class="label">${f.label}</div><div class="val">${fmt(f.n)}</div><div class="sub">${f.orden===1?'NIDs únicos':pct(f.n).toFixed(1)+'% de registros'}</div></div>`
+  ).join('');
 
-  // Funnel
-  const calW = Math.max(pct(calif), 4);
-  document.getElementById('funnel').innerHTML = `
-    <div class="funnel-row"><div class="head"><span>Registros</span><b>${fmt(registros)} · 100%</b></div>
-      <div class="bar reg" style="width:100%">${fmt(registros)}</div></div>
-    <div class="funnel-row"><div class="head"><span>Calificados (20/63)</span><b>${fmt(calif)} · ${cvr.toFixed(1)}%</b></div>
-      <div class="bar cal" style="width:${calW}%">${fmt(calif)}</div>
-      <div class="drop">↳ ${fmt(antiTotal)} leads (${pct(antiTotal).toFixed(1)}%) no llegaron a calificado → antifunnel</div></div>`;
+  // Funnel de 4 pasos
+  document.getElementById('funnel').innerHTML = funnel.map((f,i)=>{
+    const w = Math.max(pct(f.n), 4);
+    const prev = i>0 ? funnel[i-1] : null;
+    const dropTxt = prev ? `↳ ${pct(f.n).toFixed(1)}% de registros · ${prev.n? (f.n/prev.n*100).toFixed(1):0}% del paso anterior` : '';
+    return `<div class="fstep"><div class="head"><span>${f.label}</span><b>${fmt(f.n)} · ${i===0?'100%':pct(f.n).toFixed(1)+'%'}</b></div>
+      <div class="bar" style="width:${i===0?100:w}%;background:${COLORS[f.label]||'var(--accent)'}">${fmt(f.n)}</div>
+      ${dropTxt?`<div class="drop">${dropTxt}</div>`:''}</div>`;
+  }).join('');
 
-  // Split table renderer (🟠 no asignado / 🟢 asignado)
+  // Split tables
   const maxN = Math.max(1, ...estado.map(r=>r.n));
   const splitRows = rows => rows.map(r=>{
-    const no = r.n - r.a, w = (r.n/maxN*100).toFixed(1);
-    const ogw = r.n ? (no/r.n*100).toFixed(1) : 0, grw = r.n ? (r.a/r.n*100).toFixed(1) : 0;
+    const no = r.n - r.a, w=(r.n/maxN*100).toFixed(1);
+    const ogw = r.n?(no/r.n*100).toFixed(1):0, grw = r.n?(r.a/r.n*100).toFixed(1):0;
     return `<tr><td>${r.label} <span class="muted">· ${r.state_id}</span>
       <div class="splitbar" style="width:${w}%"><span class="seg og" style="width:${ogw}%"></span><span class="seg gr" style="width:${grw}%"></span></div></td>
       <td class="num og-t">${fmt(no)}</td><td class="num gr-t">${fmt(r.a)}</td><td class="num">${fmt(r.n)}</td><td class="num">${pct(r.n).toFixed(1)}%</td></tr>`;
   }).join('');
-  const totalRow = (rows,label) => {
-    const t = rows.reduce((a,r)=>a+r.n,0), a = rows.reduce((s,r)=>s+r.a,0);
-    return `<tr style="font-weight:700"><td>${label}</td><td class="num og-t">${fmt(t-a)}</td><td class="num gr-t">${fmt(a)}</td><td class="num">${fmt(t)}</td><td class="num">${pct(t).toFixed(1)}%</td></tr>`;
-  };
-  document.getElementById('calif').innerHTML = (califRows.length? splitRows(califRows)+totalRow(califRows,'Total calificados') : '<tr><td colspan="5" class="note">Sin leads calificados aún.</td></tr>');
+  const totalRow = (rows,label)=>{const t=rows.reduce((a,r)=>a+r.n,0),a=rows.reduce((s,r)=>s+r.a,0);
+    return `<tr style="font-weight:700"><td>${label}</td><td class="num og-t">${fmt(t-a)}</td><td class="num gr-t">${fmt(a)}</td><td class="num">${fmt(t)}</td><td class="num">${pct(t).toFixed(1)}%</td></tr>`;};
+  document.getElementById('calif').innerHTML = califRows.length? splitRows(califRows)+totalRow(califRows,'Total calificados') : '<tr><td colspan="5" class="note">Sin leads calificados (estado actual) aún.</td></tr>';
   document.getElementById('anti').innerHTML  = splitRows(antiRows)+totalRow(antiRows,'Total antifunnel');
 
   // Evolución diaria
   if (diario.length) new Chart(document.getElementById('chartDaily'), {
-    data: { labels: diario.map(d=>d.fecha), datasets: [
-      { type:'bar', label:'Registros', data:diario.map(d=>d.n), backgroundColor:'rgba(79,70,229,.85)', borderRadius:4 },
-      { type:'bar', label:'Calificados', data:diario.map(d=>d.c), backgroundColor:'rgba(16,185,129,.9)', borderRadius:4 },
+    data:{ labels:diario.map(d=>d.fecha), datasets:[
+      {type:'bar', label:'Registros', data:diario.map(d=>d.n), backgroundColor:'rgba(79,70,229,.85)', borderRadius:4},
+      {type:'bar', label:'Calificados', data:diario.map(d=>d.c), backgroundColor:'rgba(16,185,129,.9)', borderRadius:4},
     ]},
-    options: { maintainAspectRatio:false, interaction:{mode:'index',intersect:false},
+    options:{ maintainAspectRatio:false, interaction:{mode:'index',intersect:false},
       plugins:{ legend:{labels:{font:FONT}},
         tooltip:{callbacks:{afterBody:items=>{const d=diario[items[0].dataIndex]; return `CVR día: ${d.n?(d.c/d.n*100).toFixed(1):0}%`;}}} },
       scales:{ y:{beginAtZero:true, grid:{color:'#e5e7eb'}, ticks:{font:FONT,precision:0}}, x:{grid:{display:false}, ticks:{font:FONT}} } }
   });
 
-  document.getElementById('footer').textContent = `Asignación: ${fmt(asigTotal)} de ${fmt(registros)} registros están en el WBR mart de asignados (${pct(asigTotal).toFixed(1)}%). Registros = Calificados + Antifunnel = ${fmt(calif)} + ${fmt(antiTotal)} = ${fmt(registros)}.`;
+  const asig = funnel.find(f=>f.label==='Asignados');
+  document.getElementById('footer').textContent =
+    `Asignados (WBR mart): ${fmt(asig?asig.n:0)} de ${fmt(registros)} registros (${pct(asig?asig.n:0).toFixed(1)}%). En antifunnel (estado actual): ${fmt(antiTotal)}.`;
 }).catch(e=>{document.getElementById('funnel').innerHTML='<p class="note">No se pudo cargar data.json: '+e+'</p>';});
 </script>
 </body>
