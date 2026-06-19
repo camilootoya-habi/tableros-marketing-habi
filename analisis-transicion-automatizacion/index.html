@@ -374,8 +374,8 @@
 </tbody>
 </table>
 
-<h3>2.2 La apuesta de crecimiento: el canal de Brokers</h3>
-<p>El proyecto que conforma las tareas de este capítulo es la <strong>apuesta de crecimiento</strong>: el canal de <strong>Brokers de marketing</strong>, que nos permite darles un servicio multimarca con una mucho mejor experiencia de servicios Habi a nuestros aliados.</p>
+<h3>2.2 Las tareas del eje — 3 frentes</h3>
+<p>La capacidad liberada en Performance se invierte en <strong>tres tareas</strong>. La primera es la <strong>apuesta de crecimiento</strong>: el canal de <strong>Brokers de marketing</strong>, un servicio multimarca con mejor experiencia Habi para nuestros aliados. Le siguen la automatización de Performance de las nuevas marcas (propiedades.com + Pulppo) y el aseguramiento de los flujos de leads entre marcas.</p>
 <div class="chain" id="chain-project-brokers"></div>
 
 <h3>2.3 El objetivo transversal: comunidad de brokers bajo la sombrilla Habi</h3>
@@ -578,11 +578,17 @@ fetch('data.json').then(r => r.json()).then(D => {
   // ---------- Projects chain ----------
   const chain = document.getElementById('chain-projects');
   const chainBrokers = document.getElementById('chain-project-brokers');
-  D.projects.forEach(p => {
+  const renderStep = (host, p) => {
     const tasks = (p.tasks || []).map(t => `<li>${t}</li>`).join('');
-    const target = (p.n === 4 && chainBrokers) ? chainBrokers : chain;
-    target.insertAdjacentHTML('beforeend', `<div class="chain-step"><div class="head"><span class="num">${p.n}</span><span class="title">${p.title}</span></div><div class="outcome">→ ${p.outcome}</div><div class="desc">${p.desc}</div>${tasks ? `<ul class="tasks">${tasks}</ul>` : ''}</div>`);
-  });
+    host.insertAdjacentHTML('beforeend', `<div class="chain-step"><div class="head"><span class="num">${p.n}</span><span class="title">${p.title}</span></div><div class="outcome">→ ${p.outcome}</div><div class="desc">${p.desc}</div>${tasks ? `<ul class="tasks">${tasks}</ul>` : ''}</div>`);
+  };
+  // Cap 1 — proyectos 1 a 3
+  D.projects.filter(p => p.n <= 3).forEach(p => renderStep(chain, p));
+  // Cap 2 — tarea 1 = Programa Brokers (proyecto 4, renumerado) + tareas 2 y 3
+  if (chainBrokers) {
+    const brokers = D.projects.find(p => p.n === 4);
+    [{ ...brokers, n: 1 }, ...(D.cap2_tasks || [])].forEach(p => renderStep(chainBrokers, p));
+  }
 
   // ---------- Table: CO tasks ----------
   const coBody = document.getElementById('t-co-tasks');

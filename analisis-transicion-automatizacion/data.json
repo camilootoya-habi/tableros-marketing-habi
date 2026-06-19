@@ -224,6 +224,10 @@
     "today": ["Captación de Brokers independientes"],
     "future": ["Franquicias", "Sellers Market Maker", "Sellers Inmo", "Buyers (inventario)", "Pulppo (tickets altos)"]
   },
+  "cap2_tasks": [
+      { "n": 2, "title": "Automatizar performance de las marcas — propiedades.com + Pulppo", "outcome": "Performance multimarca sin sumar horas", "desc": "Montar el servicio de Performance automatizado para las nuevas marcas. En propiedades.com: lectura de resultados con IA, descarga de las imágenes de cada publicación del listing vía API, y creación automática del anuncio con sus imágenes y descripción. En Pulppo: automatizar la pauta tanto B2B como B2C.", "tasks": ["propiedades.com: lectura de resultados de campañas con IA", "propiedades.com: descargar las imágenes de las publicaciones del listing vía API", "propiedades.com: crear el anuncio automáticamente con sus imágenes y descripción", "Pulppo: automatizar la pauta B2B y B2C"] },
+      { "n": 3, "title": "Asegurar los flujos de leads entre marcas", "outcome": "Comunidad de brokers bajo la sombrilla Habi", "desc": "Garantizar que los leads circulen entre las marcas del ecosistema (Sellers, Buyers, propiedades.com, Pulppo, Franquicias). Muy conectado con el pilar de construir comunidad de brokers alrededor de la sombrilla de marcas Habi, apalancada en Pulppo.", "tasks": ["Mapear y conectar los flujos de leads entre marcas (CRM y portales)", "Enrutar cada lead al producto correcto segun el perfil del broker/cliente", "Reforzar la comunidad de brokers con Pulppo como plataforma multimarca"] }
+  ],
   "projects": [
     {
       "n": 1,
