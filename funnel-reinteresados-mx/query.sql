@@ -1,10 +1,11 @@
 -- Funnel + antifunnel + evolución diaria de la campaña "reinteresados" (WEB, MX).
 -- Universo: utm_campaign de la campaña, fuente WEB (fuente_id=3), MX.
 -- Filas (col `kind`):
---   'funnel' = etapas de la progresión (orden en `grupo`): Registros → Calificados (alguna vez 20/63)
---              → Asignados (WBR mart) → Citas agendadas (alguna vez estado 27). `n` = NIDs.
+--   'funnel' = etapas (orden en `grupo`): Registros → Calificados (alguna vez 20/63) →
+--              Asignados (WBR mart) → Citas agendadas (alguna vez estado 27) →
+--              Cierres (MM: oportunidad_del_negocio='Cierre - Comprado') →
+--              Contrato firmado (Inmo: oportunidad_inmobiliaria='Contrato firmado'). `n` = NIDs.
 --   'estado' = breakdown por estado ACTUAL; n = total, n_asig = asignados (resto = no asignados).
---              grupo: 20/63 = Calificado · resto = Antifunnel.
 --   'diario' = cohorte por fecha de creación; n = registros, n_calif = calificados (estado actual 20/63).
 WITH ea AS (
   SELECT deal_id, ARRAY_AGG(state_id ORDER BY date_create DESC, id DESC LIMIT 1)[OFFSET(0)] AS cur
@@ -20,7 +21,9 @@ mart AS (
 base AS (
   SELECT g.nid, ea.cur AS sid, CAST(g.fecha_creacion AS DATE) AS fc,
          COALESCE(ev.ever_calif,0) AS ever_calif, COALESCE(ev.ever_cita,0) AS ever_cita,
-         IF(m.nid IS NOT NULL,1,0) AS asignado
+         IF(m.nid IS NOT NULL,1,0) AS asignado,
+         IF(g.oportunidad_del_negocio = "Cierre - Comprado",1,0) AS cierre_mm,
+         IF(hd.oportunidad_inmobiliaria = "Contrato firmado",1,0) AS contrato_inmo
   FROM `papyrus-data-mx.habi_wh_bi.tabla_inmuebles_general` g
   JOIN `sellers-main-prod.hubspot.deals` hd ON hd.nid = g.nid AND hd.country = "México"
   LEFT JOIN ea ON ea.deal_id = g.id_negocio
@@ -34,9 +37,11 @@ SELECT 'funnel' AS kind, CAST(orden AS STRING) AS grupo, CAST(NULL AS STRING) AS
        label, CAST(NULL AS STRING) AS fecha, n, 0 AS n_asig, 0 AS n_calif
 FROM (
   SELECT 1 AS orden, "Registros" AS label, COUNT(*) AS n FROM base
-  UNION ALL SELECT 2, "Calificados",      COUNTIF(ever_calif=1) FROM base
-  UNION ALL SELECT 3, "Asignados",        COUNTIF(asignado=1)   FROM base
-  UNION ALL SELECT 4, "Citas agendadas",  COUNTIF(ever_cita=1)  FROM base
+  UNION ALL SELECT 2, "Calificados",        COUNTIF(ever_calif=1)   FROM base
+  UNION ALL SELECT 3, "Asignados",          COUNTIF(asignado=1)     FROM base
+  UNION ALL SELECT 4, "Citas agendadas",    COUNTIF(ever_cita=1)    FROM base
+  UNION ALL SELECT 5, "Cierres (MM)",       COUNTIF(cierre_mm=1)    FROM base
+  UNION ALL SELECT 6, "Contrato firmado (Inmo)", COUNTIF(contrato_inmo=1) FROM base
 )
 UNION ALL
 SELECT 'estado', IF(b.sid IN (20,63),"Calificado","Antifunnel"), CAST(b.sid AS STRING),

@@ -34,11 +34,16 @@
   .card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:18px 20px;margin:16px 0;box-shadow:0 1px 2px rgba(0,0,0,.04)}
   .chart-wrap{position:relative;height:300px;width:100%}
   /* funnel */
-  .fstep{margin:13px 0}
-  .fstep .head{display:flex;justify-content:space-between;gap:8px;font-size:14px;margin-bottom:5px;flex-wrap:wrap}
-  .fstep .head b{color:var(--text-title);white-space:nowrap}
+  .fstep{margin:14px 0}
+  .fstep .fhead{display:flex;justify-content:space-between;gap:8px;font-size:14px;margin-bottom:5px;flex-wrap:wrap}
+  .fstep .fhead b{color:var(--text-title);white-space:nowrap}
+  .frow{display:flex;align-items:center;gap:14px}
+  .barcol{flex:1;min-width:0}
   .bar{height:30px;border-radius:6px;display:flex;align-items:center;padding:0 12px;color:#fff;font-weight:700;font-size:14px;min-width:38px;transition:width .3s}
-  .drop{font-size:12px;color:var(--text-muted);margin:4px 0 0 2px}
+  .convcol{flex:0 0 auto;display:flex;gap:18px}
+  .conv-item{text-align:right;min-width:72px}
+  .conv-item .pct{font-weight:800;font-size:17px;color:var(--text-title);line-height:1.05}
+  .conv-item .cl{font-size:10px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.3px}
   /* split tables */
   .legend{font-size:12.5px;color:var(--text-muted);margin:2px 0 6px;display:flex;gap:14px;flex-wrap:wrap}
   .legend span{display:inline-flex;align-items:center;gap:5px}
@@ -62,7 +67,9 @@
     .card{padding:14px 14px}
     .chart-wrap{height:260px}
     table{font-size:13px} th,td{padding:7px 8px}
-    .fstep .head{font-size:13px}
+    .fstep .fhead{font-size:13px}
+    .frow{flex-wrap:wrap}
+    .convcol{width:100%;justify-content:flex-start;gap:28px;margin-top:4px}
   }
 </style>
 </head>
@@ -76,7 +83,7 @@
   <div class="kpi-grid" id="kpis"></div>
 
   <h2>Funnel</h2>
-  <p class="note">Progresión de la campaña: Registros → Calificados (alguna vez 20/63) → Asignados (WBR mart) → Citas agendadas (estado 27).</p>
+  <p class="note">Progresión de la campaña: Registros → Calificados (alguna vez 20/63) → Asignados (WBR mart) → Citas agendadas (estado 27) → Cierres (MM, "Cierre - Comprado") → Contrato firmado (Inmo). A la derecha: conversión <b>vs registros</b> (total) y <b>vs anterior</b> (paso a paso).</p>
   <div class="card" id="funnel"></div>
 
   <h2>Calificados (20/63) — ¿asignados?</h2>
@@ -99,7 +106,7 @@
 const N = v => parseInt(v,10) || 0;
 const fmt = v => v.toLocaleString('es-CO');
 const FONT = { family:"-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif" };
-const COLORS = { 'Registros':'var(--accent)', 'Calificados':'var(--ok)', 'Asignados':'var(--sky)', 'Citas agendadas':'var(--violet)' };
+const COLORS = { 'Registros':'#4f46e5', 'Calificados':'#10b981', 'Asignados':'#0ea5e9', 'Citas agendadas':'#8b5cf6', 'Cierres (MM)':'#f59e0b', 'Contrato firmado (Inmo)':'#0d9488' };
 const KCLS   = { 'Registros':'s1', 'Calificados':'s2', 'Asignados':'s3', 'Citas agendadas':'s4' };
 fetch('data.json').then(r=>r.json()).then(all=>{
   const funnel = all.filter(r=>r.kind==='funnel').map(r=>({orden:N(r.grupo), label:r.label, n:N(r.n)})).sort((a,b)=>a.orden-b.orden);
@@ -114,19 +121,26 @@ fetch('data.json').then(r=>r.json()).then(all=>{
   if (diario.length) document.getElementById('asof').textContent =
     diario.length > 1 ? `${diario[0].fecha} → ${diario[diario.length-1].fecha}` : diario[0].fecha;
 
-  // KPIs = las 4 etapas del funnel
-  document.getElementById('kpis').innerHTML = funnel.map(f=>
+  // KPIs = las 4 etapas iniciales del funnel
+  document.getElementById('kpis').innerHTML = funnel.slice(0,4).map(f=>
     `<div class="kpi ${KCLS[f.label]||'s1'}"><div class="label">${f.label}</div><div class="val">${fmt(f.n)}</div><div class="sub">${f.orden===1?'NIDs únicos':pct(f.n).toFixed(1)+'% de registros'}</div></div>`
   ).join('');
 
-  // Funnel de 4 pasos
+  // Funnel completo (6 etapas) con conversiones a la derecha
   document.getElementById('funnel').innerHTML = funnel.map((f,i)=>{
-    const w = Math.max(pct(f.n), 4);
+    const w = Math.max(pct(f.n), 3);
     const prev = i>0 ? funnel[i-1] : null;
-    const dropTxt = prev ? `↳ ${pct(f.n).toFixed(1)}% de registros · ${prev.n? (f.n/prev.n*100).toFixed(1):0}% del paso anterior` : '';
-    return `<div class="fstep"><div class="head"><span>${f.label}</span><b>${fmt(f.n)} · ${i===0?'100%':pct(f.n).toFixed(1)+'%'}</b></div>
-      <div class="bar" style="width:${i===0?100:w}%;background:${COLORS[f.label]||'var(--accent)'}">${fmt(f.n)}</div>
-      ${dropTxt?`<div class="drop">${dropTxt}</div>`:''}</div>`;
+    const vsReg  = i===0 ? '100%' : pct(f.n).toFixed(1)+'%';
+    const vsPrev = prev ? (prev.n ? (f.n/prev.n*100).toFixed(1)+'%' : '0%') : '—';
+    return `<div class="fstep">
+      <div class="fhead"><span>${f.label}</span><b>${fmt(f.n)}</b></div>
+      <div class="frow">
+        <div class="barcol"><div class="bar" style="width:${i===0?100:w}%;background:${COLORS[f.label]||'var(--accent)'}">${fmt(f.n)}</div></div>
+        <div class="convcol">
+          <div class="conv-item"><div class="pct">${vsReg}</div><div class="cl">vs registros</div></div>
+          <div class="conv-item"><div class="pct">${vsPrev}</div><div class="cl">vs anterior</div></div>
+        </div>
+      </div></div>`;
   }).join('');
 
   // Split tables
