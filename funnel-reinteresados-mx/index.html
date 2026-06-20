@@ -41,8 +41,10 @@
   .fstep .fhead{display:flex;justify-content:space-between;gap:8px;font-size:14px;margin-bottom:5px;flex-wrap:wrap}
   .fstep .fhead b{color:var(--text-title);white-space:nowrap}
   .frow{display:flex;align-items:center;gap:14px}
-  .barcol{flex:1;min-width:0}
-  .bar{height:30px;border-radius:6px;display:flex;align-items:center;padding:0 12px;color:#fff;font-weight:700;font-size:14px;min-width:38px;transition:width .3s}
+  .barcol{flex:1;min-width:0;display:flex;align-items:center;gap:10px}
+  .bnum{font-weight:700;font-size:14px;min-width:42px;text-align:right;color:var(--text-title);font-variant-numeric:tabular-nums;flex:0 0 auto}
+  .bartrack{flex:1;min-width:0}
+  .bar{height:30px;border-radius:6px;min-width:6px;transition:width .3s}
   .convcol{flex:0 0 auto;display:flex;gap:18px}
   .conv-item{text-align:right;min-width:72px}
   .conv-item .pct{font-weight:800;font-size:17px;color:var(--text-title);line-height:1.05}
@@ -167,8 +169,8 @@ fetch('data.json').then(r=>r.json()).then(raw=>{
       const w=Math.max(pct(f.n),3), prev=i>0?funnel[i-1]:null;
       const vsReg=i===0?'100%':pct(f.n).toFixed(1)+'%';
       const vsPrev=prev?(prev.n?(f.n/prev.n*100).toFixed(1)+'%':'0%'):'—';
-      return `<div class="fstep"><div class="fhead"><span>${f.label}</span><b>${fmt(f.n)}</b></div>
-        <div class="frow"><div class="barcol"><div class="bar" style="width:${i===0?100:w}%;background:${f.color}">${fmt(f.n)}</div></div>
+      return `<div class="fstep"><div class="fhead"><span>${f.label}</span></div>
+        <div class="frow"><div class="barcol"><span class="bnum">${fmt(f.n)}</span><div class="bartrack">${f.n>0?`<div class="bar" style="width:${i===0?100:w}%;background:${f.color}"></div>`:''}</div></div>
           <div class="convcol"><div class="conv-item"><div class="pct">${vsReg}</div><div class="cl">vs registros</div></div>
             <div class="conv-item"><div class="pct">${vsPrev}</div><div class="cl">vs anterior</div></div></div></div></div>`;
     }).join('');
