@@ -2,6 +2,7 @@ import json, subprocess, sys
 from pathlib import Path
 
 DEFAULT_MAX_BYTES = 5_000_000_000  # 5 GB
+DEFAULT_MAX_ROWS = 100_000          # bq default es solo 100 → trunca; subimos el tope (override con meta.max_rows)
 IGNORE_DIRS = {".git", ".github", "scripts", "docs", "node_modules"}
 
 def discover_jobs(repo_root: Path):
@@ -23,14 +24,15 @@ def discover_jobs(repo_root: Path):
             "sql_path": folder / meta["query"] if meta.get("query") else None,
             "data_path": folder / meta.get("data", "data.json"),
             "max_bytes": meta.get("maximum_bytes_billed", DEFAULT_MAX_BYTES),
+            "max_rows": meta.get("max_rows", DEFAULT_MAX_ROWS),
             "build_py": build_py if build_py.exists() else None,
         })
     return jobs
 
-def build_bq_command(max_bytes: int, project: str):
+def build_bq_command(max_bytes: int, project: str, max_rows: int = DEFAULT_MAX_ROWS):
     return [
         "bq", "query", "--nouse_legacy_sql", "--format=json",
-        f"--maximum_bytes_billed={max_bytes}", f"--project_id={project}",
+        f"--maximum_bytes_billed={max_bytes}", f"--max_rows={max_rows}", f"--project_id={project}",
     ]
 
 def run_job(job: dict, project: str) -> bool:
@@ -40,7 +42,7 @@ def run_job(job: dict, project: str) -> bool:
             subprocess.run([sys.executable, "build.py"], cwd=job["folder"], check=True, timeout=600)
         else:
             sql = job["sql_path"].read_text(encoding="utf-8")
-            cmd = build_bq_command(job["max_bytes"], project)
+            cmd = build_bq_command(job["max_bytes"], project, job["max_rows"])
             out = subprocess.run(cmd, input=sql, capture_output=True, text=True, timeout=600)
             if out.returncode != 0:
                 print(f"  ✗ {job['slug']}: {out.stderr.strip()[:300]}", file=sys.stderr)

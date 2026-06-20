@@ -22,9 +22,12 @@
   h2{color:var(--text-title);font-size:1.25rem;margin:34px 0 6px}
   .meta{font-size:13px;color:var(--text-muted);margin:8px 0}
   .campaign{font-size:11.5px;color:var(--text-muted);font-family:'SF Mono',Menlo,monospace;background:#f3f4f6;padding:4px 8px;border-radius:5px;display:block;word-break:break-all;line-height:1.4}
-  p{font-size:15px}
-  .muted{color:var(--text-muted);font-size:12px}
-  .kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin:18px 0}
+  p{font-size:15px} .muted{color:var(--text-muted);font-size:12px}
+  /* filtro geo */
+  .filter{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:16px 0 4px}
+  .filter label{font-size:13px;font-weight:600;color:var(--text-title)}
+  .filter select{font:inherit;font-size:14px;padding:7px 10px;border:1px solid var(--border);border-radius:8px;background:var(--card);color:var(--text);max-width:100%}
+  .kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin:14px 0}
   .kpi{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:13px 15px}
   .kpi.s1{border-left:3px solid var(--accent)} .kpi.s2{border-left:3px solid var(--ok)}
   .kpi.s3{border-left:3px solid var(--sky)} .kpi.s4{border-left:3px solid var(--violet)}
@@ -64,12 +67,11 @@
     h1{font-size:1.45rem} h2{font-size:1.12rem;margin:28px 0 6px}
     .kpi-grid{grid-template-columns:1fr 1fr;gap:8px}
     .kpi{padding:11px 12px} .kpi .val{font-size:21px}
-    .card{padding:14px 14px}
-    .chart-wrap{height:260px}
+    .card{padding:14px 14px} .chart-wrap{height:260px}
     table{font-size:13px} th,td{padding:7px 8px}
     .fstep .fhead{font-size:13px}
-    .frow{flex-wrap:wrap}
-    .convcol{width:100%;justify-content:flex-start;gap:28px;margin-top:4px}
+    .frow{flex-wrap:wrap} .convcol{width:100%;justify-content:flex-start;gap:28px;margin-top:4px}
+    .filter select{flex:1}
   }
 </style>
 </head>
@@ -80,10 +82,16 @@
   <div class="meta">Fuente WEB · México · estado actual del backbone · <span id="asof"></span></div>
   <div class="campaign">utm_campaign = mex-sellers-paid-experiments-web-without-leads-retargeting-national-reinteresados</div>
 
+  <div class="filter">
+    <label for="geo">📍 Zona:</label>
+    <select id="geo"></select>
+    <span class="muted" id="geocount"></span>
+  </div>
+
   <div class="kpi-grid" id="kpis"></div>
 
   <h2>Funnel</h2>
-  <p class="note">Progresión de la campaña: Registros → Calificados (alguna vez 20/63) → Asignados (WBR mart) → Citas agendadas (estado 27) → Cierres (MM, "Cierre - Comprado") → Contrato firmado (Inmo). A la derecha: conversión <b>vs registros</b> (total) y <b>vs anterior</b> (paso a paso).</p>
+  <p class="note">Progresión: Registros → Calificados (alguna vez 20/63) → Asignados (WBR mart) → Citas agendadas (estado 27) → Cierres (MM, "Cierre - Comprado") → Contrato firmado (Inmo). A la derecha: conversión <b>vs registros</b> y <b>vs anterior</b>.</p>
   <div class="card" id="funnel"></div>
 
   <h2>Calificados (20/63) — ¿asignados?</h2>
@@ -97,7 +105,7 @@
   <div class="card"><div class="tbl-wrap"><table><thead><tr><th>Estado actual</th><th style="text-align:right">No asig.</th><th style="text-align:right">Asig.</th><th style="text-align:right">Total</th><th style="text-align:right">% reg</th></tr></thead><tbody id="anti"></tbody></table></div></div>
 
   <h2>Evolución diaria</h2>
-  <p class="note">Registros y calificados por <b>día de creación</b> del lead (cohorte). La serie se llena a medida que la campaña corre.</p>
+  <p class="note">Registros y calificados por <b>día de creación</b> del lead (cohorte).</p>
   <div class="card"><div class="chart-wrap"><canvas id="chartDaily"></canvas></div></div>
 
   <p class="note" id="footer"></p>
@@ -106,72 +114,99 @@
 const N = v => parseInt(v,10) || 0;
 const fmt = v => v.toLocaleString('es-CO');
 const FONT = { family:"-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif" };
-const COLORS = { 'Registros':'#4f46e5', 'Calificados':'#10b981', 'Asignados':'#0ea5e9', 'Citas agendadas':'#8b5cf6', 'Cierres (MM)':'#f59e0b', 'Contrato firmado (Inmo)':'#0d9488' };
-const KCLS   = { 'Registros':'s1', 'Calificados':'s2', 'Asignados':'s3', 'Citas agendadas':'s4' };
-fetch('data.json').then(r=>r.json()).then(all=>{
-  const funnel = all.filter(r=>r.kind==='funnel').map(r=>({orden:N(r.grupo), label:r.label, n:N(r.n)})).sort((a,b)=>a.orden-b.orden);
-  const estado = all.filter(r=>r.kind==='estado').map(r=>({...r, n:N(r.n), a:N(r.n_asig)}));
-  const diario = all.filter(r=>r.kind==='diario').map(r=>({fecha:r.fecha, n:N(r.n), c:N(r.n_calif)})).sort((x,y)=> x.fecha < y.fecha ? -1 : 1);
-  const registros = funnel.length ? funnel[0].n : estado.reduce((a,r)=>a+r.n,0);
-  const pct = n => registros ? (n/registros*100) : 0;
-  const califRows = estado.filter(r=>r.grupo==='Calificado').sort((a,b)=>b.n-a.n);
-  const antiRows  = estado.filter(r=>r.grupo==='Antifunnel').sort((a,b)=>b.n-a.n);
-  const antiTotal = estado.filter(r=>r.grupo==='Antifunnel').reduce((a,r)=>a+r.n,0);
+const STAGES = [
+  ['Registros','#4f46e5',l=>l.length],
+  ['Calificados','#10b981',l=>l.filter(x=>x.calif).length],
+  ['Asignados','#0ea5e9',l=>l.filter(x=>x.asig).length],
+  ['Citas agendadas','#8b5cf6',l=>l.filter(x=>x.cita).length],
+  ['Cierres (MM)','#f59e0b',l=>l.filter(x=>x.cierre).length],
+  ['Contrato firmado (Inmo)','#0d9488',l=>l.filter(x=>x.contrato).length],
+];
+const KCLS = ['s1','s2','s3','s4'];
+let dailyChart = null;
 
-  if (diario.length) document.getElementById('asof').textContent =
-    diario.length > 1 ? `${diario[0].fecha} → ${diario[diario.length-1].fecha}` : diario[0].fecha;
+fetch('data.json').then(r=>r.json()).then(raw=>{
+  const leads = raw.map(r=>({estado_mx:r.estado_mx||'Sin dato', area:r.area||'Sin dato', sid:(r.sid==null?'':String(r.sid)), slabel:r.slabel||'Sin estado',
+    calif:N(r.calif), cita:N(r.cita), asig:N(r.asig), cierre:N(r.cierre), contrato:N(r.contrato), fc:r.fc}));
 
-  // KPIs = las 4 etapas iniciales del funnel
-  document.getElementById('kpis').innerHTML = funnel.slice(0,4).map(f=>
-    `<div class="kpi ${KCLS[f.label]||'s1'}"><div class="label">${f.label}</div><div class="val">${fmt(f.n)}</div><div class="sub">${f.orden===1?'NIDs únicos':pct(f.n).toFixed(1)+'% de registros'}</div></div>`
-  ).join('');
+  // as-of (rango de fechas)
+  const fechas = [...new Set(leads.map(l=>l.fc))].sort();
+  document.getElementById('asof').textContent = fechas.length>1 ? `${fechas[0]} → ${fechas[fechas.length-1]}` : (fechas[0]||'');
 
-  // Funnel completo (6 etapas) con conversiones a la derecha
-  document.getElementById('funnel').innerHTML = funnel.map((f,i)=>{
-    const w = Math.max(pct(f.n), 3);
-    const prev = i>0 ? funnel[i-1] : null;
-    const vsReg  = i===0 ? '100%' : pct(f.n).toFixed(1)+'%';
-    const vsPrev = prev ? (prev.n ? (f.n/prev.n*100).toFixed(1)+'%' : '0%') : '—';
-    return `<div class="fstep">
-      <div class="fhead"><span>${f.label}</span><b>${fmt(f.n)}</b></div>
-      <div class="frow">
-        <div class="barcol"><div class="bar" style="width:${i===0?100:w}%;background:${COLORS[f.label]||'var(--accent)'}">${fmt(f.n)}</div></div>
-        <div class="convcol">
-          <div class="conv-item"><div class="pct">${vsReg}</div><div class="cl">vs registros</div></div>
-          <div class="conv-item"><div class="pct">${vsPrev}</div><div class="cl">vs anterior</div></div>
-        </div>
-      </div></div>`;
-  }).join('');
+  // filtro geo (optgroups: Estado / Zona metropolitana)
+  const sel = document.getElementById('geo');
+  const opt = (v,t)=>`<option value="${v}">${t}</option>`;
+  const grp = (lab, field) => {
+    const counts = {};
+    leads.forEach(l=>{ counts[l[field]] = (counts[l[field]]||0)+1; });
+    const items = Object.entries(counts).sort((a,b)=>b[1]-a[1]).map(([v,c])=>opt(field+'|'+v, `${v} (${c})`)).join('');
+    return `<optgroup label="${lab}">${items}</optgroup>`;
+  };
+  sel.innerHTML = opt('all', `Todas (${fmt(leads.length)})`) + grp('Estado', 'estado_mx') + grp('Zona metropolitana', 'area');
+  sel.addEventListener('change', ()=>apply());
 
-  // Split tables
-  const maxN = Math.max(1, ...estado.map(r=>r.n));
-  const splitRows = rows => rows.map(r=>{
-    const no = r.n - r.a, w=(r.n/maxN*100).toFixed(1);
-    const ogw = r.n?(no/r.n*100).toFixed(1):0, grw = r.n?(r.a/r.n*100).toFixed(1):0;
-    return `<tr><td>${r.label} <span class="muted">· ${r.state_id}</span>
-      <div class="splitbar" style="width:${w}%"><span class="seg og" style="width:${ogw}%"></span><span class="seg gr" style="width:${grw}%"></span></div></td>
-      <td class="num og-t">${fmt(no)}</td><td class="num gr-t">${fmt(r.a)}</td><td class="num">${fmt(r.n)}</td><td class="num">${pct(r.n).toFixed(1)}%</td></tr>`;
-  }).join('');
-  const totalRow = (rows,label)=>{const t=rows.reduce((a,r)=>a+r.n,0),a=rows.reduce((s,r)=>s+r.a,0);
-    return `<tr style="font-weight:700"><td>${label}</td><td class="num og-t">${fmt(t-a)}</td><td class="num gr-t">${fmt(a)}</td><td class="num">${fmt(t)}</td><td class="num">${pct(t).toFixed(1)}%</td></tr>`;};
-  document.getElementById('calif').innerHTML = califRows.length? splitRows(califRows)+totalRow(califRows,'Total calificados') : '<tr><td colspan="5" class="note">Sin leads calificados (estado actual) aún.</td></tr>';
-  document.getElementById('anti').innerHTML  = splitRows(antiRows)+totalRow(antiRows,'Total antifunnel');
+  function apply(){
+    const v = sel.value;
+    let f = leads;
+    if (v !== 'all'){ const i=v.indexOf('|'); const field=v.slice(0,i), val=v.slice(i+1); f = leads.filter(l=>l[field]===val); }
+    render(f);
+  }
 
-  // Evolución diaria
-  if (diario.length) new Chart(document.getElementById('chartDaily'), {
-    data:{ labels:diario.map(d=>d.fecha), datasets:[
-      {type:'bar', label:'Registros', data:diario.map(d=>d.n), backgroundColor:'rgba(79,70,229,.85)', borderRadius:4},
-      {type:'bar', label:'Calificados', data:diario.map(d=>d.c), backgroundColor:'rgba(16,185,129,.9)', borderRadius:4},
-    ]},
-    options:{ maintainAspectRatio:false, interaction:{mode:'index',intersect:false},
-      plugins:{ legend:{labels:{font:FONT}},
-        tooltip:{callbacks:{afterBody:items=>{const d=diario[items[0].dataIndex]; return `CVR día: ${d.n?(d.c/d.n*100).toFixed(1):0}%`;}}} },
-      scales:{ y:{beginAtZero:true, grid:{color:'#e5e7eb'}, ticks:{font:FONT,precision:0}}, x:{grid:{display:false}, ticks:{font:FONT}} } }
-  });
+  function render(L){
+    const registros = L.length;
+    const pct = n => registros ? (n/registros*100) : 0;
+    const funnel = STAGES.map(([label,color,fn])=>({label,color,n:fn(L)}));
+    document.getElementById('geocount').textContent = `${fmt(registros)} registros`;
 
-  const asig = funnel.find(f=>f.label==='Asignados');
-  document.getElementById('footer').textContent =
-    `Asignados (WBR mart): ${fmt(asig?asig.n:0)} de ${fmt(registros)} registros (${pct(asig?asig.n:0).toFixed(1)}%). En antifunnel (estado actual): ${fmt(antiTotal)}.`;
+    // KPIs = 4 etapas iniciales
+    document.getElementById('kpis').innerHTML = funnel.slice(0,4).map((f,i)=>
+      `<div class="kpi ${KCLS[i]}"><div class="label">${f.label}</div><div class="val">${fmt(f.n)}</div><div class="sub">${i===0?'NIDs únicos':pct(f.n).toFixed(1)+'% de registros'}</div></div>`).join('');
+
+    // Funnel 6 pasos
+    document.getElementById('funnel').innerHTML = funnel.map((f,i)=>{
+      const w=Math.max(pct(f.n),3), prev=i>0?funnel[i-1]:null;
+      const vsReg=i===0?'100%':pct(f.n).toFixed(1)+'%';
+      const vsPrev=prev?(prev.n?(f.n/prev.n*100).toFixed(1)+'%':'0%'):'—';
+      return `<div class="fstep"><div class="fhead"><span>${f.label}</span><b>${fmt(f.n)}</b></div>
+        <div class="frow"><div class="barcol"><div class="bar" style="width:${i===0?100:w}%;background:${f.color}">${fmt(f.n)}</div></div>
+          <div class="convcol"><div class="conv-item"><div class="pct">${vsReg}</div><div class="cl">vs registros</div></div>
+            <div class="conv-item"><div class="pct">${vsPrev}</div><div class="cl">vs anterior</div></div></div></div></div>`;
+    }).join('');
+
+    // estado breakdown (actual)
+    const byState = {};
+    L.forEach(l=>{ const k=l.sid+'|'+l.slabel; (byState[k]=byState[k]||{sid:l.sid,label:l.slabel,n:0,a:0}); byState[k].n++; byState[k].a+=l.asig; });
+    const rows = Object.values(byState);
+    const calRows = rows.filter(r=>r.sid==='20'||r.sid==='63').sort((a,b)=>b.n-a.n);
+    const antiRows = rows.filter(r=>!(r.sid==='20'||r.sid==='63')).sort((a,b)=>b.n-a.n);
+    const maxN = Math.max(1,...rows.map(r=>r.n));
+    const splitRows = rs => rs.map(r=>{const no=r.n-r.a,w=(r.n/maxN*100).toFixed(1),ogw=r.n?(no/r.n*100).toFixed(1):0,grw=r.n?(r.a/r.n*100).toFixed(1):0;
+      return `<tr><td>${r.label} <span class="muted">· ${r.sid||'—'}</span><div class="splitbar" style="width:${w}%"><span class="seg og" style="width:${ogw}%"></span><span class="seg gr" style="width:${grw}%"></span></div></td>
+        <td class="num og-t">${fmt(no)}</td><td class="num gr-t">${fmt(r.a)}</td><td class="num">${fmt(r.n)}</td><td class="num">${pct(r.n).toFixed(1)}%</td></tr>`;}).join('');
+    const totalRow = (rs,lab)=>{const t=rs.reduce((a,r)=>a+r.n,0),a=rs.reduce((s,r)=>s+r.a,0);return `<tr style="font-weight:700"><td>${lab}</td><td class="num og-t">${fmt(t-a)}</td><td class="num gr-t">${fmt(a)}</td><td class="num">${fmt(t)}</td><td class="num">${pct(t).toFixed(1)}%</td></tr>`;};
+    document.getElementById('calif').innerHTML = calRows.length? splitRows(calRows)+totalRow(calRows,'Total calificados') : '<tr><td colspan="5" class="note">Sin calificados (estado actual) en esta zona.</td></tr>';
+    document.getElementById('anti').innerHTML  = antiRows.length? splitRows(antiRows)+totalRow(antiRows,'Total antifunnel') : '<tr><td colspan="5" class="note">Sin leads en antifunnel en esta zona.</td></tr>';
+
+    // diario
+    const byDay = {};
+    L.forEach(l=>{ (byDay[l.fc]=byDay[l.fc]||{n:0,c:0}); byDay[l.fc].n++; byDay[l.fc].c+=l.calif; });
+    const days = Object.keys(byDay).sort();
+    if (dailyChart) dailyChart.destroy();
+    dailyChart = new Chart(document.getElementById('chartDaily'), {
+      data:{ labels:days, datasets:[
+        {type:'bar', label:'Registros', data:days.map(d=>byDay[d].n), backgroundColor:'rgba(79,70,229,.85)', borderRadius:4},
+        {type:'bar', label:'Calificados', data:days.map(d=>byDay[d].c), backgroundColor:'rgba(16,185,129,.9)', borderRadius:4},
+      ]},
+      options:{ maintainAspectRatio:false, interaction:{mode:'index',intersect:false},
+        plugins:{ legend:{labels:{font:FONT}}, tooltip:{callbacks:{afterBody:it=>{const d=byDay[days[it[0].dataIndex]]; return `CVR día: ${d.n?(d.c/d.n*100).toFixed(1):0}%`;}}} },
+        scales:{ y:{beginAtZero:true, grid:{color:'#e5e7eb'}, ticks:{font:FONT,precision:0}}, x:{grid:{display:false}, ticks:{font:FONT}} } }
+    });
+
+    const asig = funnel[2].n, antiTotal = antiRows.reduce((a,r)=>a+r.n,0);
+    document.getElementById('footer').textContent = `Asignados (WBR): ${fmt(asig)} de ${fmt(registros)} (${pct(asig).toFixed(1)}%). Antifunnel (estado actual): ${fmt(antiTotal)}.`;
+  }
+
+  apply(); // inicial (Todas)
 }).catch(e=>{document.getElementById('funnel').innerHTML='<p class="note">No se pudo cargar data.json: '+e+'</p>';});
 </script>
 </body>
