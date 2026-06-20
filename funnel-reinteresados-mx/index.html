@@ -63,6 +63,14 @@
   .splitbar{display:flex;height:10px;border-radius:4px;overflow:hidden;background:#f3f4f6;margin-top:5px;min-width:2px}
   .splitbar .seg{height:10px}
   .splitbar .seg.og{background:var(--warn)} .splitbar .seg.gr{background:var(--ok)}
+  /* calificados por estado (clicable) */
+  .estrow{display:flex;align-items:center;gap:10px;padding:6px 8px;border-radius:8px;cursor:pointer;transition:background .12s}
+  .estrow:hover{background:#f3f4f6}
+  .estrow.active{background:var(--accent-soft);box-shadow:inset 0 0 0 1px var(--accent)}
+  .estrow .elab{flex:0 0 40%;font-size:13.5px;color:var(--text-title);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .estrow .etrack{flex:1;min-width:0}
+  .estrow .ebar{height:14px;border-radius:4px;background:var(--ok);min-width:2px}
+  .estrow .enum{flex:0 0 auto;font-weight:700;min-width:38px;text-align:right;font-variant-numeric:tabular-nums;color:var(--text-title)}
   .note{font-size:13px;color:var(--text-muted)}
   @media (max-width:600px){
     .wrap{padding:22px 14px 60px}
@@ -100,6 +108,10 @@
   <p class="note">Estados calificados (actuales), partidos por asignación en el WBR mart.</p>
   <div class="legend"><span><i class="dot gr"></i>Asignados (WBR)</span><span><i class="dot og"></i>No asignados</span></div>
   <div class="card"><div class="tbl-wrap"><table><thead><tr><th>Estado calificado</th><th style="text-align:right">No asig.</th><th style="text-align:right">Asig.</th><th style="text-align:right">Total</th><th style="text-align:right">% reg</th></tr></thead><tbody id="calif"></tbody></table></div></div>
+
+  <h2>Calificados por estado</h2>
+  <p class="note">Leads calificados por estado geográfico, de mayor a menor. Clic en una fila para filtrar el tablero (toca de nuevo para quitar el filtro), igual que el selector de arriba.</p>
+  <div class="card" id="califEstado"></div>
 
   <h2>Antifunnel</h2>
   <p class="note">Dónde quedaron los leads que <b>no</b> están en estado calificado (≠ 20/63), por estado actual y asignación.</p>
@@ -188,6 +200,22 @@ fetch('data.json').then(r=>r.json()).then(raw=>{
     const totalRow = (rs,lab)=>{const t=rs.reduce((a,r)=>a+r.n,0),a=rs.reduce((s,r)=>s+r.a,0);return `<tr style="font-weight:700"><td>${lab}</td><td class="num og-t">${fmt(t-a)}</td><td class="num gr-t">${fmt(a)}</td><td class="num">${fmt(t)}</td><td class="num">${pct(t).toFixed(1)}%</td></tr>`;};
     document.getElementById('calif').innerHTML = calRows.length? splitRows(calRows)+totalRow(calRows,'Total calificados') : '<tr><td colspan="5" class="note">Sin calificados (estado actual) en esta zona.</td></tr>';
     document.getElementById('anti').innerHTML  = antiRows.length? splitRows(antiRows)+totalRow(antiRows,'Total antifunnel') : '<tr><td colspan="5" class="note">Sin leads en antifunnel en esta zona.</td></tr>';
+
+    // Calificados por estado (navegador clicable, desde el set completo)
+    const byEst = {};
+    leads.forEach(l=>{ if(l.calif) byEst[l.estado_mx]=(byEst[l.estado_mx]||0)+1; });
+    const estArr = Object.entries(byEst).sort((a,b)=>b[1]-a[1]);
+    const maxC = estArr.length?estArr[0][1]:1;
+    const activeEst = sel.value.startsWith('estado_mx|') ? sel.value.slice(10) : null;
+    const ce = document.getElementById('califEstado');
+    ce.innerHTML = estArr.length ? estArr.map(([est,c])=>`<div class="estrow ${est===activeEst?'active':''}" data-est="${est.replace(/"/g,'&quot;')}">
+      <div class="elab">${est}</div><div class="etrack"><div class="ebar" style="width:${Math.max(c/maxC*100,2).toFixed(1)}%"></div></div><div class="enum">${fmt(c)}</div></div>`).join('')
+      : '<p class="note">Sin calificados.</p>';
+    ce.querySelectorAll('.estrow').forEach(el=>el.addEventListener('click',()=>{
+      const est=el.getAttribute('data-est');
+      sel.value = (sel.value==='estado_mx|'+est) ? 'all' : 'estado_mx|'+est;
+      apply();
+    }));
 
     // diario
     const byDay = {};
