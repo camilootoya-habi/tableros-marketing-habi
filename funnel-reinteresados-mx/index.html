@@ -233,11 +233,11 @@ function render(L){
     const rMM=Math.max(rmin, rmax*Math.sqrt(totMMy/maxT)), rIn=Math.max(rmin, rmax*Math.sqrt(totIny/maxT));
     const sep=both>0?(rMM+rIn)*0.52:(rMM+rIn)+10, cxMM=vw/2-sep/2, cxIn=vw/2+sep/2;
     const lblMM=cxMM-rMM*0.45, lblIn=cxIn+rIn*0.45, lblB=(cxMM+cxIn)/2;
-    const t=(x,n,lab)=>`<text x="${x.toFixed(0)}" y="${cy-3}" text-anchor="middle" font-size="16" font-weight="800" fill="#111827">${fmt(n)}</text><text x="${x.toFixed(0)}" y="${cy+13}" text-anchor="middle" font-size="10.5" fill="#374151">${lab} · ${(n/qual*100).toFixed(0)}%</text>`;
+    const t=(x,n)=>`<text x="${x.toFixed(0)}" y="${cy-3}" text-anchor="middle" font-size="16" font-weight="800" fill="#111827">${fmt(n)}</text><text x="${x.toFixed(0)}" y="${cy+13}" text-anchor="middle" font-size="10.5" fill="#374151">${(n/qual*100).toFixed(0)}%</text>`;
     return `<svg viewBox="0 0 ${vw} ${vh}" width="100%" style="max-width:440px;height:auto">
       <circle cx="${cxMM.toFixed(0)}" cy="${cy}" r="${rMM.toFixed(0)}" fill="rgba(16,185,129,.45)" style="mix-blend-mode:multiply"/>
       <circle cx="${cxIn.toFixed(0)}" cy="${cy}" r="${rIn.toFixed(0)}" fill="rgba(14,165,233,.45)" style="mix-blend-mode:multiply"/>
-      ${onlyMM?t(lblMM,onlyMM,'solo MM'):''}${both?t(lblB,both,'ambos'):''}${onlyIn?t(lblIn,onlyIn,'solo Inmo'):''}
+      ${onlyMM?t(lblMM,onlyMM):''}${both?t(lblB,both):''}${onlyIn?t(lblIn,onlyIn):''}
     </svg>`;
   };
   document.getElementById('venn').innerHTML = `<div class="venn-wrap">
