@@ -65,6 +65,10 @@
   .estrow .ebar{height:14px;border-radius:4px;background:var(--accent);min-width:2px}
   .estrow .enum{flex:0 0 auto;font-weight:700;min-width:38px;text-align:right;font-variant-numeric:tabular-nums;color:var(--text-title)}
   .note{font-size:13px;color:var(--text-muted)}
+  .help{display:inline-flex;align-items:center;justify-content:center;width:15px;height:15px;border-radius:50%;background:var(--border);color:var(--text-muted);font-size:10px;font-weight:700;cursor:help;margin-left:6px;position:relative;flex:0 0 auto;vertical-align:middle}
+  .help:hover{background:var(--accent);color:#fff}
+  .help::after{content:attr(data-tip);position:absolute;bottom:calc(100% + 8px);left:0;width:250px;max-width:72vw;background:var(--text-title);color:#fff;font-weight:400;font-size:11.5px;line-height:1.45;text-transform:none;letter-spacing:normal;padding:8px 10px;border-radius:8px;text-align:left;opacity:0;visibility:hidden;transition:opacity .15s;z-index:30;box-shadow:0 4px 14px rgba(0,0,0,.18);pointer-events:none}
+  .help:hover::after{opacity:1;visibility:visible}
   @media (max-width:600px){
     .wrap{padding:22px 14px 60px} h1{font-size:1.45rem} h2{font-size:1.12rem;margin:28px 0 6px}
     .kpi-grid{grid-template-columns:1fr 1fr;gap:8px} .kpi{padding:11px 12px} .kpi .val{font-size:21px}
@@ -88,12 +92,12 @@
   <div class="kpi-grid" id="kpis"></div>
 
   <h2>Funnel</h2>
-  <p class="note">Progresión: Registros → Calificados (alguna vez 20/63) → <b>Asignados (GABI)</b> → <b>Asignados (WBR Mart)</b> → Citas agendadas (estado 27) → Cierres (MM, "Cierre - Comprado") → Contrato firmado (Inmo). A la derecha: conversión <b>vs registros</b> y <b>vs anterior</b>.</p>
-  <p class="note" style="margin-top:-2px"><b>Asignados (GABI)</b> = el bot GABI ya está gestionando el lead (<code>product_qualified</code> ≠ nulo en el negocio). <b>Asignados (WBR Mart)</b> = el lead ya entró al WBR mart (downstream, llega con rezago). GABI puede dispararse antes de que el lead figure en el mart.</p>
+  <p class="note">Progresión: Registros → Calificados INMO → Calificados Market Maker → <b>Asignados (GABI)</b> → <b>Asignados (HubSpot owner)</b> → <b>Asignados (WBR Mart)</b> → Citas → Cierres (MM) → Contrato firmado (Inmo). A la derecha: conversión <b>vs registros</b> y <b>vs anterior</b>. <span class="muted">Pasa el cursor sobre el <b>?</b> de cada etapa para ver qué incluye su query.</span></p>
+  <p class="note" style="margin-top:-2px">Los 3 hitos de asignación: <b>GABI</b> = el bot ya gestiona (<code>product_qualified</code> ≠ nulo) · <b>HubSpot owner</b> = deal con <code>hubspot_owner_id</code> (GABI no asigna owner → suele dar 0) · <b>WBR Mart</b> = lead en el mart oficial (downstream, con rezago).</p>
   <div class="card" id="funnel"></div>
 
-  <h2>Calificados</h2>
-  <p class="note">Estados calificados (actuales), partidos por asignación en el WBR mart.</p>
+  <h2>Calificados Market Maker</h2>
+  <p class="note">Estados calificados Market Maker (estado actual 20/63), partidos por asignación en el WBR mart.</p>
   <div class="legend"><span><i class="dot gr"></i>Asignados (WBR)</span><span><i class="dot og"></i>No asignados</span></div>
   <div class="card"><div class="tbl-wrap"><table><thead><tr><th>Estado calificado</th><th style="text-align:right">No asig.</th><th style="text-align:right">Asig.</th><th style="text-align:right">Total</th><th style="text-align:right">% reg</th></tr></thead><tbody id="calif"></tbody></table></div></div>
 
@@ -114,16 +118,22 @@ const FONT={family:"-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-seri
 const UTM={MX:'mex-sellers-paid-experiments-web-without-leads-retargeting-national-reinteresados', CO:'col-sellers-paid-experiments-web-without-leads-retargeting-national-reinteresados'};
 const CNAME={MX:'🇲🇽 México', CO:'🇨🇴 Colombia'};
 const GEOWORD={MX:'estado', CO:'ciudad'};
-const STAGES=[['Registros','#4f46e5',l=>l.length],['Calificados','#10b981',l=>l.filter(x=>x.calif).length],
-  ['Asignados (GABI)','#06b6d4',l=>l.filter(x=>x.gabi).length],['Asignados (WBR Mart)','#0ea5e9',l=>l.filter(x=>x.asig).length],
-  ['Citas agendadas','#8b5cf6',l=>l.filter(x=>x.cita).length],
-  ['Cierres (MM)','#f59e0b',l=>l.filter(x=>x.cierre).length],['Contrato firmado (Inmo)','#0d9488',l=>l.filter(x=>x.contrato).length]];
+const STAGES=[
+  ['Registros','#4f46e5',l=>l.length,'NIDs únicos de la campaña: utm_campaign reinteresados + fuente WEB (fuente_id=3). 1 fila por nid (se queda con la fecha de creación más reciente).'],
+  ['Calificados INMO','#059669',l=>l.filter(x=>x.calif_inmo).length,'Leads que alguna vez llegaron al estado 20 del funnel Inmobiliaria (history_state_real_estate). El pipeline Inmo arranca en mar-2026.'],
+  ['Calificados Market Maker','#10b981',l=>l.filter(x=>x.calif).length,'Leads que alguna vez estuvieron en estado 20 ó 63 del funnel Market Maker (history_state).'],
+  ['Asignados (GABI)','#06b6d4',l=>l.filter(x=>x.gabi).length,'GABI ya está gestionando el lead: product_qualified ≠ nulo en el negocio (MX property_deal · CO tabla_negocio_inmueble).'],
+  ['Asignados (HubSpot owner)','#0891b2',l=>l.filter(x=>x.owner).length,'Deal con hubspot_owner_id asignado en hubspot.deals. OJO: GABI no asigna owner humano, por eso suele dar 0 en esta campaña.'],
+  ['Asignados (WBR Mart)','#0ea5e9',l=>l.filter(x=>x.asig).length,'Lead presente en el WBR mart oficial de asignados (sellers_leads_asignados_marketing_wbr_mart, 16 filtros). Hito downstream, llega con rezago.'],
+  ['Citas agendadas','#8b5cf6',l=>l.filter(x=>x.cita).length,'Leads que alguna vez llegaron al estado 27 (cita agendada) del funnel Market Maker.'],
+  ['Cierres (MM)','#f59e0b',l=>l.filter(x=>x.cierre).length,'oportunidad_del_negocio = Cierre - Comprado (compra cerrada del Market Maker).'],
+  ['Contrato firmado (Inmo)','#0d9488',l=>l.filter(x=>x.contrato).length,'oportunidad_inmobiliaria = Contrato firmado (cierre del flujo Inmobiliaria).']];
 const KCLS=['s1','s2','s3','s4'];
 let dailyChart=null, leadsAll=[], country='MX', selectedGeo=null;
 
 fetch('data.json').then(r=>r.json()).then(raw=>{
   leadsAll=raw.map(r=>({pais:r.pais, geo:r.geo||'Sin dato', area:r.area||'Sin dato', sid:(r.sid==null?'':String(r.sid)), slabel:r.slabel||'Sin estado',
-    calif:N(r.calif), cita:N(r.cita), gabi:N(r.gabi), asig:N(r.asig), cierre:N(r.cierre), contrato:N(r.contrato), fc:r.fc}));
+    calif:N(r.calif), calif_inmo:N(r.calif_inmo), cita:N(r.cita), gabi:N(r.gabi), owner:N(r.owner), asig:N(r.asig), cierre:N(r.cierre), contrato:N(r.contrato), fc:r.fc}));
   selectCountry('MX');
 });
 
@@ -153,7 +163,8 @@ function apply(){
 
 function render(L){
   const registros=L.length, pct=n=>registros?(n/registros*100):0;
-  const funnel=STAGES.map(([label,color,fn])=>({label,color,n:fn(L)}));
+  const funnel=STAGES.map(([label,color,fn,tip])=>({label,color,tip,n:fn(L)}));
+  const helpDot=tip=>`<span class="help" data-tip="${(tip||'').replace(/"/g,'&quot;')}">?</span>`;
   document.getElementById('geocount').textContent = selectedGeo!==null ? `· Filtrando: ${selectedGeo} (${fmt(registros)})` : `· ${fmt(countryLeads().length)} registros (todas las zonas)`;
 
   // Registros por estado/ciudad (es el filtro: clic en una fila)
@@ -166,12 +177,12 @@ function render(L){
   re.querySelectorAll('.estrow').forEach(el=>el.addEventListener('click',()=>{const g=el.getAttribute('data-g');selectedGeo=(selectedGeo===g)?null:g;apply();}));
 
   document.getElementById('kpis').innerHTML=funnel.slice(0,4).map((f,i)=>
-    `<div class="kpi ${KCLS[i]}"><div class="label">${f.label}</div><div class="val">${fmt(f.n)}</div><div class="sub">${i===0?'NIDs únicos':pct(f.n).toFixed(1)+'% de registros'}</div></div>`).join('');
+    `<div class="kpi ${KCLS[i]}"><div class="label">${f.label}${helpDot(f.tip)}</div><div class="val">${fmt(f.n)}</div><div class="sub">${i===0?'NIDs únicos':pct(f.n).toFixed(1)+'% de registros'}</div></div>`).join('');
 
   document.getElementById('funnel').innerHTML=funnel.map((f,i)=>{
     const w=Math.max(pct(f.n),3),prev=i>0?funnel[i-1]:null;
     const vsReg=i===0?(registros?'100%':'—'):pct(f.n).toFixed(1)+'%', vsPrev=prev?(prev.n?(f.n/prev.n*100).toFixed(1)+'%':'0%'):'—';
-    return `<div class="fstep"><div class="fhead"><span>${f.label}</span></div>
+    return `<div class="fstep"><div class="fhead"><span>${f.label}${helpDot(f.tip)}</span></div>
       <div class="frow"><div class="barcol"><span class="bnum">${fmt(f.n)}</span><div class="bartrack">${f.n>0?`<div class="bar" style="width:${i===0?100:w}%;background:${f.color}"></div>`:''}</div></div>
         <div class="convcol"><div class="conv-item"><div class="pct">${vsReg}</div><div class="cl">vs registros</div></div>
           <div class="conv-item"><div class="pct">${vsPrev}</div><div class="cl">vs anterior</div></div></div></div></div>`;
@@ -202,8 +213,8 @@ function render(L){
       scales:{y:{beginAtZero:true,grid:{color:'#e5e7eb'},ticks:{font:FONT,precision:0}},x:{grid:{display:false},ticks:{font:FONT}}}}
   });
 
-  const gabi=funnel[2].n, asig=funnel[3].n, antiTotal=antiRows.reduce((a,r)=>a+r.n,0);
-  document.getElementById('footer').textContent= registros?`Asignados (GABI): ${fmt(gabi)} de ${fmt(registros)} (${pct(gabi).toFixed(1)}%). Asignados (WBR Mart): ${fmt(asig)} (${pct(asig).toFixed(1)}%). Antifunnel (estado actual): ${fmt(antiTotal)}.`:'Sin registros para esta campaña todavía.';
+  const gabi=L.filter(x=>x.gabi).length, owner=L.filter(x=>x.owner).length, asig=L.filter(x=>x.asig).length, antiTotal=antiRows.reduce((a,r)=>a+r.n,0);
+  document.getElementById('footer').textContent= registros?`Asignados (GABI): ${fmt(gabi)} de ${fmt(registros)} (${pct(gabi).toFixed(1)}%) · HubSpot owner: ${fmt(owner)} (${pct(owner).toFixed(1)}%) · WBR Mart: ${fmt(asig)} (${pct(asig).toFixed(1)}%). Antifunnel (estado actual): ${fmt(antiTotal)}.`:'Sin registros para esta campaña todavía.';
 }
 </script>
 </body>

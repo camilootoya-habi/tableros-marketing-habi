@@ -1,7 +1,8 @@
 -- Campaña "reinteresados" (WEB) — MX y CO, 1 fila por lead, para selector de país + filtro geo en el front.
 -- MX: utm 'mex-sellers-...-reinteresados' · CO: utm 'col-sellers-...-reinteresados'. Fuente WEB (fuente_id=3).
 -- Columnas: pais · geo (MX=estado_mexico / CO=ciudad) · area (metropolitana) · sid/slabel (estado ACTUAL)
---   · calif (alguna vez 20/63) · cita (alguna vez 27) · gabi (GABI disparado = product_qualified no nulo)
+--   · calif (MM: alguna vez 20/63) · calif_inmo (Inmo: alguna vez state 20 en history_state_real_estate)
+--   · cita (alguna vez 27) · gabi (GABI disparado = product_qualified no nulo) · owner (deal con hubspot_owner_id)
 --   · asig (WBR mart) · cierre (MM 'Cierre - Comprado') · contrato (Inmo 'Contrato firmado') · fc (fecha creación).
 -- Nota asignación: el funnel distingue 2 hitos. "Asignados (GABI)" = product_qualified NO nulo en el negocio
 --   (MX: mx_rds_staging.habi_db_property_deal · CO: co_rds_staging.habi_db_tabla_negocio_inmueble) → GABI ya
@@ -20,6 +21,15 @@ pq_co AS (
   SELECT nid, MAX(IF(product_qualified IS NOT NULL,1,0)) gabi
   FROM `sellers-main-prod.co_rds_staging.habi_db_tabla_negocio_inmueble` GROUP BY nid
 ),
+-- calificado Inmo = alguna vez state_id=20 en el funnel Inmobiliaria (history_state_real_estate), por deal_id
+inmo_mx AS (
+  SELECT deal_id, MAX(IF(state_id=20,1,0)) ever_calif_inmo
+  FROM `sellers-main-prod.mx_rds_staging.habi_db_history_state_real_estate` GROUP BY deal_id
+),
+inmo_co AS (
+  SELECT deal_id, MAX(IF(state_id=20,1,0)) ever_calif_inmo
+  FROM `sellers-main-prod.co_rds_staging.habi_db_history_state_real_estate` GROUP BY deal_id
+),
 -- ===== MÉXICO =====
 ea_mx AS (
   SELECT deal_id, ARRAY_AGG(state_id ORDER BY date_create DESC, id DESC LIMIT 1)[OFFSET(0)] AS cur
@@ -34,8 +44,10 @@ mx AS (
     COALESCE(NULLIF(TRIM(g.estado_mexico),''),'Sin dato') AS geo,
     COALESCE(NULLIF(TRIM(g.area_metropolitana),''),'Sin dato') AS area,
     CAST(ea.cur AS STRING) AS sid, COALESCE(st.label,'Sin estado') AS slabel,
-    COALESCE(ev.ever_calif,0) AS calif, COALESCE(ev.ever_cita,0) AS cita,
+    COALESCE(ev.ever_calif,0) AS calif, COALESCE(im.ever_calif_inmo,0) AS calif_inmo,
+    COALESCE(ev.ever_cita,0) AS cita,
     COALESCE(pq.gabi,0) AS gabi,
+    IF(hd.hubspot_owner_id IS NOT NULL AND hd.hubspot_owner_id != '',1,0) AS owner,
     IF(m.nid IS NOT NULL,1,0) AS asig,
     IF(g.oportunidad_del_negocio='Cierre - Comprado',1,0) AS cierre,
     IF(hd.oportunidad_inmobiliaria='Contrato firmado',1,0) AS contrato,
@@ -44,6 +56,7 @@ mx AS (
   JOIN `sellers-main-prod.hubspot.deals` hd ON hd.nid=g.nid AND hd.country='México'
   LEFT JOIN ea_mx ea ON ea.deal_id=g.id_negocio
   LEFT JOIN ever_mx ev ON ev.deal_id=g.id_negocio
+  LEFT JOIN inmo_mx im ON im.deal_id=g.id_negocio
   LEFT JOIN mart m ON m.nid=g.nid AND m.pais='mexico'
   LEFT JOIN pq_mx pq ON pq.nid=g.nid
   LEFT JOIN `sellers-main-prod.mx_rds_staging.habi_db_state` st ON st.id=ea.cur
@@ -65,8 +78,10 @@ co AS (
     COALESCE(NULLIF(TRIM(g.ciudad),''),'Sin dato') AS geo,
     COALESCE(NULLIF(TRIM(g.area_metropolitana),''),'Sin dato') AS area,
     CAST(ea.cur AS STRING) AS sid, COALESCE(st.label,'Sin estado') AS slabel,
-    COALESCE(ev.ever_calif,0) AS calif, COALESCE(ev.ever_cita,0) AS cita,
+    COALESCE(ev.ever_calif,0) AS calif, COALESCE(im.ever_calif_inmo,0) AS calif_inmo,
+    COALESCE(ev.ever_cita,0) AS cita,
     COALESCE(pq.gabi,0) AS gabi,
+    IF(hd.hubspot_owner_id IS NOT NULL AND hd.hubspot_owner_id != '',1,0) AS owner,
     IF(m.nid IS NOT NULL,1,0) AS asig,
     IF(g.oportunidad_del_negocio='Cierre - Comprado',1,0) AS cierre,
     IF(hd.oportunidad_inmobiliaria='Contrato firmado',1,0) AS contrato,
@@ -75,6 +90,7 @@ co AS (
   JOIN `sellers-main-prod.hubspot.deals` hd ON hd.nid=g.nid AND hd.country='Colombia'
   LEFT JOIN ea_co ea ON ea.negocio_id=g.negocio_id
   LEFT JOIN ever_co ev ON ev.negocio_id=g.negocio_id
+  LEFT JOIN inmo_co im ON im.deal_id=g.negocio_id
   LEFT JOIN mart m ON m.nid=g.nid AND m.pais='colombia'
   LEFT JOIN pq_co pq ON pq.nid=g.nid
   LEFT JOIN `sellers-main-prod.co_rds_staging.habi_db_tabla_estados` st ON st.id=ea.cur
