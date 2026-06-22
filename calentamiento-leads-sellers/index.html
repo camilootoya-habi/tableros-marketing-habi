@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🔥</text></svg>">
+<title>Calentamiento de leads sellers — el proceso</title>
+<style>
+  :root {
+    --bg: #fafaf7; --card: #ffffff;
+    --text: #1f2937; --text-muted: #6b7280; --text-title: #111827;
+    --accent: #4f46e5; --accent-soft: #eef2ff;
+    --border: #e5e7eb; --code-bg: #f3f4f6; --table-alt: #f9fafb;
+    --warn-bg: #fef3c7; --warn-border: #f59e0b;
+    --info-bg: #eef2ff; --info-border: #4f46e5;
+    --ok-bg: #ecfdf5; --ok-border: #10b981;
+    --danger-bg: #fee2e2; --danger-border: #dc2626;
+    --co: #4f46e5; --mx: #dc2626; --warm: #f97316;
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: var(--bg); color: var(--text); line-height: 1.65; margin: 0; padding: 0; }
+  .topbar { position: sticky; top: 0; background: rgba(250,250,247,0.94); backdrop-filter: blur(8px); border-bottom: 1px solid var(--border); padding: 10px 20px; display: flex; justify-content: space-between; align-items: center; font-size: 13px; z-index: 100; flex-wrap: wrap; gap: 8px; }
+  .topbar a { color: var(--accent); text-decoration: none; margin-left: 14px; }
+  .topbar a:hover { text-decoration: underline; }
+  .topbar .back-hub { color: var(--text-muted); margin-left: 0; margin-right: 14px; padding: 3px 8px; border: 1px solid var(--border); border-radius: 6px; font-weight: 500; }
+  .topbar .back-hub:hover { color: var(--accent); border-color: var(--accent); text-decoration: none; }
+  .wrap { max-width: 920px; margin: 0 auto; padding: 40px 28px 96px; }
+  h1 { color: var(--text-title); font-size: 2rem; font-weight: 700; margin: 0 0 6px; padding-bottom: 12px; border-bottom: 2px solid var(--accent); }
+  h2 { color: var(--text-title); font-size: 1.5rem; font-weight: 700; margin: 44px 0 12px; padding-top: 20px; border-top: 1px solid var(--border); }
+  h3 { color: var(--text-title); font-size: 1.2rem; font-weight: 600; margin: 28px 0 10px; }
+  .pill-num { display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px; border-radius: 999px; background: var(--accent); color: #fff; font-size: 15px; font-weight: 700; margin-right: 8px; vertical-align: middle; }
+  p, li { font-size: 15px; }
+  ul, ol { padding-left: 26px; }
+  li { margin-bottom: 6px; }
+  strong { color: var(--text-title); }
+  code { background: var(--code-bg); padding: 2px 6px; border-radius: 4px; font-size: 13px; font-family: 'SF Mono', Menlo, Monaco, Consolas, monospace; color: #be185d; }
+  .meta { font-size: 13px; color: var(--text-muted); margin: 8px 0 24px; }
+  .lead { font-size: 16px; color: var(--text); }
+  .callout { padding: 14px 18px; border-radius: 0 8px 8px 0; margin: 18px 0; font-size: 14px; }
+  .callout.info { background: var(--info-bg); border-left: 3px solid var(--info-border); color: #1e1b4b; }
+  .callout.warn { background: var(--warn-bg); border-left: 3px solid var(--warn-border); color: #78350f; }
+  .callout.ok { background: var(--ok-bg); border-left: 3px solid var(--ok-border); color: #064e3b; }
+  .callout.danger { background: var(--danger-bg); border-left: 3px solid var(--danger-border); color: #7f1d1d; }
+  .callout strong { color: inherit; }
+  .callout p { margin: 6px 0; font-size: 14px; }
+  .callout p:first-child { margin-top: 0; }
+  .callout p:last-child { margin-bottom: 0; }
+  table { border-collapse: collapse; width: 100%; font-size: 13px; margin: 18px 0; display: block; overflow-x: auto; }
+  thead { background: var(--accent-soft); }
+  th { text-align: left; padding: 10px 12px; font-weight: 600; color: var(--text-title); border-bottom: 2px solid var(--accent); white-space: nowrap; }
+  td { padding: 8px 12px; border-bottom: 1px solid var(--border); vertical-align: top; }
+  tbody tr:nth-child(even) { background: var(--table-alt); }
+  .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; margin: 18px 0; }
+  .kpi { background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 12px 14px; }
+  .kpi.accent { border-left: 3px solid var(--accent); }
+  .kpi.warm { border-left: 3px solid var(--warm); }
+  .kpi.ok { border-left: 3px solid var(--ok-border); }
+  .kpi .label { color: var(--text-muted); font-size: 11px; text-transform: uppercase; letter-spacing: 0.4px; margin-bottom: 4px; }
+  .kpi .val { font-weight: 700; color: var(--text-title); font-size: 22px; line-height: 1.15; }
+  .kpi .sub { color: var(--text-muted); font-size: 12px; margin-top: 4px; }
+  .gate { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 4px 24px 24px; margin: 18px 0; box-shadow: 0 1px 2px rgba(0,0,0,0.04); }
+  .gate.g1 { border-top: 3px solid var(--accent); }
+  .gate.g2 { border-top: 3px solid var(--warm); }
+  .tag { display: inline-block; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.4px; padding: 3px 9px; border-radius: 999px; background: var(--accent-soft); color: var(--accent); margin-top: 18px; }
+  .tag.warm { background: #fff7ed; color: var(--warm); }
+  .tag.first { background: #ecfdf5; color: #059669; }
+  .src { font-size: 12px; color: var(--text-muted); font-style: italic; margin-top: 4px; }
+  .proj { background: var(--accent-soft); border: 1px solid #c7d2fe; border-radius: 12px; padding: 4px 22px 22px; margin: 16px 0; }
+  .proj h4 { color: var(--text-title); font-size: 1.05rem; font-weight: 700; margin: 14px 0 6px; }
+  .steps { list-style: none; counter-reset: step; padding-left: 0; margin: 16px 0; }
+  .steps > li { counter-increment: step; position: relative; padding-left: 42px; margin-bottom: 14px; font-size: 14px; }
+  .steps > li::before { content: counter(step); position: absolute; left: 0; top: 0; width: 26px; height: 26px; border-radius: 999px; background: var(--accent); color: #fff; font-weight: 700; font-size: 13px; display: flex; align-items: center; justify-content: center; }
+
+  /* --- Diagrama de funnel + compuertas --- */
+  .flowscroll { overflow-x: auto; margin: 22px 0; padding-bottom: 6px; }
+  .flow { display: flex; align-items: stretch; gap: 0; min-width: 760px; }
+  .stage { flex: 1; background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 12px 10px; text-align: center; display: flex; flex-direction: column; justify-content: center; }
+  .stage .s-t { font-weight: 600; color: var(--text-title); font-size: 13px; }
+  .stage .s-s { font-size: 11px; color: var(--text-muted); margin-top: 3px; }
+  .stage.gate1 { border-color: var(--accent); background: var(--accent-soft); }
+  .stage.gate2 { border-color: var(--warm); background: #fff7ed; }
+  .stage.term { border-style: dashed; }
+  .arrow { display: flex; align-items: center; color: var(--text-muted); font-size: 18px; padding: 0 6px; }
+  .branch { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin: 14px 0 4px; }
+  .branch .leg { border-radius: 10px; padding: 12px 16px; font-size: 13px; }
+  .branch .leg.warm { background: #fff7ed; border: 1px solid #fed7aa; }
+  .branch .leg .leg-h { font-weight: 700; color: var(--warm); font-size: 12px; text-transform: uppercase; letter-spacing: .4px; margin-bottom: 4px; }
+  @media (max-width: 640px) { .branch { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<div class="topbar">
+  <span>
+    <a href="../" class="back-hub">← Hub</a>
+    🔥 Calentamiento de leads sellers
+  </span>
+  <span>
+    <a href="#insight">Insight</a>
+    <a href="#compuerta-1">1. Pre-asignación</a>
+    <a href="#compuerta-2">2. Post-comercial</a>
+    <a href="#sintesis">Síntesis</a>
+  </span>
+</div>
+
+<div class="wrap">
+
+<h1>Calentamiento de leads sellers</h1>
+<div class="meta">Diseño de proceso · Habi Colombia + Tuhabi México · Junio 2026</div>
+
+<p class="lead">Hoy el funnel sellers trata a todo lead calificado como si estuviera listo para vender <em>ahora</em>. Pero la calificación mide sobre todo el <strong>inmueble</strong> —que cumpla las reglas del buybox—, no la <strong>intención</strong> real del vendedor. El costo: leads que entran al proceso comercial sin estar listos, con dos consecuencias —<strong>mala experiencia para el cliente</strong> y <strong>desgaste del equipo comercial</strong> gestionando lo que no va a cerrar.</p>
+
+<div class="callout info">
+  <p><strong>La tesis en una línea.</strong> Calentar leads no es un canal nuevo: es reconocer que la intención de vender madura con el tiempo. La respuesta son <strong>dos compuertas complementarias</strong> — <strong>(1)</strong> filtrar curiosos <em>antes</em> de asignarlos al comercial, para no quemar la experiencia ni el equipo, y <strong>(2)</strong> rescatar a los que sí entraron pero se enfriaron sin cerrar ni descartarse, porque el filtro nunca será 100% efectivo.</p>
+</div>
+
+<!-- ===================== INSIGHT ===================== -->
+<h2 id="insight">El insight: calificación ≠ intención</h2>
+
+<p>Un lead puede cumplir el buybox a la perfección —tipo de vivienda, zona, precio— y aun así no querer vender hoy. Está <strong>apenas considerando</strong>, o es <strong>curioso</strong> y solo quería saber cuánto vale su inmueble. Forzarlo al proceso comercial en ese momento no acelera la venta: la entorpece, y entierra al equipo en gestión que no convierte.</p>
+
+<p>El proceso de calentamiento pone <strong>dos compuertas</strong> sobre el funnel: una antes de asignar (filtra por intención) y otra después (rescata al que se enfrió). Lo que no pasa el filtro no se pierde —se calienta.</p>
+
+<div class="flowscroll">
+  <div class="flow">
+    <div class="stage"><span class="s-t">Registro</span><span class="s-s">cualquier fuente</span></div>
+    <div class="arrow">→</div>
+    <div class="stage"><span class="s-t">Califica inmueble</span><span class="s-s">cumple buybox</span></div>
+    <div class="arrow">→</div>
+    <div class="stage gate1"><span class="s-t">◆ Compuerta 1</span><span class="s-s">¿hay intención?</span></div>
+    <div class="arrow">→</div>
+    <div class="stage"><span class="s-t">Asignado</span><span class="s-s">gestión comercial</span></div>
+    <div class="arrow">→</div>
+    <div class="stage gate2"><span class="s-t">◆ Compuerta 2</span><span class="s-s">~90d sin desenlace</span></div>
+    <div class="arrow">→</div>
+    <div class="stage term"><span class="s-t">Cierre / Descarte</span><span class="s-s">estado terminal</span></div>
+  </div>
+</div>
+
+<div class="branch">
+  <div class="leg warm">
+    <div class="leg-h">↓ Compuerta 1 — sin intención</div>
+    Queda parqueado en <strong>“Habimetro sin gestion”</strong> (calentamiento), <em>no</em> se asigna al comercial. Sale cuando expresa intención de vender.
+  </div>
+  <div class="leg warm">
+    <div class="leg-h">↓ Compuerta 2 — enfriado</div>
+    Vuelve a Marketing para <strong>recalentamiento multicanal</strong>. Si reactiva interés, re-entra al comercial con una nueva oferta.
+  </div>
+</div>
+
+<!-- ===================== COMPUERTAS ===================== -->
+<h2>Las dos compuertas</h2>
+
+<div class="gate g1" id="compuerta-1">
+  <span class="tag">Compuerta 1 · Pre-asignación</span>
+  <h3><span class="pill-num">1</span>Filtrar curiosos antes de asignar</h3>
+  <p>El objetivo es <strong>no meter al proceso comercial a quien no está listo</strong>. El mecanismo ya existe: el estado <strong>“Habimetro sin gestion”</strong>. Hoy solo vive en la fuente Habimetro; el plan es <strong>extenderlo a referidos, ventanas y demás fuentes outbound</strong> como el parqueadero estándar del lead calificado-por-inmueble pero sin intención confirmada.</p>
+
+  <p><strong>La regla:</strong></p>
+  <ul>
+    <li>Lo que se pueda <strong>descartar</strong> (no cumple buybox, dato inválido), se descarta de una.</li>
+    <li>El <strong>calificado por inmueble pero sin intención</strong> no pasa a calificado/asignado: queda en <strong>“Habimetro sin gestion”</strong> en calentamiento.</li>
+    <li>Sale del parqueadero cuando <strong>prende el flag “quiero recibir una oferta de Habi”</strong> — esa es la señal de intención que lo habilita para el comercial.</li>
+  </ul>
+
+  <div class="callout info">
+    <p><strong>Por qué el flag vive en Habimetro.</strong> Habimetro es una herramienta para <em>saber cuánto vale un inmueble</em>, no un formulario de registro de venta. Por eso pregunta dos cosas: el <strong>interés</strong> (curioso · vender · comprar · soy broker) y un <strong>checkbox “¿quiere recibir una oferta de Habi?”</strong> que <strong>solo se habilita si el interés marcado fue <em>vender</em></strong>. Quien no prende ese checkbox está diciendo, explícitamente, que aún no quiere vender.</p>
+  </div>
+
+  <table>
+    <thead><tr><th>Interés declarado</th><th>¿Habilita la oferta?</th><th>Ruta</th></tr></thead>
+    <tbody>
+      <tr><td>Vender + flag oferta ✓</td><td>Sí</td><td>→ Proceso comercial</td></tr>
+      <tr><td>Vender, sin flag</td><td>No</td><td>→ Calentamiento (“Habimetro sin gestion”)</td></tr>
+      <tr><td>Curioso / Comprar</td><td>No</td><td>→ Calentamiento o descarte según fuente</td></tr>
+      <tr><td>Soy broker</td><td>No</td><td>→ Ruta broker (fuera de este flujo)</td></tr>
+    </tbody>
+  </table>
+
+  <div class="callout ok">
+    <p><strong>El doble beneficio.</strong> Mejor experiencia para el cliente (no lo persigue un comercial cuando solo quería una valoración) y un equipo comercial enfocado en leads con intención real, no en curiosos que no van a cerrar.</p>
+  </div>
+
+  <h3>Próximos pasos</h3>
+  <p><strong>Extender “Habimetro sin gestion”.</strong> Hoy Habimetro es la única fuente cuyo pipeline revisa el flag de intención. El plan es llevar ese mismo mecanismo a referidos, ventanas y demás fuentes outbound, con la regla de descartar lo descartable y parquear lo calificado-sin-intención. <strong>Empezamos por referidos.</strong></p>
+
+  <div class="proj">
+    <span class="tag first">★ Primer proyecto a implementar</span>
+    <h4>Referidos GABI</h4>
+    <p>El referido es el caso más puro de la Compuerta 1: <strong>llega sin intención por definición</strong> —no nos buscó, lo buscamos nosotros (outbound)—. Por eso es el primer proyecto: mandarlo a gestión comercial sería el error máximo; el camino correcto es asesorarlo hasta que él mismo pida la oferta.</p>
+
+    <ol class="steps">
+      <li><strong>GABI pide el referido.</strong> Como bot de gestión comercial con IA, GABI les pide referidos a los clientes y leads que ya gestiona. Su rol se limita a capturar el referido.</li>
+      <li><strong>Backbone crea el contacto y el negocio (vacío).</strong> A partir del referido se crea el contacto y un <strong>negocio con las propiedades del inmueble vacías</strong>, marcado con la <strong>fuente REFERIDOS</strong> —una fuente nueva de Marketing— y nace en estado <strong>INCOMPLETO</strong>: al inicio se comporta como <strong>Leadforms</strong>.</li>
+      <li><strong>Completamos el lead mientras lo asesoramos.</strong> Nuestro proceso (no GABI) completa los datos del inmueble durante la asesoría. Mientras está incompleto, sigue la lógica de Leadforms.</li>
+      <li><strong>Ya completo, se comporta como Habimetro.</strong> Si el inmueble <strong>califica</strong> (cumple buybox), cae en el estado <strong>“Habimetro sin gestion”</strong>; si no califica, se descarta.</li>
+      <li><strong>Momento de intención → flag → comercial.</strong> Solo cuando se marca en la propiedad <strong>“quiero una oferta Habi” = Sí</strong>, el referido sale del parqueadero y entra al proceso comercial.</li>
+    </ol>
+
+    <div class="callout ok" style="margin-top:6px;">
+      <p><strong>Valor desde el momento cero.</strong> Como el objetivo es <strong>completar</strong> el lead, no extraerle datos, entregamos valor desde el primer contacto: la <strong>valoración de Habimetro</strong> (cuánto vale su inmueble), <strong>información multiproducto</strong> de nuestros servicios, el modelo <strong>sin costo si no hay cierre</strong> (cobramos comisión a cierre), y la opción de elegir entre <strong>Market Maker e Inmobiliaria</strong> según la celeridad que busque en la transacción.</p>
+    </div>
+    <div class="callout info" style="margin-top:0;">
+      <p><strong>Pilar de comunicación: confianza.</strong> Como llega en frío y outbound, toda la conversación se construye sobre confianza —que sienta respaldo antes que presión de venta: <strong>casos de éxito y testimoniales</strong>, <strong>empresas que nos apoyan</strong>, <strong>brokers aliados que hablan bien de nosotros</strong>, y que somos una <strong>startup unicornio con más de 6 años de experiencia</strong> en el sector inmobiliario de Colombia.</p>
+    </div>
+  </div>
+</div>
+
+<div class="gate g2" id="compuerta-2">
+  <span class="tag warm">Compuerta 2 · Post-comercial</span>
+  <h3><span class="pill-num">2</span>Rescatar enfriados que no cerraron ni se descartaron</h3>
+  <p>Ningún filtro es perfecto: muchos leads <em>sí</em> entran al comercial, se gestionan, y se quedan estancados —ni llegan a <strong>cierre</strong> ni a un <strong>descarte terminal</strong>. Se enfriaron. Reconocerlo es la segunda compuerta: pasado cierto tiempo, ese lead <strong>vuelve a Marketing para recalentarse</strong>.</p>
+  <p><strong>Definición operativa:</strong> lead que fue calificado y asignado, y que a los <strong>~90 días de su fecha de creación</strong> no está ni en cierre ni en estado terminal. Hoy es nuestro punto de partida —y está a prueba (ver abajo).</p>
+
+  <h3>Lo que ya sabemos: el piloto</h3>
+  <p>Estamos probando el rescate sobre leads a 90 días de <strong>WEB, Leadforms y Habimetro</strong> que no están cerrados ni en etapa terminal. El piloto corre hoy con <strong>un solo mensaje de WhatsApp</strong>, y aun así rescata:</p>
+
+  <div class="kpi-grid">
+    <div class="kpi warm"><div class="label">Tasa de respuesta</div><div class="val">9.5%</div><div class="sub">con 1 solo mensaje de WhatsApp</div></div>
+    <div class="kpi ok"><div class="label">De los que responden</div><div class="val">35%</div><div class="sub">sigue interesado · quiere nueva oferta</div></div>
+    <div class="kpi accent"><div class="label">Reactivación efectiva</div><div class="val">~3.3%</div><div class="sub">9.5% × 35% sobre contactados</div></div>
+  </div>
+
+  <div class="callout ok">
+    <p><strong>La señal es clara:</strong> con el canal más básico (un WhatsApp) ya recuperamos interés real de venta a costo de adquisición casi cero. La pregunta no es <em>si</em> funciona, sino <strong>cuánto más rinde si lo hacemos bien</strong>.</p>
+  </div>
+
+  <h3>Próximos pasos</h3>
+  <p>Dos frentes para entender el verdadero potencial de conversión de enfriados:</p>
+  <ol>
+    <li><strong>Multicanal en el rescate.</strong> El piloto es solo WhatsApp. Le sumamos <strong>llamadas con IA</strong> y <strong>SMS con tecnología RCS</strong> para medir el lift en reactivación con un contacto más rico y multicanal.</li>
+    <li><strong>Calibrar el umbral.</strong> ¿Por qué 90 días y no <strong>80 o 70</strong>? Si esperamos de más, el lead se enfría irreversiblemente; si recalentamos muy pronto, interrumpimos una gestión comercial viva. El umbral correcto sale de un dato: correr el análisis <strong>días-a-último-estado (CO y MX)</strong> —a cuántos días de la creación los leads suelen quedar atascados en su último estado de oportunidad, ese que no es terminal pero que <em>será</em> el último si nadie lo recalienta— para decidir entre 70 / 80 / 90 días.</li>
+  </ol>
+
+  <div class="callout warn">
+    <p><strong>Pendiente de datos.</strong> El umbral de 90 días es el punto de partida, no una conclusión. Calibrarlo a 70/80/90 requiere el análisis de “días-a-último-estado” (CO y MX), que es el siguiente paso de este trabajo.</p>
+  </div>
+</div>
+
+<!-- ===================== CÓMO SE COMPLEMENTAN ===================== -->
+<h2 id="sintesis">Cómo se complementan</h2>
+<p>Las dos compuertas atacan el mismo problema —intención que no calza con el momento— en dos puntos distintos del funnel:</p>
+<ul>
+  <li><strong>Arriba (Compuerta 1):</strong> filtramos lo mejor posible para no degradar CX ni saturar al comercial. Cuanto más fino el filtro, menos trabajo desperdiciado abajo.</li>
+  <li><strong>Abajo (Compuerta 2):</strong> como el filtro nunca es perfecto, rescatamos lo que se escapó y se enfrió, antes de perderlo del todo.</li>
+</ul>
+<div class="callout info">
+  <p>Filtrar mejor arriba <strong>reduce</strong> el volumen que cae a la Compuerta 2; recalentar bien abajo <strong>recupera</strong> el valor que ya pagamos por adquirir. Juntas convierten “lead calificado que no estaba listo” de un costo hundido a un activo que vuelve al pipeline cuando madura.</p>
+</div>
+
+<div class="callout ok">
+  <p><strong>En resumen.</strong> Dejamos de tratar la calificación de inmueble como si fuera intención de venta. Filtramos curiosos antes de gastar gestión comercial en ellos, y recuperamos a los que se enfriaron sin cerrarse. Dos compuertas, un mismo principio: <strong>respetar el tiempo del vendedor y no botar el valor que ya pagamos por atraerlo</strong>.</p>
+</div>
+
+</div><!-- /wrap -->
+</body>
+</html>
