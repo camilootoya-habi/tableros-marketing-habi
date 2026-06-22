@@ -134,7 +134,7 @@
     </nav>
     <div class="meta">
       Actualizado: 2026-06-22<br>
-      Versión: 1.4 (API backbone CO+MX)<br>
+      Versión: 1.5 (CO prod + gotcha agente)<br>
       Sin auto-update (manual).
       <button class="theme-btn" id="themeToggle" onclick="toggleTheme()" aria-label="Tema">🌙</button>
     </div>
@@ -539,12 +539,15 @@ WHERE DATE(g.fecha_creacion) >= DATE_SUB(CURRENT_DATE(), INTERVAL 7 DAY);</code>
         <tbody>
           <tr><td rowspan="2"><span class="badge badge-mx">MX</span> <span class="mono-sm">jevm381meg…</span></td><td>Crear lead</td><td><code>POST</code></td><td><code>/api/v1/post_lead_mx</code></td><td><code>prod</code></td></tr>
           <tr><td>Modificar lead</td><td><code>PUT</code></td><td><code>/api/v1/put_lead_mx</code></td><td><code>prod</code></td></tr>
-          <tr><td rowspan="2"><span class="badge badge-co">CO</span> <span class="mono-sm">lew5oaks7h…</span></td><td>Crear lead</td><td><code>POST</code></td><td><code>/api/v1/post_lead_co</code></td><td><code>dev</code> ⚠</td></tr>
-          <tr><td>Modificar lead</td><td><code>PUT</code></td><td><code>/api/v1/put_lead_co</code> <em>(no confirmado)</em></td><td>—</td></tr>
+          <tr><td rowspan="2"><span class="badge badge-co">CO</span> <span class="mono-sm">jevm381meg…</span></td><td>Crear lead</td><td><code>POST</code></td><td><code>/api/v1/post_lead_co</code></td><td><code>prod</code></td></tr>
+          <tr><td>Modificar lead</td><td><code>PUT</code></td><td><code>/api/v1/put_lead_co</code></td><td><code>prod</code></td></tr>
         </tbody>
       </table>
       <div class="callout" style="border-left-color:#f59e0b">
-        <strong>⚠️ Estado de ambientes:</strong> MX apunta a <code>prod</code> (escribe leads reales). El CO que tenemos apunta a <code>dev</code> (ambiente de pruebas — crea leads dummy). <strong>Pendiente:</strong> conseguir la URL <code>prod</code> de CO y confirmar si existe <code>put_lead_co</code>.
+        <strong>⚠️ El prod de CO vive en el MISMO gateway que MX</strong> (<code>jevm381meg</code>, stage <code>prod</code>, misma key) — es un gateway unificado con rutas <code>post_lead_co</code> / <code>put_lead_co</code>. El host <code>lew5oaks7h</code> era solo <code>dev</code> (pruebas).
+      </div>
+      <div class="callout" style="border-left-color:#ef4444">
+        <strong>🐛 Gotcha de naming en el PUT de CO:</strong> el campo del actor se llama <strong><code>agente</code></strong> (español), <strong>no <code>agent</code></strong>. Con <code>agent</code> responde <code>400 "Invalid request body"</code>. El PUT de CO acepta body minimal <code>{country, deal_id, agente, &lt;campo a cambiar&gt;}</code>; <code>agente</code> es la etiqueta de la corrección (ej. <code>"correction-utm-reinteresados-co"</code>). Para setear UTM: campo <code>utm_campaign</code> (plano), aceptado tanto en POST como en PUT.
       </div>
 
       <h3>Headers (comunes a todos)</h3>
