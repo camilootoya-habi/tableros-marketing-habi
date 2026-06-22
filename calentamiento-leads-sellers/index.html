@@ -71,6 +71,17 @@
   .steps { list-style: none; counter-reset: step; padding-left: 0; margin: 16px 0; }
   .steps > li { counter-increment: step; position: relative; padding-left: 42px; margin-bottom: 14px; font-size: 14px; }
   .steps > li::before { content: counter(step); position: absolute; left: 0; top: 0; width: 26px; height: 26px; border-radius: 999px; background: var(--accent); color: #fff; font-weight: 700; font-size: 13px; display: flex; align-items: center; justify-content: center; }
+  .cal { list-style: none; padding-left: 0; margin: 14px 0 4px; }
+  .cal > li { position: relative; padding-left: 26px; padding-bottom: 18px; border-left: 2px solid #c7d2fe; margin-left: 6px; }
+  .cal > li:last-child { border-left-color: transparent; padding-bottom: 0; }
+  .cal > li::before { content: ''; position: absolute; left: -8px; top: 3px; width: 14px; height: 14px; border-radius: 999px; background: var(--accent); border: 2px solid #fff; box-shadow: 0 0 0 1px #c7d2fe; }
+  .cal .c-h { font-weight: 700; color: var(--text-title); font-size: 14px; }
+  .cal .c-meta { display: flex; gap: 8px; flex-wrap: wrap; margin: 5px 0 6px; }
+  .cal .badge { font-size: 11px; font-weight: 600; padding: 2px 9px; border-radius: 999px; }
+  .cal .badge.date { background: var(--accent); color: #fff; }
+  .cal .badge.owner { background: #f3f4f6; color: var(--text-muted); }
+  .cal .badge.tbd { background: var(--warn-bg); color: #78350f; }
+  .cal p { font-size: 13px; margin: 0; }
 
   /* --- Diagrama de funnel + compuertas --- */
   .flowscroll { overflow-x: auto; margin: 22px 0; padding-bottom: 6px; }
@@ -203,6 +214,25 @@
     <div class="callout info" style="margin-top:0;">
       <p><strong>Pilar de comunicación: confianza.</strong> Como llega en frío y outbound, toda la conversación se construye sobre confianza —que sienta respaldo antes que presión de venta: <strong>casos de éxito y testimoniales</strong>, <strong>empresas que nos apoyan</strong>, <strong>brokers aliados que hablan bien de nosotros</strong>, y que somos una <strong>startup unicornio con más de 6 años de experiencia</strong> en el sector inmobiliario de Colombia.</p>
     </div>
+
+    <h4 style="margin-top:20px;">Calendario de implementación</h4>
+    <ol class="cal">
+      <li>
+        <div class="c-h">Paso 1 · La fuente REFERIDOS existe y corre en el funnel</div>
+        <div class="c-meta"><span class="badge date">vie 3 jul 2026</span><span class="badge owner">Resp.: Quiñones</span></div>
+        <p>Los contactos del referido se <strong>crean en HubSpot</strong> y <strong>Backbone corre para actualizar el estado a INCOMPLETO</strong>. Objetivo: que la fuente exista y ande de punta a punta en el funnel de Backbone y GABI.</p>
+      </li>
+      <li>
+        <div class="c-h">Paso 2 · Piloto de gestión de incompletos</div>
+        <div class="c-meta"><span class="badge tbd">fecha por definir</span></div>
+        <p>Landing vía WhatsApp con <strong>información de confianza de la marca Habi</strong> e <strong>información de los servicios multiproducto</strong>, más un <strong>formulario estilo Habimetro</strong> con la promesa de entregar información inmobiliaria a lo Habimetro.</p>
+      </li>
+      <li>
+        <div class="c-h">Paso 3 · Revisión de gestión</div>
+        <div class="c-meta"><span class="badge tbd">fecha por definir</span></div>
+        <p>Seguimiento del <strong>avance de los leads en el proceso comercial</strong>.</p>
+      </li>
+    </ol>
   </div>
 </div>
 
