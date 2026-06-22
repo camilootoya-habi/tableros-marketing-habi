@@ -129,11 +129,12 @@
       <a href="#fuentes" data-section="fuentes">📥 Fuentes</a>
       <a href="#canales" data-section="canales">🛤️ Canales</a>
       <a href="#utm" data-section="utm">🔗 Cruce UTM</a>
+      <a href="#backbone" data-section="backbone">🔧 API Backbone (MX)</a>
       <a href="#seguridad" data-section="seguridad">🔒 Seguridad</a>
     </nav>
     <div class="meta">
-      Actualizado: 2026-06-19<br>
-      Versión: 1.2 (+ seguridad)<br>
+      Actualizado: 2026-06-22<br>
+      Versión: 1.3 (+ API backbone MX)<br>
       Sin auto-update (manual).
       <button class="theme-btn" id="themeToggle" onclick="toggleTheme()" aria-label="Tema">🌙</button>
     </div>
@@ -504,6 +505,80 @@ WHERE DATE(g.fecha_creacion) >= DATE_SUB(CURRENT_DATE(), INTERVAL 7 DAY);</code>
 
       <h3>Atribución para WBR / OKR</h3>
       <p>Los tableros oficiales (Marketing WBR, WBR 2.0, OKR Marketing) usan <strong>siempre</strong> el resolver del diccionario para clasificar el canal — nunca el campo <code>canal_mercadeo</code> ni los <code>utm_*</code> crudos. Esto asegura consistencia y permite recalcular history cuando se actualiza el sheet.</p>
+    </section>
+
+    <!-- ========== SECCIÓN: API BACKBONE ========== -->
+    <section id="backbone" class="hidden">
+      <h2>API <span class="accent">Backbone</span> — modificar leads MX</h2>
+      <p class="lead">El backbone de sellers expone un endpoint HTTP para <strong>modificar negocios (leads) de México</strong> de forma programática, uno por request. Útil para correcciones masivas (re-fuentear, re-tipificar) sin tocar la base directamente: el backbone re-evalúa el lead con la lógica de negocio, no hace un <code>UPDATE</code> ciego.</p>
+
+      <div class="callout" style="border-left-color:#f59e0b">
+        <strong>⚠️ Escritura sobre producción.</strong> Cada llamada modifica un negocio real en el OLTP de MX y dispara la re-evaluación del backbone. No es reversible con un simple "deshacer". Probar siempre primero con 1–2 <code>deal_id</code> y verificar en <code>habi_db_property_deal</code> / <code>habi_db_property</code> antes de correr un lote.
+      </div>
+
+      <h3>Endpoint</h3>
+      <table>
+        <tbody>
+          <tr><td><strong>Método</strong></td><td><code>PUT</code></td></tr>
+          <tr><td><strong>URL</strong></td><td><span class="mono-sm">https://jevm381meg.execute-api.us-east-2.amazonaws.com/prod/api/v1/put_lead_mx</span></td></tr>
+          <tr><td><strong>Región</strong></td><td>AWS <code>us-east-2</code> (API Gateway → backbone MX)</td></tr>
+          <tr><td><strong>Content-Type</strong></td><td><code>application/json</code></td></tr>
+        </tbody>
+      </table>
+
+      <h3>Headers</h3>
+      <table>
+        <thead><tr><th>Header</th><th>Valor</th><th>Nota</th></tr></thead>
+        <tbody>
+          <tr><td><code>X-API-KEY</code></td><td><span class="mono-sm">&lt;API_KEY&gt;</span></td><td><strong>Secreto.</strong> No se versiona aquí (repo público). Ver callout abajo.</td></tr>
+          <tr><td><code>Authorization</code></td><td><code>default</code></td><td>Valor literal <code>default</code> (cliente interno <code>default@habi.co</code>).</td></tr>
+          <tr><td><code>Content-Type</code></td><td><code>application/json</code></td><td></td></tr>
+        </tbody>
+      </table>
+
+      <h3>Body (payload)</h3>
+      <table>
+        <thead><tr><th>Campo</th><th>Tipo</th><th>Qué es</th></tr></thead>
+        <tbody>
+          <tr><td><code>country</code></td><td>string</td><td>Siempre <code>"MX"</code> en este endpoint.</td></tr>
+          <tr><td><code>deal_id</code></td><td>integer</td><td>El negocio a modificar (= <code>id</code> de <code>habi_db_property_deal</code>, también <code>deal_id</code>). <strong>Uno por request.</strong></td></tr>
+          <tr><td><code>agent</code></td><td>string</td><td>La acción/handler que ejecuta el backbone. Determina qué campos del payload aplica. Ej: <code>update_source_id</code>.</td></tr>
+          <tr><td><code>sub_source_id</code></td><td>integer</td><td>Payload del agente <code>update_source_id</code>: la nueva sub-fuente a asignar (ej. <code>131</code>). Ver <a href="#fuentes" class="inline">Fuentes</a>.</td></tr>
+        </tbody>
+      </table>
+      <p>Otros agentes (<code>agent</code>) aceptan otros campos en el body; <code>update_source_id</code> es el documentado y verificado aquí. Al agregar uno nuevo, documentar qué campos consume.</p>
+
+      <h3>Ejemplo — re-fuentear un lead (<code>update_source_id</code>)</h3>
+<pre><code>curl --location --request PUT \
+  'https://jevm381meg.execute-api.us-east-2.amazonaws.com/prod/api/v1/put_lead_mx' \
+  --header 'X-API-KEY: '"$BACKBONE_MX_API_KEY" \
+  --header 'Authorization: default' \
+  --header 'Content-Type: application/json' \
+  --data '{
+    "country": "MX",
+    "deal_id": 1717917,
+    "sub_source_id": 131,
+    "agent": "update_source_id"
+  }'</code></pre>
+
+      <h3>Respuesta</h3>
+      <p>Responde <code>200</code> con <code>{"success": true, "message": "Success Operation", "lead": {…}}</code>. El objeto <code>lead</code> trae el <strong>estado posterior completo</strong> del negocio (deal, property con <code>sub_source_id</code> ya actualizado, contact, utm…), así que sirve como <strong>confirmación real</strong> del cambio — no es un OK ciego. Para verificar, leer <code>lead.property.sub_source_id</code> en la respuesta.</p>
+      <div class="callout">
+        <strong>Prueba verificada (22-jun-2026):</strong> <code>deal_id 1717917</code> → <code>sub_source_id 131</code> devolvió <code>HTTP 200 · success:true</code> y <code>lead.property.sub_source_id = 131</code>.
+      </div>
+
+      <h3>Correr un lote (N leads)</h3>
+      <p>El endpoint es <strong>un deal por request</strong>; para un listado hay que iterar. Recomendaciones:</p>
+      <ul>
+        <li><strong>Secuencial con log</strong>: registrar <code>deal_id</code> + <code>http_code</code> + <code>success</code> de cada respuesta para tener bitácora de fallidos.</li>
+        <li><strong>Espaciar las llamadas</strong> (pequeño <code>sleep</code> o concurrencia limitada) para no pegarle de golpe al API Gateway.</li>
+        <li><strong>Dry-run primero</strong>: 1–2 deals, verificar en BQ/respuesta, y recién ahí soltar el lote completo.</li>
+        <li><strong>¿<code>sub_source_id</code> fijo o por lead?</strong> Definir si todos van al mismo valor o cada deal lleva el suyo antes de armar el script.</li>
+      </ul>
+
+      <div class="callout" style="border-left-color:#ef4444">
+        <strong>🔑 La API key NO se versiona en este repo (es público).</strong> Pásala por variable de entorno al correr el curl (<code>export BACKBONE_MX_API_KEY=…</code>) y guárdala en un gestor de secretos / el secret del workflow, nunca en el HTML ni en un commit. El placeholder <code>&lt;API_KEY&gt;</code> de arriba es intencional.
+      </div>
     </section>
 
     <!-- ========== SECCIÓN: SEGURIDAD ========== -->
