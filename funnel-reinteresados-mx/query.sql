@@ -1,11 +1,24 @@
 -- Campaña "reinteresados" (WEB) — MX y CO, 1 fila por lead, para selector de país + filtro geo en el front.
 -- MX: utm 'mex-sellers-...-reinteresados' · CO: utm 'col-sellers-...-reinteresados'. Fuente WEB (fuente_id=3).
 -- Columnas: pais · geo (MX=estado_mexico / CO=ciudad) · area (metropolitana) · sid/slabel (estado ACTUAL)
---   · calif (alguna vez 20/63) · cita (alguna vez 27) · asig (WBR mart) · cierre (MM 'Cierre - Comprado')
---   · contrato (Inmo 'Contrato firmado') · fc (fecha creación).
+--   · calif (alguna vez 20/63) · cita (alguna vez 27) · gabi (GABI disparado = product_qualified no nulo)
+--   · asig (WBR mart) · cierre (MM 'Cierre - Comprado') · contrato (Inmo 'Contrato firmado') · fc (fecha creación).
+-- Nota asignación: el funnel distingue 2 hitos. "Asignados (GABI)" = product_qualified NO nulo en el negocio
+--   (MX: mx_rds_staging.habi_db_property_deal · CO: co_rds_staging.habi_db_tabla_negocio_inmueble) → GABI ya
+--   está gestionando comercialmente el lead. "Asignados (WBR Mart)" = lead presente en el WBR mart (downstream,
+--   llega con rezago). GABI puede dispararse sin que el lead aún figure en el mart.
 WITH
 mart AS (
   SELECT DISTINCT nid, pais FROM `papyrus-master.sellers_data_mart.sellers_leads_asignados_marketing_wbr_mart`
+),
+-- product_qualified (GABI disparado) por nid, por país
+pq_mx AS (
+  SELECT nid, MAX(IF(product_qualified IS NOT NULL,1,0)) gabi
+  FROM `sellers-main-prod.mx_rds_staging.habi_db_property_deal` GROUP BY nid
+),
+pq_co AS (
+  SELECT nid, MAX(IF(product_qualified IS NOT NULL,1,0)) gabi
+  FROM `sellers-main-prod.co_rds_staging.habi_db_tabla_negocio_inmueble` GROUP BY nid
 ),
 -- ===== MÉXICO =====
 ea_mx AS (
@@ -22,6 +35,7 @@ mx AS (
     COALESCE(NULLIF(TRIM(g.area_metropolitana),''),'Sin dato') AS area,
     CAST(ea.cur AS STRING) AS sid, COALESCE(st.label,'Sin estado') AS slabel,
     COALESCE(ev.ever_calif,0) AS calif, COALESCE(ev.ever_cita,0) AS cita,
+    COALESCE(pq.gabi,0) AS gabi,
     IF(m.nid IS NOT NULL,1,0) AS asig,
     IF(g.oportunidad_del_negocio='Cierre - Comprado',1,0) AS cierre,
     IF(hd.oportunidad_inmobiliaria='Contrato firmado',1,0) AS contrato,
@@ -31,6 +45,7 @@ mx AS (
   LEFT JOIN ea_mx ea ON ea.deal_id=g.id_negocio
   LEFT JOIN ever_mx ev ON ev.deal_id=g.id_negocio
   LEFT JOIN mart m ON m.nid=g.nid AND m.pais='mexico'
+  LEFT JOIN pq_mx pq ON pq.nid=g.nid
   LEFT JOIN `sellers-main-prod.mx_rds_staging.habi_db_state` st ON st.id=ea.cur
   WHERE hd.utm_campaign='mex-sellers-paid-experiments-web-without-leads-retargeting-national-reinteresados'
     AND g.fuente_id=3
@@ -51,6 +66,7 @@ co AS (
     COALESCE(NULLIF(TRIM(g.area_metropolitana),''),'Sin dato') AS area,
     CAST(ea.cur AS STRING) AS sid, COALESCE(st.label,'Sin estado') AS slabel,
     COALESCE(ev.ever_calif,0) AS calif, COALESCE(ev.ever_cita,0) AS cita,
+    COALESCE(pq.gabi,0) AS gabi,
     IF(m.nid IS NOT NULL,1,0) AS asig,
     IF(g.oportunidad_del_negocio='Cierre - Comprado',1,0) AS cierre,
     IF(hd.oportunidad_inmobiliaria='Contrato firmado',1,0) AS contrato,
@@ -60,6 +76,7 @@ co AS (
   LEFT JOIN ea_co ea ON ea.negocio_id=g.negocio_id
   LEFT JOIN ever_co ev ON ev.negocio_id=g.negocio_id
   LEFT JOIN mart m ON m.nid=g.nid AND m.pais='colombia'
+  LEFT JOIN pq_co pq ON pq.nid=g.nid
   LEFT JOIN `sellers-main-prod.co_rds_staging.habi_db_tabla_estados` st ON st.id=ea.cur
   WHERE hd.utm_campaign='col-sellers-paid-experiments-web-without-leads-retargeting-national-reinteresados'
     AND g.fuente_id=3

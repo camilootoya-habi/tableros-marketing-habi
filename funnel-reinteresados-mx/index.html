@@ -88,7 +88,8 @@
   <div class="kpi-grid" id="kpis"></div>
 
   <h2>Funnel</h2>
-  <p class="note">Progresión: Registros → Calificados (alguna vez 20/63) → Asignados (WBR mart) → Citas agendadas (estado 27) → Cierres (MM, "Cierre - Comprado") → Contrato firmado (Inmo). A la derecha: conversión <b>vs registros</b> y <b>vs anterior</b>.</p>
+  <p class="note">Progresión: Registros → Calificados (alguna vez 20/63) → <b>Asignados (GABI)</b> → <b>Asignados (WBR Mart)</b> → Citas agendadas (estado 27) → Cierres (MM, "Cierre - Comprado") → Contrato firmado (Inmo). A la derecha: conversión <b>vs registros</b> y <b>vs anterior</b>.</p>
+  <p class="note" style="margin-top:-2px"><b>Asignados (GABI)</b> = el bot GABI ya está gestionando el lead (<code>product_qualified</code> ≠ nulo en el negocio). <b>Asignados (WBR Mart)</b> = el lead ya entró al WBR mart (downstream, llega con rezago). GABI puede dispararse antes de que el lead figure en el mart.</p>
   <div class="card" id="funnel"></div>
 
   <h2>Calificados</h2>
@@ -114,14 +115,15 @@ const UTM={MX:'mex-sellers-paid-experiments-web-without-leads-retargeting-nation
 const CNAME={MX:'🇲🇽 México', CO:'🇨🇴 Colombia'};
 const GEOWORD={MX:'estado', CO:'ciudad'};
 const STAGES=[['Registros','#4f46e5',l=>l.length],['Calificados','#10b981',l=>l.filter(x=>x.calif).length],
-  ['Asignados','#0ea5e9',l=>l.filter(x=>x.asig).length],['Citas agendadas','#8b5cf6',l=>l.filter(x=>x.cita).length],
+  ['Asignados (GABI)','#06b6d4',l=>l.filter(x=>x.gabi).length],['Asignados (WBR Mart)','#0ea5e9',l=>l.filter(x=>x.asig).length],
+  ['Citas agendadas','#8b5cf6',l=>l.filter(x=>x.cita).length],
   ['Cierres (MM)','#f59e0b',l=>l.filter(x=>x.cierre).length],['Contrato firmado (Inmo)','#0d9488',l=>l.filter(x=>x.contrato).length]];
 const KCLS=['s1','s2','s3','s4'];
 let dailyChart=null, leadsAll=[], country='MX', selectedGeo=null;
 
 fetch('data.json').then(r=>r.json()).then(raw=>{
   leadsAll=raw.map(r=>({pais:r.pais, geo:r.geo||'Sin dato', area:r.area||'Sin dato', sid:(r.sid==null?'':String(r.sid)), slabel:r.slabel||'Sin estado',
-    calif:N(r.calif), cita:N(r.cita), asig:N(r.asig), cierre:N(r.cierre), contrato:N(r.contrato), fc:r.fc}));
+    calif:N(r.calif), cita:N(r.cita), gabi:N(r.gabi), asig:N(r.asig), cierre:N(r.cierre), contrato:N(r.contrato), fc:r.fc}));
   selectCountry('MX');
 });
 
@@ -200,8 +202,8 @@ function render(L){
       scales:{y:{beginAtZero:true,grid:{color:'#e5e7eb'},ticks:{font:FONT,precision:0}},x:{grid:{display:false},ticks:{font:FONT}}}}
   });
 
-  const asig=funnel[2].n, antiTotal=antiRows.reduce((a,r)=>a+r.n,0);
-  document.getElementById('footer').textContent= registros?`Asignados (WBR): ${fmt(asig)} de ${fmt(registros)} (${pct(asig).toFixed(1)}%). Antifunnel (estado actual): ${fmt(antiTotal)}.`:'Sin registros para esta campaña todavía.';
+  const gabi=funnel[2].n, asig=funnel[3].n, antiTotal=antiRows.reduce((a,r)=>a+r.n,0);
+  document.getElementById('footer').textContent= registros?`Asignados (GABI): ${fmt(gabi)} de ${fmt(registros)} (${pct(gabi).toFixed(1)}%). Asignados (WBR Mart): ${fmt(asig)} (${pct(asig).toFixed(1)}%). Antifunnel (estado actual): ${fmt(antiTotal)}.`:'Sin registros para esta campaña todavía.';
 }
 </script>
 </body>

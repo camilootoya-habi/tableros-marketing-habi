@@ -180,7 +180,7 @@
             <td><strong>Negocio/lead</strong> (OLTP)</td>
             <td><span class="mono-sm">sellers-main-prod.co_rds_staging.habi_db_tabla_negocio_inmueble</span></td>
             <td><span class="mono-sm">sellers-main-prod.mx_rds_staging.habi_db_property_deal</span></td>
-            <td>Réplica del OLTP. Una fila por negocio con estado actual, FKs a inmueble y contacto.</td>
+            <td>Réplica del OLTP. Una fila por negocio con estado actual (<code>last_state_id</code>), FKs a inmueble y contacto, y <code>product_qualified</code> (= GABI disparado). Ver <a href="#tablas-inmueble-negocio" class="inline">Inmueble vs Negocio</a>.</td>
           </tr>
           <tr>
             <td><strong>Inmueble</strong> (OLTP)</td>
@@ -229,6 +229,24 @@
           </tr>
         </tbody>
       </table>
+
+      <h3 id="tablas-inmueble-negocio">Inmueble vs Negocio: <code>habi_db_property</code> vs <code>habi_db_property_deal</code></h3>
+      <p>Dos tablas OLTP que se confunden seguido porque casi siempre van 1-a-1, pero modelan cosas distintas: una es el <strong>activo físico</strong>, la otra es el <strong>proceso comercial</strong> sobre ese activo.</p>
+      <table>
+        <thead>
+          <tr><th></th><th><span class="mono-sm">habi_db_property</span> (Inmueble)</th><th><span class="mono-sm">habi_db_property_deal</span> (Negocio)</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><strong>Qué es</strong></td><td>El inmueble físico: una fila por propiedad.</td><td>El negocio/deal sobre el inmueble: una fila por intento de venta (el lead).</td></tr>
+          <tr><td><strong>Llave (PK)</strong></td><td><code>id</code> (= <code>property_id</code> en otras tablas). <strong>No</strong> tiene <code>nid</code>.</td><td><code>id</code> + <code>nid</code> (la llave transversal del lead). FK <code>property_id → property.id</code>, <code>contact_id</code>.</td></tr>
+          <tr><td><strong>Qué guarda</strong></td><td>Atributos físicos y de listing: <code>area</code>, <code>bath</code>, <code>room_num</code>, <code>garage</code>, <code>years_old</code>, <code>property_type_id</code>, precios (<code>last_ask_price</code>, <code>last_ask_price_habi</code>, <code>last_admin_price</code>…), <code>active</code>.</td><td>Estado y disposición comercial: <code>last_state_id</code> (estado del funnel), <code>type_deal_id</code>, <code>deal_priority_id</code>, <code>final_closing_price</code>, <code>last_busines_oportunity_id</code> y <code>product_qualified</code>.</td></tr>
+          <tr><td><strong>Cambia cuando</strong></td><td>Se re-mide/re-listea el inmueble (precio, atributos).</td><td>Avanza la gestión del lead (estado, calificación, asignación).</td></tr>
+        </tbody>
+      </table>
+      <p><strong>Relación:</strong> <code>property_deal.property_id = property.id</code>. En MX es prácticamente 1-a-1 (1.704.363 inmuebles con 1 solo negocio; apenas 3 con 2 negocios), pero el modelo permite varios negocios por inmueble (reactivaciones). En CO la pareja equivalente es <span class="mono-sm">habi_db_tabla_inmueble_v2</span> (inmueble) ↔ <span class="mono-sm">habi_db_tabla_negocio_inmueble</span> (negocio).</p>
+      <div class="callout">
+        <strong><code>product_qualified</code> = señal de que GABI ya está gestionando el lead.</strong> Vive en el <em>negocio</em> (no en el inmueble), tipo STRING. Valores: <code>ibuyer</code>, <code>real_estate</code>, <code>ibuyer_and_real_estate</code>, <code>transient</code>, o <code>NULL</code> (aún no calificado por producto). <strong>No nulo ⇒ GABI disparado.</strong> Es un hito <em>más temprano</em> que la entrada al <a href="#tablas" class="inline">WBR mart</a>: en la campaña de reinteresados WEB MX (jun 2026), 236 de 482 leads tenían <code>product_qualified</code> mientras 0 figuraban aún en el mart. Ojo: <code>hubspot_owner_id</code> en <code>hubspot.deals</code> <strong>no</strong> sirve para detectar gestión de GABI (el bot no asigna owner; venía vacío para el 100% de esos leads).
+      </div>
 
       <h3>Llaves de join</h3>
       <ul>
