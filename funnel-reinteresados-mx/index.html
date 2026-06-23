@@ -113,7 +113,7 @@
 
   <h2>Pipeline comercial <span class="help" data-tip="Etapa actual de cada lead en su pipeline de HubSpot: hubspot.deals.dealstage → deal_pipelines_stages (etapa, orden) → deal_pipelines (pipeline). Los leads se reparten en varios pipelines (Market Maker, Inmobiliaria, versiones vieja/NUEVO); se agrupa por pipeline y se ordena por la etapa del funnel.">?</span></h2>
   <p class="note">Dónde está cada lead en la gestión comercial, agrupado por pipeline y ordenado por etapa. Respeta el filtro de país y zona.</p>
-  <div class="card" id="pipeline"></div>
+  <div id="pipeline"></div>
 
   <h2>Cruce Calificados MM × Inmo <span class="help" data-tip="Calificado Market Maker = estado (backbone) ∈ {No gestionado, Sin pricing incial} = 20/63. Calificado Inmo = estado_del_negocio_inmo = No gestionado. Un lead puede calificar en ambos funnels, en uno, o en ninguno. Fuente: hubspot.deals.">?</span></h2>
   <p class="note">Matriz 3×3 sobre <b>todos los registros</b>: cuántos califican en MM, en Inmo, en ambos o en ninguno. Las barras de abajo son la misma data pero <b>solo sobre los que calificaron en al menos un funnel</b>. Ambas respetan el filtro de país y zona.</p>
@@ -204,20 +204,30 @@ function apply(){
 
 function renderPipeline(L){
   const el=document.getElementById('pipeline');
-  if(!L.length){el.innerHTML='<p class="note">Sin leads en esta selección.</p>';return;}
+  if(!L.length){el.innerHTML='<div class="card"><p class="note">Sin leads en esta selección.</p></div>';return;}
+  // grupo (MM vs Inmo) y orden viejo→NUEVO
+  const grp=n=>/inmobiliaria/i.test(n)?'Inmobiliaria':(/market maker|sellers/i.test(n)?'Market Maker':'Otros');
+  const isNuevo=n=>/nuevo/i.test(n);
   const byPipe={};
   L.forEach(l=>{(byPipe[l.pipeline]=byPipe[l.pipeline]||[]).push(l);});
-  const pipes=Object.entries(byPipe).sort((a,b)=>b[1].length-a[1].length);
-  el.innerHTML=pipes.map(([pipe,rows])=>{
+  const renderPipe=([pipe,rows],color)=>{
     const byEt={};
     rows.forEach(l=>{const k=l.etapa;(byEt[k]=byEt[k]||{n:0,o:l.eorden});byEt[k].n++;if(l.eorden<byEt[k].o)byEt[k].o=l.eorden;});
     const ets=Object.entries(byEt).sort((a,b)=>a[1].o-b[1].o||b[1].n-a[1].n);
-    const max=Math.max(...ets.map(e=>e[1].n),1), total=rows.length;
+    const max=Math.max(...ets.map(e=>e[1].n),1);
     const bars=ets.map(([et,d])=>`<div style="display:flex;align-items:center;gap:10px;margin:6px 0">
       <div style="width:155px;font-size:12px;text-align:right;flex:0 0 auto;color:var(--text)">${et}</div>
-      <div style="flex:1;background:#f3f4f6;border-radius:5px;height:22px"><div style="width:${(d.n/max*100).toFixed(1)}%;background:var(--accent);height:100%;border-radius:5px;min-width:3px;transition:width .3s"></div></div>
+      <div style="flex:1;background:#f3f4f6;border-radius:5px;height:22px"><div style="width:${(d.n/max*100).toFixed(1)}%;background:${color};height:100%;border-radius:5px;min-width:3px;transition:width .3s"></div></div>
       <div style="width:44px;font-size:12px;flex:0 0 auto"><b>${fmt(d.n)}</b></div></div>`).join('');
-    return `<div style="margin-bottom:18px"><div style="font-weight:700;font-size:13.5px;margin-bottom:6px">${pipe} <span class="muted">· ${fmt(total)} leads</span></div>${bars}</div>`;
+    return `<div style="margin-bottom:16px"><div style="font-weight:700;font-size:13px;margin-bottom:6px">${pipe} <span class="muted">· ${fmt(rows.length)} leads</span></div>${bars}</div>`;
+  };
+  const GROUPS=[['Market Maker','#10b981'],['Inmobiliaria','#0d9488'],['Otros','#64748b']];
+  el.innerHTML=GROUPS.map(([g,color])=>{
+    const pipesIn=Object.entries(byPipe).filter(([p])=>grp(p)===g)
+      .sort((a,b)=>(isNuevo(a[0])?1:0)-(isNuevo(b[0])?1:0)||b[1].length-a[1].length);
+    if(!pipesIn.length) return '';
+    const tot=pipesIn.reduce((s,[,r])=>s+r.length,0);
+    return `<div class="card"><div style="font-size:12.5px;font-weight:800;text-transform:uppercase;letter-spacing:.4px;color:${color};border-bottom:2px solid ${color};padding-bottom:6px;margin-bottom:14px">${g} · ${fmt(tot)} leads</div>${pipesIn.map(p=>renderPipe(p,color)).join('')}</div>`;
   }).join('');
 }
 
