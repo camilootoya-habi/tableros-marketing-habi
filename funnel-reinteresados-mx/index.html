@@ -84,9 +84,6 @@
   .venn-wrap{display:flex;flex-direction:column;align-items:center;gap:10px}
   .venn-total{font-size:13px;color:var(--text-muted)}
   .venn-total b{color:var(--text-title);font-size:15px}
-  .venn-legend{display:flex;gap:18px;flex-wrap:wrap;font-size:12.5px;color:var(--text)}
-  .venn-legend span{display:inline-flex;align-items:center;gap:6px}
-  .venn-legend i{width:12px;height:12px;border-radius:3px;display:inline-block}
   @media (max-width:600px){
     .wrap{padding:22px 14px 60px} h1{font-size:1.45rem} h2{font-size:1.12rem;margin:28px 0 6px}
     .kpi-grid{grid-template-columns:1fr 1fr;gap:8px} .kpi{padding:11px 12px} .kpi .val{font-size:21px}
@@ -115,7 +112,7 @@
   <div class="card" id="funnel"></div>
 
   <h2>Cruce Calificados MM × Inmo <span class="help" data-tip="Calificado Market Maker = alguna vez estado 20 ó 63 (history_state). Calificado Inmo = alguna vez estado 20 en history_state_real_estate. Un lead puede calificar en ambos funnels, en uno, o en ninguno.">?</span></h2>
-  <p class="note">Matriz 3×3 sobre <b>todos los registros</b>: cuántos califican en MM, en Inmo, en ambos o en ninguno. El Venn de abajo es la misma data pero <b>solo sobre los que calificaron en al menos un funnel</b>. Ambas respetan el filtro de país y zona.</p>
+  <p class="note">Matriz 3×3 sobre <b>todos los registros</b>: cuántos califican en MM, en Inmo, en ambos o en ninguno. Las barras de abajo son la misma data pero <b>solo sobre los que calificaron en al menos un funnel</b>. Ambas respetan el filtro de país y zona.</p>
   <div class="card" id="matrix"></div>
   <div class="card" id="venn"></div>
 
@@ -244,28 +241,21 @@ function render(L){
     <p class="note" style="margin-top:10px">De ${fmt(totMMy)} calificados MM, <b>${fmt(both)}</b> (${totMMy?(both/totMMy*100).toFixed(0):0}%) también califican Inmo. Exclusivos: <b>${fmt(onlyMM)}</b> solo MM, <b>${fmt(onlyIn)}</b> solo Inmo. <b>${fmt(none)}</b> (${pct(none).toFixed(0)}%) no calificaron en ninguno.</p>`
     : '<p class="note">Sin registros en esta selección.</p>';
 
-  // Venn (solo calificados ≥1 funnel)
-  const venn=()=>{
+  // Barras horizontales del cruce (solo calificados ≥1 funnel)
+  const crossBars=()=>{
     if(!qual) return '<p class="note">Sin calificados en esta selección.</p>';
-    const vw=320, vh=180, cy=vh/2, maxT=Math.max(totMMy,totIny,1), rmax=60, rmin=22;
-    const rMM=Math.max(rmin, rmax*Math.sqrt(totMMy/maxT)), rIn=Math.max(rmin, rmax*Math.sqrt(totIny/maxT));
-    const sep=both>0?(rMM+rIn)*0.52:(rMM+rIn)+10, cxMM=vw/2-sep/2, cxIn=vw/2+sep/2;
-    const lblMM=cxMM-rMM*0.45, lblIn=cxIn+rIn*0.45, lblB=(cxMM+cxIn)/2;
-    const t=(x,n)=>`<text x="${x.toFixed(0)}" y="${cy-3}" text-anchor="middle" font-size="16" font-weight="800" fill="#111827">${fmt(n)}</text><text x="${x.toFixed(0)}" y="${cy+13}" text-anchor="middle" font-size="10.5" fill="#374151">${(n/qual*100).toFixed(0)}%</text>`;
-    return `<svg viewBox="0 0 ${vw} ${vh}" width="100%" style="max-width:440px;height:auto">
-      <circle cx="${cxMM.toFixed(0)}" cy="${cy}" r="${rMM.toFixed(0)}" fill="rgba(16,185,129,.45)" style="mix-blend-mode:multiply"/>
-      <circle cx="${cxIn.toFixed(0)}" cy="${cy}" r="${rIn.toFixed(0)}" fill="rgba(14,165,233,.45)" style="mix-blend-mode:multiply"/>
-      ${onlyMM?t(lblMM,onlyMM):''}${both?t(lblB,both):''}${onlyIn?t(lblIn,onlyIn):''}
-    </svg>`;
+    const regions=[['Solo MM',onlyMM,'#10b981'],['Ambos',both,'#0d9488'],['Solo Inmo',onlyIn,'#0ea5e9']];
+    const rmax=Math.max(onlyMM,both,onlyIn,1);
+    return regions.map(([lab,n,c])=>`<div style="display:flex;align-items:center;gap:10px;margin:8px 0">
+      <div style="width:74px;font-size:12.5px;color:var(--text);text-align:right;flex:0 0 auto">${lab}</div>
+      <div style="flex:1;background:#f3f4f6;border-radius:6px;height:26px">
+        <div style="width:${(n/rmax*100).toFixed(1)}%;background:${c};height:100%;border-radius:6px;min-width:3px;transition:width .3s"></div></div>
+      <div style="width:90px;font-size:12.5px;flex:0 0 auto"><b>${fmt(n)}</b> <span class="muted">${qual?(n/qual*100).toFixed(0):0}%</span></div>
+    </div>`).join('');
   };
-  document.getElementById('venn').innerHTML = `<div class="venn-wrap">
-    <div class="venn-total">Calificados (≥1 funnel): <b>${fmt(qual)}</b>${registros?` de ${fmt(registros)} registros (${pct(qual).toFixed(0)}%)`:''}</div>
-    ${venn()}
-    <div class="venn-legend">
-      <span><i style="background:rgba(16,185,129,.65)"></i>Solo MM: <b>${fmt(onlyMM)}</b></span>
-      <span><i style="background:rgba(13,148,136,.75)"></i>Ambos: <b>${fmt(both)}</b></span>
-      <span><i style="background:rgba(14,165,233,.65)"></i>Solo Inmo: <b>${fmt(onlyIn)}</b></span>
-    </div></div>`;
+  document.getElementById('venn').innerHTML = `<div class="venn-wrap" style="align-items:stretch">
+    <div class="venn-total" style="text-align:center">Calificados (≥1 funnel): <b>${fmt(qual)}</b>${registros?` de ${fmt(registros)} registros (${pct(qual).toFixed(0)}%)`:''}</div>
+    ${crossBars()}</div>`;
 
   const byState={};
   L.forEach(l=>{const k=l.sid+'|'+l.slabel;(byState[k]=byState[k]||{sid:l.sid,label:l.slabel,n:0,a:0});byState[k].n++;byState[k].a+=l.asig;});
