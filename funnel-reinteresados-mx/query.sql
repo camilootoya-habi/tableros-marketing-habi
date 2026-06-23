@@ -95,7 +95,7 @@ co AS (
   LEFT JOIN pq_co pq ON pq.nid=g.nid
   LEFT JOIN `sellers-main-prod.co_rds_staging.habi_db_tabla_estados` st ON st.id=ea.cur
   WHERE hd.utm_campaign='col-sellers-paid-experiments-web-without-leads-retargeting-national-reinteresados'
-    AND g.fuente_id=3
+    -- CO: la campaña se define por la UTM (incluye fuente 3/7/47); NO filtramos fuente_id=3 (MX sí, ver arriba).
   QUALIFY ROW_NUMBER() OVER (PARTITION BY g.nid ORDER BY CAST(g.fecha_creacion AS DATE) DESC)=1
 )
 SELECT * FROM mx UNION ALL SELECT * FROM co
