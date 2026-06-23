@@ -134,7 +134,7 @@
     </nav>
     <div class="meta">
       Actualizado: 2026-06-22<br>
-      Versión: 1.5 (CO prod + gotcha agente)<br>
+      Versión: 1.6 (backbone completo: naming CO/MX, reglas, linaje, dedup)<br>
       Sin auto-update (manual).
       <button class="theme-btn" id="themeToggle" onclick="toggleTheme()" aria-label="Tema">🌙</button>
     </div>
@@ -524,16 +524,16 @@ WHERE DATE(g.fecha_creacion) >= DATE_SUB(CURRENT_DATE(), INTERVAL 7 DAY);</code>
           <tr><td><strong>Método (verbo)</strong></td><td>qué quieres hacer</td><td><code>--request POST</code> / <code>PUT</code> (o implícito)</td></tr>
           <tr><td><strong>URL</strong></td><td>a qué servidor y ruta</td><td><code>'https://…/post_lead_co'</code></td></tr>
           <tr><td><strong>Headers</strong></td><td>quién eres, qué formato mandas</td><td><code>--header 'x-api-key: …'</code></td></tr>
-          <tr><td><strong>Body</strong></td><td>los datos que envías</td><td><code>--data-raw '{…}'</code></td></tr>
+          <tr><td><strong>Body</strong></td><td>los datos que envías</td><td><code>--data '{…}'</code></td></tr>
         </tbody>
       </table>
-      <p>Verbos relevantes: <strong><code>POST</code> = crear</strong> algo nuevo · <strong><code>PUT</code> = modificar</strong> algo que ya existe · <code>GET</code> = leer · <code>DELETE</code> = borrar.</p>
-      <div class="callout">
-        Detalle de <code>curl</code>: si le pasas un body (<code>--data</code>/<code>--data-raw</code>) y <strong>no</strong> especificas <code>--request</code>, asume <code>POST</code> por defecto. Los nombres de header son case-insensitive (<code>x-api-key</code> ≡ <code>X-API-KEY</code>).
+      <p>Verbos relevantes: <strong><code>POST</code> = crear</strong> algo nuevo · <strong><code>PUT</code> = modificar</strong> algo que ya existe · <code>GET</code> = leer · <code>DELETE</code> = borrar. Si pasas body y no especificas <code>--request</code>, curl asume <code>POST</code>. Los headers son case-insensitive (<code>x-api-key</code> ≡ <code>X-API-KEY</code>).</p>
+      <div class="callout" style="border-left-color:#ef4444">
+        <strong>🐛 Gotcha #1 — leer el payload de un archivo:</strong> usa <code>--data @archivo.json</code>, <strong>NO</strong> <code>--data-raw @archivo.json</code>. <code>--data-raw</code> manda el texto literal <code>@archivo.json</code> como body (→ <code>400 Invalid request body</code>); solo <code>--data</code>/<code>--data-binary</code> interpretan el <code>@</code> como "leer del archivo".
       </div>
 
       <h3>Matriz de endpoints</h3>
-      <p>Hay <strong>una API por país</strong> (host de API Gateway distinto, región <code>us-east-2</code>), y sobre cada una se puede crear (<code>POST</code>) o modificar (<code>PUT</code>):</p>
+      <p>Un <strong>gateway unificado de prod</strong> sirve ambos países (región <code>us-east-2</code>); cada país tiene su ruta para crear (<code>POST</code>) y modificar (<code>PUT</code>):</p>
       <table>
         <thead><tr><th>País</th><th>Operación</th><th>Verbo</th><th>Ruta</th><th>Stage</th></tr></thead>
         <tbody>
@@ -544,90 +544,135 @@ WHERE DATE(g.fecha_creacion) >= DATE_SUB(CURRENT_DATE(), INTERVAL 7 DAY);</code>
         </tbody>
       </table>
       <div class="callout" style="border-left-color:#f59e0b">
-        <strong>⚠️ El prod de CO vive en el MISMO gateway que MX</strong> (<code>jevm381meg</code>, stage <code>prod</code>, misma key) — es un gateway unificado con rutas <code>post_lead_co</code> / <code>put_lead_co</code>. El host <code>lew5oaks7h</code> era solo <code>dev</code> (pruebas).
-      </div>
-      <div class="callout" style="border-left-color:#ef4444">
-        <strong>🐛 Gotcha de naming en el PUT de CO:</strong> el campo del actor se llama <strong><code>agente</code></strong> (español), <strong>no <code>agent</code></strong>. Con <code>agent</code> responde <code>400 "Invalid request body"</code>. El PUT de CO acepta body minimal <code>{country, deal_id, agente, &lt;campo a cambiar&gt;}</code>; <code>agente</code> es la etiqueta de la corrección (ej. <code>"correction-utm-reinteresados-co"</code>). Para setear UTM: campo <code>utm_campaign</code> (plano), aceptado tanto en POST como en PUT.
+        <strong>CO prod y MX prod viven en el MISMO gateway</strong> (<code>jevm381meg</code>, stage <code>prod</code>, <strong>misma API key</strong>) — solo cambia la ruta (<code>_co</code> / <code>_mx</code>). El host <code>lew5oaks7h</code> era solo el <code>dev</code> de CO (crea leads dummy).
       </div>
 
       <h3>Headers (comunes a todos)</h3>
       <table>
         <thead><tr><th>Header</th><th>Valor</th><th>Nota</th></tr></thead>
         <tbody>
-          <tr><td><code>x-api-key</code></td><td><span class="mono-sm">$BACKBONE_{CO,MX}_API_KEY</span></td><td>Una key por país. Secreta — ver archivo local.</td></tr>
-          <tr><td><code>Authorization</code></td><td><code>default</code></td><td>Valor literal <code>default</code> (cliente interno <code>default@habi.co</code>).</td></tr>
+          <tr><td><code>x-api-key</code></td><td><span class="mono-sm">$BACKBONE_API_KEY</span></td><td><strong>Secreta</strong> — vive en <span class="mono-sm">~/habi/.secrets/backbone-api-keys.md</span>, NUNCA en el repo. CO-prod y MX comparten la misma.</td></tr>
+          <tr><td><code>Authorization</code></td><td><code>default</code></td><td>Valor literal (cliente interno <code>default@habi.co</code>).</td></tr>
           <tr><td><code>Content-Type</code></td><td><code>application/json</code></td><td></td></tr>
         </tbody>
       </table>
 
-      <h3>Campos del body</h3>
+      <h3>Campos del body — naming CO (español) vs MX (inglés)</h3>
+      <p>El mayor tropiezo: <strong>CO usa nombres en español y MX en inglés</strong>. Misma semántica, distinto nombre:</p>
       <table>
-        <thead><tr><th>Campo</th><th>Aplica a</th><th>Qué es</th></tr></thead>
+        <thead><tr><th>Concepto</th><th>CO (<code>*_co</code>)</th><th>MX (<code>*_mx</code>)</th></tr></thead>
         <tbody>
-          <tr><td><code>country</code></td><td>todos</td><td><code>"CO"</code> o <code>"MX"</code>. Debe coincidir con el endpoint.</td></tr>
-          <tr><td><code>deal_id</code></td><td>PUT (modificar)</td><td>El negocio a modificar. <strong>No</strong> va al crear.</td></tr>
-          <tr><td><code>source_id</code> / <code>sub_source_id</code></td><td>todos</td><td>Fuente y sub-fuente del lead. Ver <a href="#fuentes" class="inline">Fuentes</a>.</td></tr>
-          <tr><td><code>agent</code> (MX) / <code>agente</code> (CO)</td><td>todos</td><td><strong>Campo sobrecargado:</strong> a veces es una <em>acción</em> (<code>"update_source_id"</code>), a veces el <em>correo/nombre del actor</em> (<code>"mateorestrepo@habi.co"</code>). Confirmar según la operación.</td></tr>
-          <tr><td>atributos de inmueble + contacto</td><td>POST (crear)</td><td>CO en español (<code>area</code>, <code>num_habitaciones</code>, <code>banos</code>, <code>estrato</code>, <code>direccion</code>, <code>ciudad_id</code>, <code>latitud</code>/<code>longitud</code>, <code>nombre_o_inmobiliaria</code>, <code>telefono</code>, <code>correo</code>, <code>property_relationship</code>, <code>tipo_inmueble(_id)</code>, <code>ask_price</code>…). MX usa naming en inglés.</td></tr>
+          <tr><td>País</td><td colspan="2"><code>country</code> = <code>"CO"</code> / <code>"MX"</code> (debe coincidir con la ruta)</td></tr>
+          <tr><td>Área (m²)</td><td><code>area</code></td><td><code>area</code></td></tr>
+          <tr><td>Habitaciones</td><td><code>num_habitaciones</code></td><td><code>room_num</code></td></tr>
+          <tr><td>Baños</td><td><code>banos</code></td><td><code>bath</code></td></tr>
+          <tr><td>Garajes</td><td><code>garajes</code></td><td><code>garage</code></td></tr>
+          <tr><td>Ascensores / piso</td><td><code>num_ascensores</code> · <code>num_piso</code></td><td>—</td></tr>
+          <tr><td>Antigüedad</td><td><code>anos_antiguedad</code></td><td><code>years_old</code></td></tr>
+          <tr><td>Tipo inmueble</td><td><code>tipo_inmueble_id</code></td><td><code>property_type_id</code></td></tr>
+          <tr><td>Tipo negocio</td><td>—</td><td><code>type_deal_id</code> (=1)</td></tr>
+          <tr><td>Estrato</td><td><code>estrato</code> (string)</td><td>— (no aplica en MX)</td></tr>
+          <tr><td>Precio pedido</td><td><code>ask_price</code></td><td><code>ask_price</code></td></tr>
+          <tr><td>Dirección</td><td><code>direccion</code></td><td><code>address</code></td></tr>
+          <tr><td>Ubicación admin.</td><td><code>ciudad_id</code></td><td><code>mex_state_id</code> (lo deriva del lat/long si no se manda)</td></tr>
+          <tr><td>Geo</td><td><code>latitud</code> · <code>longitud</code></td><td><code>latitude</code> · <code>longitude</code></td></tr>
+          <tr><td>Fuente / sub-fuente</td><td colspan="2"><code>source_id</code> (CO: <code>fuente_id</code>) · <code>sub_source_id</code></td></tr>
+          <tr><td>Nombre contacto</td><td><code>nombre_o_inmobiliaria</code></td><td><code>name_real_estate</code></td></tr>
+          <tr><td>Teléfono</td><td><code>telefono</code></td><td><code>phone</code> (10 dígitos, sin <code>+52</code>)</td></tr>
+          <tr><td>Correo</td><td><code>correo</code></td><td><code>email</code></td></tr>
+          <tr><td>Relación</td><td colspan="2"><code>property_relationship</code> (ej. <code>"owner"</code>)</td></tr>
+          <tr><td>Actor / acción</td><td><strong><code>agente</code></strong></td><td><strong><code>agent</code></strong></td></tr>
+          <tr><td>Campaña</td><td colspan="2"><code>utm_campaign</code> (plano, aceptado en POST y PUT)</td></tr>
+          <tr><td>Identificar lead (solo PUT)</td><td colspan="2"><code>deal_id</code> — el negocio a modificar. NO va en el POST.</td></tr>
+        </tbody>
+      </table>
+      <div class="callout" style="border-left-color:#ef4444">
+        <strong>🐛 Gotcha #2 — <code>agente</code> vs <code>agent</code>:</strong> el campo del actor es <strong><code>agente</code> (español) en CO</strong> y <strong><code>agent</code> (inglés) en MX</strong>. Usar el incorrecto → <code>400 "Invalid request body"</code>. El <code>agent</code>/<code>agente</code> es una etiqueta libre: una <em>acción</em> (<code>"update_source_id"</code>, <code>"correction-georef-request-co"</code>) o un identificador del proceso (<code>"claude-camilo-otoya-reinteres"</code>).
+      </div>
+
+      <h3>Reglas por país — campaña reinteresados</h3>
+      <table>
+        <thead><tr><th>Campo</th><th><span class="badge badge-co">CO</span></th><th><span class="badge badge-mx">MX</span></th></tr></thead>
+        <tbody>
+          <tr><td><code>source_id</code> / <code>fuente_id</code></td><td colspan="2"><strong>3 (WEB)</strong> — forzado, aunque el origen sea otra fuente (la campaña vive en WEB)</td></tr>
+          <tr><td><code>sub_source_id</code></td><td><strong>null</strong> (se omite)</td><td><strong>131</strong> (obligatorio)</td></tr>
+          <tr><td><code>ask_price</code></td><td colspan="2">Sí — del precio del origen</td></tr>
+          <tr><td><code>utm_campaign</code></td><td><code>col-sellers-…-reinteresados</code></td><td><code>mex-sellers-…-reinteresados</code></td></tr>
+          <tr><td><code>agente</code>/<code>agent</code></td><td colspan="2"><code>claude-camilo-otoya-reinteres</code></td></tr>
         </tbody>
       </table>
 
-      <h3>Ejemplo A — MODIFICAR un lead (MX, re-fuentear)</h3>
+      <h3>De dónde sale cada dato (linaje BQ)</h3>
+      <p>Para recrear un lead a partir de otro, se parte del negocio original (filtrando por <code>nid</code>) y se navegan sus tablas. <code>source_id</code>, <code>sub_source_id</code>, <code>utm_campaign</code> y <code>agent</code> son forzados, no salen del origen.</p>
+      <div class="grid-2">
+        <div class="box">
+          <h4><span class="badge badge-co">CO</span> <span class="mono-sm">co_rds_staging</span></h4>
+          <ul style="font-size:12.5px;padding-left:18px">
+            <li><code>habi_db_tabla_negocio_inmueble</code> (start, por <code>nid</code>) → <code>inmueble_id</code>, <code>contacto_id</code></li>
+            <li><code>habi_db_tabla_inmueble_v2</code> (<code>id=inmueble_id</code>): area, banos, num_habitaciones, estrato, garajes, num_ascensores, num_piso, tipo_inmueble_id, anos_antiguedad, <code>last_ask_price</code>, <code>localizacion_new_id</code></li>
+            <li><code>habi_db_tabla_localizacion_inmueble_v2</code> (<code>id=localizacion_new_id</code>): direccion, ciudad_id, latitud, longitud</li>
+            <li><code>habi_db_tabla_contacto_v2</code> (<code>id=contacto_id</code>): nombre_o_inmobiliaria, telefono, correo, property_relationship</li>
+          </ul>
+        </div>
+        <div class="box">
+          <h4><span class="badge badge-mx">MX</span> <span class="mono-sm">mx_rds_staging</span></h4>
+          <ul style="font-size:12.5px;padding-left:18px">
+            <li><code>habi_db_property_deal</code> (start, por <code>nid</code>) → <code>property_id</code>, <code>contact_id</code></li>
+            <li><code>habi_db_property</code> (<code>id=property_id</code>): property_type_id, area, bath, room_num, garage, years_old, <code>last_ask_price</code>, <code>property_location_id</code></li>
+            <li><code>habi_db_property_location</code> (<code>id=property_location_id</code>): address, latitude, longitude</li>
+            <li><code>habi_db_contact</code> (<code>id=contact_id</code>): name_real_estate, phone (+ phone_1/2), email</li>
+          </ul>
+        </div>
+      </div>
+
+      <h3>Ejemplo — CREAR (MX)</h3>
+<pre><code>curl --location --request POST \
+  'https://jevm381meg.execute-api.us-east-2.amazonaws.com/prod/api/v1/post_lead_mx' \
+  --header 'x-api-key: '"$BACKBONE_API_KEY" \
+  --header 'Authorization: default' \
+  --header 'Content-Type: application/json' \
+  --data @payload.json
+# payload.json:
+{ "country":"MX", "property_type_id":1, "type_deal_id":1,
+  "area":66, "bath":1, "room_num":3, "garage":0, "years_old":40,
+  "ask_price":600000, "latitude":19.616356, "longitude":-99.087474,
+  "source_id":3, "sub_source_id":131,
+  "name_real_estate":"...", "phone":"7351102150", "email":"...",
+  "agent":"claude-camilo-otoya-reinteres",
+  "utm_campaign":"mex-sellers-paid-experiments-web-without-leads-retargeting-national-reinteresados" }</code></pre>
+
+      <h3>Ejemplo — MODIFICAR (MX, setear sub_source + precio)</h3>
 <pre><code>curl --location --request PUT \
   'https://jevm381meg.execute-api.us-east-2.amazonaws.com/prod/api/v1/put_lead_mx' \
-  --header 'x-api-key: '"$BACKBONE_MX_API_KEY" \
-  --header 'Authorization: default' \
-  --header 'Content-Type: application/json' \
-  --data '{
-    "country": "MX",
-    "deal_id": 1717917,
-    "sub_source_id": 131,
-    "agent": "update_source_id"
-  }'</code></pre>
-      <div class="callout">
-        <strong>Verificado (22-jun-2026):</strong> <code>deal_id 1717917</code> → <code>sub_source_id 131</code> devolvió <code>HTTP 200 · success:true</code> y <code>lead.property.sub_source_id = 131</code>.
-      </div>
+  --header 'x-api-key: '"$BACKBONE_API_KEY" \
+  --header 'Authorization: default' --header 'Content-Type: application/json' \
+  --data '{ "country":"MX", "deal_id":1719594,
+            "sub_source_id":131, "ask_price":1805095,
+            "agent":"update_source_id" }'</code></pre>
+      <p>El PUT es parcial: solo manda <code>deal_id</code> + los campos a cambiar (en CO con <code>agente</code>). Sirve para re-fuentear, corregir UTM, precio, etc.</p>
 
-      <h3>Ejemplo B — CREAR un lead (CO, payload completo)</h3>
-<pre><code>curl --location --request POST \
-  'https://lew5oaks7h.execute-api.us-east-2.amazonaws.com/dev/api/v1/post_lead_co' \
-  --header 'x-api-key: '"$BACKBONE_CO_API_KEY" \
-  --header 'Authorization: default' \
-  --header 'Content-Type: application/json' \
-  --data-raw '{
-    "country": "CO",
-    "area": 52, "num_habitaciones": 3, "banos": 2, "estrato": "2",
-    "garajes": 0, "num_ascensores": 0, "num_piso": 14,
-    "torre": "7", "num_apartamento": "92",
-    "tipo_inmueble": "apartamento", "tipo_inmueble_id": 1,
-    "anos_antiguedad": 12,
-    "fuente_id": 3, "sub_source_id": 134,
-    "ask_price": 230000000,
-    "direccion": "CARRERA 61 # 52D - 47",
-    "direccion_homologada": "K+61+52d+47",
-    "ciudad_id": 19,
-    "latitud": 6.162005, "longitud": -75.377033,
-    "nombre_o_inmobiliaria": "prueba_nexus",
-    "telefono": "7676767788",
-    "correo": "prueba@example.com",
-    "property_relationship": "owner",
-    "agente": "prueba_nexus"
-  }'</code></pre>
+      <h3>Respuesta y verificación</h3>
+      <p>Responde <code>200</code> con <code>{"success":true, "message":"Success Operation", "lead":{…}}</code>. El objeto <code>lead</code> trae el estado posterior completo (deal, property, contact, utm) → <strong>confirmación real</strong>. Verificar leyendo <code>lead.deal.deal_id</code> y <code>lead.property.{source_id, sub_source_id, ask_price}</code> / <code>lead.utm.utm_campaign</code>.</p>
       <div class="callout" style="border-left-color:#f59e0b">
-        <strong>Ojo con el JSON.</strong> El ejemplo original de CO traía una llave <code>}</code> de más al final (JSON inválido) → quitarla. Y el de <code>post_lead_mx</code> traía <code>"country": "CO"</code> por error de copy-paste: en MX debe ser <code>"MX"</code>.
+        <strong>Campos asíncronos:</strong> el <code>nid</code> nuevo vuelve <code>null</code> en la respuesta (se asigna después) — la llave firme es <code>deal_id</code>/<code>deal_uuid</code>. En MX, <code>mex_state_id</code>/<code>city</code> también vuelven null: el mart georeferencia el estado aguas abajo desde el lat/long.
       </div>
 
-      <h3>Respuesta</h3>
-      <p>Responde <code>200</code> con <code>{"success": true, "message": "Success Operation", "lead": {…}}</code>. El objeto <code>lead</code> trae el <strong>estado posterior completo</strong> del negocio (deal, property, contact, utm…), así que sirve como <strong>confirmación real</strong> — no es un OK ciego.</p>
+      <h3>⚠️ Evitar duplicados al recrear leads</h3>
+      <div class="callout" style="border-left-color:#ef4444">
+        <strong>🐛 Gotcha #3 — NO deduplicar solo por <code>contact_id</code>.</strong> Al recrear un lead, el backbone <strong>a veces genera un <code>contact_id</code> nuevo</strong> (no reusa el del origen). Para saber si un lead ya fue creado, cruzar por <strong>múltiples señales</strong>: teléfono normalizado (últimos 10 díg, los 3 campos phone) + correo + área + habitaciones + geo (&lt;150m). Confirmar con ≥2 señales fuertes. <em>(Incidente jun-2026: dedup por <code>contact_id</code> solo → 8 leads MX duplicados.)</em>
+      </div>
 
       <h3>Correr un lote (N leads)</h3>
-      <p>Los endpoints son <strong>un lead por request</strong>; para un listado hay que iterar:</p>
       <ul>
-        <li><strong>Secuencial con log</strong>: registrar identificador + <code>http_code</code> + <code>success</code> de cada respuesta (bitácora de fallidos).</li>
-        <li><strong>Espaciar las llamadas</strong> (pequeño <code>sleep</code> o concurrencia limitada) para no saturar el API Gateway.</li>
-        <li><strong>Dry-run primero</strong>: 1–2 leads, verificar en la respuesta / BQ, y recién ahí soltar el lote.</li>
-        <li><strong>Cuidado con prod</strong>: en MX cada llamada escribe un lead real e irreversible. Confirmar valores antes.</li>
+        <li><strong>Un lead por request</strong> → iterar. Bitácora <code>old_nid → new_deal_id → deal_uuid</code> de cada respuesta.</li>
+        <li><strong>Dedup robusto ANTES</strong> (ver gotcha #3): contra lo ya creado (otros procesos + lo tuyo + entre sí).</li>
+        <li><strong>Canary primero</strong>: 1 lead, verificar respuesta (source/sub_source/utm/ask_price), luego el resto.</li>
+        <li><strong>Runner resumible</strong>: que salte los <code>nid</code> ya exitosos en la bitácora (idempotente), con <code>sleep</code> entre llamadas y corte tras N fallas seguidas.</li>
+        <li><strong>Es prod e irreversible</strong>: cada POST crea un negocio real. El stage <code>dev</code> de CO (<code>lew5oaks7h</code>) sirve para validar el esquema sin ensuciar prod.</li>
       </ul>
+      <div class="callout">
+        <strong>Scripts y bitácoras</strong> (privados, fuera del repo): <span class="mono-sm">~/habi/backbone-co-batch/</span> y <span class="mono-sm">~/habi/backbone-mx-batch/</span> (build de payloads, runner resumible, dedup multi-señal, reconstrucción de historia). Bitácoras: <span class="mono-sm">~/habi/backbone-leads-{co,mx}-ledger.csv</span>.
+      </div>
     </section>
 
     <!-- ========== SECCIÓN: SEGURIDAD ========== -->
