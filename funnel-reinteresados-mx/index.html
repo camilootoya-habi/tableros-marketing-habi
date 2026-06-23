@@ -210,11 +210,9 @@ function renderPipeline(L){
   const isNuevo=n=>/nuevo/i.test(n);
   const byPipe={};
   L.forEach(l=>{(byPipe[l.pipeline]=byPipe[l.pipeline]||[]).push(l);});
-  const renderPipe=([pipe,rows],color)=>{
-    const byEt={};
-    rows.forEach(l=>{const k=l.etapa;(byEt[k]=byEt[k]||{n:0,o:l.eorden});byEt[k].n++;if(l.eorden<byEt[k].o)byEt[k].o=l.eorden;});
-    const ets=Object.entries(byEt).sort((a,b)=>a[1].o-b[1].o||b[1].n-a[1].n);
-    const max=Math.max(...ets.map(e=>e[1].n),1);
+  const etapasDe=rows=>{const byEt={};rows.forEach(l=>{const k=l.etapa;(byEt[k]=byEt[k]||{n:0,o:l.eorden});byEt[k].n++;if(l.eorden<byEt[k].o)byEt[k].o=l.eorden;});return Object.entries(byEt).sort((a,b)=>a[1].o-b[1].o||b[1].n-a[1].n);};
+  const renderPipe=([pipe,rows],color,max)=>{
+    const ets=etapasDe(rows);
     const bars=ets.map(([et,d])=>`<div style="display:flex;align-items:center;gap:10px;margin:6px 0">
       <div style="width:155px;font-size:12px;text-align:right;flex:0 0 auto;color:var(--text)">${et}</div>
       <div style="flex:1;background:#f3f4f6;border-radius:5px;height:22px"><div style="width:${(d.n/max*100).toFixed(1)}%;background:${color};height:100%;border-radius:5px;min-width:3px;transition:width .3s"></div></div>
@@ -227,7 +225,9 @@ function renderPipeline(L){
       .sort((a,b)=>(isNuevo(a[0])?1:0)-(isNuevo(b[0])?1:0)||b[1].length-a[1].length);
     if(!pipesIn.length) return '';
     const tot=pipesIn.reduce((s,[,r])=>s+r.length,0);
-    return `<div class="card"><div style="font-size:12.5px;font-weight:800;text-transform:uppercase;letter-spacing:.4px;color:${color};border-bottom:2px solid ${color};padding-bottom:6px;margin-bottom:14px">${g} · ${fmt(tot)} leads</div>${pipesIn.map(p=>renderPipe(p,color)).join('')}</div>`;
+    // escala compartida en toda la card: max conteo de etapa entre TODOS los pipelines del grupo
+    const gmax=Math.max(1,...pipesIn.flatMap(([,rows])=>etapasDe(rows).map(e=>e[1].n)));
+    return `<div class="card"><div style="font-size:12.5px;font-weight:800;text-transform:uppercase;letter-spacing:.4px;color:${color};border-bottom:2px solid ${color};padding-bottom:6px;margin-bottom:14px">${g} · ${fmt(tot)} leads</div>${pipesIn.map(p=>renderPipe(p,color,gmax)).join('')}</div>`;
   }).join('');
 }
 
