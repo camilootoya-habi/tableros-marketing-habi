@@ -192,7 +192,12 @@
           <tr>
             <td><strong>CRM HubSpot</strong> <span class="badge badge-both">Global</span></td>
             <td colspan="2"><span class="mono-sm">sellers-main-prod.hubspot.deals</span></td>
-            <td>Réplica del CRM. Una fila por deal con <code>dealstage</code>, <code>hubspot_owner_id</code>, <code>aplica_para_inmobiliaria</code>, <code>sub_fuente</code> y muchos campos custom.</td>
+            <td>Réplica del CRM. Una fila por deal con <code>dealstage</code>, <code>hubspot_owner_id</code>, <code>aplica_para_inmobiliaria</code>, <code>sub_fuente</code> y muchos campos custom. Réplica casi en vivo (~7&nbsp;min de lag) — ideal para gestión comercial actual.</td>
+          </tr>
+          <tr>
+            <td><strong>Historial CRM</strong> <span class="badge badge-both">Global</span></td>
+            <td colspan="2"><span class="mono-sm">sellers-main-prod.hubspot.historical</span></td>
+            <td><strong>Log de cambios de propiedades</strong> de los deals: una fila por cambio (<code>nid</code>, <code>fecha</code>, <code>propiedad</code>, <code>valor</code>, <code>responsable</code>, <code>orden</code>). Da la semántica <em>"alguna vez"</em> y el recorrido del lead (historial de <code>estado</code>, <code>dealstage</code>, <code>hubspot_owner_id</code>, <code>ask_price</code>…). <strong>⚠ No es en vivo:</strong> se reconstruye por lotes (~5&nbsp;h de atraso) → sirve para análisis/precisión histórica, no para tableros casi-en-vivo (para eso, <code>hubspot.deals</code>).</td>
           </tr>
           <tr>
             <td><strong>Bridge Segment↔Deal</strong> <span class="badge badge-both">Global</span></td>
