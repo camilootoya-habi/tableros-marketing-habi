@@ -5,8 +5,10 @@ DEFAULT_MAX_BYTES = 5_000_000_000  # 5 GB
 DEFAULT_MAX_ROWS = 100_000          # bq default es solo 100 → trunca; subimos el tope (override con meta.max_rows)
 IGNORE_DIRS = {".git", ".github", "scripts", "docs", "node_modules"}
 
-def discover_jobs(repo_root: Path):
-    """Tableros que declaran `query` en su meta.json (o tienen build.py)."""
+def discover_jobs(repo_root: Path, only=None):
+    """Tableros que declaran `query` en su meta.json (o tienen build.py).
+    only=<slug>: corre SOLO ese tablero (ignora skip_hub_cron). Si no, omite los
+    que declaran "skip_hub_cron": true (tienen su propio workflow más frecuente)."""
     repo_root = Path(repo_root)
     jobs = []
     for meta_path in sorted(repo_root.rglob("meta.json")):
@@ -15,6 +17,11 @@ def discover_jobs(repo_root: Path):
         if rel.parts and rel.parts[0] in IGNORE_DIRS:
             continue
         meta = json.loads(meta_path.read_text(encoding="utf-8"))
+        if only is not None:
+            if folder.name != only:
+                continue
+        elif meta.get("skip_hub_cron"):
+            continue
         build_py = folder / "build.py"
         if not meta.get("query") and not build_py.exists():
             continue
@@ -55,11 +62,12 @@ def run_job(job: dict, project: str) -> bool:
         return False
 
 def main():
-    import os
+    import os, sys
+    only = sys.argv[sys.argv.index("--only") + 1] if "--only" in sys.argv else None
     repo = Path(__file__).resolve().parents[1]
     project = os.environ.get("GCP_PROJECT", "papyrus-data")
-    jobs = discover_jobs(repo)
-    print(f"Auto-discovery: {len(jobs)} job(s)")
+    jobs = discover_jobs(repo, only=only)
+    print(f"Auto-discovery{f' (--only {only})' if only else ''}: {len(jobs)} job(s)")
     ok = sum(run_job(j, project) for j in jobs)
     print(f"Hecho: {ok}/{len(jobs)} OK")
 

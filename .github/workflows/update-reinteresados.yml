@@ -1,0 +1,46 @@
+name: Actualizar reinteresados (10 min)
+
+on:
+  schedule:
+    - cron: '*/10 * * * *'   # cada 10 min — fuente hubspot.deals (~7 min de lag)
+  workflow_dispatch:
+
+# Evita solapamiento si una corrida tarda más de 10 min
+concurrency:
+  group: update-reinteresados
+  cancel-in-progress: false
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: google-github-actions/setup-gcloud@v2
+
+      - name: Authenticate with user credentials
+        run: |
+          echo '${{ secrets.GCP_CREDENTIALS }}' > /tmp/adc.json
+          gcloud config set project ${{ secrets.GCP_PROJECT }}
+          echo "CLOUDSDK_AUTH_CREDENTIAL_FILE_OVERRIDE=/tmp/adc.json" >> $GITHUB_ENV
+          echo "GOOGLE_APPLICATION_CREDENTIALS=/tmp/adc.json" >> $GITHUB_ENV
+
+      - name: Run reinteresados query
+        env:
+          GCP_PROJECT: ${{ secrets.GCP_PROJECT }}
+        run: python3 scripts/run_queries.py --only funnel-reinteresados-mx
+
+      - name: Commit and push
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add funnel-reinteresados-mx/data.json
+          if git diff --staged --quiet; then
+            echo "Sin cambios en data.json"
+          else
+            git pull --rebase --autostash origin main || true
+            git commit -m "Auto-update reinteresados data.json $(date -u +%Y-%m-%dT%H:%MZ)"
+            git push
+          fi

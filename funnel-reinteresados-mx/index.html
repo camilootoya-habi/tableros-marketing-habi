@@ -107,8 +107,8 @@
   <div class="kpi-grid" id="kpis"></div>
 
   <h2>Funnel</h2>
-  <p class="note">Progresión: Registros → Calificados INMO → Calificados Market Maker → <b>Asignados (GABI)</b> → <b>Asignados (HubSpot owner)</b> → <b>Asignados (WBR Mart)</b> → Citas → Cierres (MM) → Contrato firmado (Inmo). A la derecha: conversión <b>vs registros</b> y <b>vs anterior</b>. <span class="muted">Pasa el cursor sobre el <b>?</b> de cada etapa para ver qué incluye su query.</span></p>
-  <p class="note" style="margin-top:-2px">Los 3 hitos de asignación: <b>GABI</b> = el bot ya gestiona (<code>product_qualified</code> ≠ nulo) · <b>HubSpot owner</b> = deal con <code>hubspot_owner_id</code> (GABI no asigna owner → suele dar 0) · <b>WBR Mart</b> = lead en el mart oficial (downstream, con rezago).</p>
+  <p class="note">Progresión: Registros → Calificados INMO → Calificados Market Maker → <b>Asignados (HubSpot owner)</b> → <b>Asignados (WBR Mart)</b> → Citas → Cierres (MM) → Contrato firmado (Inmo). A la derecha: conversión <b>vs registros</b> y <b>vs anterior</b>. <span class="muted">Pasa el cursor sobre el <b>?</b> de cada etapa para ver qué incluye su query.</span></p>
+  <p class="note" style="margin-top:-2px">Fuente <b>hubspot.deals</b> (~7 min de lag), refresco cada 10 min. Hitos de asignación: <b>HubSpot owner</b> = deal con <code>hubspot_owner_id</code> · <b>WBR Mart</b> = lead en el mart oficial de asignados (número oficial, downstream).</p>
   <div class="card" id="funnel"></div>
 
   <h2>Cruce Calificados MM × Inmo <span class="help" data-tip="Calificado Market Maker = alguna vez estado 20 ó 63 (history_state). Calificado Inmo = alguna vez estado 20 en history_state_real_estate. Un lead puede calificar en ambos funnels, en uno, o en ninguno.">?</span></h2>
@@ -156,13 +156,12 @@ const UTM={MX:'mex-sellers-paid-experiments-web-without-leads-retargeting-nation
 const CNAME={MX:'🇲🇽 México', CO:'🇨🇴 Colombia'};
 const GEOWORD={MX:'estado', CO:'ciudad'};
 const STAGES=[
-  ['Registros','#4f46e5',l=>l.length,'NIDs únicos de la campaña: utm_campaign reinteresados + fuente WEB (fuente_id=3). 1 fila por nid (se queda con la fecha de creación más reciente).'],
-  ['Calificados INMO','#059669',l=>l.filter(x=>x.calif_inmo).length,'Leads que alguna vez llegaron al estado 20 del funnel Inmobiliaria (history_state_real_estate). El pipeline Inmo arranca en mar-2026.'],
-  ['Calificados Market Maker','#10b981',l=>l.filter(x=>x.calif).length,'Leads que alguna vez estuvieron en estado 20 ó 63 del funnel Market Maker (history_state).'],
-  ['Asignados (GABI)','#06b6d4',l=>l.filter(x=>x.gabi).length,'GABI ya está gestionando el lead: product_qualified ≠ nulo en el negocio (MX property_deal · CO tabla_negocio_inmueble).'],
-  ['Asignados (HubSpot owner)','#0891b2',l=>l.filter(x=>x.owner).length,'Deal con hubspot_owner_id asignado en hubspot.deals. OJO: GABI no asigna owner humano, por eso suele dar 0 en esta campaña.'],
-  ['Asignados (WBR Mart)','#0ea5e9',l=>l.filter(x=>x.asig).length,'Lead presente en el WBR mart oficial de asignados (sellers_leads_asignados_marketing_wbr_mart, 16 filtros). Hito downstream, llega con rezago.'],
-  ['Citas agendadas','#8b5cf6',l=>l.filter(x=>x.cita).length,'Leads que alguna vez llegaron al estado 27 (cita agendada) del funnel Market Maker.'],
+  ['Registros','#4f46e5',l=>l.length,'NIDs únicos de la campaña: utm_campaign reinteresados + fuente WEB (MX) / WEB+Leadforms (CO), desde hubspot.deals. 1 fila por nid (createdate más reciente).'],
+  ['Calificados INMO','#059669',l=>l.filter(x=>x.calif_inmo).length,'estado_del_negocio_inmo = No gestionado (calificado del funnel Inmobiliaria) en hubspot.deals.'],
+  ['Calificados Market Maker','#10b981',l=>l.filter(x=>x.calif).length,'estado (backbone) ∈ {No gestionado, Sin pricing incial} = estados 20/63 del funnel Market Maker. Mismo campo del antifunnel.'],
+  ['Asignados (HubSpot owner)','#0891b2',l=>l.filter(x=>x.owner).length,'Deal con hubspot_owner_id asignado en hubspot.deals.'],
+  ['Asignados (WBR Mart)','#0ea5e9',l=>l.filter(x=>x.asig).length,'Lead presente en el WBR mart oficial de asignados (sellers_leads_asignados_marketing_wbr_mart, 16 filtros). Número oficial; se trae de su tabla (no cambia por corrida).'],
+  ['Citas agendadas','#8b5cf6',l=>l.filter(x=>x.cita).length,'Deal con fecha_de_visita en hubspot.deals (visita agendada).'],
   ['Cierres (MM)','#f59e0b',l=>l.filter(x=>x.cierre).length,'oportunidad_del_negocio = Cierre - Comprado (compra cerrada del Market Maker).'],
   ['Contrato firmado (Inmo)','#0d9488',l=>l.filter(x=>x.contrato).length,'oportunidad_inmobiliaria = Contrato firmado (cierre del flujo Inmobiliaria).']];
 const KCLS=['s1','s2','s3','s4'];
@@ -170,7 +169,7 @@ let dailyChart=null, leadsAll=[], country='MX', selectedGeo=null;
 
 fetch('data.json').then(r=>r.json()).then(raw=>{
   leadsAll=raw.map(r=>({pais:r.pais, geo:r.geo||'Sin dato', area:r.area||'Sin dato', sid:(r.sid==null?'':String(r.sid)), slabel:r.slabel||'Sin estado',
-    calif:N(r.calif), calif_inmo:N(r.calif_inmo), cita:N(r.cita), gabi:N(r.gabi), owner:N(r.owner), asig:N(r.asig), cierre:N(r.cierre), contrato:N(r.contrato), fc:r.fc}));
+    calif:N(r.calif), calif_inmo:N(r.calif_inmo), cita:N(r.cita), owner:N(r.owner), asig:N(r.asig), cierre:N(r.cierre), contrato:N(r.contrato), fc:r.fc}));
   selectCountry('MX');
 });
 
@@ -282,8 +281,8 @@ function render(L){
       scales:{y:{beginAtZero:true,grid:{color:'#e5e7eb'},ticks:{font:FONT,precision:0}},x:{grid:{display:false},ticks:{font:FONT}}}}
   });
 
-  const gabi=L.filter(x=>x.gabi).length, owner=L.filter(x=>x.owner).length, asig=L.filter(x=>x.asig).length, antiTotal=antiRows.reduce((a,r)=>a+r.n,0);
-  document.getElementById('footer').textContent= registros?`Asignados (GABI): ${fmt(gabi)} de ${fmt(registros)} (${pct(gabi).toFixed(1)}%) · HubSpot owner: ${fmt(owner)} (${pct(owner).toFixed(1)}%) · WBR Mart: ${fmt(asig)} (${pct(asig).toFixed(1)}%). Antifunnel (estado actual): ${fmt(antiTotal)}.`:'Sin registros para esta campaña todavía.';
+  const owner=L.filter(x=>x.owner).length, asig=L.filter(x=>x.asig).length, antiTotal=antiRows.reduce((a,r)=>a+r.n,0);
+  document.getElementById('footer').textContent= registros?`HubSpot owner: ${fmt(owner)} de ${fmt(registros)} (${pct(owner).toFixed(1)}%) · WBR Mart: ${fmt(asig)} (${pct(asig).toFixed(1)}%). Antifunnel (estado actual): ${fmt(antiTotal)}.`:'Sin registros para esta campaña todavía.';
 }
 
 // ===== Histórico de leads recreados vía backbone (por país, lee el CSV del país) =====
