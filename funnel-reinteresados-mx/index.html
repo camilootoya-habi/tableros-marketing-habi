@@ -146,7 +146,7 @@
     </div>
     <div class="tbl-wrap" style="margin-top:10px">
       <table style="min-width:0"><thead><tr>
-        <th>NID origen</th><th>Deal nuevo</th><th>UUID</th><th>Fecha</th><th style="text-align:center">Estado</th>
+        <th>NID origen</th><th>Deal nuevo</th><th>UUID</th><th>Fecha</th><th style="text-align:center">Confianza</th>
       </tr></thead><tbody id="lcRows"><tr><td colspan="5" class="muted">cargando…</td></tr></tbody></table>
     </div>
     <div class="note" id="lcFoot" style="margin-top:8px"></div>
@@ -301,11 +301,14 @@ const LEADS_CSV = {CO:'leads_creados_co.csv', MX:'leads_creados_mx.csv'};
 const leadsCache = {};
 function paintLeadsCard(c, rows){
   const head = rows._head, ix = n => head.indexOf(n);
-  const ok = rows.filter(r => (r[ix('success')]||'').trim().toLowerCase() === 'true');
+  const ic = ix('confianza');
+  const ok = ix('success')>=0 ? rows.filter(r => (r[ix('success')]||'').trim().toLowerCase() === 'true') : rows;
   const fecha = r => (r[ix('timestamp')]||'').slice(0,10);
   document.getElementById('lcDownload').href = LEADS_CSV[c];
+  let confNote = '';
+  if (ic>=0){ const alta = ok.filter(r=>(r[ic]||'')==='ALTA').length; confNote = ` · <b>${Math.round(alta/ok.length*100)}%</b> trazabilidad confianza ALTA`; }
   document.getElementById('lcResumen').innerHTML =
-    `<b>${fmt(ok.length)}</b> leads creados · ${CNAME[c]} · UTM <code>${UTM[c].slice(0,3)}…reinteresados</code>`;
+    `<b>${fmt(ok.length)}</b> leads creados · ${CNAME[c]} · UTM <code>${UTM[c].slice(0,3)}…reinteresados</code>${confNote}`;
   if(!ok.length){
     document.getElementById('lcRows').innerHTML =
       `<tr><td colspan="5" class="muted">Sin registro de leads creados para ${CNAME[c]}. Histórico en reconstrucción.</td></tr>`;
@@ -317,11 +320,16 @@ function paintLeadsCard(c, rows){
   const show = ok.slice(0,10);
   document.getElementById('lcRows').innerHTML = show.map(r => {
     const uuid = (r[ix('new_deal_uuid')]||'').slice(0,8);
-    return `<tr><td class="mono">${r[ix('old_nid')]}</td>`+
+    const conf = ic>=0 ? (r[ic]||'') : '';
+    const cmap = {ALTA:'var(--ok)', MEDIA:'var(--warn)', BAJA:'#ef4444'};
+    const cell = conf
+      ? `<span style="color:${cmap[conf]||'var(--text-muted)'};font-weight:700">${conf}</span>`
+      : `<span style="color:var(--ok);font-weight:700">✓</span>`;
+    return `<tr><td class="mono">${r[ix('old_nid')]||'—'}</td>`+
            `<td class="mono"><b>${r[ix('new_deal_id')]}</b></td>`+
            `<td class="mono muted">${uuid?uuid+'…':'—'}</td>`+
            `<td>${fecha(r)}</td>`+
-           `<td style="text-align:center;color:var(--ok);font-weight:700">✓</td></tr>`;
+           `<td style="text-align:center">${cell}</td></tr>`;
   }).join('');
   document.getElementById('lcFoot').textContent =
     `Mostrando ${show.length} de ${fmt(ok.length)}. Cada fila indica de qué lead original (NID) se creó cada nuevo deal. Descarga el CSV para el listado completo.`;
