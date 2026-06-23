@@ -100,23 +100,6 @@
 <div class="wrap">
   <h1>Funnel campaña Reinteresados — WEB</h1>
 
-  <div class="card" id="leadsCreados" style="margin:6px 0 18px">
-    <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap">
-      <div>
-        <div style="font-weight:700;color:var(--text-title);font-size:15px">📄 Leads recreados vía backbone</div>
-        <div class="muted" id="lcResumen">cargando histórico…</div>
-      </div>
-      <a id="lcDownload" href="leads_creados_reinteresados.csv" download
-         style="white-space:nowrap;border:1px solid var(--border);border-radius:6px;padding:6px 12px;text-decoration:none;color:var(--accent);font-size:13px;font-weight:600">⬇ Descargar CSV completo</a>
-    </div>
-    <div class="tbl-wrap" style="margin-top:10px">
-      <table style="min-width:0"><thead><tr>
-        <th>NID origen</th><th>Deal nuevo</th><th>UUID</th><th>Fecha</th><th style="text-align:center">Estado</th>
-      </tr></thead><tbody id="lcRows"><tr><td colspan="5" class="muted">cargando…</td></tr></tbody></table>
-    </div>
-    <div class="note" id="lcFoot" style="margin-top:8px"></div>
-  </div>
-
   <div class="country-cards" id="countryCards"></div>
   <div class="campaign" id="campaign"></div>
 
@@ -151,6 +134,23 @@
   <div class="card"><div class="chart-wrap"><canvas id="chartDaily"></canvas></div></div>
 
   <p class="note" id="footer"></p>
+
+  <h2 style="margin-top:26px">📄 Leads recreados vía backbone</h2>
+  <div class="card" id="leadsCreados">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap">
+      <div>
+        <div class="muted" id="lcResumen">cargando histórico…</div>
+      </div>
+      <a id="lcDownload" href="leads_creados_reinteresados.csv" download
+         style="white-space:nowrap;border:1px solid var(--border);border-radius:6px;padding:6px 12px;text-decoration:none;color:var(--accent);font-size:13px;font-weight:600">⬇ Descargar CSV completo</a>
+    </div>
+    <div class="tbl-wrap" style="margin-top:10px">
+      <table style="min-width:0"><thead><tr>
+        <th>NID origen</th><th>Deal nuevo</th><th>UUID</th><th>Fecha</th><th style="text-align:center">Estado</th>
+      </tr></thead><tbody id="lcRows"><tr><td colspan="5" class="muted">cargando…</td></tr></tbody></table>
+    </div>
+    <div class="note" id="lcFoot" style="margin-top:8px"></div>
+  </div>
 </div>
 <script>
 const N=v=>parseInt(v,10)||0, fmt=v=>v.toLocaleString('es-CO');
