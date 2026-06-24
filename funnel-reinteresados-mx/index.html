@@ -96,7 +96,13 @@
 <body>
 <div class="topbar"><a href="../">← Hub</a><span>📢 Funnel · Reinteresados (WEB)</span></div>
 <div class="wrap">
-  <h1>Funnel campaña Reinteresados — WEB</h1>
+  <h1 style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">
+    <span>Funnel campaña Reinteresados — WEB</span>
+    <span style="display:inline-flex;align-items:center;gap:12px;font-size:13px;font-weight:400">
+      <span id="lastUpd" class="muted"></span>
+      <button id="refreshBtn" onclick="loadData(true)" style="cursor:pointer;border:1px solid var(--border);background:var(--card);border-radius:8px;padding:7px 13px;font:inherit;font-size:13px;color:var(--accent);font-weight:600">🔄 Actualizar</button>
+    </span>
+  </h1>
 
   <div class="country-cards" id="countryCards"></div>
   <div class="campaign" id="campaign"></div>
@@ -172,12 +178,27 @@ const STAGES=[
 const KCLS=['s1','s2','s3','s4'];
 let dailyChart=null, leadsAll=[], country='MX', selectedGeo=null;
 
-fetch('data.json').then(r=>r.json()).then(raw=>{
-  leadsAll=raw.map(r=>({pais:r.pais, geo:r.geo||'Sin dato', area:r.area||'Sin dato', sid:(r.sid==null?'':String(r.sid)), slabel:r.slabel||'Sin estado',
+// URL de la Cloud Function (datos en vivo). Vacío = leer data.json del cron (fallback). Ver DEPLOY.md.
+const BACKEND_URL = '';
+let firstLoad=true;
+function mapRaw(raw){ return raw.map(r=>({pais:r.pais, geo:r.geo||'Sin dato', area:r.area||'Sin dato', sid:(r.sid==null?'':String(r.sid)), slabel:r.slabel||'Sin estado',
     calif:N(r.calif), calif_inmo:N(r.calif_inmo), cita:N(r.cita), owner:N(r.owner), asig:N(r.asig), cierre:N(r.cierre), contrato:N(r.contrato),
-    pipeline:r.pipeline||'Sin pipeline', etapa:r.etapa||'Sin etapa', eorden:N(r.eorden), fc:r.fc}));
-  selectCountry('MX');
-});
+    pipeline:r.pipeline||'Sin pipeline', etapa:r.etapa||'Sin etapa', eorden:N(r.eorden), fc:r.fc})); }
+async function loadData(force){
+  const btn=document.getElementById('refreshBtn');
+  if(btn){ btn.disabled=true; btn.textContent='⏳ Actualizando…'; }
+  let raw=null, live=false;
+  if(BACKEND_URL){
+    try{ const r=await fetch(BACKEND_URL+(force?'?force=1':'')); if(r.ok){ raw=await r.json(); live=true; } }catch(e){}
+  }
+  if(!raw){ try{ raw=await (await fetch('data.json?t='+Date.now())).json(); }catch(e){ raw=[]; } }
+  leadsAll=mapRaw(raw);
+  const lbl=document.getElementById('lastUpd');
+  if(lbl){ lbl.textContent='Actualizado '+new Date().toLocaleTimeString('es',{hour:'2-digit',minute:'2-digit'})+(live?' · en vivo':' · cron'); }
+  if(btn){ btn.disabled=false; btn.textContent='🔄 Actualizar'; }
+  if(firstLoad){ firstLoad=false; selectCountry('MX'); } else { renderCards(); apply(); }
+}
+loadData(false);
 
 function countryLeads(){ return leadsAll.filter(l=>l.pais===country); }
 
