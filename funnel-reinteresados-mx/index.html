@@ -235,11 +235,15 @@ function renderGabi(L){
     <div style="width:95px;font-size:12.5px;text-align:right;flex:0 0 auto;color:var(--text)">${p}</div>
     <div style="flex:1;background:#f3f4f6;border-radius:5px;height:22px"><div style="width:${(n/max*100).toFixed(1)}%;background:${col[p]||'#6366f1'};height:100%;border-radius:5px;min-width:3px;transition:width .3s"></div></div>
     <div style="width:84px;font-size:12.5px;flex:0 0 auto"><b>${fmt(n)}</b> <span class="muted">${gest?(n/gest*100).toFixed(0):0}%</span></div></div>`).join('');
+  const tipG='Leads que GABI (bot IA recepcionista) recibió y está/estuvo gestionando: presentes en la tabla recepcionista seller_digital_co_recepcionista_mm (CO) / seller_digital_mx_gabi_recepcionista (MX). El % es sobre el total de registros de la selección.';
+  const tipR='De los gestionados, los que INTERACTUARON con GABI: campo fecha_interaccion no nulo = el cliente respondió el mensaje del bot. El % es sobre los gestionados por GABI.';
+  const tipP='Tipificación de prioridad que asigna el sistema a cada lead (campo prioridad_gestion_market_maker de hubspot.deals): A = más prioritario, luego B y C. "Sin prioridad" = aún no tipificado. El % de cada barra es sobre los gestionados por GABI.';
+  const dot=t=>`<span class="help" data-tip="${t.replace(/"/g,'&quot;')}">?</span>`;
   el.innerHTML=`<div style="display:flex;gap:28px;flex-wrap:wrap;margin-bottom:16px">
-      <div><div class="muted" style="font-size:12px">Gestionados por GABI</div><div style="font-size:26px;font-weight:800;color:var(--text-title)">${fmt(gest)} <span style="font-size:13px;font-weight:600" class="muted">${pr(gest)}% de registros</span></div></div>
-      <div><div class="muted" style="font-size:12px">Le respondieron a GABI</div><div style="font-size:26px;font-weight:800;color:#10b981">${fmt(resp)} <span style="font-size:13px;font-weight:600" class="muted">${gest?(resp/gest*100).toFixed(0):0}% de gestionados</span></div></div>
+      <div><div class="muted" style="font-size:12px">Gestionados por GABI ${dot(tipG)}</div><div style="font-size:26px;font-weight:800;color:var(--text-title)">${fmt(gest)} <span style="font-size:13px;font-weight:600" class="muted">${pr(gest)}% de registros</span></div></div>
+      <div><div class="muted" style="font-size:12px">Le respondieron a GABI ${dot(tipR)}</div><div style="font-size:26px;font-weight:800;color:#10b981">${fmt(resp)} <span style="font-size:13px;font-weight:600" class="muted">${gest?(resp/gest*100).toFixed(0):0}% de gestionados</span></div></div>
     </div>
-    <div style="font-size:12.5px;font-weight:700;margin-bottom:8px">Priorización GABI (de los gestionados)</div>
+    <div style="font-size:12.5px;font-weight:700;margin-bottom:8px">Priorización GABI (de los gestionados) ${dot(tipP)}</div>
     ${ps.length?bars:'<p class="note">Sin gestionados de GABI en esta selección.</p>'}`;
 }
 
