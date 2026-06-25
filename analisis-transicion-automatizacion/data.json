@@ -1,8 +1,19 @@
 {
   "source": "ABC COSTING PEOPLE MAYO 2026 (MARKETING) — Habi",
   "as_of": "2026-05",
+  "automation_projects": [
+    { "id": "MKT-01", "chapter": 1, "name": "Lectura conectada multiplataforma", "outcome": "Capacidad de monitoreo continuo", "risk": "Bajo", "baseline_h": 5, "autom_pct": 100, "efic_pct": 80, "desc": "Agentes IA con lectura diaria de Meta, TikTok y Google Ads; el dato unificado alimenta reportes, alarmas y decisiones.", "tasks": ["Crear los accesos read-only (system users / tokens) a las 3 APIs", "Conectar los agentes IA para que lean campañas, gasto y métricas a diario", "Definir el esquema unificado de métricas (naming, monedas, atribución)", "QA: validar que el dato del agente cuadre con cada plataforma"] },
+    { "id": "MKT-02", "chapter": 1, "name": "Reportes, alarmas y sugerencias automatizadas", "outcome": "El líder decide, no calcula", "risk": "Bajo–Medio", "baseline_h": 4, "autom_pct": 90, "efic_pct": 80, "desc": "El agente arma el daily y la baseline del WBR, dispara alarmas de pacing/CPL/saturación y propone cambios; el líder aprueba.", "tasks": ["Definir el daily estándar: métricas, formato y hora", "Configurar alarmas de pacing, CPL y saturación por canal", "Prototipar sugerencias accionables (bid, apagar creativo, redistribuir budget)", "Iterar hasta reemplazar el reporte manual"] },
+    { "id": "MKT-03", "chapter": 1, "name": "Renovación de creativos guiada por performance", "outcome": "Itera hacia lo que funciona, sin briefing manual", "risk": "Medio", "baseline_h": 3, "autom_pct": 70, "efic_pct": 70, "desc": "Pipeline que detecta fatiga, genera variantes con IA y rota creativos con aprobación humana.", "tasks": ["Definir métricas de fatiga/saturación por creativo y audiencia", "Pipeline que identifica patrones ganadores (formato, copy, hook)", "Generación de variantes con IA + aprobación humana", "Automatizar la rotación: apagar saturados, lanzar aprobados"] },
+    { "id": "MKT-04", "chapter": 1, "name": "Calidad de dato y tracking", "outcome": "Cero ceguera de medición, sin esfuerzo humano", "risk": "Bajo", "baseline_h": 2, "autom_pct": 100, "efic_pct": 90, "desc": "Healthcheck de tracking (pixel, CAPI, UTMs), validación de nomenclatura de ads y monitoreo de atribución (chain UUID) con alertas.", "tasks": ["Healthcheck automático de pixel, CAPI y UTMs con alertas", "Validador de UTMs y nomenclatura de los ads", "Monitor de atribución sobre el chain UUID Segment→Deal"] },
+    { "id": "MKT-05", "chapter": 2, "name": "Performance multimarca automatizado", "outcome": "Performance multimarca sin sumar horas", "risk": "Medio", "baseline_h": 20, "autom_pct": 85, "efic_pct": 100, "desc": "Montar la pauta automatizada en las marcas nuevas (propiedades.com, Pulppo, Franquicias, Habi Buyers): lectura, reportes y creación de anuncios.", "tasks": ["propiedades.com: lectura de resultados + imágenes vía API + creación de anuncios", "Pulppo: pauta B2B y B2C automatizada", "Franquicias: setup y seguimiento de campañas de captación", "Habi Buyers: pauta directa + migración de presupuesto"] },
+    { "id": "MKT-06", "chapter": 2, "name": "Routing de leads entre marcas", "outcome": "Cada lead al producto correcto", "risk": "Bajo–Medio", "baseline_h": 2, "autom_pct": 90, "efic_pct": 100, "desc": "Enrutamiento automático de cada lead al producto correcto del ecosistema (Sellers, Buyers, pcom, Pulppo, Franquicias).", "tasks": ["Mapear y conectar los flujos de leads entre marcas (CRM y portales)", "Enrutar cada lead según el perfil del broker/cliente"] },
+    { "id": "MKT-07", "chapter": 2, "name": "Comunidad de brokers multimarca", "outcome": "De fuente de leads a comunidad multiproducto", "risk": "Medio", "baseline_h": 4, "autom_pct": 50, "efic_pct": 50, "desc": "Consolidar la BBDD de brokers, formación y comunidad multimarca bajo la sombrilla Habi (apuesta de Growth puro).", "tasks": ["Consolidar la BBDD de brokers en una sola fuente", "Diseñar la formación inmobiliaria sobre los productos Habi", "Lanzar el hub + eventos de comunidad", "Definir el modelo de servicio multimarca para aliados"] },
+    { "id": "MKT-08", "chapter": 3, "name": "Completitud de Lead Forms por agente IA (GABI)", "outcome": "Lead Forms completado y calificado por IA", "risk": "Medio", "baseline_h": 160, "autom_pct": 100, "efic_pct": 87, "desc": "Agente IA que completa y califica los Lead Forms incompletos (META/TikTok) por llamada y WhatsApp en CO y MX, incluida la regestión.", "tasks": ["Agente IA de llamada saliente + WhatsApp (CO y MX)", "Regestión automatizada de incompletos con ventanas de tiempo", "Calificación automática del lead", "Entrenador de IA: afina prompts y evalúa calidad"] },
+    { "id": "MKT-09", "chapter": 3, "name": "Triage operativo CO: Ventana a CRM", "outcome": "La ventana a CRM, sin manos", "risk": "Bajo", "baseline_h": 200, "autom_pct": 100, "efic_pct": 100, "desc": "Triage automatizado de la ventana a CRM, validación de dirección por geocoding y completitud de incompletos desde web (CO).", "tasks": ["Triage automatizado de la ventana a CRM (tipificación)", "Geocoding + validación de dirección", "Completitud de incompletos desde web por agente IA", "Escalación humana solo en casos complejos"] }
+  ],
   "leaders_evolution": {
-    "narrative": "El equipo de marketing pasó en menos de un año de ser un área de Performance puro al servicio de un solo producto (Habi Sellers), a una estructura de Growth multi-producto que atiende hoy 5 verticales del ecosistema Habi.",
+    "narrative": "En menos de un año el equipo pasó de hacer Performance puro para un solo producto (Habi Sellers) a un modelo dual Performance + Growth que hoy debe cubrir cinco marcas del ecosistema. La línea de tiempo muestra esa transición:",
     "timeline": [
       { "period": "Hasta 2025 Q3", "structure": "4 líderes Performance (perfil homogéneo) + 1 de SEO", "products": ["Habi Sellers"], "note": "Foco único: atraer vendedores de vivienda para que Habi compre." },
       { "period": "2025 Q3–Q4", "structure": "Split a 2 Performance + 2 Growth + 1 SEO", "products": ["Habi Sellers", "Habi Buyers"], "note": "Surge la función Growth diferenciada de Performance. Marketing recibe Habi Buyers (mover el inventario)." },
@@ -15,7 +26,7 @@
       "id": "lider_performance_mx",
       "label": "Líder Performance MX",
       "country": "MX",
-      "hours_week": 44.4,
+      "hours_week": 44.3,
       "capacity_week": 40,
       "stages_week": {
         "Mantenimiento": 36.0,
@@ -35,10 +46,10 @@
       "id": "lider_performance_co",
       "label": "Líder Performance CO",
       "country": "CO",
-      "hours_week": 37.4,
+      "hours_week": 39.9,
       "capacity_week": 40,
       "stages_week": {
-        "Mantenimiento": 28.5,
+        "Mantenimiento": 31.5,
         "Análisis": 2.0,
         "Planeación": 1.2,
         "Coordinación": 3.2,
@@ -87,12 +98,12 @@
     }
   ],
   "lider_mx_tasks": [
-    { "task": "Renovación de creativos (apagar saturados, lanzar nuevos)", "etapa": "Mantenimiento — Performance Sellers", "freq": "Cada 2 días", "hours_week": 3.0, "ai": "IA asiste (humano decide)", "how": "Pipeline de Marketing Agents que lee performance, propone variantes y rota" },
+    { "task": "Renovación de creativos (apagar saturados, lanzar nuevos)", "etapa": "Mantenimiento — Performance Sellers", "freq": "Cada 2 días", "hours_week": 3.0, "ai": "IA asiste (humano decide)", "how": "Pipeline de Marketing Agents que lee performance, propone variantes y rota", "project": "P3", "risk": "Medio" },
     { "task": "Daily Growth & Acquisition: despliegue + indicadores", "etapa": "Mantenimiento — Performance Sellers", "freq": "Diario", "hours_week": 5.0, "ai": "Solo humano", "how": "Se mantiene como espacio diario de lectura activa del líder — no se automatiza" },
-    { "task": "Pacing de presupuesto vs meta mensual", "etapa": "Mantenimiento — Performance Sellers", "freq": "Semanal", "hours_week": 1.0, "ai": "IA ejecuta", "how": "Alarmas automáticas de desviación" },
-    { "task": "Optimización de bids / audiencias / segmentación", "etapa": "Mantenimiento — Performance Sellers", "freq": "Semanal", "hours_week": 1.0, "ai": "IA asiste (humano decide)", "how": "IA propone, humano aprueba" },
-    { "task": "Revisión calidad tracking (pixel, CAPI, UTMs)", "etapa": "Mantenimiento — Performance Sellers", "freq": "Quincenal", "hours_week": 1.0, "ai": "IA ejecuta", "how": "Healthcheck automático + alertas" },
-    { "task": "Setup de campañas nuevas (lanzamientos)", "etapa": "Mantenimiento — Performance Sellers", "freq": "Bajo demanda", "hours_week": 2.0, "ai": "IA asiste (humano decide)", "how": "Plantillas + generación de variantes" },
+    { "task": "Pacing de presupuesto vs meta mensual", "etapa": "Mantenimiento — Performance Sellers", "freq": "Semanal", "hours_week": 1.0, "ai": "IA ejecuta", "how": "Alarmas automáticas de desviación", "project": "P2", "risk": "Bajo" },
+    { "task": "Optimización de bids / audiencias / segmentación", "etapa": "Mantenimiento — Performance Sellers", "freq": "Semanal", "hours_week": 1.0, "ai": "IA asiste (humano decide)", "how": "IA propone, humano aprueba", "project": "P2", "risk": "Medio" },
+    { "task": "Revisión calidad tracking (pixel, CAPI, UTMs)", "etapa": "Mantenimiento — Performance Sellers", "freq": "Quincenal", "hours_week": 1.0, "ai": "IA ejecuta", "how": "Healthcheck automático + alertas", "project": "P4", "risk": "Bajo" },
+    { "task": "Setup de campañas nuevas (lanzamientos)", "etapa": "Mantenimiento — Performance Sellers", "freq": "Bajo demanda", "hours_week": 2.0, "ai": "IA asiste (humano decide)", "how": "Plantillas + generación de variantes", "project": "P3", "risk": "Medio" },
     { "task": "Seguimiento con Medios (Google/META account managers)", "etapa": "Mantenimiento — Performance Sellers", "freq": "Quincenal", "hours_week": 2.0, "ai": "Solo humano", "how": "Relación con stakeholders externos" },
     { "task": "Seguimiento Finanzas/Tesorería (pagos, facturas)", "etapa": "Mantenimiento — Performance Sellers", "freq": "Semanal", "hours_week": 1.0, "ai": "Solo humano", "how": "Negociación administrativa" },
     { "task": "Setup y seguimiento Performance Pulppo MX", "etapa": "Mantenimiento — Pulppo MX", "freq": "Semanal", "hours_week": 4.5, "ai": "IA asiste (humano decide)", "how": "Reporting automático + decisiones humanas" },
@@ -100,14 +111,14 @@
     { "task": "Planeación, Reporting y control Budget Buyers", "etapa": "Mantenimiento — Buyers", "freq": "Semanal", "hours_week": 2.0, "ai": "IA asiste (humano decide)", "how": "Dashboard automático + alarmas" },
     { "task": "Setup campañas Franquicias", "etapa": "Mantenimiento — Franquicias", "freq": "Semanal", "hours_week": 1.0, "ai": "IA asiste (humano decide)", "how": "Plantillas" },
     { "task": "Auditoría anuncios con CX (sentiment, comentarios)", "etapa": "Mantenimiento — CX", "freq": "Quincenal", "hours_week": 0.5, "ai": "IA asiste (humano decide)", "how": "Análisis de sentiment automatizado" },
-    { "task": "Tráfico Creativo: solicitudes contenido", "etapa": "Mantenimiento — Orgánico", "freq": "Por posición", "hours_week": 1.0, "ai": "IA ejecuta", "how": "Generación de copys/títulos con IA" },
+    { "task": "Tráfico Creativo: solicitudes contenido", "etapa": "Mantenimiento — Orgánico", "freq": "Por posición", "hours_week": 1.0, "ai": "IA ejecuta", "how": "Generación de copys/títulos con IA", "project": "P3", "risk": "Medio" },
     { "task": "Tráfico Agencia CM: revisión parrilla orgánico", "etapa": "Mantenimiento — Orgánico", "freq": "Por posición", "hours_week": 1.0, "ai": "IA asiste (humano decide)", "how": "IA propone, humano aprueba" },
     { "task": "Manejo de objeciones — Agente Brokers", "etapa": "Mantenimiento — Agentes", "freq": "Semanal", "hours_week": 3.0, "ai": "Solo humano", "how": "Coaching directo" },
     { "task": "Revisión Backbone/Antifunnel DMN", "etapa": "Mantenimiento — Funnel", "freq": "Cada 2 días", "hours_week": 2.0, "ai": "Solo humano", "how": "Decisión de negocio sobre reglas" },
-    { "task": "Validación de UTMs y nomenclatura ads", "etapa": "Mantenimiento — Funnel", "freq": "Semanal", "hours_week": 0.5, "ai": "IA ejecuta", "how": "Validator automático" },
-    { "task": "Calidad atribución / chain UUID Segment→Deal", "etapa": "Mantenimiento — Funnel", "freq": "Semanal", "hours_week": 0.5, "ai": "IA ejecuta", "how": "Monitor automático + alertas" },
-    { "task": "WBR: preparación + presentación", "etapa": "Análisis", "freq": "Semanal", "hours_week": 1.0, "ai": "IA ejecuta", "how": "Baseline automática, humano presenta" },
-    { "task": "Postmortem de campañas / experimentos", "etapa": "Análisis", "freq": "Por posición", "hours_week": 1.0, "ai": "IA asiste (humano decide)", "how": "Análisis automático, narrativa humana" },
+    { "task": "Validación de UTMs y nomenclatura ads", "etapa": "Mantenimiento — Funnel", "freq": "Semanal", "hours_week": 0.5, "ai": "IA ejecuta", "how": "Validator automático", "project": "P4", "risk": "Bajo" },
+    { "task": "Calidad atribución / chain UUID Segment→Deal", "etapa": "Mantenimiento — Funnel", "freq": "Semanal", "hours_week": 0.5, "ai": "IA ejecuta", "how": "Monitor automático + alertas", "project": "P4", "risk": "Bajo" },
+    { "task": "WBR: preparación + presentación", "etapa": "Análisis", "freq": "Semanal", "hours_week": 1.0, "ai": "IA ejecuta", "how": "Baseline automática, humano presenta", "project": "P2", "risk": "Bajo" },
+    { "task": "Postmortem de campañas / experimentos", "etapa": "Análisis", "freq": "Por posición", "hours_week": 1.0, "ai": "IA asiste (humano decide)", "how": "Análisis automático, narrativa humana", "project": "P2", "risk": "Bajo" },
     { "task": "Plan trimestral del canal (OKRs)", "etapa": "Planeación", "freq": "Trimestral", "hours_week": 0.2, "ai": "Solo humano", "how": "Decisión estratégica" },
     { "task": "Plan mensual de inversión por canal", "etapa": "Planeación", "freq": "Mensual", "hours_week": 0.5, "ai": "Solo humano", "how": "Decisión estratégica" },
     { "task": "Planeación campañas grandes (estacionalidad)", "etapa": "Planeación", "freq": "Por posición", "hours_week": 0.5, "ai": "Solo humano", "how": "Decisión estratégica" },
@@ -168,10 +179,10 @@
     }
   ],
   "capacity_reallocation": {
-    "narrative": "Las 9 oportunidades aplican a los 4 perfiles de líder, no solo al de Performance MX. Al ejecutar los 3 proyectos del documento esperamos:",
+    "narrative": "Las oportunidades de automatización aplican a los líderes de Performance de ambos países. Al ejecutar los cuatro proyectos del plan esperamos:",
     "regularization": {
       "leader": "Líder Performance MX",
-      "from": 44.4,
+      "from": 44.3,
       "to": 40,
       "delta": -4.4,
       "note": "Regularización del único rol sobre capacidad — vuelve a 40 h/sem"
@@ -233,6 +244,7 @@
       "n": 1,
       "title": "Lectura conectada — agentes Claude con acceso a Meta, TikTok y Google Ads",
       "outcome": "Capacidad de monitoreo continuo",
+      "risk": "Bajo",
       "desc": "Conectar agentes IA con read access a las APIs de las 3 plataformas. Hoy el líder consulta cada cuenta manualmente y arma el panorama mentalmente. Con esto, el dato vive en el agente y está disponible para todo lo que sigue (reporting, alarmas, decisiones).",
       "tasks": [
         "Crear los accesos read-only (system users / tokens) a las APIs de Meta, TikTok y Google Ads",
@@ -245,6 +257,7 @@
       "n": 2,
       "title": "Reportes + alarmas + sugerencias de cambios automatizadas",
       "outcome": "El líder decide, no calcula",
+      "risk": "Bajo–Medio",
       "desc": "Sobre la lectura conectada del paso 1, el agente arma el daily, dispara alarmas de pacing / CPL / saturación y propone cambios accionables (\"subir bid en X audiencia\", \"apagar Y creativo\", \"redistribuir 15% del budget a Z\"). El líder aprueba o descarta — no construye el reporte ni hace el cálculo manual.",
       "tasks": [
         "Definir el daily estándar: métricas, formato y hora de entrega",
@@ -257,6 +270,7 @@
       "n": 3,
       "title": "Renovación de creativos guiada por performance",
       "outcome": "Itera hacia lo que funciona, sin briefing manual",
+      "risk": "Medio",
       "desc": "Cierre del loop: el agente lee qué creativos performan, identifica patrones (formato, copy, hook, audiencia), genera variantes con IA y las rota. La \"renovación de creativos\" deja de ser una tarea calendarizada cada 2 días y se vuelve un loop continuo guiado por la data del paso 1.",
       "tasks": [
         "Definir las métricas de fatiga/saturación por creativo y audiencia",
@@ -267,6 +281,18 @@
     },
     {
       "n": 4,
+      "title": "Calidad de dato y tracking",
+      "outcome": "Cero ceguera de medición, sin esfuerzo humano",
+      "risk": "Bajo",
+      "desc": "Chequeos que hoy hace el líder a mano y que la IA puede correr en continuo con alertas. Es de bajo riesgo porque solo valida y avisa — no acciona sobre las campañas — y por eso entra entre lo primero a ejecutar: libera tiempo casi sin exposición.",
+      "tasks": [
+        "Healthcheck automático de pixel, CAPI y UTMs con alertas de anomalía",
+        "Validador de UTMs y nomenclatura de los ads",
+        "Monitor de calidad de atribución sobre el chain UUID Segment→Deal"
+      ]
+    },
+    {
+      "n": 5,
       "title": "Programa Brokers — BBDD consolidada + formación + comunidad",
       "outcome": "De fuente de leads a comunidad multiproducto",
       "desc": "Pivote estratégico de marketing: dejar de tratar a los brokers como fuente de leads para Habi Sellers exclusivamente, y construir una comunidad de brokers alrededor del ecosistema completo. Tres pilares: (1) consolidar la BBDD de brokers hoy fragmentada; (2) lanzar cursos de formación inmobiliaria sobre los 5 productos Habi; (3) construir comunidad (hub + eventos) para que los brokers se vinculen con Habi y entre ellos.",
