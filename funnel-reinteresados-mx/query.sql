@@ -7,6 +7,14 @@
 WITH mart AS (
   SELECT DISTINCT nid, pais FROM `papyrus-master.sellers_data_mart.sellers_leads_asignados_marketing_wbr_mart`
 ),
+-- GABI (recepcionista IA): lead gestionado por el bot + si respondió (fecha_interaccion). CO + MX.
+gabi AS (
+  SELECT nid, MAX(IF(fecha_interaccion IS NOT NULL,1,0)) AS resp FROM (
+    SELECT nid, fecha_interaccion FROM `sellers-main-prod.mid_funnel_ibuyer.seller_digital_co_recepcionista_mm`
+    UNION ALL
+    SELECT nid, fecha_interaccion FROM `sellers-main-prod.mid_funnel_ibuyer.seller_digital_mx_gabi_recepcionista`
+  ) GROUP BY nid
+),
 base AS (
   SELECT
     CASE d.country WHEN 'México' THEN 'MX' WHEN 'Colombia' THEN 'CO' END AS pais,
@@ -26,6 +34,9 @@ base AS (
     COALESCE(NULLIF(TRIM(p.label),''),'Sin pipeline') AS pipeline,
     COALESCE(NULLIF(TRIM(s.label),''),'Sin etapa') AS etapa,
     CAST(COALESCE(s.display_order,999) AS INT64) AS eorden,
+    IF(gb.nid IS NOT NULL,1,0) AS gabi,
+    COALESCE(gb.resp,0) AS gabi_resp,
+    COALESCE(NULLIF(TRIM(d.prioridad_gestion_market_maker),''),'Sin prioridad') AS prioridad,
     CAST(CAST(d.createdate AS DATE) AS STRING) AS fc,
     d.nid,
     ROW_NUMBER() OVER (PARTITION BY d.nid ORDER BY d.createdate DESC) AS rn
@@ -33,6 +44,7 @@ base AS (
   LEFT JOIN mart m
     ON m.nid = d.nid
    AND m.pais = CASE d.country WHEN 'México' THEN 'mexico' WHEN 'Colombia' THEN 'colombia' END
+  LEFT JOIN gabi gb ON gb.nid = d.nid
   LEFT JOIN `sellers-main-prod.hubspot.deal_pipelines_stages` s ON s.id = d.dealstage
   LEFT JOIN `sellers-main-prod.hubspot.deal_pipelines` p ON p.id = s.pipeline_id
   WHERE d.utm_campaign LIKE '%reinteresados%'
@@ -41,5 +53,5 @@ base AS (
       (d.country='Colombia' AND d.fuente IN ('WEB','Leadforms'))
     )
 )
-SELECT pais, geo, area, sid, slabel, calif, calif_inmo, cita, owner, asig, cierre, contrato, pipeline, etapa, eorden, fc
+SELECT pais, geo, area, sid, slabel, calif, calif_inmo, cita, owner, asig, cierre, contrato, pipeline, etapa, eorden, gabi, gabi_resp, prioridad, fc
 FROM base WHERE rn=1

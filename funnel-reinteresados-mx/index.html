@@ -118,6 +118,10 @@
   <p class="note" style="margin-top:-2px">Fuente <b>hubspot.deals</b> (~7 min de lag), refresco cada 10 min. Hitos de asignación: <b>HubSpot owner</b> = deal con <code>hubspot_owner_id</code> · <b>WBR Mart</b> = lead en el mart oficial de asignados (número oficial, downstream).</p>
   <div class="card" id="funnel"></div>
 
+  <h2>Recepcionista GABI 🤖 <span class="help" data-tip="GABI = bot IA recepcionista de leads. 'Gestionados' = lead presente en la tabla recepcionista (seller_digital_co_recepcionista_mm / seller_digital_mx_gabi_recepcionista). 'Le respondieron' = el lead interactuó (fecha_interaccion). Priorización = prioridad_gestion_market_maker (hubspot.deals).">?</span></h2>
+  <p class="note">Cuántos leads gestionó GABI, cuántos le respondieron, y la priorización (A/B/C) que asignó. Respeta el filtro de país y zona.</p>
+  <div class="card" id="gabi"></div>
+
   <h2>Pipeline comercial <span class="help" data-tip="Etapa actual de cada lead en su pipeline de HubSpot: hubspot.deals.dealstage → deal_pipelines_stages (etapa, orden) → deal_pipelines (pipeline). Los leads se reparten en varios pipelines (Market Maker, Inmobiliaria, versiones vieja/NUEVO); se agrupa por pipeline y se ordena por la etapa del funnel.">?</span></h2>
   <p class="note">Dónde está cada lead en la gestión comercial, agrupado por pipeline y ordenado por etapa. Respeta el filtro de país y zona.</p>
   <div id="pipeline"></div>
@@ -181,7 +185,8 @@ let dailyChart=null, leadsAll=[], country='MX', selectedGeo=null;
 let firstLoad=true;
 function mapRaw(raw){ return raw.map(r=>({pais:r.pais, geo:r.geo||'Sin dato', area:r.area||'Sin dato', sid:(r.sid==null?'':String(r.sid)), slabel:r.slabel||'Sin estado',
     calif:N(r.calif), calif_inmo:N(r.calif_inmo), cita:N(r.cita), owner:N(r.owner), asig:N(r.asig), cierre:N(r.cierre), contrato:N(r.contrato),
-    pipeline:r.pipeline||'Sin pipeline', etapa:r.etapa||'Sin etapa', eorden:N(r.eorden), fc:r.fc})); }
+    pipeline:r.pipeline||'Sin pipeline', etapa:r.etapa||'Sin etapa', eorden:N(r.eorden),
+    gabi:N(r.gabi), gabi_resp:N(r.gabi_resp), prioridad:r.prioridad||'Sin prioridad', fc:r.fc})); }
 async function loadData(){
   const btn=document.getElementById('refreshBtn');
   if(btn){ btn.disabled=true; btn.textContent='⏳ Cargando…'; }
@@ -217,6 +222,25 @@ function apply(){
   let f=countryLeads();
   if(selectedGeo!==null) f=f.filter(l=>l.geo===selectedGeo);
   render(f);
+}
+
+function renderGabi(L){
+  const el=document.getElementById('gabi'); const reg=L.length;
+  const gest=L.filter(x=>x.gabi).length, resp=L.filter(x=>x.gabi_resp).length;
+  const byP={}; L.filter(x=>x.gabi).forEach(x=>byP[x.prioridad]=(byP[x.prioridad]||0)+1);
+  const ord=['A','B','C','Sin prioridad'], col={'A':'#ef4444','B':'#f59e0b','C':'#10b981','Sin prioridad':'#94a3b8'};
+  const ps=Object.entries(byP).sort((a,b)=>{const ia=ord.indexOf(a[0]),ib=ord.indexOf(b[0]);return (ia<0?9:ia)-(ib<0?9:ib);});
+  const max=Math.max(1,...ps.map(p=>p[1])), pr=n=>reg?(n/reg*100).toFixed(0):0;
+  const bars=ps.map(([p,n])=>`<div style="display:flex;align-items:center;gap:10px;margin:6px 0">
+    <div style="width:95px;font-size:12.5px;text-align:right;flex:0 0 auto;color:var(--text)">${p}</div>
+    <div style="flex:1;background:#f3f4f6;border-radius:5px;height:22px"><div style="width:${(n/max*100).toFixed(1)}%;background:${col[p]||'#6366f1'};height:100%;border-radius:5px;min-width:3px;transition:width .3s"></div></div>
+    <div style="width:84px;font-size:12.5px;flex:0 0 auto"><b>${fmt(n)}</b> <span class="muted">${gest?(n/gest*100).toFixed(0):0}%</span></div></div>`).join('');
+  el.innerHTML=`<div style="display:flex;gap:28px;flex-wrap:wrap;margin-bottom:16px">
+      <div><div class="muted" style="font-size:12px">Gestionados por GABI</div><div style="font-size:26px;font-weight:800;color:var(--text-title)">${fmt(gest)} <span style="font-size:13px;font-weight:600" class="muted">${pr(gest)}% de registros</span></div></div>
+      <div><div class="muted" style="font-size:12px">Le respondieron a GABI</div><div style="font-size:26px;font-weight:800;color:#10b981">${fmt(resp)} <span style="font-size:13px;font-weight:600" class="muted">${gest?(resp/gest*100).toFixed(0):0}% de gestionados</span></div></div>
+    </div>
+    <div style="font-size:12.5px;font-weight:700;margin-bottom:8px">Priorización GABI (de los gestionados)</div>
+    ${ps.length?bars:'<p class="note">Sin gestionados de GABI en esta selección.</p>'}`;
 }
 
 function renderPipeline(L){
@@ -275,6 +299,7 @@ function render(L){
           <div class="conv-item"><div class="pct">${vsPrev}</div><div class="cl">vs anterior</div></div></div></div></div>`;
   }).join('');
 
+  renderGabi(L);
   renderPipeline(L);
 
   // ===== Cruce Calificados MM × Inmo =====
