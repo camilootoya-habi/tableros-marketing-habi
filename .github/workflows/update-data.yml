@@ -334,7 +334,7 @@ jobs:
           import json
           with open('/tmp/inc_dir_raw.json') as f:
               data = json.load(f)
-          int_keys = ('f','tr','t','inc_pass','inc_left','rev_pass','rev_left')
+          int_keys = ('f','tr','t','inc_pass','inc_left','inc_to_20','rev_pass','rev_left','rev_to_20','inc_reman_notip','rev_reman_notip')
           for r in data:
               for k in int_keys:
                   r[k] = int(r[k])

@@ -108,19 +108,32 @@
   .help-dialog .close-btn { margin-top: 14px; background: var(--border); color: var(--text); border: none; padding: 7px 18px; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 500; transition: background 0.15s; }
   .help-dialog .close-btn:hover { background: var(--border-strong); }
 
-  .charts { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin-bottom: 18px; }
+  .charts { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 12px; margin-bottom: 18px; }
   .chart-card { background: var(--card); border-radius: 10px; border: 1px solid var(--border); padding: 14px; min-width: 0; }
   .chart-title { font-size: 12px; color: var(--text-muted-2); font-weight: 600; margin-bottom: 8px; }
   .chart-wrap { position: relative; height: 220px; }
-  @media (max-width: 1100px) { .charts { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
-  @media (max-width: 760px) { .charts { grid-template-columns: 1fr; } }
+  @media (max-width: 1300px) { .charts { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  @media (max-width: 700px) { .charts { grid-template-columns: 1fr; } }
+
+  .dist-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 18px; }
+  @media (max-width: 1300px) { .dist-row { grid-template-columns: 1fr 1fr; } }
+  @media (max-width: 880px) { .dist-row { grid-template-columns: 1fr; } }
+  .bag-card { background: var(--card); border-radius: 10px; border: 1px solid var(--border); padding: 16px; }
+  .bag-head { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 6px; }
+  .bag-title { font-size: 13px; color: var(--text-title); font-weight: 600; }
+  .bag-sub { font-size: 11px; color: var(--text-muted-2); margin-bottom: 10px; }
+  .bag-horizon { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text-muted-2); }
+  .bag-horizon button { background: var(--border); color: var(--text-muted); border: 1px solid var(--border); border-radius: 6px; padding: 4px 10px; font-size: 12px; cursor: pointer; font-weight: 500; transition: background 0.15s, color 0.15s; }
+  .bag-horizon button:hover { color: var(--accent); }
+  .bag-horizon button.active { background: var(--accent); color: var(--accent-on); border-color: var(--accent); }
+  .bag-wrap { position: relative; height: 320px; }
 </style>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 </head>
 <body>
 <a href="https://camilootoya-habi.github.io/tableros-marketing-habi/" class="back-link">← Volver al hub</a>
 <div class="header">
-  <h1>Procesos Transitorios Marketing — <span class="state" id="stateTitle">Incompletos</span> · <span class="country" id="countryTitle">Colombia</span></h1>
+  <h1>Procesos Transitorios Marketing — <span class="state" id="stateTitle">Revisar dirección</span> · <span class="country" id="countryTitle">Colombia</span></h1>
   <div class="refresh-info">
     <span id="lastUpdate"></span>
     <button type="button" class="theme-btn" id="themeToggle" onclick="toggleTheme()" aria-label="Cambiar tema">🌙</button>
@@ -138,8 +151,8 @@
   <div class="control-card">
     <div class="control-label">Estado <button type="button" class="help-btn" onclick="document.getElementById('helpEstado').showModal()" aria-label="Explicación de estados">?</button></div>
     <div class="filter-bar">
-      <label><input type="radio" name="state" value="inc" checked onchange="onStateChange()"> Incompletos <span class="fuente-tag" style="background:#fbbf2430;color:#fbbf24">7+39</span></label>
-      <label><input type="radio" name="state" value="rev" onchange="onStateChange()"> Revisar dirección <span class="fuente-tag" style="background:#34d39930;color:#34d399">3</span></label>
+      <label><input type="radio" name="state" value="inc" onchange="onStateChange()"> Incompletos <span class="fuente-tag" style="background:#fbbf2430;color:#fbbf24">7+39</span></label>
+      <label><input type="radio" name="state" value="rev" checked onchange="onStateChange()"> Revisar dirección <span class="fuente-tag" style="background:#34d39930;color:#34d399">3</span></label>
     </div>
   </div>
   <div class="control-card">
@@ -175,6 +188,14 @@
     <div class="chart-wrap"><canvas id="chartLeft"></canvas></div>
   </div>
   <div class="chart-card">
+    <div class="chart-title">Remanentes en el estado / Registros</div>
+    <div class="chart-wrap"><canvas id="chartReman"></canvas></div>
+  </div>
+  <div class="chart-card">
+    <div class="chart-title">Remanentes sin tipificar / Registros</div>
+    <div class="chart-wrap"><canvas id="chartNoTip"></canvas></div>
+  </div>
+  <div class="chart-card">
     <div class="chart-title">Pasaron por Calificado (20) / Salieron del estado</div>
     <div class="chart-wrap"><canvas id="chartTo20"></canvas></div>
   </div>
@@ -190,10 +211,86 @@
     <div class="chart-wrap"><canvas id="chartLeftN"></canvas></div>
   </div>
   <div class="chart-card">
+    <div class="chart-title">Remanentes en el estado — # de leads</div>
+    <div class="chart-wrap"><canvas id="chartRemanN"></canvas></div>
+  </div>
+  <div class="chart-card">
+    <div class="chart-title">Remanentes sin tipificar — # de leads</div>
+    <div class="chart-wrap"><canvas id="chartNoTipN"></canvas></div>
+  </div>
+  <div class="chart-card">
     <div class="chart-title">Pasaron por Calificado (20) — # de leads</div>
     <div class="chart-wrap"><canvas id="chartTo20N"></canvas></div>
   </div>
 </div>
+
+<div class="dist-row">
+  <div class="bag-card">
+    <div class="bag-head">
+      <div class="bag-title">Bolsa de leads a gestionar — por antigüedad <button type="button" class="help-btn" onclick="document.getElementById('helpBag').showModal()" aria-label="Ayuda bolsa">?</button></div>
+      <div class="bag-horizon js-bag-h">
+        <span>Horizonte:</span>
+        <button type="button" data-h="30" onclick="setHorizon(30)">30d</button>
+        <button type="button" data-h="45" class="active" onclick="setHorizon(45)">45d</button>
+        <button type="button" data-h="90" onclick="setHorizon(90)">90d</button>
+        <button type="button" data-h="180" onclick="setHorizon(180)">180d</button>
+        <button type="button" data-h="365" onclick="setHorizon(365)">365d</button>
+      </div>
+    </div>
+    <div class="bag-sub" id="bagSub">Stock actual de leads en el estado transitorio <strong>sin tipificar</strong>, por días desde su fecha de creación. Se excluyen leads de más de 365 días.</div>
+    <div class="bag-wrap"><canvas id="chartBag"></canvas></div>
+  </div>
+
+  <div class="bag-card">
+    <div class="bag-head">
+      <div class="bag-title">Distribución de duración en el estado — leads que salieron <button type="button" class="help-btn" onclick="document.getElementById('helpDur').showModal()" aria-label="Ayuda duración">?</button></div>
+      <div class="bag-horizon js-dur-h">
+        <span>Creados últimos:</span>
+        <button type="button" data-h="30" onclick="setHorizonDur(30)">30d</button>
+        <button type="button" data-h="45" class="active" onclick="setHorizonDur(45)">45d</button>
+        <button type="button" data-h="90" onclick="setHorizonDur(90)">90d</button>
+        <button type="button" data-h="180" onclick="setHorizonDur(180)">180d</button>
+        <button type="button" data-h="365" onclick="setHorizonDur(365)">365d</button>
+      </div>
+    </div>
+    <div class="bag-sub" id="durSub">Distribución del tiempo que los leads pasaron en el estado transitorio antes de salir.</div>
+    <div class="bag-wrap"><canvas id="chartDur"></canvas></div>
+  </div>
+
+  <div class="bag-card">
+    <div class="bag-head">
+      <div class="bag-title">Conversión móvil 28 días — % que salió <button type="button" class="help-btn" onclick="document.getElementById('helpConv').showModal()" aria-label="Ayuda conversión">?</button></div>
+    </div>
+    <div class="bag-sub" id="convSub">Conversión móvil de 28 días (Salieron/Pasaron), diaria.</div>
+    <div class="bag-wrap"><canvas id="chartConv"></canvas></div>
+  </div>
+</div>
+
+<dialog id="helpBag" class="help-dialog">
+  <h3>Bolsa de leads a gestionar</h3>
+  <p>Curva <strong>acumulativa</strong>: para cada antigüedad X (días desde la fecha de creación), cuántos leads que están <strong>hoy</strong> en el estado transitorio y <strong>sin tipificar</strong> tienen X días o menos.</p>
+  <p>Eje X = días desde creación (buckets de 5). Eje Y = # de leads acumulado. Responde a los selectores de país, estado y fuentes; es un <strong>snapshot</strong> actual (no depende de la temporalidad).</p>
+  <p>Leads con más de 365 días desde creación se excluyen (ya no son gestionables). El horizonte hace zoom a la ventana accionable.</p>
+  <button type="button" class="close-btn" onclick="this.closest('dialog').close()">Cerrar</button>
+</dialog>
+
+<dialog id="helpDur" class="help-dialog">
+  <h3>Distribución de duración en el estado</h3>
+  <p>Para los leads que <strong>lograron salir</strong> del estado transitorio: cuánto tiempo pasaron dentro, medido de la <strong>primera entrada</strong> al estado a la <strong>primera salida</strong> (a cualquier otro estado).</p>
+  <p>Solo cuenta leads que quedaron <strong>atrapados</strong>: seguían en el estado <strong>más de 1 hora después de su creación</strong>. Esto excluye el barrido automático del backbone, que pasa a todos los leads por los estados y los saca al instante.</p>
+  <p>Eje X = horas en el estado (buckets de 4h). Eje Y = # de leads en cada bucket. Solo cuenta leads que ya salieron; los que siguen en el estado no entran aquí.</p>
+  <p>Líneas: <strong style="color:#38bdf8">cuartiles (P25 · Mediana · P75)</strong> y <strong style="color:#f59e0b">P90</strong>, calculados sobre la distribución de las fuentes seleccionadas. La cola de más de 90 días se agrupa al final; el eje hace zoom hasta P90.</p>
+  <p><strong>Creados últimos</strong>: filtra la cohorte por antigüedad de creación del lead (solo leads creados en los últimos N días). Default 45d. No confundir con el eje X, que es la duración dentro del estado.</p>
+  <button type="button" class="close-btn" onclick="this.closest('dialog').close()">Cerrar</button>
+</dialog>
+
+<dialog id="helpConv" class="help-dialog">
+  <h3>Conversión móvil 28 días</h3>
+  <p>Para cada día, la conversión <strong>Salieron / Pasaron</strong> de los leads <strong>atrapados</strong> creados en la <strong>ventana móvil de los 28 días previos</strong> (4 semanas exactas). Es un ratio de sumas, no un promedio de ratios, así que suaviza la curva.</p>
+  <p>La línea punteada es el <strong>promedio</strong> del período. Responde a país, estado y fuentes.</p>
+  <p>Ojo: el extremo derecho (días más recientes) tiende a caer porque esos leads aún no han tenido tiempo de salir (siguen como remanentes).</p>
+  <button type="button" class="close-btn" onclick="this.closest('dialog').close()">Cerrar</button>
+</dialog>
 
 <dialog id="helpEstado" class="help-dialog">
   <h3>Estados</h3>
@@ -222,6 +319,21 @@
   <p>Leads que pasaron por el estado y cuyo <strong>estado actual</strong> ya no es el mismo. Es la métrica de "salida" o recuperación del estado.</p>
   <p>Estado actual: <code>last_estado_id</code> (CO) / <code>last_state_id</code> (MX) en OLTP. Si NULL se considera que salió.</p>
   <p>El % se calcula sobre <strong>Pasaron por el estado</strong> del período (conversión de la etapa anterior).</p>
+  <button type="button" class="close-btn" onclick="this.closest('dialog').close()">Cerrar</button>
+</dialog>
+
+<dialog id="helpReman" class="help-dialog">
+  <h3>Remanentes en el estado</h3>
+  <p>Leads creados en el período que <strong>pasaron por el estado y siguen ahí hoy</strong>: su estado actual (<code>last_estado_id</code> CO / <code>last_state_id</code> MX) es exactamente el estado transitorio.</p>
+  <p>Es el complemento de "Salieron": <strong>Remanentes = Pasaron − Salieron</strong>. El % se calcula sobre <strong>Registros</strong> del período — qué fracción de la cosecha sigue atascada. Más alto = peor (escala invertida, rojo = más atascados).</p>
+  <button type="button" class="close-btn" onclick="this.closest('dialog').close()">Cerrar</button>
+</dialog>
+
+<dialog id="helpNoTip" class="help-dialog">
+  <h3>Remanentes sin tipificar (sin gestión)</h3>
+  <p>Subconjunto de los <strong>Remanentes</strong> que <strong>no tienen marca de <code>tipificacion_lead</code></strong> en HubSpot (<code>sellers-main-prod.hubspot.deals</code>): el call center nunca dejó una disposición (No contestó, Volver a llamar, Imposible comunicarnos, etc.). Es decir, <strong>aún no fueron gestionados</strong>.</p>
+  <p>NULL incluye tanto deal sin tipificación como lead sin deal en HubSpot. Si cualquier deal del <code>nid</code> tiene tipificación, el lead se considera gestionado.</p>
+  <p>El % se calcula sobre <strong>Registros</strong> del período. Escala invertida (rojo = más leads atascados sin gestión).</p>
   <button type="button" class="close-btn" onclick="this.closest('dialog').close()">Cerrar</button>
 </dialog>
 
@@ -281,6 +393,31 @@ const FUENTES_BY_COUNTRY = {
 
 const STATE_LABEL = { inc: 'Incompletos', rev: 'Revisar dirección' };
 const SHOW_COUNT = 20;
+let HORIZON = 45;
+const SLA_DAYS = 10;
+let HORIZON_DUR = 45;
+
+// Línea vertical roja del SLA sobre el gráfico de la bolsa.
+const slaLinePlugin = {
+  id: 'slaLine',
+  afterDatasetsDraw(chart) {
+    const xScale = chart.scales.x;
+    if (!xScale) return;
+    const x = xScale.getPixelForValue(SLA_DAYS);
+    const { top, bottom, left, right } = chart.chartArea;
+    if (x < left || x > right) return;
+    const c = chart.ctx;
+    c.save();
+    c.beginPath();
+    c.moveTo(x, top); c.lineTo(x, bottom);
+    c.lineWidth = 2; c.strokeStyle = '#ef4444'; c.setLineDash([5, 4]);
+    c.stroke();
+    c.setLineDash([]);
+    c.fillStyle = '#ef4444'; c.font = '600 11px Segoe UI'; c.textAlign = 'left';
+    c.fillText(`SLA ${SLA_DAYS}d`, x + 5, top + 12);
+    c.restore();
+  }
+};
 
 let RAW_DATA = [];
 let LABEL_CACHE = {};
@@ -320,7 +457,7 @@ function buildLabelCache() {
   RAW_DATA.forEach(r => { LABEL_CACHE[`${r.c}:${r.f}`] = r.fn; });
 }
 
-function buildFuenteCheckboxes() {
+function buildFuenteCheckboxes(defaultIds) {
   const country = getCountry();
   const fb = document.getElementById('filterBar');
   fb.querySelectorAll('.fuente-lbl').forEach(el => el.remove());
@@ -328,9 +465,13 @@ function buildFuenteCheckboxes() {
     const lbl = document.createElement('label');
     lbl.className = 'fuente-lbl';
     const name = labelFor(country, f.id);
-    lbl.innerHTML = `<input type="checkbox" class="fuente-chk" value="${f.id}" checked onchange="onUpdate()"> ${name} <span class="fuente-tag" style="background:${f.color}30;color:${f.color}">ID ${f.id}</span>`;
+    const checked = defaultIds ? (defaultIds.includes(f.id) ? 'checked' : '') : 'checked';
+    lbl.innerHTML = `<input type="checkbox" class="fuente-chk" value="${f.id}" ${checked} onchange="onUpdate()"> ${name} <span class="fuente-tag" style="background:${f.color}30;color:${f.color}">ID ${f.id}</span>`;
     fb.appendChild(lbl);
   });
+  if (defaultIds) {
+    document.getElementById('chkAll').checked = defaultIds.length === FUENTES_BY_COUNTRY[country].length;
+  }
 }
 
 function toggleAll(c) { document.querySelectorAll('.fuente-chk').forEach(x => x.checked = c); onUpdate(); }
@@ -389,15 +530,17 @@ function aggregate(gran, country, selIds) {
   const filtered = RAW_DATA.filter(r => r.g === gran && r.c === country && selIds.includes(r.f));
   const periodSet = {};
   filtered.forEach(r => {
-    if (!periodSet[r.p]) periodSet[r.p] = { p: r.p, tr: 0, t: 0, inc_pass: 0, inc_left: 0, inc_to_20: 0, rev_pass: 0, rev_left: 0, rev_to_20: 0 };
+    if (!periodSet[r.p]) periodSet[r.p] = { p: r.p, tr: 0, t: 0, inc_pass: 0, inc_left: 0, inc_to_20: 0, inc_reman_notip: 0, rev_pass: 0, rev_left: 0, rev_to_20: 0, rev_reman_notip: 0 };
     periodSet[r.p].tr += (r.tr || 0);
     periodSet[r.p].t += (r.t || 0);
     periodSet[r.p].inc_pass += (r.inc_pass || 0);
     periodSet[r.p].inc_left += (r.inc_left || 0);
     periodSet[r.p].inc_to_20 += (r.inc_to_20 || 0);
+    periodSet[r.p].inc_reman_notip += (r.inc_reman_notip || 0);
     periodSet[r.p].rev_pass += (r.rev_pass || 0);
     periodSet[r.p].rev_left += (r.rev_left || 0);
     periodSet[r.p].rev_to_20 += (r.rev_to_20 || 0);
+    periodSet[r.p].rev_reman_notip += (r.rev_reman_notip || 0);
   });
   return Object.values(periodSet).sort((a, b) => a.p.localeCompare(b.p));
 }
@@ -422,8 +565,278 @@ function heatCells(values, denominators, invert) {
 
 function fmt(n) { return n.toLocaleString('es-MX'); }
 
-let CHART_PASS = null, CHART_LEFT = null, CHART_TO20 = null;
-let CHART_PASS_N = null, CHART_LEFT_N = null, CHART_TO20_N = null;
+let CHART_PASS = null, CHART_LEFT = null, CHART_REMAN = null, CHART_NOTIP = null, CHART_TO20 = null;
+let CHART_PASS_N = null, CHART_LEFT_N = null, CHART_REMAN_N = null, CHART_NOTIP_N = null, CHART_TO20_N = null;
+let CHART_BAG = null, CHART_DUR = null, CHART_CONV = null;
+
+function setHorizon(h) {
+  HORIZON = h;
+  document.querySelectorAll('.js-bag-h button').forEach(b => b.classList.toggle('active', +b.dataset.h === h));
+  renderBag();
+}
+
+function setHorizonDur(h) {
+  HORIZON_DUR = h;
+  document.querySelectorAll('.js-dur-h button').forEach(b => b.classList.toggle('active', +b.dataset.h === h));
+  renderDur();
+}
+
+function renderBag() {
+  const ctx = document.getElementById('chartBag');
+  if (!ctx) return;
+  const country = getCountry();
+  const state = getState();
+  const sel = getSelFuentes();
+  const field = state === 'inc' ? 'inc_reman_notip' : 'rev_reman_notip';
+
+  const byBucket = {};
+  RAW_DATA.forEach(r => {
+    if (r.g !== 'B' || r.c !== country || !sel.includes(r.f)) return;
+    const b = +r.p;
+    byBucket[b] = (byBucket[b] || 0) + (r[field] || 0);
+  });
+
+  // No acumulativa: cada bucket de 1 día muestra su propio conteo, hasta el horizonte.
+  // Vértice exacto en el SLA (día 10) para partir el área limpio.
+  const all = [];
+  for (let b = 0; b <= HORIZON; b++) all.push({ x: b, y: byBucket[b] || 0 });
+  const ptsLeft = all.filter(p => p.x <= SLA_DAYS);   // dentro de SLA → negro
+  const ptsRight = all.filter(p => p.x >= SLA_DAYS);  // fuera de SLA → rojo
+  const slaY = all.filter(p => p.x <= SLA_DAYS).reduce((s, p) => s + p.y, 0);
+  const totalHorizon = all.reduce((s, p) => s + p.y, 0);
+  const breached = totalHorizon - slaY;               // leads que ya incumplen el SLA
+  // Línea acumulativa secundaria (eje derecho, sombreada por detrás)
+  let acc = 0; const ptsCum = all.map(p => { acc += p.y; return { x: p.x, y: acc }; });
+
+  document.getElementById('bagSub').innerHTML =
+    `Stock actual en <strong>${STATE_LABEL[state]}</strong> <strong>sin tipificar</strong> (sin gestión), por días desde creación (sin acumular). ` +
+    `<strong>${slaY.toLocaleString('es-MX')}</strong> dentro de SLA (≤ ${SLA_DAYS}d) · ` +
+    `<strong style="color:#ef4444">${breached.toLocaleString('es-MX')}</strong> fuera de SLA · ` +
+    `${totalHorizon.toLocaleString('es-MX')} total en ≤ ${HORIZON}d.`;
+
+  const tc = themeColors();
+  if (CHART_BAG) CHART_BAG.destroy();
+  CHART_BAG = new Chart(ctx, {
+    type: 'line',
+    data: { datasets: [
+      { label: 'Acumulado', data: ptsCum, yAxisID: 'y2', order: 3,
+        borderColor: 'rgba(148,163,184,0.55)', backgroundColor: 'rgba(148,163,184,0.10)',
+        borderDash: [3, 3], tension: 0.25, pointRadius: 0, pointHoverRadius: 4, borderWidth: 1.5, fill: 'origin' },
+      { label: 'Dentro de SLA', data: ptsLeft, yAxisID: 'y', order: 1,
+        borderColor: 'rgba(15,23,42,0.9)', backgroundColor: 'rgba(0,0,0,0.7)',
+        tension: 0.25, pointRadius: 2, pointHoverRadius: 5, borderWidth: 2, fill: 'origin' },
+      { label: 'Fuera de SLA', data: ptsRight, yAxisID: 'y', order: 1,
+        borderColor: '#f43f5e', backgroundColor: 'rgba(244,63,94,0.55)',
+        tension: 0.25, pointRadius: 2, pointHoverRadius: 5, borderWidth: 2, fill: 'origin' }
+    ]},
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          filter: item => item.datasetIndex === 0 || (item.parsed.x < SLA_DAYS ? item.datasetIndex === 1 : item.datasetIndex === 2),
+          callbacks: {
+            title: items => `${items[0].parsed.x} días desde creación`,
+            label: c => `${c.dataset.label}: ${c.parsed.y.toLocaleString('es-MX')} leads`
+          }
+        }
+      },
+      scales: {
+        x: { type: 'linear', min: 0, max: HORIZON,
+          title: { display: true, text: 'Días desde fecha de creación', color: tc.tickSmall, font: { size: 11 } },
+          ticks: { color: tc.tickSmall, font: { size: 10 }, stepSize: HORIZON <= 30 ? 5 : (HORIZON <= 90 ? 15 : 30) }, grid: { color: tc.grid } },
+        y: { title: { display: true, text: 'Leads sin tipificar (por día)', color: tc.tickSmall, font: { size: 11 } },
+          ticks: { color: tc.tickSmall, font: { size: 10 }, callback: v => v.toLocaleString('es-MX') }, grid: { color: tc.grid }, min: 0 },
+        y2: { position: 'right', min: 0,
+          title: { display: true, text: 'Acumulado', color: tc.tickSmall, font: { size: 11 } },
+          ticks: { color: tc.tickSmall, font: { size: 10 }, callback: v => v.toLocaleString('es-MX') }, grid: { drawOnChartArea: false } }
+      }
+    },
+    plugins: [slaLinePlugin]
+  });
+}
+
+function fmtHours(h) {
+  if (h == null) return '—';
+  if (h < 24) return `${Math.round(h)}h`;
+  return `${(h / 24).toFixed(h < 168 ? 1 : 0)}d`;
+}
+
+function renderDur() {
+  const ctx = document.getElementById('chartDur');
+  if (!ctx) return;
+  const country = getCountry();
+  const state = getState();
+  const sel = getSelFuentes();
+  const field = state === 'inc' ? 'inc_reman_notip' : 'rev_reman_notip';
+
+  const byBucket = {};
+  RAW_DATA.forEach(r => {
+    if (r.g !== 'DUR' || r.c !== country || !sel.includes(r.f)) return;
+    const [tierStr, hbStr] = String(r.p).split(':');
+    if (+tierStr > HORIZON_DUR) return;   // solo cohortes creados en los últimos HORIZON_DUR días
+    const b = +hbStr;
+    byBucket[b] = (byBucket[b] || 0) + (r[field] || 0);
+  });
+  const buckets = Object.keys(byBucket).map(Number).sort((a, b) => a - b);
+  const total = buckets.reduce((s, b) => s + byBucket[b], 0);
+
+  // Percentiles desde el histograma (resolución 4h)
+  const P = {}; let cum = 0; const qs = [25, 50, 75, 90]; let qi = 0;
+  for (const b of buckets) {
+    cum += byBucket[b];
+    while (qi < qs.length && total > 0 && cum >= total * qs[qi] / 100) { P[qs[qi]] = b; qi++; }
+  }
+  // Eje X: cubrir hasta P90 + margen (la cola larga se recorta)
+  const xMax = Math.min(2160, (P[90] != null ? P[90] : (buckets.length ? buckets[buckets.length - 1] : 48)) + 48);
+  const points = buckets.filter(b => b <= xMax).map(b => ({ x: b, y: byBucket[b] }));
+
+  document.getElementById('durSub').innerHTML =
+    `<strong>${total.toLocaleString('es-MX')}</strong> leads <strong>atrapados</strong> (>1h) que <strong>salieron</strong> de ${STATE_LABEL[state]} (creados últimos ${HORIZON_DUR}d) · ` +
+    `mediana ${fmtHours(P[50])} · P75 ${fmtHours(P[75])} · <strong style="color:#f59e0b">P90 ${fmtHours(P[90])}</strong>` +
+    (xMax >= 2160 ? ' · cola >90d agrupada' : '') +
+    (total < 50 ? ` · <span style="color:#f59e0b">⚠ muestra chica (${total}); barras unitarias en la cola</span>` : '');
+
+  const tc = themeColors();
+  const percPlugin = {
+    id: 'perc',
+    afterDatasetsDraw(chart) {
+      const xs = chart.scales.x; if (!xs) return;
+      const { top, bottom, left, right } = chart.chartArea; const c = chart.ctx;
+      const lines = [[P[25], '#38bdf8', 'P25'], [P[50], '#38bdf8', 'Mediana'], [P[75], '#38bdf8', 'P75'], [P[90], '#f59e0b', 'P90']];
+      lines.forEach(([val, col, lbl], i) => {
+        if (val == null) return;
+        const x = xs.getPixelForValue(val); if (x < left || x > right) return;
+        c.save();
+        c.beginPath(); c.moveTo(x, top); c.lineTo(x, bottom);
+        c.lineWidth = 1.5; c.strokeStyle = col; c.setLineDash([4, 3]); c.stroke(); c.setLineDash([]);
+        c.fillStyle = col; c.font = '600 10px Segoe UI'; c.textAlign = 'center';
+        c.fillText(lbl, x, top + 4 + (i % 2) * 12);
+        c.restore();
+      });
+    }
+  };
+
+  if (CHART_DUR) CHART_DUR.destroy();
+  CHART_DUR = new Chart(ctx, {
+    type: 'bar',
+    data: { datasets: [{
+      label: 'Leads', data: points,
+      backgroundColor: 'rgba(52,211,153,0.55)', borderColor: '#34d399', borderWidth: 1,
+      barPercentage: 1, categoryPercentage: 1
+    }]},
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: { display: false },
+        tooltip: { callbacks: {
+          title: items => `${items[0].parsed.x}–${items[0].parsed.x + 4} h en el estado`,
+          label: c => c.parsed.y.toLocaleString('es-MX') + ' leads'
+        } }
+      },
+      scales: {
+        x: { type: 'linear', min: 0, max: xMax,
+          title: { display: true, text: 'Horas en el estado transitorio (de entrada a salida)', color: tc.tickSmall, font: { size: 11 } },
+          ticks: { color: tc.tickSmall, font: { size: 10 }, callback: v => v >= 48 ? Math.round(v / 24) + 'd' : Math.round(v) + 'h' }, grid: { color: tc.grid } },
+        y: { title: { display: true, text: 'Leads que salieron (por bucket de 4h)', color: tc.tickSmall, font: { size: 11 } },
+          ticks: { color: tc.tickSmall, font: { size: 10 }, callback: v => v.toLocaleString('es-MX') }, grid: { color: tc.grid }, min: 0 }
+      }
+    },
+    plugins: [percPlugin]
+  });
+}
+
+function renderConv() {
+  const ctx = document.getElementById('chartConv');
+  if (!ctx) return;
+  const country = getCountry();
+  const state = getState();
+  const sel = getSelFuentes();
+  const passF = state === 'inc' ? 'inc_pass' : 'rev_pass';
+  const leftF = state === 'inc' ? 'inc_left' : 'rev_left';
+
+  const WIN = 28; // ventana móvil de 28 días (4 semanas exactas)
+  const byDay = {};
+  RAW_DATA.forEach(r => {
+    if (r.g !== 'D' || r.c !== country || !sel.includes(r.f)) return;
+    if (!byDay[r.p]) byDay[r.p] = { pass: 0, left: 0 };
+    byDay[r.p].pass += (r[passF] || 0);
+    byDay[r.p].left += (r[leftF] || 0);
+  });
+  const present = Object.keys(byDay).sort();
+  if (!present.length) { if (CHART_CONV) { CHART_CONV.destroy(); CHART_CONV = null; } return; }
+  // Calendario contiguo (rellena días sin datos con 0) para una ventana móvil correcta
+  const cal = [];
+  let dt = new Date(present[0] + 'T00:00:00Z');
+  const endDt = new Date(present[present.length - 1] + 'T00:00:00Z');
+  while (dt <= endDt) { cal.push(dt.toISOString().slice(0, 10)); dt.setUTCDate(dt.getUTCDate() + 1); }
+  const pts = []; const labels = [];
+  for (let i = WIN - 1; i < cal.length; i++) {
+    let rp = 0, rl = 0;
+    for (let j = i - WIN + 1; j <= i; j++) { const v = byDay[cal[j]]; if (v) { rp += v.pass; rl += v.left; } }
+    pts.push({ pass: rp, left: rl, y: rp ? rl / rp * 100 : 0 });
+    labels.push(formatPeriod(cal[i], 'D'));
+  }
+  const totP = present.reduce((s, d) => s + byDay[d].pass, 0);
+  const totL = present.reduce((s, d) => s + byDay[d].left, 0);
+  const avg = totP ? totL / totP * 100 : 0;
+
+  document.getElementById('convSub').innerHTML =
+    `Conversión <strong>móvil 28 días</strong> (Salieron/Pasaron) de ${STATE_LABEL[state]}, diaria · ` +
+    `promedio <strong>${avg.toFixed(0)}%</strong>`;
+
+  const tc = themeColors();
+  const SLA_CONV = 70;
+  const refLinesPlugin = {
+    id: 'convRefs',
+    afterDatasetsDraw(chart) {
+      const ys = chart.scales.y; if (!ys) return;
+      const { left, right } = chart.chartArea; const c = chart.ctx;
+      [[avg, 'rgba(148,163,184,0.9)', 'prom'], [SLA_CONV, '#ef4444', 'SLA']].forEach(([val, col, lbl]) => {
+        const y = ys.getPixelForValue(val);
+        c.save();
+        c.beginPath(); c.moveTo(left, y); c.lineTo(right, y);
+        c.lineWidth = 1.5; c.strokeStyle = col; c.setLineDash([5, 4]); c.stroke(); c.setLineDash([]);
+        c.fillStyle = col; c.font = '600 10px Segoe UI'; c.textAlign = 'right';
+        c.fillText(`${lbl} ${val.toFixed(0)}%`, right - 4, y - 4);
+        c.restore();
+      });
+    }
+  };
+
+  if (CHART_CONV) CHART_CONV.destroy();
+  CHART_CONV = new Chart(ctx, {
+    type: 'line',
+    data: { labels, datasets: [{
+      label: 'Conversión', data: pts.map(p => p.y),
+      borderColor: '#818cf8', borderWidth: 2,
+      // Relleno respecto al SLA: rojo donde la conversión cae por debajo de 70%, verde por encima
+      fill: { target: { value: SLA_CONV }, above: 'rgba(52,211,153,0.18)', below: 'rgba(244,63,94,0.35)' },
+      tension: 0.3, pointRadius: 2, pointHoverRadius: 5
+    }]},
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: { display: false },
+        tooltip: { callbacks: {
+          label: c => {
+            const p = pts[c.dataIndex];
+            return `${c.parsed.y.toFixed(0)}% salió (${p.left}/${p.pass})`;
+          }
+        } }
+      },
+      scales: {
+        x: { ticks: { color: tc.tickSmall, font: { size: 10 }, maxRotation: 0, autoSkip: true, maxTicksLimit: 8 }, grid: { color: tc.grid } },
+        y: { title: { display: true, text: '% que salió del estado', color: tc.tickSmall, font: { size: 11 } },
+          ticks: { color: tc.tickSmall, font: { size: 10 }, callback: v => v + '%' }, grid: { color: tc.grid }, min: 0, max: 100 }
+      }
+    },
+    plugins: [refLinesPlugin]
+  });
+}
 
 function renderCountChart(canvasId, label, color, values, labels) {
   const ctx = document.getElementById(canvasId);
@@ -451,11 +864,29 @@ function renderCountChart(canvasId, label, color, values, labels) {
   });
 }
 
-function renderTrendChart(canvasId, label, color, values, denominators, labels) {
+function renderTrendChart(canvasId, label, color, values, denominators, labels, refLines) {
   const ctx = document.getElementById(canvasId);
   if (!ctx) return null;
   const pcts = values.map((v, i) => denominators[i] > 0 ? v / denominators[i] * 100 : 0);
   const tc = themeColors();
+  // Líneas de referencia horizontales (promedio, SLA, …)
+  const refPlugin = {
+    id: 'refLines',
+    afterDatasetsDraw(chart) {
+      if (!refLines || !refLines.length) return;
+      const ys = chart.scales.y; const { left, right } = chart.chartArea; const c = chart.ctx;
+      refLines.forEach(rl => {
+        if (rl.value == null) return;
+        const y = ys.getPixelForValue(rl.value);
+        c.save();
+        c.beginPath(); c.moveTo(left, y); c.lineTo(right, y);
+        c.lineWidth = 1.5; c.strokeStyle = rl.color; c.setLineDash([5, 4]); c.stroke(); c.setLineDash([]);
+        c.fillStyle = rl.color; c.font = '600 10px Segoe UI'; c.textAlign = 'left';
+        c.fillText(`${rl.label} ${rl.value.toFixed(0)}%`, left + 4, y - 4);
+        c.restore();
+      });
+    }
+  };
   return new Chart(ctx, {
     type: 'line',
     data: { labels, datasets: [{
@@ -474,7 +905,8 @@ function renderTrendChart(canvasId, label, color, values, denominators, labels) 
         x: { ticks: { color: tc.tickSmall, font: { size: 10 }, maxRotation: 0, autoSkip: true, maxTicksLimit: 8 }, grid: { color: tc.grid } },
         y: { ticks: { color: tc.tickSmall, font: { size: 10 }, callback: v => v + '%' }, grid: { color: tc.grid }, min: 0 }
       }
-    }
+    },
+    plugins: [refPlugin]
   });
 }
 
@@ -488,16 +920,26 @@ function onUpdate() {
     document.querySelector('#funnelTable tbody').innerHTML = '<tr><td colspan="22" style="text-align:center;padding:40px;color:#64748b">Selecciona al menos una fuente</td></tr>';
     if (CHART_PASS) { CHART_PASS.destroy(); CHART_PASS = null; }
     if (CHART_LEFT) { CHART_LEFT.destroy(); CHART_LEFT = null; }
+    if (CHART_REMAN) { CHART_REMAN.destroy(); CHART_REMAN = null; }
+    if (CHART_NOTIP) { CHART_NOTIP.destroy(); CHART_NOTIP = null; }
     if (CHART_TO20) { CHART_TO20.destroy(); CHART_TO20 = null; }
     if (CHART_PASS_N) { CHART_PASS_N.destroy(); CHART_PASS_N = null; }
     if (CHART_LEFT_N) { CHART_LEFT_N.destroy(); CHART_LEFT_N = null; }
+    if (CHART_REMAN_N) { CHART_REMAN_N.destroy(); CHART_REMAN_N = null; }
+    if (CHART_NOTIP_N) { CHART_NOTIP_N.destroy(); CHART_NOTIP_N = null; }
     if (CHART_TO20_N) { CHART_TO20_N.destroy(); CHART_TO20_N = null; }
+    if (CHART_BAG) { CHART_BAG.destroy(); CHART_BAG = null; }
+    if (CHART_DUR) { CHART_DUR.destroy(); CHART_DUR = null; }
+    if (CHART_CONV) { CHART_CONV.destroy(); CHART_CONV = null; }
     return;
   }
   const g = getGran();
   let rows = aggregate(g, country, sel);
   if (g !== 'Y') rows = rows.slice(-SHOW_COUNT);
   render(rows, g);
+  renderBag();
+  renderDur();
+  renderConv();
 }
 
 function render(rows, gran) {
@@ -520,9 +962,13 @@ function render(rows, gran) {
     tbody.innerHTML = '<tr><td colspan="3" style="text-align:center;padding:40px;color:#64748b">Sin datos para esta combinación</td></tr>';
     if (CHART_PASS) { CHART_PASS.destroy(); CHART_PASS = null; }
     if (CHART_LEFT) { CHART_LEFT.destroy(); CHART_LEFT = null; }
+    if (CHART_REMAN) { CHART_REMAN.destroy(); CHART_REMAN = null; }
+    if (CHART_NOTIP) { CHART_NOTIP.destroy(); CHART_NOTIP = null; }
     if (CHART_TO20) { CHART_TO20.destroy(); CHART_TO20 = null; }
     if (CHART_PASS_N) { CHART_PASS_N.destroy(); CHART_PASS_N = null; }
     if (CHART_LEFT_N) { CHART_LEFT_N.destroy(); CHART_LEFT_N = null; }
+    if (CHART_REMAN_N) { CHART_REMAN_N.destroy(); CHART_REMAN_N = null; }
+    if (CHART_NOTIP_N) { CHART_NOTIP_N.destroy(); CHART_NOTIP_N = null; }
     if (CHART_TO20_N) { CHART_TO20_N.destroy(); CHART_TO20_N = null; }
     return;
   }
@@ -538,7 +984,12 @@ function render(rows, gran) {
   const trs = sortedRows.map(r => r.tr);
   const passVals = sortedRows.map(r => r[passField]);
   const leftVals = sortedRows.map(r => r[leftField]);
+  const remanVals = passVals.map((v, i) => v - leftVals[i]);
+  const notipField = state === 'inc' ? 'inc_reman_notip' : 'rev_reman_notip';
+  const notipVals = sortedRows.map(r => r[notipField]);
   const to20Vals = sortedRows.map(r => r[to20Field]);
+  const remanLabel = state === 'inc' ? 'Remanentes en Incompleto (siguen ahí)' : 'Remanentes en Revisar dirección (siguen ahí)';
+  const notipLabel = 'Remanentes sin tipificar (sin gestión CC)';
 
   let tb = '';
   // Row 0: Registros (contexto)
@@ -553,6 +1004,12 @@ function render(rows, gran) {
   // Etapa 2: Salieron del estado, % sobre los que pasaron
   tb += `<tr class="row-stage">${helpCell('helpLeft')}<td>${leftLabel}</td>${heatCells(leftVals, passVals, false)}</tr>`;
 
+  // Remanentes: pasaron y SIGUEN en el estado hoy, % sobre Registros (invertido: más = peor)
+  tb += `<tr class="row-stage">${helpCell('helpReman')}<td>${remanLabel}</td>${heatCells(remanVals, trs, true)}</tr>`;
+
+  // Remanentes SIN tipificar: subconjunto sin gestión del call center, % sobre Registros (invertido)
+  tb += `<tr class="row-stage">${helpCell('helpNoTip')}<td>${notipLabel}</td>${heatCells(notipVals, trs, true)}</tr>`;
+
   // Etapa 3: Después pasaron por estado 20 (Calificado), % sobre los que pasaron por el estado fuente
   tb += `<tr class="row-stage">${helpCell('helpTo20')}<td>${to20Label}</td>${heatCells(to20Vals, passVals, false)}</tr>`;
 
@@ -564,15 +1021,28 @@ function render(rows, gran) {
   const chartLabels = periods.map(p => formatPeriod(p, gran));
   if (CHART_PASS) CHART_PASS.destroy();
   if (CHART_LEFT) CHART_LEFT.destroy();
+  if (CHART_REMAN) CHART_REMAN.destroy();
+  if (CHART_NOTIP) CHART_NOTIP.destroy();
   if (CHART_TO20) CHART_TO20.destroy();
   if (CHART_PASS_N) CHART_PASS_N.destroy();
   if (CHART_LEFT_N) CHART_LEFT_N.destroy();
+  if (CHART_REMAN_N) CHART_REMAN_N.destroy();
+  if (CHART_NOTIP_N) CHART_NOTIP_N.destroy();
   if (CHART_TO20_N) CHART_TO20_N.destroy();
-  CHART_PASS = renderTrendChart('chartPass', passLabel, '#fbbf24', passVals, trs, chartLabels);
-  CHART_LEFT = renderTrendChart('chartLeft', leftLabel, '#34d399', leftVals, passVals, chartLabels);
-  CHART_TO20 = renderTrendChart('chartTo20', to20Label, '#818cf8', to20Vals, leftVals, chartLabels);
+  const sumA = a => a.reduce((s, v) => s + v, 0);
+  const PROM = 'rgba(148,163,184,0.9)';
+  const passAvg = sumA(trs) ? sumA(passVals) / sumA(trs) * 100 : 0;
+  const leftAvg = sumA(passVals) ? sumA(leftVals) / sumA(passVals) * 100 : 0;
+  const to20Avg = sumA(leftVals) ? sumA(to20Vals) / sumA(leftVals) * 100 : 0;
+  CHART_PASS = renderTrendChart('chartPass', passLabel, '#fbbf24', passVals, trs, chartLabels, [{ value: passAvg, color: PROM, label: 'prom' }]);
+  CHART_LEFT = renderTrendChart('chartLeft', leftLabel, '#34d399', leftVals, passVals, chartLabels, [{ value: leftAvg, color: PROM, label: 'prom' }]);
+  CHART_REMAN = renderTrendChart('chartReman', remanLabel, '#f87171', remanVals, trs, chartLabels);
+  CHART_NOTIP = renderTrendChart('chartNoTip', notipLabel, '#f43f5e', notipVals, trs, chartLabels);
+  CHART_TO20 = renderTrendChart('chartTo20', to20Label, '#818cf8', to20Vals, leftVals, chartLabels, [{ value: to20Avg, color: PROM, label: 'prom' }]);
   CHART_PASS_N = renderCountChart('chartPassN', passLabel, '#fbbf24', passVals, chartLabels);
   CHART_LEFT_N = renderCountChart('chartLeftN', leftLabel, '#34d399', leftVals, chartLabels);
+  CHART_REMAN_N = renderCountChart('chartRemanN', remanLabel, '#f87171', remanVals, chartLabels);
+  CHART_NOTIP_N = renderCountChart('chartNoTipN', notipLabel, '#f43f5e', notipVals, chartLabels);
   CHART_TO20_N = renderCountChart('chartTo20N', to20Label, '#818cf8', to20Vals, chartLabels);
 }
 
@@ -581,7 +1051,7 @@ fetch('data.json')
   .then(data => {
     RAW_DATA = data;
     buildLabelCache();
-    buildFuenteCheckboxes();
+    buildFuenteCheckboxes([3]); // default: solo WEB
     document.getElementById('lastUpdate').textContent = `Datos al ${new Date().toLocaleString('es-CO')}`;
     document.getElementById('themeToggle').textContent = document.body.classList.contains('light') ? '☀️' : '🌙';
     onUpdate();
