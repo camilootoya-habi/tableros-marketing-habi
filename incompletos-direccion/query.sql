@@ -32,18 +32,21 @@ WITH base AS (
 -- salida y "fin de estancia" en cada estado transitorio. next_ts = inicio del siguiente
 -- evento = fin del segmento actual en ese estado.
 ev AS (
-  SELECT 'Colombia' c, negocio_id biz_id, estado_id st, DATETIME(fecha_actualizacion) ts
+  SELECT 'Colombia' c, negocio_id biz_id, estado_id st, DATETIME(fecha_actualizacion) ts, agente
   FROM `sellers-main-prod.co_rds_staging.habi_db_tabla_historico_estado_v2`
   WHERE negocio_id IS NOT NULL
   UNION ALL
-  SELECT 'México', deal_id, state_id, DATETIME(date_create)
+  SELECT 'México', deal_id, state_id, DATETIME(date_create), agent
   FROM `sellers-main-prod.mx_rds_staging.habi_db_history_state`
   WHERE deal_id IS NOT NULL
 ),
 ev2 AS (
-  SELECT c, biz_id, st, ts,
-    LEAD(ts) OVER (PARTITION BY c, biz_id ORDER BY ts, st) AS next_ts
+  SELECT c, biz_id, st, ts, agente,
+    LEAD(ts) OVER w AS next_ts,
+    LEAD(st) OVER w AS next_st,
+    LEAD(agente) OVER w AS next_agente
   FROM ev
+  WINDOW w AS (PARTITION BY c, biz_id ORDER BY ts, st)
 ),
 -- Por lead: paso por cada estado, primera entrada, última entrada a 20, y "fin de estancia"
 -- (rev_end / inc_end = último instante en que el lead seguía en el estado; 9999 si nunca salió).
@@ -56,7 +59,12 @@ historic AS (
     MIN(IF(st = 3, ts, NULL)) AS first_rev,
     MAX(IF(st IN (7, 39), IFNULL(next_ts, DATETIME '9999-12-31'), NULL)) AS inc_end,
     MAX(IF(st = 3, IFNULL(next_ts, DATETIME '9999-12-31'), NULL)) AS rev_end,
-    MAX(IF(st = 20, ts, NULL)) AS last_20
+    MAX(IF(st = 20, ts, NULL)) AS last_20,
+    -- agente que ejecutó la PRIMERA salida del estado (transición st->otro estado)
+    ARRAY_AGG(IF(st = 3 AND next_st IS NOT NULL AND next_st != 3, next_agente, NULL)
+              IGNORE NULLS ORDER BY ts LIMIT 1)[SAFE_OFFSET(0)] AS rev_exit_agent,
+    ARRAY_AGG(IF(st IN (7, 39) AND next_st IS NOT NULL AND next_st NOT IN (7, 39), next_agente, NULL)
+              IGNORE NULLS ORDER BY ts LIMIT 1)[SAFE_OFFSET(0)] AS inc_exit_agent
   FROM ev2 GROUP BY c, biz_id
 ),
 
@@ -71,7 +79,9 @@ current_state AS (
 -- Tipificación del call center (HubSpot, global). MAX ignora NULLs: si CUALQUIER deal del
 -- nid tiene tipificación, se considera gestionado. NULL (o sin deal) = sin gestión.
 tip AS (
-  SELECT country AS c, nid, MAX(tipificacion_lead) AS tipificacion_lead
+  SELECT country AS c, nid,
+    MAX(tipificacion_lead) AS tipificacion_lead,
+    CAST(MAX(agente_gestor_crm) AS STRING) AS owner   -- agente gestor CRM (INT64 id) -> string
   FROM `sellers-main-prod.hubspot.deals`
   WHERE nid IS NOT NULL AND country IN ('Colombia', 'México')
   GROUP BY c, nid
@@ -88,7 +98,10 @@ enriched AS (
     IF(h.ever_inc = 1 AND h.inc_end > DATETIME_ADD(b.fecha_ts, INTERVAL 1 HOUR)
        AND h.last_20 IS NOT NULL AND h.first_inc IS NOT NULL AND h.last_20 > h.first_inc, 1, 0) AS inc_to_20,
     IF(h.ever_rev = 1 AND h.rev_end > DATETIME_ADD(b.fecha_ts, INTERVAL 1 HOUR)
-       AND h.last_20 IS NOT NULL AND h.first_rev IS NOT NULL AND h.last_20 > h.first_rev, 1, 0) AS rev_to_20
+       AND h.last_20 IS NOT NULL AND h.first_rev IS NOT NULL AND h.last_20 > h.first_rev, 1, 0) AS rev_to_20,
+    tp.owner AS owner,
+    h.rev_exit_agent AS rev_exit_agent,
+    h.inc_exit_agent AS inc_exit_agent
   FROM base b
   LEFT JOIN historic h ON h.c = b.c AND h.biz_id = b.biz_id
   LEFT JOIN current_state cs ON cs.c = b.c AND cs.biz_id = b.biz_id
@@ -244,6 +257,38 @@ agg_dur AS (
     -- (excluye el barrido automático del backbone que entra y sale al instante).
     AND d.exit_ts > DATETIME_ADD(b.fecha_ts, INTERVAL 1 HOUR)
   GROUP BY b.c, b.fuente_id, p
+),
+
+-- Áreas 100% (semanal, últimas ~17 semanas). fn = categoría, t = conteo.
+-- OWN: distribución por propietario del negocio (agente_gestor_crm) de los leads atrapados.
+-- AGT: distribución por agente que sacó del estado, de los leads que salieron.
+agg_own AS (
+  SELECT 'OWNrev' g, c, fuente_id f, owner fn, FORMAT_DATE('%Y-%m-%d', DATE_TRUNC(fecha, ISOWEEK)) p,
+    0 tr, COUNT(*) t, 0 inc_pass, 0 inc_left, 0 inc_to_20, 0 rev_pass, 0 rev_left, 0 rev_to_20, 0 inc_reman_notip, 0 rev_reman_notip
+  FROM enriched
+  WHERE ever_rev = 1 AND owner IS NOT NULL AND DATE_DIFF(CURRENT_DATE(), fecha, DAY) <= 120
+  GROUP BY c, f, fn, p
+  UNION ALL
+  SELECT 'OWNinc' g, c, fuente_id f, owner fn, FORMAT_DATE('%Y-%m-%d', DATE_TRUNC(fecha, ISOWEEK)) p,
+    0, COUNT(*), 0, 0, 0, 0, 0, 0, 0, 0
+  FROM enriched
+  WHERE ever_inc = 1 AND owner IS NOT NULL AND DATE_DIFF(CURRENT_DATE(), fecha, DAY) <= 120
+  GROUP BY c, f, fn, p
+),
+agg_agt AS (
+  SELECT 'AGTrev' g, c, fuente_id f, rev_exit_agent fn, FORMAT_DATE('%Y-%m-%d', DATE_TRUNC(fecha, ISOWEEK)) p,
+    0 tr, COUNT(*) t, 0 inc_pass, 0 inc_left, 0 inc_to_20, 0 rev_pass, 0 rev_left, 0 rev_to_20, 0 inc_reman_notip, 0 rev_reman_notip
+  FROM enriched
+  WHERE ever_rev = 1 AND (cur_state IS NULL OR cur_state != 3) AND rev_exit_agent IS NOT NULL
+    AND DATE_DIFF(CURRENT_DATE(), fecha, DAY) <= 120
+  GROUP BY c, f, fn, p
+  UNION ALL
+  SELECT 'AGTinc' g, c, fuente_id f, inc_exit_agent fn, FORMAT_DATE('%Y-%m-%d', DATE_TRUNC(fecha, ISOWEEK)) p,
+    0, COUNT(*), 0, 0, 0, 0, 0, 0, 0, 0
+  FROM enriched
+  WHERE ever_inc = 1 AND (cur_state IS NULL OR cur_state NOT IN (7, 39)) AND inc_exit_agent IS NOT NULL
+    AND DATE_DIFF(CURRENT_DATE(), fecha, DAY) <= 120
+  GROUP BY c, f, fn, p
 )
 
 SELECT g, c, f, fn, p, tr, t, inc_pass, inc_left, inc_to_20, rev_pass, rev_left, rev_to_20, inc_reman_notip, rev_reman_notip FROM (
@@ -255,5 +300,7 @@ SELECT g, c, f, fn, p, tr, t, inc_pass, inc_left, inc_to_20, rev_pass, rev_left,
   UNION ALL SELECT * FROM agg_yearly
   UNION ALL SELECT * FROM agg_bag
   UNION ALL SELECT * FROM agg_dur
+  UNION ALL SELECT * FROM agg_own
+  UNION ALL SELECT * FROM agg_agt
 )
 ORDER BY g, c, f, p
