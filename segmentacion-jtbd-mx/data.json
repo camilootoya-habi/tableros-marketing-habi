@@ -1,0 +1,2092 @@
+{
+ "meta": {
+  "n": 291,
+  "n_con_job": 290,
+  "fuente": "GDV — Segmentación de vendedores Tuhabi MX (mayo 2026)",
+  "jobs": [
+   {
+    "key": "Urgencia",
+    "label": "Resolver una urgencia",
+    "color": "#e4572e",
+    "base": 118
+   },
+   {
+    "key": "Soltar",
+    "label": "Soltar un activo ocioso",
+    "color": "#f3a712",
+    "base": 62
+   },
+   {
+    "key": "Invertir",
+    "label": "Hacer rendir el capital",
+    "color": "#2e9e5b",
+    "base": 47
+   },
+   {
+    "key": "Crecer",
+    "label": "Crecer / dar el siguiente paso",
+    "color": "#3d6fd1",
+    "base": 63
+   }
+  ],
+  "personas": [
+   {
+    "key": "Isadora",
+    "label": "Buscadora Liquidez Rápida",
+    "base": 100
+   },
+   {
+    "key": "Emilia",
+    "label": "Negociadora Pragmática",
+    "base": 69
+   },
+   {
+    "key": "Clara",
+    "label": "Analista Precavido",
+    "base": 73
+   },
+   {
+    "key": "Esteban",
+    "label": "Orientado a Estabilidad",
+    "base": 49
+   }
+  ]
+ },
+ "transparencia": {
+  "njobs_dist": {
+   "0": 1,
+   "1": 93,
+   "2": 131,
+   "3": 58,
+   "4": 8
+  },
+  "n_single": 93,
+  "n_multi": 197,
+  "pct_single": 32.0,
+  "pct_multi": 68.0,
+  "cooccurrence": {
+   "Urgencia": {
+    "Urgencia": 118,
+    "Soltar": 34,
+    "Invertir": 46,
+    "Crecer": 75
+   },
+   "Soltar": {
+    "Urgencia": 34,
+    "Soltar": 96,
+    "Invertir": 56,
+    "Crecer": 55
+   },
+   "Invertir": {
+    "Urgencia": 46,
+    "Soltar": 56,
+    "Invertir": 133,
+    "Crecer": 87
+   },
+   "Crecer": {
+    "Urgencia": 75,
+    "Soltar": 55,
+    "Invertir": 87,
+    "Crecer": 214
+   }
+  }
+ },
+ "bridge": {
+  "Isadora": {
+   "Urgencia": 44,
+   "Soltar": 16,
+   "Invertir": 17,
+   "Crecer": 22
+  },
+  "Emilia": {
+   "Urgencia": 32,
+   "Soltar": 14,
+   "Invertir": 12,
+   "Crecer": 11
+  },
+  "Clara": {
+   "Urgencia": 19,
+   "Soltar": 20,
+   "Invertir": 13,
+   "Crecer": 21
+  },
+  "Esteban": {
+   "Urgencia": 23,
+   "Soltar": 12,
+   "Invertir": 5,
+   "Crecer": 9
+  }
+ },
+ "crosstabs": {
+  "P4": {
+   "title": "Motivaciones para vender (P.4)",
+   "kind": "grouped",
+   "order": [
+    {
+     "item": "CRECIMIENTO",
+     "type": "group"
+    },
+    {
+     "item": "Para buscar una mejor propiedad, en tamaño, zona y condiciones de la casa",
+     "type": "sub"
+    },
+    {
+     "item": "Crecimiento familiar y necesito una más grande",
+     "type": "sub"
+    },
+    {
+     "item": "Cambio / Mudanza por una oportunidad laboral",
+     "type": "sub"
+    },
+    {
+     "item": "NO LA USO / USARÉ",
+     "type": "group"
+    },
+    {
+     "item": "No habito/vivo en la propiedad",
+     "type": "sub"
+    },
+    {
+     "item": "Es una herencia que no usaré",
+     "type": "sub"
+    },
+    {
+     "item": "Me divorcié / Por separación de bienes",
+     "type": "sub"
+    },
+    {
+     "item": "PARA INVERTIR",
+     "type": "group"
+    },
+    {
+     "item": "Para invertir en otros activos",
+     "type": "sub"
+    },
+    {
+     "item": "Aumento de plusvalía en la zona",
+     "type": "sub"
+    },
+    {
+     "item": "Aproveché mi alta demanda en el mercado",
+     "type": "sub"
+    },
+    {
+     "item": "GASTOS DE EMERGENCIA",
+     "type": "group"
+    },
+    {
+     "item": "Gastos imprevistos",
+     "type": "sub"
+    },
+    {
+     "item": "Necesidad de liquidez inmediata por algún tema de salud",
+     "type": "sub"
+    },
+    {
+     "item": "Necesidad de liquidez inmediata para pagar deudas",
+     "type": "sub"
+    },
+    {
+     "item": "Necesita una remodelación costosa y no la puedo costear",
+     "type": "sub"
+    },
+    {
+     "item": "Necesidad de liquidez inmediata para pagar los estudios de mis hijos",
+     "type": "sub"
+    },
+    {
+     "item": "OTROS PUSH",
+     "type": "group"
+    },
+    {
+     "item": "Aumento de inseguridad en la zona",
+     "type": "sub"
+    },
+    {
+     "item": "Aumento de costos en servicios / mantenimiento",
+     "type": "sub"
+    }
+   ],
+   "job": {
+    "CRECIMIENTO": {
+     "total": 60.3,
+     "Urgencia": 46.6,
+     "Urgencia_idx": 77,
+     "Soltar": 43.5,
+     "Soltar_idx": 72,
+     "Invertir": 70.2,
+     "Invertir_idx": 116,
+     "Crecer": 95.2,
+     "Crecer_idx": 158
+    },
+    "Para buscar una mejor propiedad, en tamaño, zona y condiciones de la casa": {
+     "total": 40.7,
+     "Urgencia": 37.3,
+     "Urgencia_idx": 92,
+     "Soltar": 27.4,
+     "Soltar_idx": 67,
+     "Invertir": 38.3,
+     "Invertir_idx": 94,
+     "Crecer": 61.9,
+     "Crecer_idx": 152
+    },
+    "Crecimiento familiar y necesito una más grande": {
+     "total": 22.4,
+     "Urgencia": 16.1,
+     "Urgencia_idx": 72,
+     "Soltar": 9.7,
+     "Soltar_idx": 43,
+     "Invertir": 40.4,
+     "Invertir_idx": 180,
+     "Crecer": 33.3,
+     "Crecer_idx": 149
+    },
+    "Cambio / Mudanza por una oportunidad laboral": {
+     "total": 19.3,
+     "Urgencia": 10.2,
+     "Urgencia_idx": 53,
+     "Soltar": 19.4,
+     "Soltar_idx": 101,
+     "Invertir": 23.4,
+     "Invertir_idx": 121,
+     "Crecer": 33.3,
+     "Crecer_idx": 173
+    },
+    "NO LA USO / USARÉ": {
+     "total": 32.1,
+     "Urgencia": 28.0,
+     "Urgencia_idx": 87,
+     "Soltar": 96.8,
+     "Soltar_idx": 302,
+     "Invertir": 0.0,
+     "Invertir_idx": 0,
+     "Crecer": 0.0,
+     "Crecer_idx": 0
+    },
+    "No habito/vivo en la propiedad": {
+     "total": 24.8,
+     "Urgencia": 21.2,
+     "Urgencia_idx": 85,
+     "Soltar": 75.8,
+     "Soltar_idx": 306,
+     "Invertir": 0.0,
+     "Invertir_idx": 0,
+     "Crecer": 0.0,
+     "Crecer_idx": 0
+    },
+    "Es una herencia que no usaré": {
+     "total": 9.3,
+     "Urgencia": 7.6,
+     "Urgencia_idx": 82,
+     "Soltar": 29.0,
+     "Soltar_idx": 312,
+     "Invertir": 0.0,
+     "Invertir_idx": 0,
+     "Crecer": 0.0,
+     "Crecer_idx": 0
+    },
+    "Me divorcié / Por separación de bienes": {
+     "total": 3.1,
+     "Urgencia": 3.4,
+     "Urgencia_idx": 110,
+     "Soltar": 8.1,
+     "Soltar_idx": 261,
+     "Invertir": 0.0,
+     "Invertir_idx": 0,
+     "Crecer": 0.0,
+     "Crecer_idx": 0
+    },
+    "PARA INVERTIR": {
+     "total": 29.0,
+     "Urgencia": 22.0,
+     "Urgencia_idx": 76,
+     "Soltar": 35.5,
+     "Soltar_idx": 122,
+     "Invertir": 76.6,
+     "Invertir_idx": 264,
+     "Crecer": 0.0,
+     "Crecer_idx": 0
+    },
+    "Para invertir en otros activos": {
+     "total": 20.7,
+     "Urgencia": 11.9,
+     "Urgencia_idx": 57,
+     "Soltar": 27.4,
+     "Soltar_idx": 132,
+     "Invertir": 61.7,
+     "Invertir_idx": 298,
+     "Crecer": 0.0,
+     "Crecer_idx": 0
+    },
+    "Aumento de plusvalía en la zona": {
+     "total": 7.2,
+     "Urgencia": 8.5,
+     "Urgencia_idx": 118,
+     "Soltar": 8.1,
+     "Soltar_idx": 112,
+     "Invertir": 12.8,
+     "Invertir_idx": 178,
+     "Crecer": 0.0,
+     "Crecer_idx": 0
+    },
+    "Aproveché mi alta demanda en el mercado": {
+     "total": 6.9,
+     "Urgencia": 5.1,
+     "Urgencia_idx": 74,
+     "Soltar": 9.7,
+     "Soltar_idx": 141,
+     "Invertir": 17.0,
+     "Invertir_idx": 246,
+     "Crecer": 0.0,
+     "Crecer_idx": 0
+    },
+    "GASTOS DE EMERGENCIA": {
+     "total": 21.4,
+     "Urgencia": 52.5,
+     "Urgencia_idx": 245,
+     "Soltar": 0.0,
+     "Soltar_idx": 0,
+     "Invertir": 0.0,
+     "Invertir_idx": 0,
+     "Crecer": 0.0,
+     "Crecer_idx": 0
+    },
+    "Gastos imprevistos": {
+     "total": 8.6,
+     "Urgencia": 21.2,
+     "Urgencia_idx": 247,
+     "Soltar": 0.0,
+     "Soltar_idx": 0,
+     "Invertir": 0.0,
+     "Invertir_idx": 0,
+     "Crecer": 0.0,
+     "Crecer_idx": 0
+    },
+    "Necesidad de liquidez inmediata por algún tema de salud": {
+     "total": 5.9,
+     "Urgencia": 14.4,
+     "Urgencia_idx": 244,
+     "Soltar": 0.0,
+     "Soltar_idx": 0,
+     "Invertir": 0.0,
+     "Invertir_idx": 0,
+     "Crecer": 0.0,
+     "Crecer_idx": 0
+    },
+    "Necesidad de liquidez inmediata para pagar deudas": {
+     "total": 6.9,
+     "Urgencia": 16.9,
+     "Urgencia_idx": 245,
+     "Soltar": 0.0,
+     "Soltar_idx": 0,
+     "Invertir": 0.0,
+     "Invertir_idx": 0,
+     "Crecer": 0.0,
+     "Crecer_idx": 0
+    },
+    "Necesita una remodelación costosa y no la puedo costear": {
+     "total": 4.5,
+     "Urgencia": 11.0,
+     "Urgencia_idx": 244,
+     "Soltar": 0.0,
+     "Soltar_idx": 0,
+     "Invertir": 0.0,
+     "Invertir_idx": 0,
+     "Crecer": 0.0,
+     "Crecer_idx": 0
+    },
+    "Necesidad de liquidez inmediata para pagar los estudios de mis hijos": {
+     "total": 2.4,
+     "Urgencia": 5.9,
+     "Urgencia_idx": 246,
+     "Soltar": 0.0,
+     "Soltar_idx": 0,
+     "Invertir": 0.0,
+     "Invertir_idx": 0,
+     "Crecer": 0.0,
+     "Crecer_idx": 0
+    },
+    "OTROS PUSH": {
+     "total": 19.0,
+     "Urgencia": 46.6,
+     "Urgencia_idx": 245,
+     "Soltar": 0.0,
+     "Soltar_idx": 0,
+     "Invertir": 0.0,
+     "Invertir_idx": 0,
+     "Crecer": 0.0,
+     "Crecer_idx": 0
+    },
+    "Aumento de inseguridad en la zona": {
+     "total": 14.5,
+     "Urgencia": 35.6,
+     "Urgencia_idx": 246,
+     "Soltar": 0.0,
+     "Soltar_idx": 0,
+     "Invertir": 0.0,
+     "Invertir_idx": 0,
+     "Crecer": 0.0,
+     "Crecer_idx": 0
+    },
+    "Aumento de costos en servicios / mantenimiento": {
+     "total": 5.9,
+     "Urgencia": 14.4,
+     "Urgencia_idx": 244,
+     "Soltar": 0.0,
+     "Soltar_idx": 0,
+     "Invertir": 0.0,
+     "Invertir_idx": 0,
+     "Crecer": 0.0,
+     "Crecer_idx": 0
+    },
+    "__base__": {
+     "total": 290,
+     "Urgencia": 118,
+     "Soltar": 62,
+     "Invertir": 47,
+     "Crecer": 63
+    }
+   },
+   "persona": {
+    "CRECIMIENTO": {
+     "total": 60.3,
+     "Isadora": 55.6,
+     "Isadora_idx": 92,
+     "Emilia": 53.6,
+     "Emilia_idx": 89,
+     "Clara": 69.9,
+     "Clara_idx": 116,
+     "Esteban": 65.3,
+     "Esteban_idx": 108
+    },
+    "Para buscar una mejor propiedad, en tamaño, zona y condiciones de la casa": {
+     "total": 40.7,
+     "Isadora": 37.4,
+     "Isadora_idx": 92,
+     "Emilia": 36.2,
+     "Emilia_idx": 89,
+     "Clara": 47.9,
+     "Clara_idx": 118,
+     "Esteban": 42.9,
+     "Esteban_idx": 105
+    },
+    "Crecimiento familiar y necesito una más grande": {
+     "total": 22.4,
+     "Isadora": 20.2,
+     "Isadora_idx": 90,
+     "Emilia": 21.7,
+     "Emilia_idx": 97,
+     "Clara": 30.1,
+     "Clara_idx": 134,
+     "Esteban": 16.3,
+     "Esteban_idx": 73
+    },
+    "Cambio / Mudanza por una oportunidad laboral": {
+     "total": 19.3,
+     "Isadora": 15.2,
+     "Isadora_idx": 79,
+     "Emilia": 17.4,
+     "Emilia_idx": 90,
+     "Clara": 23.3,
+     "Clara_idx": 121,
+     "Esteban": 24.5,
+     "Esteban_idx": 127
+    },
+    "NO LA USO / USARÉ": {
+     "total": 32.1,
+     "Isadora": 26.3,
+     "Isadora_idx": 82,
+     "Emilia": 37.7,
+     "Emilia_idx": 117,
+     "Clara": 31.5,
+     "Clara_idx": 98,
+     "Esteban": 36.7,
+     "Esteban_idx": 114
+    },
+    "No habito/vivo en la propiedad": {
+     "total": 24.8,
+     "Isadora": 15.2,
+     "Isadora_idx": 61,
+     "Emilia": 31.9,
+     "Emilia_idx": 129,
+     "Clara": 26.0,
+     "Clara_idx": 105,
+     "Esteban": 32.7,
+     "Esteban_idx": 132
+    },
+    "Es una herencia que no usaré": {
+     "total": 9.3,
+     "Isadora": 10.1,
+     "Isadora_idx": 109,
+     "Emilia": 10.1,
+     "Emilia_idx": 109,
+     "Clara": 9.6,
+     "Clara_idx": 103,
+     "Esteban": 6.1,
+     "Esteban_idx": 66
+    },
+    "Me divorcié / Por separación de bienes": {
+     "total": 3.1,
+     "Isadora": 5.1,
+     "Isadora_idx": 165,
+     "Emilia": 2.9,
+     "Emilia_idx": 94,
+     "Clara": 0.0,
+     "Clara_idx": 0,
+     "Esteban": 4.1,
+     "Esteban_idx": 132
+    },
+    "PARA INVERTIR": {
+     "total": 29.0,
+     "Isadora": 29.3,
+     "Isadora_idx": 101,
+     "Emilia": 26.1,
+     "Emilia_idx": 90,
+     "Clara": 34.2,
+     "Clara_idx": 118,
+     "Esteban": 24.5,
+     "Esteban_idx": 84
+    },
+    "Para invertir en otros activos": {
+     "total": 20.7,
+     "Isadora": 20.2,
+     "Isadora_idx": 98,
+     "Emilia": 15.9,
+     "Emilia_idx": 77,
+     "Clara": 27.4,
+     "Clara_idx": 132,
+     "Esteban": 18.4,
+     "Esteban_idx": 89
+    },
+    "Aumento de plusvalía en la zona": {
+     "total": 7.2,
+     "Isadora": 6.1,
+     "Isadora_idx": 85,
+     "Emilia": 7.2,
+     "Emilia_idx": 100,
+     "Clara": 11.0,
+     "Clara_idx": 153,
+     "Esteban": 4.1,
+     "Esteban_idx": 57
+    },
+    "Aproveché mi alta demanda en el mercado": {
+     "total": 6.9,
+     "Isadora": 6.1,
+     "Isadora_idx": 88,
+     "Emilia": 4.3,
+     "Emilia_idx": 62,
+     "Clara": 11.0,
+     "Clara_idx": 159,
+     "Esteban": 6.1,
+     "Esteban_idx": 88
+    },
+    "GASTOS DE EMERGENCIA": {
+     "total": 21.4,
+     "Isadora": 26.3,
+     "Isadora_idx": 123,
+     "Emilia": 24.6,
+     "Emilia_idx": 115,
+     "Clara": 12.3,
+     "Clara_idx": 57,
+     "Esteban": 20.4,
+     "Esteban_idx": 95
+    },
+    "Gastos imprevistos": {
+     "total": 8.6,
+     "Isadora": 11.1,
+     "Isadora_idx": 129,
+     "Emilia": 11.6,
+     "Emilia_idx": 135,
+     "Clara": 2.7,
+     "Clara_idx": 31,
+     "Esteban": 8.2,
+     "Esteban_idx": 95
+    },
+    "Necesidad de liquidez inmediata por algún tema de salud": {
+     "total": 5.9,
+     "Isadora": 7.1,
+     "Isadora_idx": 120,
+     "Emilia": 8.7,
+     "Emilia_idx": 147,
+     "Clara": 4.1,
+     "Clara_idx": 69,
+     "Esteban": 2.0,
+     "Esteban_idx": 34
+    },
+    "Necesidad de liquidez inmediata para pagar deudas": {
+     "total": 6.9,
+     "Isadora": 10.1,
+     "Isadora_idx": 146,
+     "Emilia": 5.8,
+     "Emilia_idx": 84,
+     "Clara": 5.5,
+     "Clara_idx": 80,
+     "Esteban": 4.1,
+     "Esteban_idx": 59
+    },
+    "Necesita una remodelación costosa y no la puedo costear": {
+     "total": 4.5,
+     "Isadora": 4.0,
+     "Isadora_idx": 89,
+     "Emilia": 4.3,
+     "Emilia_idx": 96,
+     "Clara": 4.1,
+     "Clara_idx": 91,
+     "Esteban": 6.1,
+     "Esteban_idx": 136
+    },
+    "Necesidad de liquidez inmediata para pagar los estudios de mis hijos": {
+     "total": 2.4,
+     "Isadora": 1.0,
+     "Isadora_idx": 42,
+     "Emilia": 7.2,
+     "Emilia_idx": 300,
+     "Clara": 1.4,
+     "Clara_idx": 58,
+     "Esteban": 0.0,
+     "Esteban_idx": 0
+    },
+    "OTROS PUSH": {
+     "total": 19.0,
+     "Isadora": 18.2,
+     "Isadora_idx": 96,
+     "Emilia": 14.5,
+     "Emilia_idx": 76,
+     "Clara": 15.1,
+     "Clara_idx": 79,
+     "Esteban": 32.7,
+     "Esteban_idx": 172
+    },
+    "Aumento de inseguridad en la zona": {
+     "total": 14.5,
+     "Isadora": 16.2,
+     "Isadora_idx": 112,
+     "Emilia": 10.1,
+     "Emilia_idx": 70,
+     "Clara": 13.7,
+     "Clara_idx": 94,
+     "Esteban": 18.4,
+     "Esteban_idx": 127
+    },
+    "Aumento de costos en servicios / mantenimiento": {
+     "total": 5.9,
+     "Isadora": 4.0,
+     "Isadora_idx": 68,
+     "Emilia": 4.3,
+     "Emilia_idx": 73,
+     "Clara": 4.1,
+     "Clara_idx": 69,
+     "Esteban": 14.3,
+     "Esteban_idx": 242
+    },
+    "__base__": {
+     "total": 290,
+     "Isadora": 99,
+     "Emilia": 69,
+     "Clara": 73,
+     "Esteban": 49
+    }
+   }
+  },
+  "P22": {
+   "title": "Uso del dinero de la venta (P.22)",
+   "kind": "grouped",
+   "order": [
+    {
+     "item": "LIQUIDEZ PARA OTROS FINES",
+     "type": "group"
+    },
+    {
+     "item": "Comprar otra propiedad",
+     "type": "sub"
+    },
+    {
+     "item": "Rentar en otro lugar",
+     "type": "sub"
+    },
+    {
+     "item": "Mantenimiento / renovación / construcción de otra propiedad",
+     "type": "sub"
+    },
+    {
+     "item": "Repartir el dinero entre mis hijos / herencia repartida entre hermanos",
+     "type": "sub"
+    },
+    {
+     "item": "Comprar un carro",
+     "type": "sub"
+    },
+    {
+     "item": "INVERTIR EL DINERO",
+     "type": "group"
+    },
+    {
+     "item": "Invertir el dinero",
+     "type": "sub"
+    },
+    {
+     "item": "LIQUIDEZ PARA UNA EMERGENCIA",
+     "type": "group"
+    },
+    {
+     "item": "Pagar deudas",
+     "type": "sub"
+    },
+    {
+     "item": "Emergencia médica (pagar medicinas, operación, rehabilitación)",
+     "type": "sub"
+    }
+   ],
+   "job": {
+    "LIQUIDEZ PARA OTROS FINES": {
+     "total": 65.2,
+     "Urgencia": 56.8,
+     "Urgencia_idx": 87,
+     "Soltar": 48.4,
+     "Soltar_idx": 74,
+     "Invertir": 63.8,
+     "Invertir_idx": 98,
+     "Crecer": 98.4,
+     "Crecer_idx": 151
+    },
+    "Comprar otra propiedad": {
+     "total": 64.5,
+     "Urgencia": 55.1,
+     "Urgencia_idx": 85,
+     "Soltar": 48.4,
+     "Soltar_idx": 75,
+     "Invertir": 63.8,
+     "Invertir_idx": 99,
+     "Crecer": 98.4,
+     "Crecer_idx": 153
+    },
+    "Rentar en otro lugar": {
+     "total": 2.1,
+     "Urgencia": 1.7,
+     "Urgencia_idx": 81,
+     "Soltar": 6.5,
+     "Soltar_idx": 310,
+     "Invertir": 0.0,
+     "Invertir_idx": 0,
+     "Crecer": 0.0,
+     "Crecer_idx": 0
+    },
+    "Mantenimiento / renovación / construcción de otra propiedad": {
+     "total": 0.0,
+     "Urgencia": 0.0,
+     "Urgencia_idx": null,
+     "Soltar": 0.0,
+     "Soltar_idx": null,
+     "Invertir": 0.0,
+     "Invertir_idx": null,
+     "Crecer": 0.0,
+     "Crecer_idx": null
+    },
+    "Repartir el dinero entre mis hijos / herencia repartida entre hermanos": {
+     "total": 0.0,
+     "Urgencia": 0.0,
+     "Urgencia_idx": null,
+     "Soltar": 0.0,
+     "Soltar_idx": null,
+     "Invertir": 0.0,
+     "Invertir_idx": null,
+     "Crecer": 0.0,
+     "Crecer_idx": null
+    },
+    "Comprar un carro": {
+     "total": 0.0,
+     "Urgencia": 0.0,
+     "Urgencia_idx": null,
+     "Soltar": 0.0,
+     "Soltar_idx": null,
+     "Invertir": 0.0,
+     "Invertir_idx": null,
+     "Crecer": 0.0,
+     "Crecer_idx": null
+    },
+    "INVERTIR EL DINERO": {
+     "total": 34.1,
+     "Urgencia": 25.4,
+     "Urgencia_idx": 74,
+     "Soltar": 56.5,
+     "Soltar_idx": 166,
+     "Invertir": 72.3,
+     "Invertir_idx": 212,
+     "Crecer": 0.0,
+     "Crecer_idx": 0
+    },
+    "Invertir el dinero": {
+     "total": 34.1,
+     "Urgencia": 25.4,
+     "Urgencia_idx": 74,
+     "Soltar": 56.5,
+     "Soltar_idx": 166,
+     "Invertir": 72.3,
+     "Invertir_idx": 212,
+     "Crecer": 0.0,
+     "Crecer_idx": 0
+    },
+    "LIQUIDEZ PARA UNA EMERGENCIA": {
+     "total": 16.9,
+     "Urgencia": 41.5,
+     "Urgencia_idx": 246,
+     "Soltar": 0.0,
+     "Soltar_idx": 0,
+     "Invertir": 0.0,
+     "Invertir_idx": 0,
+     "Crecer": 0.0,
+     "Crecer_idx": 0
+    },
+    "Pagar deudas": {
+     "total": 16.9,
+     "Urgencia": 41.5,
+     "Urgencia_idx": 246,
+     "Soltar": 0.0,
+     "Soltar_idx": 0,
+     "Invertir": 0.0,
+     "Invertir_idx": 0,
+     "Crecer": 0.0,
+     "Crecer_idx": 0
+    },
+    "Emergencia médica (pagar medicinas, operación, rehabilitación)": {
+     "total": 0.0,
+     "Urgencia": 0.0,
+     "Urgencia_idx": null,
+     "Soltar": 0.0,
+     "Soltar_idx": null,
+     "Invertir": 0.0,
+     "Invertir_idx": null,
+     "Crecer": 0.0,
+     "Crecer_idx": null
+    },
+    "__base__": {
+     "total": 290,
+     "Urgencia": 118,
+     "Soltar": 62,
+     "Invertir": 47,
+     "Crecer": 63
+    }
+   },
+   "persona": {
+    "LIQUIDEZ PARA OTROS FINES": {
+     "total": 65.2,
+     "Isadora": 64.6,
+     "Isadora_idx": 99,
+     "Emilia": 59.4,
+     "Emilia_idx": 91,
+     "Clara": 68.5,
+     "Clara_idx": 105,
+     "Esteban": 69.4,
+     "Esteban_idx": 106
+    },
+    "Comprar otra propiedad": {
+     "total": 64.5,
+     "Isadora": 63.6,
+     "Isadora_idx": 99,
+     "Emilia": 59.4,
+     "Emilia_idx": 92,
+     "Clara": 68.5,
+     "Clara_idx": 106,
+     "Esteban": 67.3,
+     "Esteban_idx": 104
+    },
+    "Rentar en otro lugar": {
+     "total": 2.1,
+     "Isadora": 2.0,
+     "Isadora_idx": 95,
+     "Emilia": 1.4,
+     "Emilia_idx": 67,
+     "Clara": 1.4,
+     "Clara_idx": 67,
+     "Esteban": 4.1,
+     "Esteban_idx": 195
+    },
+    "Mantenimiento / renovación / construcción de otra propiedad": {
+     "total": 0.0,
+     "Isadora": 0.0,
+     "Isadora_idx": null,
+     "Emilia": 0.0,
+     "Emilia_idx": null,
+     "Clara": 0.0,
+     "Clara_idx": null,
+     "Esteban": 0.0,
+     "Esteban_idx": null
+    },
+    "Repartir el dinero entre mis hijos / herencia repartida entre hermanos": {
+     "total": 0.0,
+     "Isadora": 0.0,
+     "Isadora_idx": null,
+     "Emilia": 0.0,
+     "Emilia_idx": null,
+     "Clara": 0.0,
+     "Clara_idx": null,
+     "Esteban": 0.0,
+     "Esteban_idx": null
+    },
+    "Comprar un carro": {
+     "total": 0.0,
+     "Isadora": 0.0,
+     "Isadora_idx": null,
+     "Emilia": 0.0,
+     "Emilia_idx": null,
+     "Clara": 0.0,
+     "Clara_idx": null,
+     "Esteban": 0.0,
+     "Esteban_idx": null
+    },
+    "INVERTIR EL DINERO": {
+     "total": 34.1,
+     "Isadora": 31.3,
+     "Isadora_idx": 92,
+     "Emilia": 29.0,
+     "Emilia_idx": 85,
+     "Clara": 41.1,
+     "Clara_idx": 121,
+     "Esteban": 36.7,
+     "Esteban_idx": 108
+    },
+    "Invertir el dinero": {
+     "total": 34.1,
+     "Isadora": 31.3,
+     "Isadora_idx": 92,
+     "Emilia": 29.0,
+     "Emilia_idx": 85,
+     "Clara": 41.1,
+     "Clara_idx": 121,
+     "Esteban": 36.7,
+     "Esteban_idx": 108
+    },
+    "LIQUIDEZ PARA UNA EMERGENCIA": {
+     "total": 16.9,
+     "Isadora": 18.2,
+     "Isadora_idx": 108,
+     "Emilia": 23.2,
+     "Emilia_idx": 137,
+     "Clara": 9.6,
+     "Clara_idx": 57,
+     "Esteban": 16.3,
+     "Esteban_idx": 96
+    },
+    "Pagar deudas": {
+     "total": 16.9,
+     "Isadora": 18.2,
+     "Isadora_idx": 108,
+     "Emilia": 23.2,
+     "Emilia_idx": 137,
+     "Clara": 9.6,
+     "Clara_idx": 57,
+     "Esteban": 16.3,
+     "Esteban_idx": 96
+    },
+    "Emergencia médica (pagar medicinas, operación, rehabilitación)": {
+     "total": 0.0,
+     "Isadora": 0.0,
+     "Isadora_idx": null,
+     "Emilia": 0.0,
+     "Emilia_idx": null,
+     "Clara": 0.0,
+     "Clara_idx": null,
+     "Esteban": 0.0,
+     "Esteban_idx": null
+    },
+    "__base__": {
+     "total": 290,
+     "Isadora": 99,
+     "Emilia": 69,
+     "Clara": 73,
+     "Esteban": 49
+    }
+   }
+  },
+  "P12": {
+   "title": "Marca que usaría / usó para vender (P.12)",
+   "kind": "single",
+   "job": {
+    "Inmuebles México": {
+     "total": 2.1,
+     "Urgencia": 3.4,
+     "Urgencia_idx": 162,
+     "Soltar": 1.6,
+     "Soltar_idx": 76,
+     "Invertir": 2.1,
+     "Invertir_idx": 100,
+     "Crecer": 0.0,
+     "Crecer_idx": 0
+    },
+    "Century 21": {
+     "total": 17.2,
+     "Urgencia": 16.1,
+     "Urgencia_idx": 94,
+     "Soltar": 14.5,
+     "Soltar_idx": 84,
+     "Invertir": 12.8,
+     "Invertir_idx": 74,
+     "Crecer": 25.4,
+     "Crecer_idx": 148
+    },
+    "RE/MAX": {
+     "total": 2.1,
+     "Urgencia": 1.7,
+     "Urgencia_idx": 81,
+     "Soltar": 1.6,
+     "Soltar_idx": 76,
+     "Invertir": 4.3,
+     "Invertir_idx": 205,
+     "Crecer": 1.6,
+     "Crecer_idx": 76
+    },
+    "Inmuebles 24": {
+     "total": 17.6,
+     "Urgencia": 11.9,
+     "Urgencia_idx": 68,
+     "Soltar": 24.2,
+     "Soltar_idx": 138,
+     "Invertir": 23.4,
+     "Invertir_idx": 133,
+     "Crecer": 17.5,
+     "Crecer_idx": 99
+    },
+    "Casas Ara": {
+     "total": 7.6,
+     "Urgencia": 5.1,
+     "Urgencia_idx": 67,
+     "Soltar": 6.5,
+     "Soltar_idx": 86,
+     "Invertir": 10.6,
+     "Invertir_idx": 139,
+     "Crecer": 11.1,
+     "Crecer_idx": 146
+    },
+    "Compramos tu casa": {
+     "total": 1.4,
+     "Urgencia": 0.8,
+     "Urgencia_idx": 57,
+     "Soltar": 0.0,
+     "Soltar_idx": 0,
+     "Invertir": 2.1,
+     "Invertir_idx": 150,
+     "Crecer": 3.2,
+     "Crecer_idx": 229
+    },
+    "Tuhabi": {
+     "total": 12.4,
+     "Urgencia": 11.0,
+     "Urgencia_idx": 89,
+     "Soltar": 12.9,
+     "Soltar_idx": 104,
+     "Invertir": 8.5,
+     "Invertir_idx": 69,
+     "Crecer": 17.5,
+     "Crecer_idx": 141
+    },
+    "La Haus": {
+     "total": 0.3,
+     "Urgencia": 0.0,
+     "Urgencia_idx": 0,
+     "Soltar": 0.0,
+     "Soltar_idx": 0,
+     "Invertir": 2.1,
+     "Invertir_idx": 700,
+     "Crecer": 0.0,
+     "Crecer_idx": 0
+    },
+    "Propiedades.com": {
+     "total": 2.1,
+     "Urgencia": 1.7,
+     "Urgencia_idx": 81,
+     "Soltar": 0.0,
+     "Soltar_idx": 0,
+     "Invertir": 8.5,
+     "Invertir_idx": 405,
+     "Crecer": 0.0,
+     "Crecer_idx": 0
+    },
+    "Lamudi": {
+     "total": 1.4,
+     "Urgencia": 0.8,
+     "Urgencia_idx": 57,
+     "Soltar": 1.6,
+     "Soltar_idx": 114,
+     "Invertir": 0.0,
+     "Invertir_idx": 0,
+     "Crecer": 3.2,
+     "Crecer_idx": 229
+    },
+    "Tecnocasa": {
+     "total": 5.9,
+     "Urgencia": 7.6,
+     "Urgencia_idx": 129,
+     "Soltar": 3.2,
+     "Soltar_idx": 54,
+     "Invertir": 8.5,
+     "Invertir_idx": 144,
+     "Crecer": 3.2,
+     "Crecer_idx": 54
+    },
+    "Por mi cuenta (sin intermediarios)": {
+     "total": 17.6,
+     "Urgencia": 21.2,
+     "Urgencia_idx": 120,
+     "Soltar": 21.0,
+     "Soltar_idx": 119,
+     "Invertir": 12.8,
+     "Invertir_idx": 73,
+     "Crecer": 11.1,
+     "Crecer_idx": 63
+    },
+    "Otra marca (texto libre)": {
+     "total": 10.7,
+     "Urgencia": 15.3,
+     "Urgencia_idx": 143,
+     "Soltar": 12.9,
+     "Soltar_idx": 121,
+     "Invertir": 4.3,
+     "Invertir_idx": 40,
+     "Crecer": 4.8,
+     "Crecer_idx": 45
+    },
+    "Just Sale": {
+     "total": 0.3,
+     "Urgencia": 0.8,
+     "Urgencia_idx": 267,
+     "Soltar": 0.0,
+     "Soltar_idx": 0,
+     "Invertir": 0.0,
+     "Invertir_idx": 0,
+     "Crecer": 0.0,
+     "Crecer_idx": 0
+    },
+    "Vende tu casa YA!": {
+     "total": 1.4,
+     "Urgencia": 2.5,
+     "Urgencia_idx": 179,
+     "Soltar": 0.0,
+     "Soltar_idx": 0,
+     "Invertir": 0.0,
+     "Invertir_idx": 0,
+     "Crecer": 1.6,
+     "Crecer_idx": 114
+    },
+    "__base__": {
+     "total": 290,
+     "Urgencia": 118,
+     "Soltar": 62,
+     "Invertir": 47,
+     "Crecer": 63
+    }
+   },
+   "persona": {
+    "Inmuebles México": {
+     "total": 2.1,
+     "Isadora": 4.0,
+     "Isadora_idx": 190,
+     "Emilia": 1.4,
+     "Emilia_idx": 67,
+     "Clara": 1.4,
+     "Clara_idx": 67,
+     "Esteban": 0.0,
+     "Esteban_idx": 0
+    },
+    "Century 21": {
+     "total": 17.2,
+     "Isadora": 20.2,
+     "Isadora_idx": 117,
+     "Emilia": 13.0,
+     "Emilia_idx": 76,
+     "Clara": 20.5,
+     "Clara_idx": 119,
+     "Esteban": 12.2,
+     "Esteban_idx": 71
+    },
+    "RE/MAX": {
+     "total": 2.1,
+     "Isadora": 2.0,
+     "Isadora_idx": 95,
+     "Emilia": 2.9,
+     "Emilia_idx": 138,
+     "Clara": 0.0,
+     "Clara_idx": 0,
+     "Esteban": 4.1,
+     "Esteban_idx": 195
+    },
+    "Inmuebles 24": {
+     "total": 17.6,
+     "Isadora": 9.1,
+     "Isadora_idx": 52,
+     "Emilia": 20.3,
+     "Emilia_idx": 115,
+     "Clara": 21.9,
+     "Clara_idx": 124,
+     "Esteban": 24.5,
+     "Esteban_idx": 139
+    },
+    "Casas Ara": {
+     "total": 7.6,
+     "Isadora": 10.1,
+     "Isadora_idx": 133,
+     "Emilia": 2.9,
+     "Emilia_idx": 38,
+     "Clara": 12.3,
+     "Clara_idx": 162,
+     "Esteban": 2.0,
+     "Esteban_idx": 26
+    },
+    "Compramos tu casa": {
+     "total": 1.4,
+     "Isadora": 1.0,
+     "Isadora_idx": 71,
+     "Emilia": 2.9,
+     "Emilia_idx": 207,
+     "Clara": 1.4,
+     "Clara_idx": 100,
+     "Esteban": 0.0,
+     "Esteban_idx": 0
+    },
+    "Tuhabi": {
+     "total": 12.4,
+     "Isadora": 16.2,
+     "Isadora_idx": 131,
+     "Emilia": 4.3,
+     "Emilia_idx": 35,
+     "Clara": 13.7,
+     "Clara_idx": 110,
+     "Esteban": 14.3,
+     "Esteban_idx": 115
+    },
+    "La Haus": {
+     "total": 0.3,
+     "Isadora": 1.0,
+     "Isadora_idx": 333,
+     "Emilia": 0.0,
+     "Emilia_idx": 0,
+     "Clara": 0.0,
+     "Clara_idx": 0,
+     "Esteban": 0.0,
+     "Esteban_idx": 0
+    },
+    "Propiedades.com": {
+     "total": 2.1,
+     "Isadora": 0.0,
+     "Isadora_idx": 0,
+     "Emilia": 2.9,
+     "Emilia_idx": 138,
+     "Clara": 4.1,
+     "Clara_idx": 195,
+     "Esteban": 2.0,
+     "Esteban_idx": 95
+    },
+    "Lamudi": {
+     "total": 1.4,
+     "Isadora": 1.0,
+     "Isadora_idx": 71,
+     "Emilia": 0.0,
+     "Emilia_idx": 0,
+     "Clara": 4.1,
+     "Clara_idx": 293,
+     "Esteban": 0.0,
+     "Esteban_idx": 0
+    },
+    "Tecnocasa": {
+     "total": 5.9,
+     "Isadora": 10.1,
+     "Isadora_idx": 171,
+     "Emilia": 2.9,
+     "Emilia_idx": 49,
+     "Clara": 1.4,
+     "Clara_idx": 24,
+     "Esteban": 8.2,
+     "Esteban_idx": 139
+    },
+    "Por mi cuenta (sin intermediarios)": {
+     "total": 17.6,
+     "Isadora": 11.1,
+     "Isadora_idx": 63,
+     "Emilia": 30.4,
+     "Emilia_idx": 173,
+     "Clara": 12.3,
+     "Clara_idx": 70,
+     "Esteban": 20.4,
+     "Esteban_idx": 116
+    },
+    "Otra marca (texto libre)": {
+     "total": 10.7,
+     "Isadora": 11.1,
+     "Isadora_idx": 104,
+     "Emilia": 15.9,
+     "Emilia_idx": 149,
+     "Clara": 4.1,
+     "Clara_idx": 38,
+     "Esteban": 12.2,
+     "Esteban_idx": 114
+    },
+    "Just Sale": {
+     "total": 0.3,
+     "Isadora": 0.0,
+     "Isadora_idx": 0,
+     "Emilia": 0.0,
+     "Emilia_idx": 0,
+     "Clara": 1.4,
+     "Clara_idx": 467,
+     "Esteban": 0.0,
+     "Esteban_idx": 0
+    },
+    "Vende tu casa YA!": {
+     "total": 1.4,
+     "Isadora": 3.0,
+     "Isadora_idx": 214,
+     "Emilia": 0.0,
+     "Emilia_idx": 0,
+     "Clara": 1.4,
+     "Clara_idx": 100,
+     "Esteban": 0.0,
+     "Esteban_idx": 0
+    },
+    "__base__": {
+     "total": 290,
+     "Isadora": 99,
+     "Emilia": 69,
+     "Clara": 73,
+     "Esteban": 49
+    }
+   }
+  },
+  "P29": {
+   "title": "% dispuesto a bajar el precio por liquidez (P.29)",
+   "kind": "single",
+   "order": [
+    {
+     "item": "No lo bajaría"
+    },
+    {
+     "item": "Menos del 5%"
+    },
+    {
+     "item": "5 al 10%"
+    },
+    {
+     "item": "11 al 20%"
+    },
+    {
+     "item": "Más del 20%"
+    }
+   ],
+   "job": {
+    "5 al 10%": {
+     "total": 34.5,
+     "Urgencia": 31.7,
+     "Urgencia_idx": 92,
+     "Soltar": 45.2,
+     "Soltar_idx": 131,
+     "Invertir": 22.6,
+     "Invertir_idx": 66,
+     "Crecer": 37.8,
+     "Crecer_idx": 110
+    },
+    "Menos del 5%": {
+     "total": 28.5,
+     "Urgencia": 28.0,
+     "Urgencia_idx": 98,
+     "Soltar": 21.4,
+     "Soltar_idx": 75,
+     "Invertir": 35.5,
+     "Invertir_idx": 125,
+     "Crecer": 31.1,
+     "Crecer_idx": 109
+    },
+    "No lo bajaría": {
+     "total": 28.5,
+     "Urgencia": 34.1,
+     "Urgencia_idx": 120,
+     "Soltar": 33.3,
+     "Soltar_idx": 117,
+     "Invertir": 32.3,
+     "Invertir_idx": 113,
+     "Crecer": 11.1,
+     "Crecer_idx": 39
+    },
+    "11 al 20%": {
+     "total": 8.0,
+     "Urgencia": 6.1,
+     "Urgencia_idx": 76,
+     "Soltar": 0.0,
+     "Soltar_idx": 0,
+     "Invertir": 9.7,
+     "Invertir_idx": 121,
+     "Crecer": 17.8,
+     "Crecer_idx": 222
+    },
+    "Más del 20%": {
+     "total": 0.5,
+     "Urgencia": 0.0,
+     "Urgencia_idx": 0,
+     "Soltar": 0.0,
+     "Soltar_idx": 0,
+     "Invertir": 0.0,
+     "Invertir_idx": 0,
+     "Crecer": 2.2,
+     "Crecer_idx": 440
+    },
+    "__base__": {
+     "total": 200,
+     "Urgencia": 82,
+     "Soltar": 42,
+     "Invertir": 31,
+     "Crecer": 45
+    }
+   },
+   "persona": {
+    "5 al 10%": {
+     "total": 34.5,
+     "Isadora": 26.6,
+     "Isadora_idx": 77,
+     "Emilia": 31.0,
+     "Emilia_idx": 90,
+     "Clara": 40.5,
+     "Clara_idx": 117,
+     "Esteban": 47.2,
+     "Esteban_idx": 137
+    },
+    "Menos del 5%": {
+     "total": 28.5,
+     "Isadora": 28.1,
+     "Isadora_idx": 99,
+     "Emilia": 36.2,
+     "Emilia_idx": 127,
+     "Clara": 28.6,
+     "Clara_idx": 100,
+     "Esteban": 16.7,
+     "Esteban_idx": 59
+    },
+    "No lo bajaría": {
+     "total": 28.5,
+     "Isadora": 31.2,
+     "Isadora_idx": 109,
+     "Emilia": 25.9,
+     "Emilia_idx": 91,
+     "Clara": 26.2,
+     "Clara_idx": 92,
+     "Esteban": 30.6,
+     "Esteban_idx": 107
+    },
+    "11 al 20%": {
+     "total": 8.0,
+     "Isadora": 14.1,
+     "Isadora_idx": 176,
+     "Emilia": 6.9,
+     "Emilia_idx": 86,
+     "Clara": 2.4,
+     "Clara_idx": 30,
+     "Esteban": 5.6,
+     "Esteban_idx": 70
+    },
+    "Más del 20%": {
+     "total": 0.5,
+     "Isadora": 0.0,
+     "Isadora_idx": 0,
+     "Emilia": 0.0,
+     "Emilia_idx": 0,
+     "Clara": 2.4,
+     "Clara_idx": 480,
+     "Esteban": 0.0,
+     "Esteban_idx": 0
+    },
+    "__base__": {
+     "total": 200,
+     "Isadora": 64,
+     "Emilia": 58,
+     "Clara": 42,
+     "Esteban": 36
+    }
+   }
+  },
+  "P14": {
+   "title": "Evaluación general de la experiencia (P.14)",
+   "kind": "single",
+   "order": [
+    {
+     "item": "Excelente"
+    },
+    {
+     "item": "Muy buena"
+    },
+    {
+     "item": "Buena"
+    },
+    {
+     "item": "Regular"
+    },
+    {
+     "item": "Mala"
+    }
+   ],
+   "job": {
+    "Buena": {
+     "total": 38.8,
+     "Urgencia": 35.1,
+     "Urgencia_idx": 90,
+     "Soltar": 37.0,
+     "Soltar_idx": 95,
+     "Invertir": 46.7,
+     "Invertir_idx": 120,
+     "Crecer": 41.7,
+     "Crecer_idx": 107
+    },
+    "Regular": {
+     "total": 10.7,
+     "Urgencia": 13.5,
+     "Urgencia_idx": 126,
+     "Soltar": 11.1,
+     "Soltar_idx": 104,
+     "Invertir": 0.0,
+     "Invertir_idx": 0,
+     "Crecer": 12.5,
+     "Crecer_idx": 117
+    },
+    "Muy buena": {
+     "total": 23.3,
+     "Urgencia": 16.2,
+     "Urgencia_idx": 70,
+     "Soltar": 29.6,
+     "Soltar_idx": 127,
+     "Invertir": 33.3,
+     "Invertir_idx": 143,
+     "Crecer": 20.8,
+     "Crecer_idx": 89
+    },
+    "Excelente": {
+     "total": 27.2,
+     "Urgencia": 35.1,
+     "Urgencia_idx": 129,
+     "Soltar": 22.2,
+     "Soltar_idx": 82,
+     "Invertir": 20.0,
+     "Invertir_idx": 74,
+     "Crecer": 25.0,
+     "Crecer_idx": 92
+    },
+    "__base__": {
+     "total": 103,
+     "Urgencia": 37,
+     "Soltar": 27,
+     "Invertir": 15,
+     "Crecer": 24
+    }
+   },
+   "persona": {
+    "Buena": {
+     "total": 38.8,
+     "Isadora": 35.3,
+     "Isadora_idx": 91,
+     "Emilia": 41.2,
+     "Emilia_idx": 106,
+     "Clara": 47.1,
+     "Clara_idx": 121,
+     "Esteban": 27.8,
+     "Esteban_idx": 72
+    },
+    "Regular": {
+     "total": 10.7,
+     "Isadora": 8.8,
+     "Isadora_idx": 82,
+     "Emilia": 23.5,
+     "Emilia_idx": 220,
+     "Clara": 2.9,
+     "Clara_idx": 27,
+     "Esteban": 16.7,
+     "Esteban_idx": 156
+    },
+    "Muy buena": {
+     "total": 23.3,
+     "Isadora": 26.5,
+     "Isadora_idx": 114,
+     "Emilia": 11.8,
+     "Emilia_idx": 51,
+     "Clara": 26.5,
+     "Clara_idx": 114,
+     "Esteban": 22.2,
+     "Esteban_idx": 95
+    },
+    "Excelente": {
+     "total": 27.2,
+     "Isadora": 29.4,
+     "Isadora_idx": 108,
+     "Emilia": 23.5,
+     "Emilia_idx": 86,
+     "Clara": 23.5,
+     "Clara_idx": 86,
+     "Esteban": 33.3,
+     "Esteban_idx": 122
+    },
+    "__base__": {
+     "total": 103,
+     "Isadora": 34,
+     "Emilia": 17,
+     "Clara": 34,
+     "Esteban": 18
+    }
+   }
+  },
+  "P28": {
+   "title": "Barreras para contactar iBuyers (P.28)",
+   "kind": "multi",
+   "job": {
+    "Temo que haya costos o comisiones ocultas": {
+     "total": 24.0,
+     "Urgencia": 34.1,
+     "Urgencia_idx": 142,
+     "Soltar": 28.6,
+     "Soltar_idx": 119,
+     "Invertir": 9.7,
+     "Invertir_idx": 40,
+     "Crecer": 11.1,
+     "Crecer_idx": 46
+    },
+    "No conozco bien cómo funciona este tipo de servicio": {
+     "total": 30.0,
+     "Urgencia": 32.9,
+     "Urgencia_idx": 110,
+     "Soltar": 26.2,
+     "Soltar_idx": 87,
+     "Invertir": 29.0,
+     "Invertir_idx": 97,
+     "Crecer": 28.9,
+     "Crecer_idx": 96
+    },
+    "Confío más en una inmobiliaria tradicional": {
+     "total": 19.0,
+     "Urgencia": 26.8,
+     "Urgencia_idx": 141,
+     "Soltar": 11.9,
+     "Soltar_idx": 63,
+     "Invertir": 12.9,
+     "Invertir_idx": 68,
+     "Crecer": 15.6,
+     "Crecer_idx": 82
+    },
+    "Los procesos digitales son riesgosos e impersonales": {
+     "total": 12.0,
+     "Urgencia": 17.1,
+     "Urgencia_idx": 143,
+     "Soltar": 9.5,
+     "Soltar_idx": 79,
+     "Invertir": 9.7,
+     "Invertir_idx": 81,
+     "Crecer": 6.7,
+     "Crecer_idx": 56
+    },
+    "Prefiero venderla de manera directa": {
+     "total": 26.5,
+     "Urgencia": 35.4,
+     "Urgencia_idx": 134,
+     "Soltar": 23.8,
+     "Soltar_idx": 90,
+     "Invertir": 19.4,
+     "Invertir_idx": 73,
+     "Crecer": 17.8,
+     "Crecer_idx": 67
+    },
+    "No las conocía": {
+     "total": 54.5,
+     "Urgencia": 50.0,
+     "Urgencia_idx": 92,
+     "Soltar": 52.4,
+     "Soltar_idx": 96,
+     "Invertir": 67.7,
+     "Invertir_idx": 124,
+     "Crecer": 55.6,
+     "Crecer_idx": 102
+    },
+    "No me gusta la idea de que una empresa “revenda” mi casa": {
+     "total": 11.5,
+     "Urgencia": 14.6,
+     "Urgencia_idx": 127,
+     "Soltar": 4.8,
+     "Soltar_idx": 42,
+     "Invertir": 12.9,
+     "Invertir_idx": 112,
+     "Crecer": 11.1,
+     "Crecer_idx": 97
+    },
+    "Ofrecen menos dinero de lo que vale mi casa": {
+     "total": 16.5,
+     "Urgencia": 22.0,
+     "Urgencia_idx": 133,
+     "Soltar": 19.0,
+     "Soltar_idx": 115,
+     "Invertir": 0.0,
+     "Invertir_idx": 0,
+     "Crecer": 15.6,
+     "Crecer_idx": 95
+    },
+    "Mi casa no cumple con las condiciones que piden": {
+     "total": 2.5,
+     "Urgencia": 3.7,
+     "Urgencia_idx": 148,
+     "Soltar": 2.4,
+     "Soltar_idx": 96,
+     "Invertir": 3.2,
+     "Invertir_idx": 128,
+     "Crecer": 0.0,
+     "Crecer_idx": 0
+    },
+    "Son estrictos con los requisitos": {
+     "total": 5.0,
+     "Urgencia": 7.3,
+     "Urgencia_idx": 146,
+     "Soltar": 4.8,
+     "Soltar_idx": 96,
+     "Invertir": 3.2,
+     "Invertir_idx": 64,
+     "Crecer": 2.2,
+     "Crecer_idx": 44
+    },
+    "Otra (Especificar)": {
+     "total": 2.0,
+     "Urgencia": 2.4,
+     "Urgencia_idx": 120,
+     "Soltar": 2.4,
+     "Soltar_idx": 120,
+     "Invertir": 0.0,
+     "Invertir_idx": 0,
+     "Crecer": 2.2,
+     "Crecer_idx": 110
+    },
+    "__base__": {
+     "total": 200,
+     "Urgencia": 82,
+     "Soltar": 42,
+     "Invertir": 31,
+     "Crecer": 45
+    }
+   },
+   "persona": {
+    "Temo que haya costos o comisiones ocultas": {
+     "total": 24.0,
+     "Isadora": 14.1,
+     "Isadora_idx": 59,
+     "Emilia": 27.6,
+     "Emilia_idx": 115,
+     "Clara": 11.9,
+     "Clara_idx": 50,
+     "Esteban": 50.0,
+     "Esteban_idx": 208
+    },
+    "No conozco bien cómo funciona este tipo de servicio": {
+     "total": 30.0,
+     "Isadora": 29.7,
+     "Isadora_idx": 99,
+     "Emilia": 27.6,
+     "Emilia_idx": 92,
+     "Clara": 21.4,
+     "Clara_idx": 71,
+     "Esteban": 44.4,
+     "Esteban_idx": 148
+    },
+    "Confío más en una inmobiliaria tradicional": {
+     "total": 19.0,
+     "Isadora": 15.6,
+     "Isadora_idx": 82,
+     "Emilia": 17.2,
+     "Emilia_idx": 91,
+     "Clara": 21.4,
+     "Clara_idx": 113,
+     "Esteban": 25.0,
+     "Esteban_idx": 132
+    },
+    "Los procesos digitales son riesgosos e impersonales": {
+     "total": 12.0,
+     "Isadora": 6.2,
+     "Isadora_idx": 52,
+     "Emilia": 17.2,
+     "Emilia_idx": 143,
+     "Clara": 2.4,
+     "Clara_idx": 20,
+     "Esteban": 25.0,
+     "Esteban_idx": 208
+    },
+    "Prefiero venderla de manera directa": {
+     "total": 26.5,
+     "Isadora": 15.6,
+     "Isadora_idx": 59,
+     "Emilia": 37.9,
+     "Emilia_idx": 143,
+     "Clara": 23.8,
+     "Clara_idx": 90,
+     "Esteban": 30.6,
+     "Esteban_idx": 115
+    },
+    "No las conocía": {
+     "total": 54.5,
+     "Isadora": 62.5,
+     "Isadora_idx": 115,
+     "Emilia": 46.6,
+     "Emilia_idx": 86,
+     "Clara": 57.1,
+     "Clara_idx": 105,
+     "Esteban": 50.0,
+     "Esteban_idx": 92
+    },
+    "No me gusta la idea de que una empresa “revenda” mi casa": {
+     "total": 11.5,
+     "Isadora": 17.2,
+     "Isadora_idx": 150,
+     "Emilia": 10.3,
+     "Emilia_idx": 90,
+     "Clara": 4.8,
+     "Clara_idx": 42,
+     "Esteban": 11.1,
+     "Esteban_idx": 97
+    },
+    "Ofrecen menos dinero de lo que vale mi casa": {
+     "total": 16.5,
+     "Isadora": 9.4,
+     "Isadora_idx": 57,
+     "Emilia": 24.1,
+     "Emilia_idx": 146,
+     "Clara": 9.5,
+     "Clara_idx": 58,
+     "Esteban": 25.0,
+     "Esteban_idx": 152
+    },
+    "Mi casa no cumple con las condiciones que piden": {
+     "total": 2.5,
+     "Isadora": 1.6,
+     "Isadora_idx": 64,
+     "Emilia": 1.7,
+     "Emilia_idx": 68,
+     "Clara": 0.0,
+     "Clara_idx": 0,
+     "Esteban": 8.3,
+     "Esteban_idx": 332
+    },
+    "Son estrictos con los requisitos": {
+     "total": 5.0,
+     "Isadora": 3.1,
+     "Isadora_idx": 62,
+     "Emilia": 5.2,
+     "Emilia_idx": 104,
+     "Clara": 4.8,
+     "Clara_idx": 96,
+     "Esteban": 8.3,
+     "Esteban_idx": 166
+    },
+    "Otra (Especificar)": {
+     "total": 2.0,
+     "Isadora": 1.6,
+     "Isadora_idx": 80,
+     "Emilia": 0.0,
+     "Emilia_idx": 0,
+     "Clara": 4.8,
+     "Clara_idx": 240,
+     "Esteban": 2.8,
+     "Esteban_idx": 140
+    },
+    "__base__": {
+     "total": 200,
+     "Isadora": 64,
+     "Emilia": 58,
+     "Clara": 42,
+     "Esteban": 36
+    }
+   }
+  },
+  "P26": {
+   "title": "Medios en que ofrece la propiedad (P.26)",
+   "kind": "multi",
+   "job": {
+    "Redes sociales": {
+     "total": 39.3,
+     "Urgencia": 35.6,
+     "Urgencia_idx": 91,
+     "Soltar": 41.9,
+     "Soltar_idx": 107,
+     "Invertir": 44.7,
+     "Invertir_idx": 114,
+     "Crecer": 39.7,
+     "Crecer_idx": 101
+    },
+    "Casas Inmobiliarias": {
+     "total": 43.8,
+     "Urgencia": 44.1,
+     "Urgencia_idx": 101,
+     "Soltar": 35.5,
+     "Soltar_idx": 81,
+     "Invertir": 57.4,
+     "Invertir_idx": 131,
+     "Crecer": 41.3,
+     "Crecer_idx": 94
+    },
+    "Boca a boca: Ofrecer a contactos potenciales": {
+     "total": 54.8,
+     "Urgencia": 50.8,
+     "Urgencia_idx": 93,
+     "Soltar": 61.3,
+     "Soltar_idx": 112,
+     "Invertir": 57.4,
+     "Invertir_idx": 105,
+     "Crecer": 54.0,
+     "Crecer_idx": 99
+    },
+    "Páginas web / apps especializadas en venta de propiedades": {
+     "total": 27.6,
+     "Urgencia": 20.3,
+     "Urgencia_idx": 74,
+     "Soltar": 25.8,
+     "Soltar_idx": 93,
+     "Invertir": 42.6,
+     "Invertir_idx": 154,
+     "Crecer": 31.7,
+     "Crecer_idx": 115
+    },
+    "Agente": {
+     "total": 15.5,
+     "Urgencia": 10.2,
+     "Urgencia_idx": 66,
+     "Soltar": 16.1,
+     "Soltar_idx": 104,
+     "Invertir": 23.4,
+     "Invertir_idx": 151,
+     "Crecer": 19.0,
+     "Crecer_idx": 123
+    },
+    "Anuncios impresos": {
+     "total": 23.1,
+     "Urgencia": 22.0,
+     "Urgencia_idx": 95,
+     "Soltar": 22.6,
+     "Soltar_idx": 98,
+     "Invertir": 21.3,
+     "Invertir_idx": 92,
+     "Crecer": 27.0,
+     "Crecer_idx": 117
+    },
+    "Ferias/Expos inmobiliarios": {
+     "total": 4.1,
+     "Urgencia": 3.4,
+     "Urgencia_idx": 83,
+     "Soltar": 4.8,
+     "Soltar_idx": 117,
+     "Invertir": 4.3,
+     "Invertir_idx": 105,
+     "Crecer": 4.8,
+     "Crecer_idx": 117
+    },
+    "Otro (texto libre)": {
+     "total": 2.1,
+     "Urgencia": 2.5,
+     "Urgencia_idx": 119,
+     "Soltar": 3.2,
+     "Soltar_idx": 152,
+     "Invertir": 0.0,
+     "Invertir_idx": 0,
+     "Crecer": 1.6,
+     "Crecer_idx": 76
+    },
+    "__base__": {
+     "total": 290,
+     "Urgencia": 118,
+     "Soltar": 62,
+     "Invertir": 47,
+     "Crecer": 63
+    }
+   },
+   "persona": {
+    "Redes sociales": {
+     "total": 39.3,
+     "Isadora": 39.4,
+     "Isadora_idx": 100,
+     "Emilia": 36.2,
+     "Emilia_idx": 92,
+     "Clara": 46.6,
+     "Clara_idx": 119,
+     "Esteban": 32.7,
+     "Esteban_idx": 83
+    },
+    "Casas Inmobiliarias": {
+     "total": 43.8,
+     "Isadora": 40.4,
+     "Isadora_idx": 92,
+     "Emilia": 39.1,
+     "Emilia_idx": 89,
+     "Clara": 50.7,
+     "Clara_idx": 116,
+     "Esteban": 46.9,
+     "Esteban_idx": 107
+    },
+    "Boca a boca: Ofrecer a contactos potenciales": {
+     "total": 54.8,
+     "Isadora": 47.5,
+     "Isadora_idx": 87,
+     "Emilia": 68.1,
+     "Emilia_idx": 124,
+     "Clara": 52.1,
+     "Clara_idx": 95,
+     "Esteban": 55.1,
+     "Esteban_idx": 101
+    },
+    "Páginas web / apps especializadas en venta de propiedades": {
+     "total": 27.6,
+     "Isadora": 28.3,
+     "Isadora_idx": 103,
+     "Emilia": 17.4,
+     "Emilia_idx": 63,
+     "Clara": 34.2,
+     "Clara_idx": 124,
+     "Esteban": 30.6,
+     "Esteban_idx": 111
+    },
+    "Agente": {
+     "total": 15.5,
+     "Isadora": 14.1,
+     "Isadora_idx": 91,
+     "Emilia": 8.7,
+     "Emilia_idx": 56,
+     "Clara": 19.2,
+     "Clara_idx": 124,
+     "Esteban": 22.4,
+     "Esteban_idx": 145
+    },
+    "Anuncios impresos": {
+     "total": 23.1,
+     "Isadora": 15.2,
+     "Isadora_idx": 66,
+     "Emilia": 40.6,
+     "Emilia_idx": 176,
+     "Clara": 13.7,
+     "Clara_idx": 59,
+     "Esteban": 28.6,
+     "Esteban_idx": 124
+    },
+    "Ferias/Expos inmobiliarios": {
+     "total": 4.1,
+     "Isadora": 4.0,
+     "Isadora_idx": 98,
+     "Emilia": 5.8,
+     "Emilia_idx": 141,
+     "Clara": 1.4,
+     "Clara_idx": 34,
+     "Esteban": 6.1,
+     "Esteban_idx": 149
+    },
+    "Otro (texto libre)": {
+     "total": 2.1,
+     "Isadora": 1.0,
+     "Isadora_idx": 48,
+     "Emilia": 1.4,
+     "Emilia_idx": 67,
+     "Clara": 4.1,
+     "Clara_idx": 195,
+     "Esteban": 2.0,
+     "Esteban_idx": 95
+    },
+    "__base__": {
+     "total": 290,
+     "Isadora": 99,
+     "Emilia": 69,
+     "Clara": 73,
+     "Esteban": 49
+    }
+   }
+  }
+ }
+}

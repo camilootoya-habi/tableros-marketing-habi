@@ -1,0 +1,341 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🧩</text></svg>">
+<title>Segmentación JTBD · Vendedores Tuhabi MX</title>
+<style>
+  :root {
+    --bg: #0f172a; --card: #1e293b; --card-2: #263348; --border: #334155;
+    --accent: #818cf8; --text: #f8fafc; --text-2: #e2e8f0; --muted: #94a3b8;
+    --muted-3: #64748b;
+    --urg: #e4572e; --sol: #f3a712; --inv: #2e9e5b; --cre: #3d6fd1;
+  }
+  body.light {
+    --bg: #f5f7fa; --card: #ffffff; --card-2: #f1f5f9; --border: #e2e8f0;
+    --accent: #6366f1; --text: #0f172a; --text-2: #334155; --muted: #64748b;
+    --muted-3: #94a3b8;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { background: var(--bg); color: var(--text-2);
+    font: 14px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+  body { padding: 20px; transition: background .2s, color .2s; }
+  a { color: var(--accent); text-decoration: none; }
+  .wrap { max-width: 1180px; margin: 0 auto; }
+  .back-link { display: inline-flex; gap: 6px; padding: 6px 12px; background: var(--card);
+    border: 1px solid var(--border); border-radius: 6px; color: var(--muted); font-size: 13px; margin-bottom: 16px; }
+  .back-link:hover { color: var(--accent); border-color: var(--accent); }
+  header.page { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; flex-wrap: wrap; margin-bottom: 8px; }
+  header.page h1 { font-size: 23px; color: var(--text); font-weight: 700; }
+  header.page h1 .em { color: var(--accent); }
+  header.page p.sub { color: var(--muted); font-size: 13px; margin-top: 4px; max-width: 760px; }
+  .theme-btn { background: var(--card); border: 1px solid var(--border); color: var(--muted);
+    border-radius: 6px; padding: 5px 11px; font-size: 14px; cursor: pointer; }
+  .theme-btn:hover { color: var(--accent); }
+  .card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 18px 20px; margin: 16px 0; }
+  .card h2 { font-size: 16px; color: var(--text); font-weight: 650; margin-bottom: 4px; }
+  .card .lead { color: var(--muted); font-size: 13px; margin-bottom: 14px; }
+  .kicker { font-size: 11px; text-transform: uppercase; letter-spacing: .08em; color: var(--accent); font-weight: 700; margin-bottom: 6px; }
+  /* job cards */
+  .jobs { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px,1fr)); gap: 12px; margin-top: 8px; }
+  .job { border: 1px solid var(--border); border-left-width: 4px; border-radius: 10px; padding: 12px 14px; background: var(--card-2); }
+  .job .name { font-weight: 700; color: var(--text); font-size: 14px; }
+  .job .pct { font-size: 26px; font-weight: 800; color: var(--text); line-height: 1.1; margin: 2px 0; }
+  .job .pct small { font-size: 12px; font-weight: 600; color: var(--muted); }
+  .job .desc { font-size: 12px; color: var(--muted); margin-top: 4px; }
+  .job .src { font-size: 11px; color: var(--muted-3); margin-top: 8px; }
+  /* transparency */
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 22px; }
+  @media (max-width: 760px){ .grid2 { grid-template-columns: 1fr; } }
+  .bigstat { font-size: 40px; font-weight: 800; color: var(--text); line-height: 1; }
+  .bigstat .u { font-size: 16px; color: var(--muted); font-weight: 600; }
+  .nj-row { display: flex; align-items: center; gap: 10px; margin: 7px 0; font-size: 13px; }
+  .nj-row .lab { width: 92px; color: var(--muted); flex-shrink: 0; }
+  .nj-bar { height: 18px; border-radius: 4px; background: var(--accent); min-width: 2px; }
+  .nj-row .val { font-variant-numeric: tabular-nums; color: var(--text); font-weight: 600; }
+  .callout { border-left: 3px solid var(--accent); padding: 8px 0 8px 14px; margin-top: 12px; color: var(--text-2); font-size: 13px; }
+  /* co-occurrence */
+  table.cooc { border-collapse: separate; border-spacing: 3px; font-size: 12px; margin-top: 4px; }
+  table.cooc th { color: var(--muted); font-weight: 600; padding: 4px 6px; font-size: 11px; }
+  table.cooc td { text-align: center; padding: 8px 6px; border-radius: 5px; color: #fff; font-weight: 600; font-variant-numeric: tabular-nums; min-width: 46px; }
+  /* controls */
+  .controls { display: flex; gap: 16px; flex-wrap: wrap; align-items: center; margin-bottom: 14px; }
+  .ctl-label { font-size: 11px; text-transform: uppercase; letter-spacing: .05em; color: var(--muted-3); margin-right: 4px; }
+  .chip-group { display: inline-flex; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; flex-wrap: wrap; }
+  .chip { padding: 6px 12px; cursor: pointer; background: transparent; color: var(--text-2); border: 0; font-size: 12.5px; }
+  .chip + .chip { border-left: 1px solid var(--border); }
+  .chip.active { background: var(--accent); color: #0b1224; font-weight: 700; }
+  /* crosstab table */
+  .ct-wrap { overflow-x: auto; }
+  table.ct { width: 100%; border-collapse: collapse; font-size: 13px; }
+  table.ct th, table.ct td { padding: 7px 10px; text-align: right; white-space: nowrap; }
+  table.ct th.it, table.ct td.it { text-align: left; white-space: normal; min-width: 240px; }
+  table.ct thead th { font-size: 11px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); border-bottom: 1px solid var(--border); }
+  table.ct tbody tr.group td { background: var(--card-2); font-weight: 700; color: var(--text); border-top: 1px solid var(--border); }
+  table.ct tbody td { border-bottom: 1px solid var(--border); }
+  table.ct tbody tr.sub td.it { padding-left: 22px; color: var(--muted); font-weight: 400; }
+  .cell { display: inline-flex; align-items: center; gap: 6px; justify-content: flex-end; }
+  .cell .pct { font-variant-numeric: tabular-nums; min-width: 38px; }
+  .idx { font-size: 10px; font-weight: 700; padding: 1px 5px; border-radius: 10px; }
+  .idx.hi { background: rgba(46,158,91,.18); color: #36c977; }
+  .idx.lo { background: rgba(228,87,46,.16); color: #ef7a59; }
+  .idx.mid { color: var(--muted-3); background: transparent; }
+  .totcol { color: var(--muted); }
+  .seg-h { font-weight: 700; }
+  .note { font-size: 12px; color: var(--muted-3); margin-top: 10px; }
+  /* bridge */
+  .bridge-bar { display: flex; height: 26px; border-radius: 5px; overflow: hidden; margin: 4px 0; border: 1px solid var(--border); }
+  .bridge-seg { display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; color: #fff; }
+  .bridge-leg { display:flex; gap: 14px; flex-wrap: wrap; font-size: 12px; color: var(--muted); margin-top: 8px; }
+  .bridge-leg span { display: inline-flex; align-items: center; gap: 5px; }
+  .dot { width: 10px; height: 10px; border-radius: 3px; display: inline-block; }
+  .b-row { display: grid; grid-template-columns: 90px 1fr; align-items: center; gap: 10px; margin: 8px 0; }
+  .b-row .pl { font-size: 13px; color: var(--text); font-weight: 600; }
+  .b-row .pl small { display:block; color: var(--muted-3); font-weight: 400; font-size: 11px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <a class="back-link" href="../">← Tableros Marketing</a>
+  <header class="page">
+    <div>
+      <h1>Segmentación por <span class="em">Job To Be Done</span> · Vendedores Tuhabi MX</h1>
+      <p class="sub">Re-lectura del estudio de GDV (n=291). En vez de segmentar por <em>cómo decide</em> la
+        persona (las 4 buyer personas de la agencia), segmentamos por <em>qué necesidad resuelve la venta</em>.
+        Mismos datos, lente accionable para Tuhabi.</p>
+    </div>
+    <button class="theme-btn" id="themeBtn" title="Cambiar tema">🌓</button>
+  </header>
+
+  <!-- BLOQUE 1 -->
+  <section class="card" id="metodologia">
+    <div class="kicker">01 · Metodología</div>
+    <h2>Cuatro <em>jobs</em> detrás de la venta</h2>
+    <p class="lead">Construidos combinando <b>P.4</b> (motivación para vender) y <b>P.22</b> (uso del dinero).
+      Como son multi-respuesta, cada persona se asigna a <b>un</b> job por <b>jerarquía de acuidad</b>:
+      Urgencia&nbsp;&rsaquo;&nbsp;Soltar&nbsp;&rsaquo;&nbsp;Invertir&nbsp;&rsaquo;&nbsp;Crecer (gana la necesidad más aguda).</p>
+    <div class="jobs" id="jobCards"></div>
+  </section>
+
+  <!-- BLOQUE 2 -->
+  <section class="card" id="transparencia">
+    <div class="kicker">02 · Transparencia de la asignación</div>
+    <h2>No son tipos de persona: son necesidades que conviven</h2>
+    <p class="lead">La jerarquía fuerza segmentos limpios, pero la realidad es más mezclada. Mostramos cuánto.</p>
+    <div class="grid2">
+      <div>
+        <h3 class="ctl-label" style="margin-bottom:8px">¿A cuántos jobs responde cada encuestado?</h3>
+        <div id="njobs"></div>
+        <div class="callout" id="overlapCallout"></div>
+      </div>
+      <div>
+        <h3 class="ctl-label" style="margin-bottom:8px">Co-ocurrencia entre jobs (nº de personas con señal de ambos)</h3>
+        <table class="cooc" id="cooc"></table>
+        <p class="note">La diagonal = total con señal de ese job (antes de la jerarquía). Fuera de la diagonal = solapamiento.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- BLOQUE 3 -->
+  <section class="card" id="cruces">
+    <div class="kicker">03 · Re-corte de los slides por JTBD</div>
+    <h2>Cada cruce de GDV, cortado por job</h2>
+    <p class="lead">Las mismas preguntas de la presentación, ahora por necesidad. Alterna entre la lente
+      <b>JTBD</b> y las <b>personas</b> originales para comparar. Índice = % del segmento ÷ % total
+      (<span style="color:#36c977">verde ≥120</span>, <span style="color:#ef7a59">rojo ≤80</span>).</p>
+    <div class="controls">
+      <div><span class="ctl-label">Pregunta</span><div class="chip-group" id="qSel"></div></div>
+      <div><span class="ctl-label">Lente</span><div class="chip-group" id="lensSel">
+        <button class="chip active" data-lens="job">JTBD</button>
+        <button class="chip" data-lens="persona">Personas GDV</button>
+      </div></div>
+    </div>
+    <div class="ct-wrap"><table class="ct" id="ctTable"></table></div>
+    <p class="note" id="ctNote"></p>
+  </section>
+
+  <!-- BLOQUE 4 -->
+  <section class="card" id="puente">
+    <div class="kicker">04 · Puente persona ↔ JTBD</div>
+    <h2>Cómo se reparten las personas de GDV dentro de cada job</h2>
+    <p class="lead">No descartamos el trabajo de la agencia: lo reinterpretamos. Cada barra es un job;
+      los colores muestran qué mezcla de personas lo compone.</p>
+    <div id="bridge"></div>
+    <div class="bridge-leg" id="bridgeLeg"></div>
+  </section>
+
+  <p class="note" style="text-align:center;margin:24px 0">
+    Fuente: GDV — Segmentación de vendedores Tuhabi MX (mayo 2026). Procesamiento JTBD: Growth Marketing.
+  </p>
+</div>
+
+<script>
+const JOB_ORDER = ["Urgencia","Soltar","Invertir","Crecer"];
+const PERSONA_ORDER = ["Isadora","Emilia","Clara","Esteban"];
+const JOB_DESC = {
+  "Urgencia":"Liquidez inmediata: deudas, salud, imprevistos, costos que ya no aguanta.",
+  "Soltar":"Un activo que no usa: no lo habita, herencia, divorcio. Quiere salir de él.",
+  "Invertir":"Mueve capital: aprovechar plusvalía/demanda y reinvertir el dinero.",
+  "Crecer":"Da el siguiente paso: una mejor propiedad, más espacio, una nueva etapa."
+};
+const PCOLORS = {Isadora:"#e4572e",Emilia:"#f3a712",Clara:"#2e9e5b",Esteban:"#3d6fd1"};
+let DATA=null, curQ=null, curLens="job";
+
+function jobColor(k){return getComputedStyle(document.documentElement).getPropertyValue(
+  {Urgencia:"--urg",Soltar:"--sol",Invertir:"--inv",Crecer:"--cre"}[k]).trim();}
+const SEG_COLOR = {Urgencia:"#e4572e",Soltar:"#f3a712",Invertir:"#2e9e5b",Crecer:"#3d6fd1",
+  Isadora:"#e4572e",Emilia:"#f3a712",Clara:"#2e9e5b",Esteban:"#3d6fd1"};
+
+async function init(){
+  const r = await fetch('data.json',{cache:'no-store'});
+  DATA = await r.json();
+  renderJobs(); renderTransparency(); renderBridge(); renderQSelector();
+  curQ = Object.keys(DATA.crosstabs)[0];
+  renderCrosstab();
+  bindControls();
+}
+
+function renderJobs(){
+  const host = document.getElementById('jobCards');
+  const tot = DATA.meta.n_con_job;
+  host.innerHTML = DATA.meta.jobs.map(j=>{
+    const pct = Math.round(100*j.base/tot);
+    return `<div class="job" style="border-left-color:${j.color}">
+      <div class="name" style="color:${j.color}">${j.label}</div>
+      <div class="pct">${pct}<small>% · n=${j.base}</small></div>
+      <div class="desc">${JOB_DESC[j.key]}</div>
+    </div>`;}).join('');
+}
+
+function renderTransparency(){
+  const t = DATA.transparencia;
+  const nj = t.njobs_dist;
+  const maxv = Math.max(...Object.values(nj));
+  const labels = {0:"0 (sin señal)",1:"1 job",2:"2 jobs",3:"3 jobs",4:"4 jobs"};
+  let html="";
+  Object.keys(nj).sort().forEach(k=>{
+    const v=nj[k], w=Math.round(100*v/maxv);
+    html+=`<div class="nj-row"><span class="lab">${labels[k]||k}</span>
+      <div class="nj-bar" style="width:${Math.max(w,3)}%"></div><span class="val">${v}</span></div>`;
+  });
+  document.getElementById('njobs').innerHTML=html;
+  document.getElementById('overlapCallout').innerHTML =
+    `<b>Solo el ${Math.round(t.pct_single)}%</b> (${t.n_single}) marca un único job.
+     El <b>${Math.round(t.pct_multi)}%</b> (${t.n_multi}) responde a 2 o más a la vez.
+     Por eso estos segmentos son una <b>lente</b>, no cajas estancas.`;
+
+  // co-occurrence
+  const c=t.cooccurrence, diag=JOB_ORDER.map(j=>c[j][j]), maxc=Math.max(...diag);
+  const tbl=document.getElementById('cooc');
+  let head="<tr><th></th>"+JOB_ORDER.map(j=>`<th>${j}</th>`).join("")+"</tr>";
+  let body=JOB_ORDER.map(a=>{
+    return "<tr><th style='text-align:right'>"+a+"</th>"+JOB_ORDER.map(b=>{
+      const v=c[a][b], alpha=0.15+0.85*(v/maxc);
+      const bg = a===b? `rgba(129,140,248,${alpha})` : `rgba(148,163,184,${alpha})`;
+      return `<td style="background:${bg}">${v}</td>`;}).join("")+"</tr>";
+  }).join("");
+  tbl.innerHTML=head+body;
+}
+
+function renderQSelector(){
+  const host=document.getElementById('qSel');
+  host.innerHTML=Object.entries(DATA.crosstabs).map(([k,v],i)=>
+    `<button class="chip ${i===0?'active':''}" data-q="${k}">${k}</button>`).join("");
+}
+
+function idxBadge(idx){
+  if(idx==null) return `<span class="idx mid">·</span>`;
+  const cls = idx>=120?"hi":(idx<=80?"lo":"mid");
+  return `<span class="idx ${cls}">${idx}</span>`;
+}
+
+function renderCrosstab(){
+  const q=DATA.crosstabs[curQ];
+  const segs = curLens==="job"?JOB_ORDER:PERSONA_ORDER;
+  const tbl=q[curLens];
+  const bases=tbl["__base__"]||{};
+  // build row order
+  let rows;
+  if(q.order){ rows=q.order; }
+  else { rows=Object.keys(tbl).filter(k=>k!=="__base__")
+          .sort((a,b)=>tbl[b].total-tbl[a].total).map(it=>({item:it})); }
+
+  // header
+  let head=`<thead><tr><th class="it">${q.title}</th><th class="totcol">Total<br><small>n=${bases.total||DATA.meta.n_con_job}</small></th>`;
+  head+=segs.map(s=>{
+    return `<th class="seg-h" style="color:${SEG_COLOR[s]}">${s}<br><small style="color:var(--muted-3)">n=${bases[s]??""}</small></th>`;
+  }).join("")+`</tr></thead>`;
+
+  let body="<tbody>";
+  rows.forEach(r=>{
+    const d=tbl[r.item]; if(!d) return;
+    const isGroup=r.type==="group";
+    const cls = isGroup?"group":(r.type==="sub"?"sub":"");
+    body+=`<tr class="${cls}"><td class="it">${r.item}</td>`;
+    body+=`<td class="totcol">${d.total}</td>`;
+    segs.forEach(s=>{
+      const idx=d[s+"_idx"];
+      body+=`<td><span class="cell"><span class="pct">${d[s]}</span>${idxBadge(idx)}</span></td>`;
+    });
+    body+="</tr>";
+  });
+  body+="</tbody>";
+  document.getElementById('ctTable').innerHTML=head+body;
+
+  const notes={
+    P4:"Origen del JTBD. Las celdas son % que marcó cada motivo (multi-respuesta).",
+    P22:"Origen del JTBD. % que destinó el dinero a cada fin (multi-respuesta).",
+    P12:"Marca única que usaría/usó. Lectura de share competitivo por job.",
+    P29:"% de descuento que aceptaría a cambio de liquidez. Clave para el value-prop de Tuhabi.",
+    P14:"Calificación de la experiencia general de venta.",
+    P28:"Por qué no contactan iBuyers. Las barreras a derribar, por segmento.",
+    P26:"Canales donde ofrece la propiedad (multi-respuesta)."
+  };
+  document.getElementById('ctNote').textContent=notes[curQ]||"";
+}
+
+function renderBridge(){
+  const br=DATA.bridge;
+  const host=document.getElementById('bridge');
+  host.innerHTML=JOB_ORDER.map(j=>{
+    const counts=PERSONA_ORDER.map(p=>br[p][j]);
+    const tot=counts.reduce((a,b)=>a+b,0)||1;
+    const segs=PERSONA_ORDER.map((p,i)=>{
+      const pct=100*counts[i]/tot;
+      if(pct<1) return "";
+      return `<div class="bridge-seg" style="width:${pct}%;background:${PCOLORS[p]}"
+        title="${p}: ${counts[i]} (${Math.round(pct)}%)">${pct>=12?Math.round(pct)+'%':''}</div>`;
+    }).join("");
+    const jl=DATA.meta.jobs.find(x=>x.key===j);
+    return `<div class="b-row"><div class="pl" style="color:${jl.color}">${j}
+      <small>n=${tot}</small></div><div class="bridge-bar">${segs}</div></div>`;
+  }).join("");
+  document.getElementById('bridgeLeg').innerHTML=PERSONA_ORDER.map(p=>{
+    const m=DATA.meta.personas.find(x=>x.key===p);
+    return `<span><i class="dot" style="background:${PCOLORS[p]}"></i>${p} · ${m.label}</span>`;
+  }).join("");
+}
+
+function bindControls(){
+  document.getElementById('qSel').addEventListener('click',e=>{
+    if(!e.target.dataset.q) return;
+    curQ=e.target.dataset.q;
+    document.querySelectorAll('#qSel .chip').forEach(c=>c.classList.toggle('active',c.dataset.q===curQ));
+    renderCrosstab();
+  });
+  document.getElementById('lensSel').addEventListener('click',e=>{
+    if(!e.target.dataset.lens) return;
+    curLens=e.target.dataset.lens;
+    document.querySelectorAll('#lensSel .chip').forEach(c=>c.classList.toggle('active',c.dataset.lens===curLens));
+    renderCrosstab();
+  });
+  document.getElementById('themeBtn').addEventListener('click',()=>{
+    document.body.classList.toggle('light');
+    renderJobs(); renderBridge();
+  });
+}
+init();
+</script>
+</body>
+</html>
