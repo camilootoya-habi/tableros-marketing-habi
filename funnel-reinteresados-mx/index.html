@@ -107,6 +107,10 @@
   <div class="country-cards" id="countryCards"></div>
   <div class="campaign" id="campaign"></div>
 
+  <h2 style="margin-top:22px">Leads por fecha de creación</h2>
+  <p class="note">Registros y calificados por <b>día de creación</b>. <b>Clic en una barra</b> para filtrar TODO el tablero por esa fecha (toca de nuevo para quitar). <span id="datefilter"></span></p>
+  <div class="card"><div class="chart-wrap"><canvas id="chartDaily"></canvas></div></div>
+
   <h2 id="h2geo" style="margin-top:26px">Registros por estado</h2>
   <p class="note">Registros por <span id="geoword">estado</span>, de mayor a menor. <b>Clic en una fila para filtrar</b> todo el tablero (toca de nuevo para quitar el filtro). <span id="geocount"></span></p>
   <div class="card" id="regEstado"></div>
@@ -140,10 +144,6 @@
   <p class="note">Dónde quedaron los leads que <b>no</b> están en estado calificado (≠ 20/63), por estado actual y asignación.</p>
   <div class="legend"><span><i class="dot gr"></i>Asignados (WBR)</span><span><i class="dot og"></i>No asignados</span></div>
   <div class="card"><div class="tbl-wrap"><table><thead><tr><th>Estado actual</th><th style="text-align:right">No asig.</th><th style="text-align:right">Asig.</th><th style="text-align:right">Total</th><th style="text-align:right">% reg</th></tr></thead><tbody id="anti"></tbody></table></div></div>
-
-  <h2>Evolución diaria</h2>
-  <p class="note">Registros y calificados por <b>día de creación</b> del lead (cohorte).</p>
-  <div class="card"><div class="chart-wrap"><canvas id="chartDaily"></canvas></div></div>
 
   <p class="note" id="footer"></p>
 
@@ -180,7 +180,7 @@ const STAGES=[
   ['Cierres (MM)','#f59e0b',l=>l.filter(x=>x.cierre).length,'oportunidad_del_negocio = Cierre - Comprado (compra cerrada del Market Maker).'],
   ['Contrato firmado (Inmo)','#0d9488',l=>l.filter(x=>x.contrato).length,'oportunidad_inmobiliaria = Contrato firmado (cierre del flujo Inmobiliaria).']];
 const KCLS=['s1','s2','s3','s4'];
-let dailyChart=null, leadsAll=[], country='MX', selectedGeo=null;
+let dailyChart=null, leadsAll=[], country='MX', selectedGeo=null, selectedDate=null;
 
 let firstLoad=true;
 function mapRaw(raw){ return raw.map(r=>({pais:r.pais, geo:r.geo||'Sin dato', area:r.area||'Sin dato', sid:(r.sid==null?'':String(r.sid)), slabel:r.slabel||'Sin estado',
@@ -211,7 +211,7 @@ function renderCards(){
 }
 
 function selectCountry(c){
-  country=c; selectedGeo=null;
+  country=c; selectedGeo=null; selectedDate=null;
   document.getElementById('campaign').textContent='utm_campaign = '+UTM[c];
   document.getElementById('h2geo').textContent='Registros por '+GEOWORD[c];
   document.getElementById('geoword').textContent=GEOWORD[c];
@@ -221,6 +221,7 @@ function selectCountry(c){
 function apply(){
   let f=countryLeads();
   if(selectedGeo!==null) f=f.filter(l=>l.geo===selectedGeo);
+  if(selectedDate!==null) f=f.filter(l=>l.fc===selectedDate);
   render(f);
 }
 
@@ -351,17 +352,23 @@ function render(L){
   document.getElementById('calif').innerHTML=calRows.length?splitRows(calRows)+totalRow(calRows,'Total calificados'):'<tr><td colspan="5" class="note">Sin calificados (estado actual) en esta selección.</td></tr>';
   document.getElementById('anti').innerHTML=antiRows.length?splitRows(antiRows)+totalRow(antiRows,'Total antifunnel'):'<tr><td colspan="5" class="note">Sin leads en antifunnel en esta selección.</td></tr>';
 
-  const byDay={}; L.forEach(l=>{(byDay[l.fc]=byDay[l.fc]||{n:0,c:0});byDay[l.fc].n++;byDay[l.fc].c+=l.calif;});
+  // Chart de fechas = date-picker: SIEMPRE muestra todas las fechas del país (+ filtro de zona si hay), independiente del filtro de fecha
+  let chartBase=countryLeads();
+  if(selectedGeo!==null) chartBase=chartBase.filter(l=>l.geo===selectedGeo);
+  const byDay={}; chartBase.forEach(l=>{(byDay[l.fc]=byDay[l.fc]||{n:0,c:0});byDay[l.fc].n++;byDay[l.fc].c+=l.calif;});
   const days=Object.keys(byDay).filter(Boolean).sort();
+  const dim=(on,off)=>ctx=>(selectedDate&&days[ctx.dataIndex]!==selectedDate)?off:on;
   if(dailyChart)dailyChart.destroy();
   dailyChart=new Chart(document.getElementById('chartDaily'),{
     data:{labels:days,datasets:[
-      {type:'bar',label:'Registros',data:days.map(d=>byDay[d].n),backgroundColor:'rgba(79,70,229,.85)',borderRadius:4},
-      {type:'bar',label:'Calificados',data:days.map(d=>byDay[d].c),backgroundColor:'rgba(16,185,129,.9)',borderRadius:4}]},
+      {type:'bar',label:'Registros',data:days.map(d=>byDay[d].n),backgroundColor:dim('rgba(79,70,229,.85)','rgba(79,70,229,.22)'),borderRadius:4},
+      {type:'bar',label:'Calificados',data:days.map(d=>byDay[d].c),backgroundColor:dim('rgba(16,185,129,.9)','rgba(16,185,129,.25)'),borderRadius:4}]},
     options:{maintainAspectRatio:false,interaction:{mode:'index',intersect:false},
+      onClick:(e,els)=>{ if(!els||!els.length) return; const d=days[els[0].index]; selectedDate=(selectedDate===d)?null:d; apply(); },
       plugins:{legend:{labels:{font:FONT}},tooltip:{callbacks:{afterBody:it=>{const d=byDay[days[it[0].dataIndex]];return `CVR día: ${d.n?(d.c/d.n*100).toFixed(1):0}%`;}}}},
       scales:{y:{beginAtZero:true,grid:{color:'#e5e7eb'},ticks:{font:FONT,precision:0}},x:{grid:{display:false},ticks:{font:FONT}}}}
   });
+  document.getElementById('datefilter').innerHTML = selectedDate ? `· Filtrando por fecha: <b>${selectedDate}</b> — <a href="#" onclick="selectedDate=null;apply();return false" style="color:var(--accent);text-decoration:none">✕ quitar</a>` : '';
 
   const owner=L.filter(x=>x.owner).length, asig=L.filter(x=>x.asig).length, antiTotal=antiRows.reduce((a,r)=>a+r.n,0);
   document.getElementById('footer').textContent= registros?`HubSpot owner: ${fmt(owner)} de ${fmt(registros)} (${pct(owner).toFixed(1)}%) · WBR Mart: ${fmt(asig)} (${pct(asig).toFixed(1)}%). Antifunnel (estado actual): ${fmt(antiTotal)}.`:'Sin registros para esta campaña todavía.';
