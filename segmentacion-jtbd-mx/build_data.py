@@ -25,6 +25,8 @@ def find_excel(argv):
 XLSX = find_excel(sys.argv)
 ET = pd.read_excel(XLSX, sheet_name="ETIQUETAS", header=0)
 CO = pd.read_excel(XLSX, sheet_name="CODIGOS", header=0)
+DMAP = pd.read_excel(XLSX, sheet_name="DATA MAP", header=None, skiprows=1,
+                     names=["VAR", "ET"]).dropna(subset=["VAR"])
 N = len(ET)
 
 # ------------------------------------------------------------------- JTBD mapping
@@ -260,6 +262,120 @@ P26COLS = cols_with_prefix("P26M")
 p26_masks = multi_response_masks(P26COLS,
             {v: clean(v) for v in pd.unique(ET[P26COLS].values.ravel()) if pd.notna(v)})
 
+# ============================================================================
+# DOCUMENTO — Lámina 10 (P.1 MaxDiff) y Lámina 11 (P.17), por JTBD
+# Reconstrucción propia (no replica la ponderación HB de GDV):
+#   · Lámina 10: best-worst share = share de veces elegido "lo más importante".
+#   · Lámina 11: share de menciones (atributo asociado a alguna marca).
+# Validado: el ranking Total reproduce el de GDV (ver prints abajo).
+# ============================================================================
+
+def share_table_by_job(count_by_jobitem, items_order, groups, base_counts):
+    """count_by_jobitem[job][item] -> conteo. Devuelve % (share dentro del job)
+    + total + índice, en formato {item: {total, <job>, <job>_idx}} con __base__."""
+    jobs_tot = {j: sum(count_by_jobitem[j].values()) or 1 for j in JOBS}
+    tot_all = sum(jobs_tot.values())
+    out = {}
+    for it in items_order:
+        if it.get("type") == "group":
+            subs = groups[it["item"]]
+            row = {"total": round(100 * sum(sum(count_by_jobitem[j][s] for s in subs)
+                                            for j in JOBS) / tot_all, 1)}
+            for j in JOBS:
+                pc = round(100 * sum(count_by_jobitem[j][s] for s in subs) / jobs_tot[j], 1)
+                row[j] = pc
+                row[j + "_idx"] = int(round(100 * pc / row["total"])) if row["total"] else None
+            out[it["item"]] = row
+        else:
+            s = it["item"]
+            row = {"total": round(100 * sum(count_by_jobitem[j][s] for j in JOBS) / tot_all, 1)}
+            for j in JOBS:
+                pc = round(100 * count_by_jobitem[j][s] / jobs_tot[j], 1)
+                row[j] = pc
+                row[j + "_idx"] = int(round(100 * pc / row["total"])) if row["total"] else None
+            out[s] = row
+    out["__base__"] = {"total": int(HAS.sum()), **base_counts}
+    return out
+
+# ---- Lámina 10: P.1 MaxDiff (best-worst) ----
+md_code2txt = {}
+for c in [x for x in ET.columns if re.match(r'MXFM\d+$', str(x))]:
+    for cd, tx in pd.DataFrame({"c": CO[c], "t": ET[c]}).dropna().drop_duplicates().itertuples(index=False):
+        md_code2txt[int(cd)] = tx.strip()
+MD_GROUPS = {  # categorías del slide 10 -> códigos de atributo (NN)
+    "FORMALIDAD EN EL PROCESO": [2, 15, 3, 17, 8, 5, 6, 14, 10, 16, 7],
+    "SEGURIDAD": [12, 9, 13, 4, 1],
+    "PRECIO JUSTO": [18, 11],
+}
+md_best = {j: {a: 0 for a in range(1, 19)} for j in JOBS}
+MDCOLS = [c for c in ET.columns if re.match(r'MD_V\d+S\d+_A1$', str(c))]  # A1 = "Más"
+def _nn(v):
+    m = re.search(r'Choices\((\d+)\)', str(v))
+    return int(m.group(1)) if m else None
+for idx, row in ET.iterrows():
+    j = row["_job"]
+    if j not in JOBS:
+        continue
+    for c in MDCOLS:
+        a = _nn(row[c])
+        if a:
+            md_best[j][a] += 1
+# orden + grupos en formato del documento (con textos)
+md_order, md_group_subs = [], {}
+for gname, codes in MD_GROUPS.items():
+    md_order.append({"item": gname, "type": "group"})
+    subs = [md_code2txt[a] for a in codes]
+    md_group_subs[gname] = subs
+    # remap conteos de NN->texto
+    for a in codes:
+        md_order.append({"item": md_code2txt[a], "type": "sub"})
+md_best_txt = {j: {md_code2txt[a]: md_best[j][a] for a in range(1, 19)} for j in JOBS}
+md_base = {j: base_job[j] for j in JOBS}
+maxdiff_tbl = share_table_by_job(md_best_txt, md_order, md_group_subs, md_base)
+
+# ---- Lámina 11: P.17 (share de menciones) ----
+# A-índice -> texto (sufijo del diccionario) y conteo de menciones por job
+p17_txt = {}
+for a in range(1, 25):
+    rowdm = DMAP[DMAP["VAR"] == f"P17_A{a}M1"]
+    if len(rowdm):
+        p17_txt[a] = rowdm["ET"].values[0].split(" - ")[-1].strip()
+def _theme_p17(t):
+    t = t.lower()
+    if any(k in t for k in ["confianza", "transparente", "segura", "innovadora", "profesional", "experta"]):
+        return "IMAGEN PROFESIONAL"
+    if any(k in t for k in ["precios justos", "montos acordados", "gastos innecesarios", "opciones de pago", "liquidez", "maximiza"]):
+        return "ECONOMÍA"
+    if any(k in t for k in ["acompañamiento", "asesoría", "trámites legales", "cobertura nacional", "estructura sólida", "facilita todo"]):
+        return "ACOMPAÑAMIENTO EN EL PROCESO"
+    if any(k in t for k in ["comunicación", "ágiles", "servicio al cliente", "garantías", "cobertura amplia"]):
+        return "CONVENIENCIA"
+    return None
+P17_THEME_ORDER = ["IMAGEN PROFESIONAL", "ACOMPAÑAMIENTO EN EL PROCESO", "ECONOMÍA", "CONVENIENCIA"]
+p17_count = {j: {} for j in JOBS}
+p17_groups = {g: [] for g in P17_THEME_ORDER}
+for a in range(1, 25):
+    txt = p17_txt.get(a, "")
+    if "ninguna" in txt.lower():
+        continue
+    theme = _theme_p17(txt)
+    if not theme:
+        continue
+    if txt not in p17_groups[theme]:
+        p17_groups[theme].append(txt)
+    cols = [c for c in ET.columns if re.match(rf'P17_A{a}M\d+$', str(c))]
+    cnt_series = ET[cols].notna().sum(axis=1)  # menciones de ese atributo por persona
+    for j in JOBS:
+        m = HAS & (ET["_job"] == j)
+        p17_count[j][txt] = p17_count[j].get(txt, 0) + int(cnt_series[m].sum())
+p17_order = []
+for g in P17_THEME_ORDER:
+    p17_order.append({"item": g, "type": "group"})
+    for s in p17_groups[g]:
+        p17_order.append({"item": s, "type": "sub"})
+p17_base = {j: base_job[j] for j in JOBS}
+p17_tbl = share_table_by_job(p17_count, p17_order, p17_groups, p17_base)
+
 # ----------------------------------------------------------------------- ensamble
 data = {
     "meta": {
@@ -297,6 +413,18 @@ data = {
         "P26": {"title": "Medios en que ofrece la propiedad (P.26)", "kind": "multi",
                 **crosstab_both(p26_masks, answered_multi(P26COLS))},
     },
+    "documento": {
+        "maxdiff": {
+            "title": "Necesidades de la categoría — qué valora del proceso de venta (P.1)",
+            "metodo": "Reconstrucción propia · best-worst: share de veces elegido como “lo más importante” en el MaxDiff. No replica las utilidades HB de GDV; el ranking Total sí reproduce el del estudio.",
+            "order": md_order, "tbl": maxdiff_tbl,
+        },
+        "p17": {
+            "title": "Drivers para elegir con quién vender (P.17)",
+            "metodo": "Reconstrucción propia · share de menciones (atributo asociado a alguna marca). Etiquetas tomadas del diccionario de la base.",
+            "order": p17_order, "tbl": p17_tbl,
+        },
+    },
 }
 
 OUT = os.path.join(os.path.dirname(__file__) or ".", "data.json")
@@ -317,3 +445,12 @@ print("\n--- P.22 por persona (debe ~= slide 9) ---")
 for g in ["LIQUIDEZ PARA OTROS FINES", "INVERTIR EL DINERO", "LIQUIDEZ PARA UNA EMERGENCIA"]:
     r = data["crosstabs"]["P22"]["persona"][g]
     print(f"  {g:30} Total {r['total']:>5}  Isa {r['Isadora']:>5}  Emi {r['Emilia']:>5}  Cla {r['Clara']:>5}  Est {r['Esteban']:>5}")
+print("\n--- LÁMINA 10 MaxDiff: top atributos por share-de-Más (Total) ---")
+md_subs = [o["item"] for o in md_order if o.get("type") == "sub"]
+for s in sorted(md_subs, key=lambda x: -maxdiff_tbl[x]["total"])[:6]:
+    r = maxdiff_tbl[s]
+    print(f"  {r['total']:>4}  U{r['Urgencia']:>4} S{r['Soltar']:>4} I{r['Invertir']:>4} C{r['Crecer']:>4}  {s[:50]}")
+print("--- LÁMINA 11 P.17: categorías (Total) ---")
+for g in P17_THEME_ORDER:
+    r = p17_tbl[g]
+    print(f"  {g:30} Total {r['total']:>5}  U{r['Urgencia']:>5} S{r['Soltar']:>5} I{r['Invertir']:>5} C{r['Crecer']:>5}")

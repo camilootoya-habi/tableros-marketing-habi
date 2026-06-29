@@ -2088,5 +2088,742 @@
     }
    }
   }
+ },
+ "documento": {
+  "maxdiff": {
+   "title": "Necesidades de la categoría — qué valora del proceso de venta (P.1)",
+   "metodo": "Reconstrucción propia · best-worst: share de veces elegido como “lo más importante” en el MaxDiff. No replica las utilidades HB de GDV; el ranking Total sí reproduce el del estudio.",
+   "order": [
+    {
+     "item": "FORMALIDAD EN EL PROCESO",
+     "type": "group"
+    },
+    {
+     "item": "Que cumpla con los tiempos acordados para pagos y trámites",
+     "type": "sub"
+    },
+    {
+     "item": "Que proporcione la documentación necesaria (identificaciones, comprobantes, etc.).",
+     "type": "sub"
+    },
+    {
+     "item": "Que cumpla con los tiempos de escrituración y entrega acordados.",
+     "type": "sub"
+    },
+    {
+     "item": "Que tenga decisión real de compra, sin alargar el proceso innecesariamente.",
+     "type": "sub"
+    },
+    {
+     "item": "Que muestre seriedad y respeto durante las negociaciones.",
+     "type": "sub"
+    },
+    {
+     "item": "Que esté dispuesto a cubrir los gastos que le correspondan.",
+     "type": "sub"
+    },
+    {
+     "item": "Que esté dispuesto a firmar compromisos o apartados si se requiere.",
+     "type": "sub"
+    },
+    {
+     "item": "Que se presente una oferta clara y formal por escrito.",
+     "type": "sub"
+    },
+    {
+     "item": "Que no imponga trámites o requisitos complicados o innecesarios",
+     "type": "sub"
+    },
+    {
+     "item": "Que respete el estado y condiciones del inmueble tal como se acuerdan.",
+     "type": "sub"
+    },
+    {
+     "item": "Que mantenga comunicación constante y formal durante el proceso.",
+     "type": "sub"
+    },
+    {
+     "item": "SEGURIDAD",
+     "type": "group"
+    },
+    {
+     "item": "Que ofrezca un pago seguro y garantizado (transferencia, cheque certificado, etc.).",
+     "type": "sub"
+    },
+    {
+     "item": "Que no genere riesgos legales o fiscales para el vendedor.",
+     "type": "sub"
+    },
+    {
+     "item": "Que ofrezca una operación transparente y sin intermediarios dudosos.",
+     "type": "sub"
+    },
+    {
+     "item": "Que el comprador tenga capacidad económica comprobable.",
+     "type": "sub"
+    },
+    {
+     "item": "Que cuente con asesoría notarial o bancaria propia para agilizar el cierre",
+     "type": "sub"
+    },
+    {
+     "item": "PRECIO JUSTO",
+     "type": "group"
+    },
+    {
+     "item": "Que respete mi avalúo justo",
+     "type": "sub"
+    },
+    {
+     "item": "Que no solicite reducciones excesivas de precio.",
+     "type": "sub"
+    }
+   ],
+   "tbl": {
+    "FORMALIDAD EN EL PROCESO": {
+     "total": 53.4,
+     "Urgencia": 54.7,
+     "Urgencia_idx": 102,
+     "Soltar": 51.9,
+     "Soltar_idx": 97,
+     "Invertir": 53.0,
+     "Invertir_idx": 99,
+     "Crecer": 52.7,
+     "Crecer_idx": 99
+    },
+    "Que cumpla con los tiempos acordados para pagos y trámites": {
+     "total": 6.9,
+     "Urgencia": 6.8,
+     "Urgencia_idx": 99,
+     "Soltar": 7.0,
+     "Soltar_idx": 101,
+     "Invertir": 7.0,
+     "Invertir_idx": 101,
+     "Crecer": 6.9,
+     "Crecer_idx": 100
+    },
+    "Que proporcione la documentación necesaria (identificaciones, comprobantes, etc.).": {
+     "total": 6.2,
+     "Urgencia": 5.5,
+     "Urgencia_idx": 89,
+     "Soltar": 6.9,
+     "Soltar_idx": 111,
+     "Invertir": 6.2,
+     "Invertir_idx": 100,
+     "Crecer": 6.9,
+     "Crecer_idx": 111
+    },
+    "Que cumpla con los tiempos de escrituración y entrega acordados.": {
+     "total": 5.7,
+     "Urgencia": 6.3,
+     "Urgencia_idx": 111,
+     "Soltar": 5.0,
+     "Soltar_idx": 88,
+     "Invertir": 6.4,
+     "Invertir_idx": 112,
+     "Crecer": 4.7,
+     "Crecer_idx": 82
+    },
+    "Que tenga decisión real de compra, sin alargar el proceso innecesariamente.": {
+     "total": 5.8,
+     "Urgencia": 5.9,
+     "Urgencia_idx": 102,
+     "Soltar": 5.6,
+     "Soltar_idx": 97,
+     "Invertir": 5.4,
+     "Invertir_idx": 93,
+     "Crecer": 6.0,
+     "Crecer_idx": 103
+    },
+    "Que muestre seriedad y respeto durante las negociaciones.": {
+     "total": 4.8,
+     "Urgencia": 5.1,
+     "Urgencia_idx": 106,
+     "Soltar": 4.7,
+     "Soltar_idx": 98,
+     "Invertir": 5.2,
+     "Invertir_idx": 108,
+     "Crecer": 4.0,
+     "Crecer_idx": 83
+    },
+    "Que esté dispuesto a cubrir los gastos que le correspondan.": {
+     "total": 4.2,
+     "Urgencia": 4.0,
+     "Urgencia_idx": 95,
+     "Soltar": 4.1,
+     "Soltar_idx": 98,
+     "Invertir": 5.0,
+     "Invertir_idx": 119,
+     "Crecer": 3.9,
+     "Crecer_idx": 93
+    },
+    "Que esté dispuesto a firmar compromisos o apartados si se requiere.": {
+     "total": 4.3,
+     "Urgencia": 4.3,
+     "Urgencia_idx": 100,
+     "Soltar": 4.7,
+     "Soltar_idx": 109,
+     "Invertir": 3.3,
+     "Invertir_idx": 77,
+     "Crecer": 4.9,
+     "Crecer_idx": 114
+    },
+    "Que se presente una oferta clara y formal por escrito.": {
+     "total": 4.3,
+     "Urgencia": 5.0,
+     "Urgencia_idx": 116,
+     "Soltar": 3.1,
+     "Soltar_idx": 72,
+     "Invertir": 4.4,
+     "Invertir_idx": 102,
+     "Crecer": 4.3,
+     "Crecer_idx": 100
+    },
+    "Que no imponga trámites o requisitos complicados o innecesarios": {
+     "total": 4.2,
+     "Urgencia": 4.5,
+     "Urgencia_idx": 107,
+     "Soltar": 4.1,
+     "Soltar_idx": 98,
+     "Invertir": 4.1,
+     "Invertir_idx": 98,
+     "Crecer": 3.7,
+     "Crecer_idx": 88
+    },
+    "Que respete el estado y condiciones del inmueble tal como se acuerdan.": {
+     "total": 3.8,
+     "Urgencia": 3.9,
+     "Urgencia_idx": 103,
+     "Soltar": 4.1,
+     "Soltar_idx": 108,
+     "Invertir": 3.3,
+     "Invertir_idx": 87,
+     "Crecer": 3.9,
+     "Crecer_idx": 103
+    },
+    "Que mantenga comunicación constante y formal durante el proceso.": {
+     "total": 3.1,
+     "Urgencia": 3.5,
+     "Urgencia_idx": 113,
+     "Soltar": 2.6,
+     "Soltar_idx": 84,
+     "Invertir": 2.7,
+     "Invertir_idx": 87,
+     "Crecer": 3.3,
+     "Crecer_idx": 106
+    },
+    "SEGURIDAD": {
+     "total": 35.2,
+     "Urgencia": 34.1,
+     "Urgencia_idx": 97,
+     "Soltar": 34.6,
+     "Soltar_idx": 98,
+     "Invertir": 36.4,
+     "Invertir_idx": 103,
+     "Crecer": 37.1,
+     "Crecer_idx": 105
+    },
+    "Que ofrezca un pago seguro y garantizado (transferencia, cheque certificado, etc.).": {
+     "total": 10.6,
+     "Urgencia": 9.7,
+     "Urgencia_idx": 92,
+     "Soltar": 10.4,
+     "Soltar_idx": 98,
+     "Invertir": 13.0,
+     "Invertir_idx": 123,
+     "Crecer": 10.6,
+     "Crecer_idx": 100
+    },
+    "Que no genere riesgos legales o fiscales para el vendedor.": {
+     "total": 7.3,
+     "Urgencia": 6.5,
+     "Urgencia_idx": 89,
+     "Soltar": 7.8,
+     "Soltar_idx": 107,
+     "Invertir": 7.7,
+     "Invertir_idx": 105,
+     "Crecer": 7.8,
+     "Crecer_idx": 107
+    },
+    "Que ofrezca una operación transparente y sin intermediarios dudosos.": {
+     "total": 6.2,
+     "Urgencia": 6.5,
+     "Urgencia_idx": 105,
+     "Soltar": 6.0,
+     "Soltar_idx": 97,
+     "Invertir": 5.2,
+     "Invertir_idx": 84,
+     "Crecer": 6.6,
+     "Crecer_idx": 106
+    },
+    "Que el comprador tenga capacidad económica comprobable.": {
+     "total": 6.4,
+     "Urgencia": 6.4,
+     "Urgencia_idx": 100,
+     "Soltar": 5.9,
+     "Soltar_idx": 92,
+     "Invertir": 6.6,
+     "Invertir_idx": 103,
+     "Crecer": 6.6,
+     "Crecer_idx": 103
+    },
+    "Que cuente con asesoría notarial o bancaria propia para agilizar el cierre": {
+     "total": 4.8,
+     "Urgencia": 5.0,
+     "Urgencia_idx": 104,
+     "Soltar": 4.5,
+     "Soltar_idx": 94,
+     "Invertir": 3.9,
+     "Invertir_idx": 81,
+     "Crecer": 5.5,
+     "Crecer_idx": 115
+    },
+    "PRECIO JUSTO": {
+     "total": 11.4,
+     "Urgencia": 11.2,
+     "Urgencia_idx": 98,
+     "Soltar": 13.5,
+     "Soltar_idx": 118,
+     "Invertir": 10.6,
+     "Invertir_idx": 93,
+     "Crecer": 10.2,
+     "Crecer_idx": 89
+    },
+    "Que respete mi avalúo justo": {
+     "total": 6.6,
+     "Urgencia": 6.2,
+     "Urgencia_idx": 94,
+     "Soltar": 9.1,
+     "Soltar_idx": 138,
+     "Invertir": 6.0,
+     "Invertir_idx": 91,
+     "Crecer": 5.2,
+     "Crecer_idx": 79
+    },
+    "Que no solicite reducciones excesivas de precio.": {
+     "total": 4.8,
+     "Urgencia": 5.0,
+     "Urgencia_idx": 104,
+     "Soltar": 4.4,
+     "Soltar_idx": 92,
+     "Invertir": 4.6,
+     "Invertir_idx": 96,
+     "Crecer": 5.0,
+     "Crecer_idx": 104
+    },
+    "__base__": {
+     "total": 290,
+     "Urgencia": 118,
+     "Soltar": 62,
+     "Invertir": 47,
+     "Crecer": 63
+    }
+   }
+  },
+  "p17": {
+   "title": "Drivers para elegir con quién vender (P.17)",
+   "metodo": "Reconstrucción propia · share de menciones (atributo asociado a alguna marca). Etiquetas tomadas del diccionario de la base.",
+   "order": [
+    {
+     "item": "IMAGEN PROFESIONAL",
+     "type": "group"
+    },
+    {
+     "item": "Profesional",
+     "type": "sub"
+    },
+    {
+     "item": "Experta en el sector",
+     "type": "sub"
+    },
+    {
+     "item": "De confianza",
+     "type": "sub"
+    },
+    {
+     "item": "Transparente",
+     "type": "sub"
+    },
+    {
+     "item": "Innovadora",
+     "type": "sub"
+    },
+    {
+     "item": "Segura",
+     "type": "sub"
+    },
+    {
+     "item": "ACOMPAÑAMIENTO EN EL PROCESO",
+     "type": "group"
+    },
+    {
+     "item": "Tiene cobertura amplia y estructura sólida",
+     "type": "sub"
+    },
+    {
+     "item": "Proporciona asesoría integral",
+     "type": "sub"
+    },
+    {
+     "item": "Tiene cobertura nacional",
+     "type": "sub"
+    },
+    {
+     "item": "Tiene una estructura sólida",
+     "type": "sub"
+    },
+    {
+     "item": "Ofrece acompañamiento de un experto",
+     "type": "sub"
+    },
+    {
+     "item": "Maneja bien los trámites legales y notariales",
+     "type": "sub"
+    },
+    {
+     "item": "Facilita todo el proceso de venta",
+     "type": "sub"
+    },
+    {
+     "item": "ECONOMÍA",
+     "type": "group"
+    },
+    {
+     "item": "Ofrece precios justos",
+     "type": "sub"
+    },
+    {
+     "item": "Da opciones de pago o liquidez rápida",
+     "type": "sub"
+    },
+    {
+     "item": "Evita gastos innecesarios",
+     "type": "sub"
+    },
+    {
+     "item": "Maximiza el valor del inmueble",
+     "type": "sub"
+    },
+    {
+     "item": "Cumple con los montos acordados",
+     "type": "sub"
+    },
+    {
+     "item": "CONVENIENCIA",
+     "type": "group"
+    },
+    {
+     "item": "Ofrece garantías y seguridad documental",
+     "type": "sub"
+    },
+    {
+     "item": "Buen servicio al cliente",
+     "type": "sub"
+    },
+    {
+     "item": "Sus procesos son ágiles / rápidos",
+     "type": "sub"
+    },
+    {
+     "item": "Comunicación constante y fluida",
+     "type": "sub"
+    }
+   ],
+   "tbl": {
+    "IMAGEN PROFESIONAL": {
+     "total": 26.8,
+     "Urgencia": 26.5,
+     "Urgencia_idx": 99,
+     "Soltar": 26.6,
+     "Soltar_idx": 99,
+     "Invertir": 27.0,
+     "Invertir_idx": 101,
+     "Crecer": 27.2,
+     "Crecer_idx": 101
+    },
+    "Profesional": {
+     "total": 4.7,
+     "Urgencia": 4.5,
+     "Urgencia_idx": 96,
+     "Soltar": 4.9,
+     "Soltar_idx": 104,
+     "Invertir": 4.7,
+     "Invertir_idx": 100,
+     "Crecer": 4.7,
+     "Crecer_idx": 100
+    },
+    "Experta en el sector": {
+     "total": 4.4,
+     "Urgencia": 4.3,
+     "Urgencia_idx": 98,
+     "Soltar": 4.2,
+     "Soltar_idx": 95,
+     "Invertir": 4.4,
+     "Invertir_idx": 100,
+     "Crecer": 4.5,
+     "Crecer_idx": 102
+    },
+    "De confianza": {
+     "total": 4.5,
+     "Urgencia": 4.4,
+     "Urgencia_idx": 98,
+     "Soltar": 4.5,
+     "Soltar_idx": 100,
+     "Invertir": 4.6,
+     "Invertir_idx": 102,
+     "Crecer": 4.5,
+     "Crecer_idx": 100
+    },
+    "Transparente": {
+     "total": 4.5,
+     "Urgencia": 4.4,
+     "Urgencia_idx": 98,
+     "Soltar": 4.6,
+     "Soltar_idx": 102,
+     "Invertir": 4.7,
+     "Invertir_idx": 104,
+     "Crecer": 4.5,
+     "Crecer_idx": 100
+    },
+    "Innovadora": {
+     "total": 4.2,
+     "Urgencia": 4.3,
+     "Urgencia_idx": 102,
+     "Soltar": 4.0,
+     "Soltar_idx": 95,
+     "Invertir": 4.0,
+     "Invertir_idx": 95,
+     "Crecer": 4.2,
+     "Crecer_idx": 100
+    },
+    "Segura": {
+     "total": 4.6,
+     "Urgencia": 4.6,
+     "Urgencia_idx": 100,
+     "Soltar": 4.5,
+     "Soltar_idx": 98,
+     "Invertir": 4.5,
+     "Invertir_idx": 98,
+     "Crecer": 4.8,
+     "Crecer_idx": 104
+    },
+    "ACOMPAÑAMIENTO EN EL PROCESO": {
+     "total": 31.7,
+     "Urgencia": 31.8,
+     "Urgencia_idx": 100,
+     "Soltar": 32.5,
+     "Soltar_idx": 103,
+     "Invertir": 30.9,
+     "Invertir_idx": 97,
+     "Crecer": 31.5,
+     "Crecer_idx": 99
+    },
+    "Tiene cobertura amplia y estructura sólida": {
+     "total": 4.5,
+     "Urgencia": 4.6,
+     "Urgencia_idx": 102,
+     "Soltar": 4.7,
+     "Soltar_idx": 104,
+     "Invertir": 4.4,
+     "Invertir_idx": 98,
+     "Crecer": 4.3,
+     "Crecer_idx": 96
+    },
+    "Proporciona asesoría integral": {
+     "total": 4.6,
+     "Urgencia": 4.5,
+     "Urgencia_idx": 98,
+     "Soltar": 4.8,
+     "Soltar_idx": 104,
+     "Invertir": 4.7,
+     "Invertir_idx": 102,
+     "Crecer": 4.7,
+     "Crecer_idx": 102
+    },
+    "Tiene cobertura nacional": {
+     "total": 4.8,
+     "Urgencia": 4.7,
+     "Urgencia_idx": 98,
+     "Soltar": 5.3,
+     "Soltar_idx": 110,
+     "Invertir": 4.3,
+     "Invertir_idx": 90,
+     "Crecer": 5.1,
+     "Crecer_idx": 106
+    },
+    "Tiene una estructura sólida": {
+     "total": 4.4,
+     "Urgencia": 4.6,
+     "Urgencia_idx": 105,
+     "Soltar": 4.1,
+     "Soltar_idx": 93,
+     "Invertir": 4.5,
+     "Invertir_idx": 102,
+     "Crecer": 4.3,
+     "Crecer_idx": 98
+    },
+    "Ofrece acompañamiento de un experto": {
+     "total": 4.5,
+     "Urgencia": 4.5,
+     "Urgencia_idx": 100,
+     "Soltar": 4.7,
+     "Soltar_idx": 104,
+     "Invertir": 4.4,
+     "Invertir_idx": 98,
+     "Crecer": 4.4,
+     "Crecer_idx": 98
+    },
+    "Maneja bien los trámites legales y notariales": {
+     "total": 4.4,
+     "Urgencia": 4.4,
+     "Urgencia_idx": 100,
+     "Soltar": 4.6,
+     "Soltar_idx": 105,
+     "Invertir": 4.1,
+     "Invertir_idx": 93,
+     "Crecer": 4.6,
+     "Crecer_idx": 105
+    },
+    "Facilita todo el proceso de venta": {
+     "total": 4.4,
+     "Urgencia": 4.5,
+     "Urgencia_idx": 102,
+     "Soltar": 4.4,
+     "Soltar_idx": 100,
+     "Invertir": 4.5,
+     "Invertir_idx": 102,
+     "Crecer": 4.2,
+     "Crecer_idx": 95
+    },
+    "ECONOMÍA": {
+     "total": 24.3,
+     "Urgencia": 24.8,
+     "Urgencia_idx": 102,
+     "Soltar": 23.6,
+     "Soltar_idx": 97,
+     "Invertir": 24.5,
+     "Invertir_idx": 101,
+     "Crecer": 24.0,
+     "Crecer_idx": 99
+    },
+    "Ofrece precios justos": {
+     "total": 4.1,
+     "Urgencia": 4.3,
+     "Urgencia_idx": 105,
+     "Soltar": 3.8,
+     "Soltar_idx": 93,
+     "Invertir": 4.2,
+     "Invertir_idx": 102,
+     "Crecer": 3.8,
+     "Crecer_idx": 93
+    },
+    "Da opciones de pago o liquidez rápida": {
+     "total": 8.1,
+     "Urgencia": 8.5,
+     "Urgencia_idx": 105,
+     "Soltar": 7.5,
+     "Soltar_idx": 93,
+     "Invertir": 8.2,
+     "Invertir_idx": 101,
+     "Crecer": 7.8,
+     "Crecer_idx": 96
+    },
+    "Evita gastos innecesarios": {
+     "total": 3.9,
+     "Urgencia": 4.0,
+     "Urgencia_idx": 103,
+     "Soltar": 3.9,
+     "Soltar_idx": 100,
+     "Invertir": 3.4,
+     "Invertir_idx": 87,
+     "Crecer": 4.0,
+     "Crecer_idx": 103
+    },
+    "Maximiza el valor del inmueble": {
+     "total": 4.1,
+     "Urgencia": 4.0,
+     "Urgencia_idx": 98,
+     "Soltar": 4.3,
+     "Soltar_idx": 105,
+     "Invertir": 4.1,
+     "Invertir_idx": 100,
+     "Crecer": 4.1,
+     "Crecer_idx": 100
+    },
+    "Cumple con los montos acordados": {
+     "total": 4.2,
+     "Urgencia": 4.1,
+     "Urgencia_idx": 98,
+     "Soltar": 4.1,
+     "Soltar_idx": 98,
+     "Invertir": 4.5,
+     "Invertir_idx": 107,
+     "Crecer": 4.3,
+     "Crecer_idx": 102
+    },
+    "CONVENIENCIA": {
+     "total": 17.2,
+     "Urgencia": 16.9,
+     "Urgencia_idx": 98,
+     "Soltar": 17.3,
+     "Soltar_idx": 101,
+     "Invertir": 17.6,
+     "Invertir_idx": 102,
+     "Crecer": 17.3,
+     "Crecer_idx": 101
+    },
+    "Ofrece garantías y seguridad documental": {
+     "total": 4.3,
+     "Urgencia": 4.2,
+     "Urgencia_idx": 98,
+     "Soltar": 4.2,
+     "Soltar_idx": 98,
+     "Invertir": 4.6,
+     "Invertir_idx": 107,
+     "Crecer": 4.3,
+     "Crecer_idx": 100
+    },
+    "Buen servicio al cliente": {
+     "total": 4.5,
+     "Urgencia": 4.4,
+     "Urgencia_idx": 98,
+     "Soltar": 4.6,
+     "Soltar_idx": 102,
+     "Invertir": 4.6,
+     "Invertir_idx": 102,
+     "Crecer": 4.6,
+     "Crecer_idx": 102
+    },
+    "Sus procesos son ágiles / rápidos": {
+     "total": 4.2,
+     "Urgencia": 4.3,
+     "Urgencia_idx": 102,
+     "Soltar": 3.8,
+     "Soltar_idx": 90,
+     "Invertir": 4.1,
+     "Invertir_idx": 98,
+     "Crecer": 4.3,
+     "Crecer_idx": 102
+    },
+    "Comunicación constante y fluida": {
+     "total": 4.2,
+     "Urgencia": 4.0,
+     "Urgencia_idx": 95,
+     "Soltar": 4.7,
+     "Soltar_idx": 112,
+     "Invertir": 4.3,
+     "Invertir_idx": 102,
+     "Crecer": 4.1,
+     "Crecer_idx": 98
+    },
+    "__base__": {
+     "total": 290,
+     "Urgencia": 118,
+     "Soltar": 62,
+     "Invertir": 47,
+     "Crecer": 63
+    }
+   }
+  }
  }
 }

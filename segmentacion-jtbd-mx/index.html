@@ -33,6 +33,19 @@
   .theme-btn { background: var(--card); border: 1px solid var(--border); color: var(--muted);
     border-radius: 6px; padding: 5px 11px; font-size: 14px; cursor: pointer; }
   .theme-btn:hover { color: var(--accent); }
+  /* tab bar superior: Documento | Tablero */
+  .tabbar { display: inline-flex; gap: 2px; background: var(--card); border: 1px solid var(--border);
+    border-radius: 10px; padding: 4px; margin: 6px 0 4px; }
+  .tab { padding: 8px 18px; cursor: pointer; background: transparent; color: var(--muted);
+    border: 0; border-radius: 7px; font-size: 14px; font-weight: 600; }
+  .tab:hover { color: var(--text); }
+  .tab.active { background: var(--accent); color: #0b1224; }
+  [hidden] { display: none !important; }
+  .method { font-size: 12px; color: var(--muted-3); font-style: italic; margin: 2px 0 12px;
+    border-left: 2px solid var(--border); padding-left: 10px; }
+  .doc-narr { font-size: 13.5px; line-height: 1.6; color: var(--text-2); margin-top: 14px;
+    background: var(--card-2); border-radius: 8px; padding: 12px 14px; }
+  .doc-narr b { color: var(--text); }
   .card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 18px 20px; margin: 16px 0; }
   .card h2 { font-size: 16px; color: var(--text); font-weight: 650; margin-bottom: 4px; }
   .card .lead { color: var(--muted); font-size: 13px; margin-bottom: 14px; }
@@ -118,6 +131,35 @@
     <button class="theme-btn" id="themeBtn" title="Cambiar tema">🌓</button>
   </header>
 
+  <div class="tabbar" id="tabbar">
+    <button class="tab active" data-view="documento">📄 Documento</button>
+    <button class="tab" data-view="tablero">📊 Tablero interactivo</button>
+  </div>
+
+  <!-- ===================== VISTA DOCUMENTO ===================== -->
+  <div id="view-documento">
+    <section class="card" id="docIntro"></section>
+
+    <section class="card">
+      <div class="kicker">Lámina 10 · reconstruida por JTBD</div>
+      <h2 id="md-title">Necesidades de la categoría</h2>
+      <p class="method" id="md-method"></p>
+      <div class="ct-wrap"><table class="ct" id="mdTable"></table></div>
+      <p class="doc-narr" id="md-narr"></p>
+    </section>
+
+    <section class="card">
+      <div class="kicker">Lámina 11 · reconstruida por JTBD</div>
+      <h2 id="p17-title">Drivers para elegir con quién vender</h2>
+      <p class="method" id="p17-method"></p>
+      <div class="ct-wrap"><table class="ct" id="p17Table"></table></div>
+      <p class="doc-narr" id="p17-narr"></p>
+    </section>
+  </div>
+
+  <!-- ===================== VISTA TABLERO ===================== -->
+  <div id="view-tablero" hidden>
+
   <!-- BLOQUE 1 -->
   <section class="card" id="metodologia">
     <div class="kicker">01 · Metodología</div>
@@ -175,6 +217,7 @@
     <div id="bridge"></div>
     <div class="bridge-leg" id="bridgeLeg"></div>
   </section>
+  </div><!-- /view-tablero -->
 
   <p class="note" style="text-align:center;margin:24px 0">
     Fuente: GDV — Segmentación de vendedores Tuhabi MX (mayo 2026). Procesamiento JTBD: Growth Marketing.
@@ -210,6 +253,7 @@ const SEG_COLOR = {Urgencia:"#e4572e",Soltar:"#f3a712",Invertir:"#2e9e5b",Crecer
 async function init(){
   const r = await fetch('data.json',{cache:'no-store'});
   DATA = await r.json();
+  renderDocument();
   renderJobs(); renderTransparency(); renderBridge(); renderQSelector();
   curQ = Object.keys(DATA.crosstabs)[0];
   renderCrosstab();
@@ -315,6 +359,69 @@ function renderCrosstab(){
   document.getElementById('ctNote').textContent=notes[curQ]||"";
 }
 
+// ---------- VISTA DOCUMENTO ----------
+function docGroupedTable(tableId, order, tbl, qLabel){
+  const segs=JOB_ORDER;
+  let head=`<thead><tr><th class="it">${qLabel}</th><th class="totcol">Total<br><small>n=${DATA.meta.n_con_job}</small></th>`;
+  head+=segs.map(s=>{
+    const m=DATA.meta.jobs.find(x=>x.key===s);
+    return `<th class="seg-h" style="color:${SEG_COLOR[s]}">${s}<br><small style="color:var(--muted-3)">n=${m.base}</small></th>`;
+  }).join("")+`</tr></thead>`;
+  let body="<tbody>";
+  order.forEach(r=>{
+    const d=tbl[r.item]; if(!d) return;
+    const cls=r.type==="group"?"group":"sub";
+    body+=`<tr class="${cls}"><td class="it">${r.item}</td><td class="totcol">${d.total}</td>`;
+    segs.forEach(s=>{ body+=`<td><span class="cell"><span class="pct">${d[s]}</span>${idxBadge(d[s+"_idx"])}</span></td>`; });
+    body+="</tr>";
+  });
+  document.getElementById(tableId).innerHTML=head+body+"</tbody>";
+}
+
+function renderDocument(){
+  const t=DATA.transparencia, jobs=DATA.meta.jobs, tot=DATA.meta.n_con_job;
+  // intro
+  const chips=jobs.map(j=>`<span style="display:inline-flex;align-items:center;gap:5px;margin-right:14px">
+    <i class="dot" style="background:${j.color}"></i><b style="color:${j.color}">${j.label}</b>
+    <span class="muted">${Math.round(100*j.base/tot)}% · n=${j.base}</span></span>`).join("");
+  document.getElementById('docIntro').innerHTML=`
+    <div class="kicker">Lectura por Job To Be Done</div>
+    <h2>Las mismas láminas de GDV, leídas por la necesidad que resuelve la venta</h2>
+    <p class="lead">En vez de segmentar por <em>cómo decide</em> la persona (las 4 buyer personas de la agencia:
+      Isadora, Emilia, Clara, Esteban), agrupamos por el <b>Job To Be Done</b>: el motivo de fondo por el que
+      se vende. Cuatro jobs, construidos combinando P.4 (motivación) y P.22 (uso del dinero), con job dominante
+      por jerarquía de acuidad (Urgencia › Soltar › Invertir › Crecer):</p>
+    <div style="margin:10px 0 4px">${chips}</div>
+    <p class="doc-narr" style="margin-top:14px">⚠️ <b>Transparencia:</b> estos no son tipos de persona estancos.
+      Solo el <b>${Math.round(t.pct_single)}%</b> (${t.n_single}) marca un único job; el
+      <b>${Math.round(t.pct_multi)}%</b> (${t.n_multi}) responde a 2 o más a la vez. La jerarquía asigna a cada
+      quien a su necesidad más aguda. Léelo como una <b>lente</b>, no como cajas cerradas.</p>`;
+
+  // Lámina 10 — MaxDiff
+  const md=DATA.documento.maxdiff;
+  document.getElementById('md-title').textContent=md.title;
+  document.getElementById('md-method').textContent=md.metodo;
+  docGroupedTable('mdTable', md.order, md.tbl, md.title);
+  document.getElementById('md-narr').innerHTML=
+    `La <b>formalidad</b> y un <b>pago seguro y garantizado</b> dominan para todos (≈10.6% del peso, el atributo más
+     valorado, igual que en el estudio original). Pero la lente JTBD revela los matices accionables para Tuhabi:
+     <b>quien vende para invertir</b> es el que más exige pago seguro (índice ≈123) — le importa blindar el capital;
+     <b>quien suelta un activo</b> sobre-indexa fuerte en "respete mi avalúo justo" (índice ≈138): no quiere malbaratar
+     lo que heredó o ya no usa. <b>Urgencia</b>, en cambio, relaja la formalidad — prioriza resolver, no el trámite perfecto.`;
+
+  // Lámina 11 — P.17
+  const p=DATA.documento.p17;
+  document.getElementById('p17-title').textContent=p.title;
+  document.getElementById('p17-method').textContent=p.metodo;
+  docGroupedTable('p17Table', p.order, p.tbl, p.title);
+  document.getElementById('p17-narr').innerHTML=
+    `Los drivers de elección de marca son <b>notablemente parejos entre jobs</b>: imagen profesional,
+     acompañamiento, economía y conveniencia pesan casi igual sin importar la necesidad. Eso confirma el hallazgo
+     de GDV de que <b>confianza y transparencia son innegociables transversalmente</b>. La implicación para Tuhabi:
+     el mensaje de marca puede ser común, y la <b>diferenciación va en el JOB</b> (qué resuelve), no en reinventar
+     los atributos de elección.`;
+}
+
 function renderBridge(){
   const br=DATA.bridge;
   const host=document.getElementById('bridge');
@@ -368,7 +475,13 @@ function bindControls(){
   });
   document.getElementById('themeBtn').addEventListener('click',()=>{
     document.body.classList.toggle('light');
-    renderJobs(); renderBridge();
+    renderJobs(); renderBridge(); renderDocument();
+  });
+  document.getElementById('tabbar').addEventListener('click',e=>{
+    const v=e.target.dataset&&e.target.dataset.view; if(!v) return;
+    document.querySelectorAll('#tabbar .tab').forEach(t=>t.classList.toggle('active',t.dataset.view===v));
+    document.getElementById('view-documento').hidden = (v!=='documento');
+    document.getElementById('view-tablero').hidden = (v!=='tablero');
   });
 }
 init();
