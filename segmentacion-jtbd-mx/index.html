@@ -66,6 +66,16 @@
   .chip { padding: 6px 12px; cursor: pointer; background: transparent; color: var(--text-2); border: 0; font-size: 12.5px; }
   .chip + .chip { border-left: 1px solid var(--border); }
   .chip.active { background: var(--accent); color: #0b1224; font-weight: 700; }
+  /* tooltip pop-up del selector de preguntas */
+  .q-tip { position: fixed; z-index: 50; max-width: 340px; background: #0b1224;
+    border: 1px solid var(--accent); border-radius: 8px; padding: 10px 12px;
+    font-size: 12.5px; line-height: 1.45; color: var(--text-2);
+    box-shadow: 0 8px 28px rgba(0,0,0,.45); opacity: 0; transform: translateY(4px);
+    transition: opacity .12s, transform .12s; pointer-events: none; }
+  .q-tip.show { opacity: 1; transform: translateY(0); }
+  .q-tip .qt-code { color: var(--accent); font-weight: 700; }
+  .q-tip .qt-base { display: block; margin-top: 6px; color: var(--muted); font-size: 11px; }
+  body.light .q-tip { background: #ffffff; color: var(--text-2); }
   /* crosstab table */
   .ct-wrap { overflow-x: auto; }
   table.ct { width: 100%; border-collapse: collapse; font-size: 13px; }
@@ -154,6 +164,7 @@
     <div class="ct-wrap"><table class="ct" id="ctTable"></table></div>
     <p class="note" id="ctNote"></p>
   </section>
+  <div class="q-tip" id="qTip"></div>
 
   <!-- BLOQUE 4 -->
   <section class="card" id="puente">
@@ -180,6 +191,15 @@ const JOB_DESC = {
   "Crecer":"Da el siguiente paso: una mejor propiedad, más espacio, una nueva etapa."
 };
 const PCOLORS = {Isadora:"#e4572e",Emilia:"#f3a712",Clara:"#2e9e5b",Esteban:"#3d6fd1"};
+const Q_EXPLAIN = {
+  P4:{q:"Ahora de la siguiente lista, por favor selecciona aquella razón o razones por las que vendiste, estás vendiendo o consideras vender tu casa.", base:"Multi-respuesta · base: todos los vendedores (n=290). Una de las dos fuentes del JTBD."},
+  P22:{q:"¿En qué usaste o en qué planeas usar el dinero obtenido de la venta de la casa/departamento?", base:"Multi-respuesta · base: todos (n=290). La otra fuente del JTBD."},
+  P12:{q:"¿Cuál sería la que usarías o usaste definitivamente para la venta de tu propiedad?", base:"Respuesta única · base: todos (n=290). Lectura de share competitivo."},
+  P29:{q:"¿Qué % estarías dispuesto a bajarle a tu casa o departamento de lo que está valuada si el pago fuera en un lapso corto de tiempo (ej. 30 días)?", base:"Respuesta única · base: quienes no han considerado iBuyers (n=200). Clave para el value-prop de Tuhabi."},
+  P14:{q:"En una escala del 1 al 5 (5 = excelente, 1 = mala), ¿cómo calificas de manera general a Tuhabi?", base:"Respuesta única · base: solo quienes ya vendieron (n=103)."},
+  P28:{q:"¿Por qué no has considerado contactar con iBuyers (empresas que compran propiedades a propietarios directos)?", base:"Multi-respuesta · base: quienes no han considerado iBuyers (n=200). Las barreras a derribar."},
+  P26:{q:"¿En qué medios ofreciste o estás ofreciendo tu casa o departamento?", base:"Multi-respuesta · base: todos (n=290)."}
+};
 let DATA=null, curQ=null, curLens="job";
 
 function jobColor(k){return getComputedStyle(document.documentElement).getPropertyValue(
@@ -318,11 +338,27 @@ function renderBridge(){
 }
 
 function bindControls(){
-  document.getElementById('qSel').addEventListener('click',e=>{
+  const qSel=document.getElementById('qSel'), tip=document.getElementById('qTip');
+  qSel.addEventListener('click',e=>{
     if(!e.target.dataset.q) return;
     curQ=e.target.dataset.q;
     document.querySelectorAll('#qSel .chip').forEach(c=>c.classList.toggle('active',c.dataset.q===curQ));
     renderCrosstab();
+  });
+  // pop-up explicativo al pasar el mouse sobre cada pregunta
+  qSel.addEventListener('mouseover',e=>{
+    const k=e.target.dataset&&e.target.dataset.q; if(!k||!Q_EXPLAIN[k]) return;
+    const ex=Q_EXPLAIN[k];
+    tip.innerHTML=`<span class="qt-code">${k}</span> · ${ex.q}<span class="qt-base">${ex.base}</span>`;
+    const r=e.target.getBoundingClientRect();
+    tip.classList.add('show');
+    const tw=tip.offsetWidth, vw=window.innerWidth;
+    let left=r.left; if(left+tw>vw-12) left=vw-tw-12; if(left<12) left=12;
+    tip.style.left=left+'px';
+    tip.style.top=(r.bottom+8)+'px';
+  });
+  qSel.addEventListener('mouseout',e=>{
+    if(e.target.dataset&&e.target.dataset.q) tip.classList.remove('show');
   });
   document.getElementById('lensSel').addEventListener('click',e=>{
     if(!e.target.dataset.lens) return;
