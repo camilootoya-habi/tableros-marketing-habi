@@ -46,6 +46,14 @@
   .doc-narr { font-size: 13.5px; line-height: 1.6; color: var(--text-2); margin-top: 14px;
     background: var(--card-2); border-radius: 8px; padding: 12px 14px; }
   .doc-narr b { color: var(--text); }
+  .terr { border-left: 4px solid var(--accent); background: var(--card-2); border-radius: 8px;
+    padding: 12px 16px; margin: 14px 0; }
+  .terr h3 { font-size: 15px; font-weight: 700; margin-bottom: 4px; }
+  .terr .t-ins { font-size: 12.5px; color: var(--muted); margin-bottom: 8px; }
+  .terr .copy { list-style: none; display: flex; flex-direction: column; gap: 6px; }
+  .terr .copy li { font-size: 14px; color: var(--text); font-weight: 600; padding: 7px 12px;
+    background: var(--card); border: 1px solid var(--border); border-radius: 6px; }
+  .terr .copy li::before { content: "💬 "; }
   .card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 18px 20px; margin: 16px 0; }
   .card h2 { font-size: 16px; color: var(--text); font-weight: 650; margin-bottom: 4px; }
   .card .lead { color: var(--muted); font-size: 13px; margin-bottom: 14px; }
@@ -171,6 +179,17 @@
       </div>
     </section>
 
+    <!-- Objetivo -->
+    <section class="card" id="objetivo">
+      <div class="kicker">03 · El experimento</div>
+      <h2>¿Cambian las necesidades del proceso y los drivers de marca según el job?</h2>
+      <p class="lead">El objetivo de este documento era <b>reconstruir las láminas 10 y 11 de GDV cortadas por
+        Job To Be Done</b> — ver si la <em>necesidad de fondo</em> (no la personalidad) cambia (1) qué valora el
+        vendedor del <b>proceso de venta</b> (P.1) y (2) qué lo hace <b>elegir una marca</b> (P.17). Leemos el
+        índice: <span style="color:#36c977">verde ≥120</span> / <span style="color:#ef7a59">rojo ≤80</span> =
+        sobre/sub-representado vs. el promedio. Si casi todo queda en ~100, el job <b>no discrimina</b>.</p>
+    </section>
+
     <!-- Lámina 10 -->
     <section class="card">
       <div class="kicker">Lámina 10 · reconstruida por JTBD</div>
@@ -189,9 +208,126 @@
       <p class="doc-narr" id="p17-narr"></p>
     </section>
 
+    <!-- Veredicto + pivote -->
+    <section class="card" id="pivote" style="border-color:var(--accent)">
+      <div class="kicker">Veredicto de las láminas 10 y 11</div>
+      <h2>Estas dos preguntas <span style="color:var(--accent)">no</span> distinguen entre jobs</h2>
+      <p class="lead">El formato condicional casi no se enciende: en la lámina 10 solo <b>1 celda</b> se sale de
+        rango (desviación máx. 29 pts) y en la lámina 11 <b>ninguna</b> (máx. 8 pts). Todos los jobs valoran lo
+        mismo del proceso (formalidad + pago seguro) y los mismos drivers de marca (confianza + transparencia).
+        <b>Conclusión honesta: para P.1 y P.17, el JTBD no aporta insight diferencial</b> — son necesidades
+        transversales. Así que reconstruimos <b>otras</b> preguntas del estudio por JTBD; ahí sí aparecen
+        diferencias accionables 👇</p>
+    </section>
+
+    <!-- Preguntas que SÍ discriminan -->
+    <section class="card">
+      <div class="kicker">Insight · reconstrucción extra</div>
+      <h2>P.28 — Barreras hacia los iBuyers</h2>
+      <p class="method">% que menciona cada barrera, dentro de cada job (multi-respuesta; base: quienes no han considerado iBuyers).</p>
+      <div class="ct-wrap"><table class="ct" id="dP28"></table></div>
+      <p class="doc-narr" id="dP28-narr"></p>
+    </section>
+
+    <section class="card">
+      <div class="kicker">Insight · reconstrucción extra</div>
+      <h2>P.12 — Marca que usaría para vender</h2>
+      <p class="method">Respuesta única; % dentro de cada job. La pregunta que MÁS discrimina por JTBD.</p>
+      <div class="ct-wrap"><table class="ct" id="dP12"></table></div>
+      <p class="doc-narr" id="dP12-narr"></p>
+    </section>
+
+    <section class="card">
+      <div class="kicker">Insight · reconstrucción extra</div>
+      <h2>P.26 — Medios donde ofrece la propiedad</h2>
+      <p class="method">% que usa cada medio, dentro de cada job (multi-respuesta).</p>
+      <div class="ct-wrap"><table class="ct" id="dP26"></table></div>
+      <p class="doc-narr" id="dP26-narr"></p>
+    </section>
+
+    <section class="card">
+      <div class="kicker">Insight · reconstrucción extra</div>
+      <h2>P.29 — % de descuento que aceptaría por liquidez rápida</h2>
+      <p class="method">Respuesta única; % dentro de cada job (base: quienes no han considerado iBuyers).</p>
+      <div class="ct-wrap"><table class="ct" id="dP29"></table></div>
+      <p class="doc-narr" id="dP29-narr"></p>
+    </section>
+
+    <section class="card">
+      <div class="kicker">Insight · reconstrucción extra</div>
+      <h2>P.14 — Evaluación de la experiencia de venta</h2>
+      <p class="method">Respuesta única; % dentro de cada job (base: quienes ya vendieron).</p>
+      <div class="ct-wrap"><table class="ct" id="dP14"></table></div>
+      <p class="doc-narr" id="dP14-narr"></p>
+    </section>
+
+    <!-- Creativo: qué decir en pauta -->
+    <section class="card" id="creativo" style="border-color:var(--accent)">
+      <div class="kicker">04 · De los insights a la pauta</div>
+      <h2>Qué comunicarle a cada vendedor para cautivarlo</h2>
+      <p class="lead">Dos reglas que salen directo del análisis:
+        <b>(1)</b> el mensaje de <em>marca</em> es transversal (lámina 11 plana: confianza y transparencia le importan
+        a todos por igual) → <b>no diferencies la marca por job, diferencia el GANCHO</b>.
+        <b>(2)</b> el freno no es awareness, es <b>desconfianza + precio</b> (P.28) → toda la pauta debe respirar
+        <b>oferta clara, sin costos ocultos, al precio justo</b>.</p>
+
+      <div class="terr" style="border-left-color:var(--cre)">
+        <h3 style="color:var(--cre)">🔵 Crecer · 74% — tu mayor audiencia</h3>
+        <p class="t-ins">Vende para dar el siguiente paso (mejor casa, más espacio, nueva etapa). Gancho: que
+          vender no frene su avance — rapidez y certeza para seguir.</p>
+        <ul class="copy">
+          <li>"Vende rápido. Múdate a lo que sigue."</li>
+          <li>"Tu próxima casa empieza por vender la de hoy — te la compramos en días."</li>
+          <li>"Sin esperar meses a un comprador: vende con fecha cierta y da el paso."</li>
+        </ul>
+      </div>
+
+      <div class="terr" style="border-left-color:var(--sol)">
+        <h3 style="color:var(--sol)">🟡 Soltar · 33% — la jugada de conveniencia más clara</h3>
+        <p class="t-ins">Propiedad que ya no usa (herencia, no la habita); le importa que respeten su avalúo
+          justo y tiende a venderla solo. Gancho: vuélvela dinero sin ocuparte de nada, al precio justo.</p>
+        <ul class="copy">
+          <li>"¿Una casa que ya no usas? Te la compramos, al precio justo y sin que muevas un dedo."</li>
+          <li>"Heredaste una propiedad, no un problema. Nosotros nos encargamos de todo."</li>
+          <li>"Venderla solo desgasta. Lo hacemos por ti — con un avalúo que respeta su valor."</li>
+        </ul>
+      </div>
+
+      <div class="terr" style="border-left-color:var(--urg)">
+        <h3 style="color:var(--urg)">🔴 Urgencia · 41% — necesita liquidez pero DESCONFÍA</h3>
+        <p class="t-ins">Quiere el dinero ya (deudas, salud, imprevistos), pero es el segmento que más teme
+          costos ocultos y cree que "ofrecen menos". Gancho: liquidez rápida con <b>transparencia radical</b>
+          que desarme el recelo. (Tono empático, nunca depredador.)</p>
+        <ul class="copy">
+          <li>"Necesitas el dinero ya. Te damos una oferta clara, sin costos ocultos."</li>
+          <li>"El precio que ves es el que recibes. Liquidez en días, sin letra chica."</li>
+          <li>"Rápido no es malbaratar: oferta justa, por escrito, sin sorpresas."</li>
+        </ul>
+      </div>
+
+      <div class="terr" style="border-left-color:var(--inv)">
+        <h3 style="color:var(--inv)">🟢 Invertir · 46% — baja prioridad para Tuhabi</h3>
+        <p class="t-ins">Ya usa portales y brokers; Tuhabi sub-indexa aquí (P.12, idx 67). Si se pauta, vender =
+          capital líquido sin riesgo de que la venta se caiga. Recomendación: <b>invertir poco</b> en este
+          segmento, compite mejor el portal.</p>
+        <ul class="copy">
+          <li>"Convierte tu propiedad en capital líquido, con venta garantizada y fecha cierta."</li>
+        </ul>
+      </div>
+
+      <p class="doc-narr" style="margin-top:16px"><b>Pilares transversales (en TODO anuncio, salgan donde salgan):</b>
+        ① <b>pago seguro y garantizado</b> (lo #1 que valoran los 4 jobs en la lámina 10);
+        ② <b>oferta clara y por escrito, sin costos ocultos</b> (ataca la barrera #1 de P.28);
+        ③ <b>respetamos tu avalúo / precio justo</b> (ataca el "ofrecen menos de lo que vale");
+        ④ <b>vender solo es difícil</b> (ataca el "por mi cuenta" que domina en Soltar y Urgencia).
+        El gran movimiento estratégico: la pauta de Tuhabi debe ganar la conversación de <b>confianza y precio</b>,
+        no la de notoriedad.</p>
+      <p class="note">Mensajes propuestos por el equipo de Growth a partir del análisis JTBD; pendientes de validar en test creativo.</p>
+    </section>
+
     <!-- 04 Puente persona ↔ JTBD -->
     <section class="card" id="puente">
-      <div class="kicker">04 · Puente persona ↔ JTBD</div>
+      <div class="kicker">05 · Puente persona ↔ JTBD</div>
       <h2>Cómo se reparten las personas de GDV dentro de cada job</h2>
       <p class="lead">No descartamos el trabajo de la agencia: lo reinterpretamos. Cada barra es un job;
         los colores muestran qué mezcla de las 4 personas lo compone (las personas sí son excluyentes,
@@ -373,7 +509,7 @@ function docGroupedTable(tableId, order, tbl, qLabel){
   let body="<tbody>";
   order.forEach(r=>{
     const d=tbl[r.item]; if(!d) return;
-    const cls=r.type==="group"?"group":"sub";
+    const cls=r.type==="group"?"group":(r.type==="sub"?"sub":"");
     body+=`<tr class="${cls}"><td class="it">${r.item}</td><td class="totcol">${d.total}</td>`;
     segs.forEach(s=>{ body+=`<td><span class="cell"><span class="pct">${d[s]}</span>${idxBadge(d[s+"_idx"])}</span></td>`; });
     body+="</tr>";
@@ -393,11 +529,9 @@ function renderDocument(){
   document.getElementById('md-method').textContent=md.metodo;
   docGroupedTable('mdTable', md.order, md.tbl, md.title);
   document.getElementById('md-narr').innerHTML=
-    `La <b>formalidad</b> y un <b>pago seguro y garantizado</b> dominan para todos (≈10.6% del peso, el atributo
-     más valorado, igual que en el estudio original). La lente JTBD revela el matiz accionable para Tuhabi:
-     <b>quien suelta un activo</b> sobre-indexa en "respete mi avalúo justo" (índice ≈129) — no quiere malbaratar
-     lo que heredó o ya no usa; <b>quien vende para invertir o crecer</b> aprieta un poco más el pago seguro.
-     <b>Urgencia</b>, en cambio, relaja la formalidad: prioriza resolver, no el trámite perfecto.`;
+    `<b>Casi plano.</b> "Pago seguro y garantizado" domina para todos (≈10.6%, igual que el estudio original).
+     El único matiz: <b>Soltar</b> valora más "respete mi avalúo justo" (índice 129) — no quiere malbaratar lo
+     que heredó o ya no usa. Fuera de eso, los 4 jobs valoran lo mismo del proceso.`;
 
   // Lámina 11 — P.17
   const p=DATA.documento.p17;
@@ -405,11 +539,49 @@ function renderDocument(){
   document.getElementById('p17-method').textContent=p.metodo;
   docGroupedTable('p17Table', p.order, p.tbl, p.title);
   document.getElementById('p17-narr').innerHTML=
-    `Los drivers de elección de marca son <b>notablemente parejos entre jobs</b>: imagen profesional,
-     acompañamiento, economía y conveniencia pesan casi igual sin importar la necesidad. Eso confirma el hallazgo
-     de GDV de que <b>confianza y transparencia son innegociables transversalmente</b>. La implicación para Tuhabi:
-     el mensaje de marca puede ser común, y la <b>diferenciación va en el JOB</b> (qué resuelve), no en reinventar
-     los atributos de elección.`;
+    `<b>Totalmente plano</b> (ningún índice sale de 92–108). Los drivers de marca — imagen, acompañamiento,
+     economía, conveniencia — pesan igual sin importar el job. Confianza y transparencia son transversales.`;
+
+  // ---- Preguntas que SÍ discriminan (desde los cruces) ----
+  function ordOf(q){
+    const t=DATA.crosstabs[q].job;
+    if(DATA.crosstabs[q].order) return DATA.crosstabs[q].order;
+    return Object.keys(t).filter(k=>k!=="__base__").sort((a,b)=>t[b].total-t[a].total).map(it=>({item:it}));
+  }
+  function renderDoc(q,tableId){ docGroupedTable(tableId, ordOf(q), DATA.crosstabs[q].job, DATA.crosstabs[q].title); }
+
+  renderDoc('P28','dP28');
+  document.getElementById('dP28-narr').innerHTML=
+    `<b>El insight más fuerte para Tuhabi.</b> El job <b>Urgencia</b> es el <b>más desconfiado de los iBuyers</b>:
+     sobre-indexa en casi todas las barreras — teme costos/comisiones ocultas (idx 142), confía más en la
+     inmobiliaria tradicional (141), ve los procesos digitales como riesgosos (143), prefiere vender directo (134)
+     y cree que "ofrecen menos de lo que vale" (133). <b>Paradoja:</b> quien más necesita la liquidez rápida que
+     ofrece Tuhabi es justo quien más recela del modelo. <b>Soltar</b> también desconfía del precio (costos
+     ocultos 147, "ofrecen menos" 125). → El reto de Tuhabi con estos segmentos es <b>confianza y precio</b>, no awareness.`;
+
+  renderDoc('P12','dP12');
+  document.getElementById('dP12-narr').innerHTML=
+    `<b>La que más discrimina.</b> <b>Tuhabi sub-indexa entre quienes venden para Invertir</b> (idx 67): el
+     inversionista prefiere portales y brokers (Inmuebles 24 → 128, Propiedades.com → 214, RE/MAX → 143).
+     En cambio <b>"por mi cuenta / sin intermediarios"</b> sobre-indexa en <b>Soltar</b> (136) y <b>Urgencia</b>
+     (120), y sub-indexa en Crecer (74): quien suelta un activo o está apurado tiende a ir solo. → El espacio
+     natural de Tuhabi está más en <b>Crecer y Urgencia</b> que en el inversionista (que ya usa portales).`;
+
+  renderDoc('P26','dP26');
+  document.getElementById('dP26-narr').innerHTML=
+    `<b>Invertir es digital y autónomo:</b> usa más páginas/apps especializadas (idx 125). <b>Urgencia</b>, al
+     revés, usa <b>menos</b> canales digitales (74) y menos agente (66) — se mueve por vías más informales.
+     <b>Soltar</b> destaca en ferias/expos (151).`;
+
+  renderDoc('P29','dP29');
+  document.getElementById('dP29-narr').innerHTML=
+    `Señal sutil: <b>Urgencia</b> sobre-indexa en "no lo bajaría" (idx 120) — incluso con necesidad de liquidez,
+     resisten un descuento fuerte. Las celdas de descuento alto tienen base chica, así que tomar con pinzas.`;
+
+  renderDoc('P14','dP14');
+  document.getElementById('dP14-narr').innerHTML=
+    `<b>Urgencia polariza</b> su experiencia: más "excelente" (idx 129) pero también más "regular" (126).
+     <b>Invertir</b> califica menos "excelente" (72); <b>Soltar</b> se inclina a "muy buena" (127).`;
 }
 
 function renderBridge(){
