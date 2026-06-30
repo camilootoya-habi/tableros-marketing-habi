@@ -33,24 +33,26 @@ las 4 personas, con total transparencia sobre cómo se asignó cada encuestado.
   | **Soltar un activo ocioso** | No habito la propiedad, herencia que no usaré, divorcio/separación de bienes | Repartir entre hijos/herencia, Rentar en otro lugar |
   | **Hacer rendir el capital** | Para invertir en otros activos, aumento de plusvalía, aproveché alta demanda | Invertir el dinero |
   | **Crecer / siguiente paso** | Mejor propiedad (tamaño/zona), crecimiento familiar, mudanza laboral | Comprar otra propiedad |
-- **Asignación:** job dominante por **jerarquía de acuidad**:
-  `Urgencia > Soltar > Invertir > Crecer`. Cada encuestado cae en exactamente un job
-  (el de mayor prioridad entre los que marcó). Evita que "Crecer" (el bucket más marcado)
-  se trague a todos y alinea con el sweet spot de Tuhabi (liquidez).
+- **Membresía:** **penetración solapada** (no excluyente). Cada encuestado cuenta en
+  TODOS los jobs que menciona; el % de un job = nº de vendedores que lo incluyen ÷ total.
+  No suman 100%. (Se descartó el "job dominante por jerarquía" porque la jerarquía
+  distorsionaba el retrato: inflaba Urgencia y hundía Crecer/Invertir — ver nota abajo.)
 
-### Resultado de la asignación (validado contra la base)
+### Penetración por job (validado contra la base)
 
-| Job | n | % |
+| Job | n | % de vendedores |
 |---|---|---|
+| Crecer / siguiente paso | 214 | 74% |
+| Hacer rendir el capital | 133 | 46% |
 | Resolver una urgencia | 118 | 41% |
-| Crecer / siguiente paso | 63 | 22% |
-| Soltar un activo ocioso | 62 | 21% |
-| Hacer rendir el capital | 47 | 16% |
-| (sin señal mapeable) | 1 | 0% |
+| Soltar un activo ocioso | 96 | 33% |
 
-**Solapamiento (transparencia):** solo **93 (32%)** marcan un único job; **197 (68%)**
-responden a 2+ jobs (131→2, 58→3, 8→4). La jerarquía fuerza exclusividad; el tablero lo
-hace explícito.
+(Suma 561 > 290 porque cada quien aporta a todos sus jobs.)
+
+**Por qué penetración y no job dominante:** con jerarquía urgencia-primero, Crecer caía a
+22% (63) y Urgencia subía a 41% (118) — invirtiendo el retrato real (Crecer es la
+motivación más común; Invertir 46% > Urgencia 41%). El job dominante mentía. **Solapamiento:**
+solo 93 (32%) mencionan un único job; 197 (68%) tienen 2+.
 
 ## Estructura del tablero (4 bloques)
 

@@ -54,7 +54,8 @@ for lab in SOLTAR: JOBMAP[lab] = "Soltar"
 for lab in INVERTIR: JOBMAP[lab] = "Invertir"
 for lab in URGENCIA: JOBMAP[lab] = "Urgencia"
 
-JOBS = ["Urgencia", "Soltar", "Invertir", "Crecer"]   # también jerarquía de acuidad
+# Membresía SOLAPADA por penetración (no excluyente, sin jerarquía). Orden = penetración desc.
+JOBS = ["Crecer", "Invertir", "Urgencia", "Soltar"]
 JOB_LABEL = {
     "Urgencia": "Resolver una urgencia",
     "Soltar":   "Soltar un activo ocioso",
@@ -84,31 +85,25 @@ def row_signals(row, cols):
     return out
 
 # ----------------------------------------------------- asignación job + jerarquía
-job_of = []
 njobs_of = []
 jobset_of = []
 IGNORE = {"nan", "Otros (Especificar)", "Otro (Especificar)",
           "Otra: [P8.Choices(99).OpenEnd]"}
 for _, row in ET.iterrows():
     sig = row_signals(row, P4COLS) | row_signals(row, P22COLS)
-    jset = set()
-    for a in sig:
-        if a in JOBMAP:
-            jset.add(JOBMAP[a])
-        elif a not in IGNORE:
-            pass  # etiqueta no mapeable -> se ignora
-    dom = next((j for j in JOBS if j in jset), None)
-    job_of.append(dom if dom else "SinSeñal")
+    jset = {JOBMAP[a] for a in sig if a in JOBMAP}
     njobs_of.append(len(jset))
     jobset_of.append(jset)
 
-ET = ET.assign(_job=job_of, _njobs=njobs_of)
+ET = ET.assign(_njobs=njobs_of)
 ET["_persona"] = CO["Op4Groupsv1"].map(PERSONA)
 
-# máscara: trabajamos con quien tiene job asignado (descartamos SinSeñal=1)
-HAS = ET["_job"].isin(JOBS)
-base_job = {j: int((ET["_job"] == j).sum()) for j in JOBS}
-base_persona = {p: int((ET["_persona"] == p).sum()) for p in PERSONAS}
+# MEMBRESÍA SOLAPADA: una máscara booleana por job (pertenece si menciona ese job).
+job_masks = {j: pd.Series([j in s for s in jobset_of], index=ET.index) for j in JOBS}
+persona_masks = {p: (ET["_persona"] == p) for p in PERSONAS}
+HAS = pd.Series([len(s) > 0 for s in jobset_of], index=ET.index)   # tiene ≥1 job
+base_job = {j: int(job_masks[j].sum()) for j in JOBS}              # PENETRACIÓN
+base_persona = {p: int(persona_masks[p].sum()) for p in PERSONAS}
 
 # --------------------------------------------------------- transparencia overlap
 njobs_dist = {int(k): int(v) for k, v in ET["_njobs"].value_counts().sort_index().items()}
@@ -122,28 +117,29 @@ for jset in jobset_of:
             if a in jset and b in jset:
                 cooc[a][b] += 1
 
-# puente persona x job (cuenta y % por columna-job)
+# puente persona x job: % de cada persona dentro de quienes tienen el job (solapado)
 bridge = {p: {j: 0 for j in JOBS} for p in PERSONAS}
-for _, row in ET[HAS].iterrows():
-    p, j = row["_persona"], row["_job"]
-    if p in bridge and j in JOBS:
-        bridge[p][j] += 1
+for j in JOBS:
+    for p in PERSONAS:
+        bridge[p][j] = int((job_masks[j] & persona_masks[p]).sum())
 
 # ------------------------------------------------------------------- crosstab fn
-def pct_table(item_masks, group_col, groups, answered):
-    """item_masks: dict item->boolean Series. `answered`: bool Series de quién contestó
-    la pregunta (denominador). Devuelve % por grupo + total + índice + bases."""
+def pct_table(item_masks, group_masks, answered):
+    """item_masks: dict item->bool Series. group_masks: dict grupo->bool Series (pueden
+    solaparse, p.ej. jobs). `answered`: bool Series del denominador. % por grupo + total
+    + índice + bases. El TOTAL siempre es sobre todos los que tienen job y contestaron."""
     out = {}
     base = HAS & answered
     total_base = int(base.sum())
+    groups = list(group_masks.keys())
     bases = {"total": total_base}
     for g in groups:
-        bases[g] = int((base & (ET[group_col] == g)).sum())
+        bases[g] = int((base & group_masks[g]).sum())
     for item, mask in item_masks.items():
         m = mask & base
         row = {"total": round(100 * m.sum() / total_base, 1) if total_base else 0.0}
         for g in groups:
-            gmask = base & (ET[group_col] == g)
+            gmask = base & group_masks[g]
             gb = int(gmask.sum())
             pc = round(100 * (m & gmask).sum() / gb, 1) if gb else 0.0
             row[g] = pc
@@ -187,8 +183,8 @@ def answered_multi(cols):
 
 def crosstab_both(item_masks, answered=ALL_TRUE):
     return {
-        "job": pct_table(item_masks, "_job", JOBS, answered),
-        "persona": pct_table(item_masks, "_persona", PERSONAS, answered),
+        "job": pct_table(item_masks, job_masks, answered),
+        "persona": pct_table(item_masks, persona_masks, answered),
     }
 
 # ------------------------------------------------------------- P4 motivos (slide8)
@@ -270,30 +266,20 @@ p26_masks = multi_response_masks(P26COLS,
 # Validado: el ranking Total reproduce el de GDV (ver prints abajo).
 # ============================================================================
 
-def share_table_by_job(count_by_jobitem, items_order, groups, base_counts):
-    """count_by_jobitem[job][item] -> conteo. Devuelve % (share dentro del job)
-    + total + índice, en formato {item: {total, <job>, <job>_idx}} con __base__."""
-    jobs_tot = {j: sum(count_by_jobitem[j].values()) or 1 for j in JOBS}
-    tot_all = sum(jobs_tot.values())
+def share_table_by_job(total_counts, job_counts, items_order, groups, base_counts):
+    """total_counts[item] = conteo sobre TODOS (col Total). job_counts[job][item] = conteo
+    sobre quienes tienen ese job (solapado). % = share dentro de cada columna."""
+    tot_all = sum(total_counts.values()) or 1
+    jobs_tot = {j: sum(job_counts[j].values()) or 1 for j in JOBS}
     out = {}
     for it in items_order:
-        if it.get("type") == "group":
-            subs = groups[it["item"]]
-            row = {"total": round(100 * sum(sum(count_by_jobitem[j][s] for s in subs)
-                                            for j in JOBS) / tot_all, 1)}
-            for j in JOBS:
-                pc = round(100 * sum(count_by_jobitem[j][s] for s in subs) / jobs_tot[j], 1)
-                row[j] = pc
-                row[j + "_idx"] = int(round(100 * pc / row["total"])) if row["total"] else None
-            out[it["item"]] = row
-        else:
-            s = it["item"]
-            row = {"total": round(100 * sum(count_by_jobitem[j][s] for j in JOBS) / tot_all, 1)}
-            for j in JOBS:
-                pc = round(100 * count_by_jobitem[j][s] / jobs_tot[j], 1)
-                row[j] = pc
-                row[j + "_idx"] = int(round(100 * pc / row["total"])) if row["total"] else None
-            out[s] = row
+        subs = groups[it["item"]] if it.get("type") == "group" else [it["item"]]
+        row = {"total": round(100 * sum(total_counts[s] for s in subs) / tot_all, 1)}
+        for j in JOBS:
+            pc = round(100 * sum(job_counts[j][s] for s in subs) / jobs_tot[j], 1)
+            row[j] = pc
+            row[j + "_idx"] = int(round(100 * pc / row["total"])) if row["total"] else None
+        out[it["item"]] = row
     out["__base__"] = {"total": int(HAS.sum()), **base_counts}
     return out
 
@@ -308,30 +294,32 @@ MD_GROUPS = {  # categorías del slide 10 -> códigos de atributo (NN)
     "PRECIO JUSTO": [18, 11],
 }
 md_best = {j: {a: 0 for a in range(1, 19)} for j in JOBS}
+md_best_total = {a: 0 for a in range(1, 19)}
 MDCOLS = [c for c in ET.columns if re.match(r'MD_V\d+S\d+_A1$', str(c))]  # A1 = "Más"
 def _nn(v):
     m = re.search(r'Choices\((\d+)\)', str(v))
     return int(m.group(1)) if m else None
 for idx, row in ET.iterrows():
-    j = row["_job"]
-    if j not in JOBS:
+    if not HAS[idx]:
         continue
+    jset = jobset_of[idx]
     for c in MDCOLS:
         a = _nn(row[c])
         if a:
-            md_best[j][a] += 1
+            md_best_total[a] += 1
+            for j in jset:
+                md_best[j][a] += 1
 # orden + grupos en formato del documento (con textos)
 md_order, md_group_subs = [], {}
 for gname, codes in MD_GROUPS.items():
     md_order.append({"item": gname, "type": "group"})
-    subs = [md_code2txt[a] for a in codes]
-    md_group_subs[gname] = subs
-    # remap conteos de NN->texto
+    md_group_subs[gname] = [md_code2txt[a] for a in codes]
     for a in codes:
         md_order.append({"item": md_code2txt[a], "type": "sub"})
+md_total_txt = {md_code2txt[a]: md_best_total[a] for a in range(1, 19)}
 md_best_txt = {j: {md_code2txt[a]: md_best[j][a] for a in range(1, 19)} for j in JOBS}
 md_base = {j: base_job[j] for j in JOBS}
-maxdiff_tbl = share_table_by_job(md_best_txt, md_order, md_group_subs, md_base)
+maxdiff_tbl = share_table_by_job(md_total_txt, md_best_txt, md_order, md_group_subs, md_base)
 
 # ---- Lámina 11: P.17 (share de menciones) ----
 # A-índice -> texto (sufijo del diccionario) y conteo de menciones por job
@@ -353,6 +341,7 @@ def _theme_p17(t):
     return None
 P17_THEME_ORDER = ["IMAGEN PROFESIONAL", "ACOMPAÑAMIENTO EN EL PROCESO", "ECONOMÍA", "CONVENIENCIA"]
 p17_count = {j: {} for j in JOBS}
+p17_total = {}
 p17_groups = {g: [] for g in P17_THEME_ORDER}
 for a in range(1, 25):
     txt = p17_txt.get(a, "")
@@ -365,16 +354,16 @@ for a in range(1, 25):
         p17_groups[theme].append(txt)
     cols = [c for c in ET.columns if re.match(rf'P17_A{a}M\d+$', str(c))]
     cnt_series = ET[cols].notna().sum(axis=1)  # menciones de ese atributo por persona
+    p17_total[txt] = p17_total.get(txt, 0) + int(cnt_series[HAS].sum())
     for j in JOBS:
-        m = HAS & (ET["_job"] == j)
-        p17_count[j][txt] = p17_count[j].get(txt, 0) + int(cnt_series[m].sum())
+        p17_count[j][txt] = p17_count[j].get(txt, 0) + int(cnt_series[HAS & job_masks[j]].sum())
 p17_order = []
 for g in P17_THEME_ORDER:
     p17_order.append({"item": g, "type": "group"})
     for s in p17_groups[g]:
         p17_order.append({"item": s, "type": "sub"})
 p17_base = {j: base_job[j] for j in JOBS}
-p17_tbl = share_table_by_job(p17_count, p17_order, p17_groups, p17_base)
+p17_tbl = share_table_by_job(p17_total, p17_count, p17_order, p17_groups, p17_base)
 
 # ----------------------------------------------------------------------- ensamble
 data = {
@@ -383,7 +372,9 @@ data = {
         "n_con_job": int(HAS.sum()),
         "fuente": "GDV — Segmentación de vendedores Tuhabi MX (mayo 2026)",
         "jobs": [{"key": j, "label": JOB_LABEL[j], "color": JOB_COLOR[j],
-                  "base": base_job[j]} for j in JOBS],
+                  "base": base_job[j],
+                  "pct": round(100 * base_job[j] / int(HAS.sum()))} for j in JOBS],
+        "metodo_membresia": "penetración (solapada): cada job = % de vendedores que lo mencionan en P.4/P.22. No suman 100% porque una persona puede tener varios jobs.",
         "personas": [{"key": p, "label": PERSONA_LABEL[p], "base": base_persona[p]}
                      for p in PERSONAS],
     },

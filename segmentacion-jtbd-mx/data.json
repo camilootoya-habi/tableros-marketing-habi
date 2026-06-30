@@ -5,30 +5,35 @@
   "fuente": "GDV — Segmentación de vendedores Tuhabi MX (mayo 2026)",
   "jobs": [
    {
-    "key": "Urgencia",
-    "label": "Resolver una urgencia",
-    "color": "#e4572e",
-    "base": 118
-   },
-   {
-    "key": "Soltar",
-    "label": "Soltar un activo ocioso",
-    "color": "#f3a712",
-    "base": 62
+    "key": "Crecer",
+    "label": "Crecer / dar el siguiente paso",
+    "color": "#3d6fd1",
+    "base": 214,
+    "pct": 74
    },
    {
     "key": "Invertir",
     "label": "Hacer rendir el capital",
     "color": "#2e9e5b",
-    "base": 47
+    "base": 133,
+    "pct": 46
    },
    {
-    "key": "Crecer",
-    "label": "Crecer / dar el siguiente paso",
-    "color": "#3d6fd1",
-    "base": 63
+    "key": "Urgencia",
+    "label": "Resolver una urgencia",
+    "color": "#e4572e",
+    "base": 118,
+    "pct": 41
+   },
+   {
+    "key": "Soltar",
+    "label": "Soltar un activo ocioso",
+    "color": "#f3a712",
+    "base": 96,
+    "pct": 33
    }
   ],
+  "metodo_membresia": "penetración (solapada): cada job = % de vendedores que lo mencionan en P.4/P.22. No suman 100% porque una persona puede tener varios jobs.",
   "personas": [
    {
     "key": "Isadora",
@@ -65,56 +70,56 @@
   "pct_single": 32.0,
   "pct_multi": 68.0,
   "cooccurrence": {
-   "Urgencia": {
-    "Urgencia": 118,
-    "Soltar": 34,
-    "Invertir": 46,
-    "Crecer": 75
-   },
-   "Soltar": {
-    "Urgencia": 34,
-    "Soltar": 96,
-    "Invertir": 56,
-    "Crecer": 55
+   "Crecer": {
+    "Crecer": 214,
+    "Invertir": 87,
+    "Urgencia": 75,
+    "Soltar": 55
    },
    "Invertir": {
-    "Urgencia": 46,
-    "Soltar": 56,
+    "Crecer": 87,
     "Invertir": 133,
-    "Crecer": 87
+    "Urgencia": 46,
+    "Soltar": 56
    },
-   "Crecer": {
-    "Urgencia": 75,
-    "Soltar": 55,
-    "Invertir": 87,
-    "Crecer": 214
+   "Urgencia": {
+    "Crecer": 75,
+    "Invertir": 46,
+    "Urgencia": 118,
+    "Soltar": 34
+   },
+   "Soltar": {
+    "Crecer": 55,
+    "Invertir": 56,
+    "Urgencia": 34,
+    "Soltar": 96
    }
   }
  },
  "bridge": {
   "Isadora": {
+   "Crecer": 72,
+   "Invertir": 45,
    "Urgencia": 44,
-   "Soltar": 16,
-   "Invertir": 17,
-   "Crecer": 22
+   "Soltar": 26
   },
   "Emilia": {
+   "Crecer": 46,
+   "Invertir": 29,
    "Urgencia": 32,
-   "Soltar": 14,
-   "Invertir": 12,
-   "Crecer": 11
+   "Soltar": 26
   },
   "Clara": {
+   "Crecer": 56,
+   "Invertir": 40,
    "Urgencia": 19,
-   "Soltar": 20,
-   "Invertir": 13,
-   "Crecer": 21
+   "Soltar": 24
   },
   "Esteban": {
+   "Crecer": 40,
+   "Invertir": 19,
    "Urgencia": 23,
-   "Soltar": 12,
-   "Invertir": 5,
-   "Crecer": 9
+   "Soltar": 20
   }
  },
  "crosstabs": {
@@ -210,241 +215,241 @@
    "job": {
     "CRECIMIENTO": {
      "total": 60.3,
+     "Crecer": 81.8,
+     "Crecer_idx": 136,
+     "Invertir": 54.9,
+     "Invertir_idx": 91,
      "Urgencia": 46.6,
      "Urgencia_idx": 77,
-     "Soltar": 43.5,
-     "Soltar_idx": 72,
-     "Invertir": 70.2,
-     "Invertir_idx": 116,
-     "Crecer": 95.2,
-     "Crecer_idx": 158
+     "Soltar": 39.6,
+     "Soltar_idx": 66
     },
     "Para buscar una mejor propiedad, en tamaño, zona y condiciones de la casa": {
      "total": 40.7,
+     "Crecer": 55.1,
+     "Crecer_idx": 135,
+     "Invertir": 36.1,
+     "Invertir_idx": 89,
      "Urgencia": 37.3,
      "Urgencia_idx": 92,
-     "Soltar": 27.4,
-     "Soltar_idx": 67,
-     "Invertir": 38.3,
-     "Invertir_idx": 94,
-     "Crecer": 61.9,
-     "Crecer_idx": 152
+     "Soltar": 25.0,
+     "Soltar_idx": 61
     },
     "Crecimiento familiar y necesito una más grande": {
      "total": 22.4,
+     "Crecer": 30.4,
+     "Crecer_idx": 136,
+     "Invertir": 25.6,
+     "Invertir_idx": 114,
      "Urgencia": 16.1,
      "Urgencia_idx": 72,
-     "Soltar": 9.7,
-     "Soltar_idx": 43,
-     "Invertir": 40.4,
-     "Invertir_idx": 180,
-     "Crecer": 33.3,
-     "Crecer_idx": 149
+     "Soltar": 12.5,
+     "Soltar_idx": 56
     },
     "Cambio / Mudanza por una oportunidad laboral": {
      "total": 19.3,
+     "Crecer": 26.2,
+     "Crecer_idx": 136,
+     "Invertir": 17.3,
+     "Invertir_idx": 90,
      "Urgencia": 10.2,
      "Urgencia_idx": 53,
-     "Soltar": 19.4,
-     "Soltar_idx": 101,
-     "Invertir": 23.4,
-     "Invertir_idx": 121,
-     "Crecer": 33.3,
-     "Crecer_idx": 173
+     "Soltar": 15.6,
+     "Soltar_idx": 81
     },
     "NO LA USO / USARÉ": {
      "total": 32.1,
+     "Crecer": 24.3,
+     "Crecer_idx": 76,
+     "Invertir": 41.4,
+     "Invertir_idx": 129,
      "Urgencia": 28.0,
      "Urgencia_idx": 87,
-     "Soltar": 96.8,
-     "Soltar_idx": 302,
-     "Invertir": 0.0,
-     "Invertir_idx": 0,
-     "Crecer": 0.0,
-     "Crecer_idx": 0
+     "Soltar": 96.9,
+     "Soltar_idx": 302
     },
     "No habito/vivo en la propiedad": {
      "total": 24.8,
+     "Crecer": 19.2,
+     "Crecer_idx": 77,
+     "Invertir": 31.6,
+     "Invertir_idx": 127,
      "Urgencia": 21.2,
      "Urgencia_idx": 85,
-     "Soltar": 75.8,
-     "Soltar_idx": 306,
-     "Invertir": 0.0,
-     "Invertir_idx": 0,
-     "Crecer": 0.0,
-     "Crecer_idx": 0
+     "Soltar": 75.0,
+     "Soltar_idx": 302
     },
     "Es una herencia que no usaré": {
      "total": 9.3,
+     "Crecer": 3.7,
+     "Crecer_idx": 40,
+     "Invertir": 13.5,
+     "Invertir_idx": 145,
      "Urgencia": 7.6,
      "Urgencia_idx": 82,
-     "Soltar": 29.0,
-     "Soltar_idx": 312,
-     "Invertir": 0.0,
-     "Invertir_idx": 0,
-     "Crecer": 0.0,
-     "Crecer_idx": 0
+     "Soltar": 28.1,
+     "Soltar_idx": 302
     },
     "Me divorcié / Por separación de bienes": {
      "total": 3.1,
+     "Crecer": 2.8,
+     "Crecer_idx": 90,
+     "Invertir": 3.8,
+     "Invertir_idx": 123,
      "Urgencia": 3.4,
      "Urgencia_idx": 110,
-     "Soltar": 8.1,
-     "Soltar_idx": 261,
-     "Invertir": 0.0,
-     "Invertir_idx": 0,
-     "Crecer": 0.0,
-     "Crecer_idx": 0
+     "Soltar": 9.4,
+     "Soltar_idx": 303
     },
     "PARA INVERTIR": {
      "total": 29.0,
+     "Crecer": 29.4,
+     "Crecer_idx": 101,
+     "Invertir": 63.2,
+     "Invertir_idx": 218,
      "Urgencia": 22.0,
      "Urgencia_idx": 76,
-     "Soltar": 35.5,
-     "Soltar_idx": 122,
-     "Invertir": 76.6,
-     "Invertir_idx": 264,
-     "Crecer": 0.0,
-     "Crecer_idx": 0
+     "Soltar": 31.2,
+     "Soltar_idx": 108
     },
     "Para invertir en otros activos": {
      "total": 20.7,
+     "Crecer": 20.6,
+     "Crecer_idx": 100,
+     "Invertir": 45.1,
+     "Invertir_idx": 218,
      "Urgencia": 11.9,
      "Urgencia_idx": 57,
-     "Soltar": 27.4,
-     "Soltar_idx": 132,
-     "Invertir": 61.7,
-     "Invertir_idx": 298,
-     "Crecer": 0.0,
-     "Crecer_idx": 0
+     "Soltar": 24.0,
+     "Soltar_idx": 116
     },
     "Aumento de plusvalía en la zona": {
      "total": 7.2,
+     "Crecer": 7.0,
+     "Crecer_idx": 97,
+     "Invertir": 15.8,
+     "Invertir_idx": 219,
      "Urgencia": 8.5,
      "Urgencia_idx": 118,
-     "Soltar": 8.1,
-     "Soltar_idx": 112,
-     "Invertir": 12.8,
-     "Invertir_idx": 178,
-     "Crecer": 0.0,
-     "Crecer_idx": 0
+     "Soltar": 7.3,
+     "Soltar_idx": 101
     },
     "Aproveché mi alta demanda en el mercado": {
      "total": 6.9,
+     "Crecer": 7.0,
+     "Crecer_idx": 101,
+     "Invertir": 15.0,
+     "Invertir_idx": 217,
      "Urgencia": 5.1,
      "Urgencia_idx": 74,
-     "Soltar": 9.7,
-     "Soltar_idx": 141,
-     "Invertir": 17.0,
-     "Invertir_idx": 246,
-     "Crecer": 0.0,
-     "Crecer_idx": 0
+     "Soltar": 8.3,
+     "Soltar_idx": 120
     },
     "GASTOS DE EMERGENCIA": {
      "total": 21.4,
+     "Crecer": 13.6,
+     "Crecer_idx": 64,
+     "Invertir": 19.5,
+     "Invertir_idx": 91,
      "Urgencia": 52.5,
      "Urgencia_idx": 245,
-     "Soltar": 0.0,
-     "Soltar_idx": 0,
-     "Invertir": 0.0,
-     "Invertir_idx": 0,
-     "Crecer": 0.0,
-     "Crecer_idx": 0
+     "Soltar": 14.6,
+     "Soltar_idx": 68
     },
     "Gastos imprevistos": {
      "total": 8.6,
+     "Crecer": 3.7,
+     "Crecer_idx": 43,
+     "Invertir": 6.0,
+     "Invertir_idx": 70,
      "Urgencia": 21.2,
      "Urgencia_idx": 247,
-     "Soltar": 0.0,
-     "Soltar_idx": 0,
-     "Invertir": 0.0,
-     "Invertir_idx": 0,
-     "Crecer": 0.0,
-     "Crecer_idx": 0
+     "Soltar": 3.1,
+     "Soltar_idx": 36
     },
     "Necesidad de liquidez inmediata por algún tema de salud": {
      "total": 5.9,
+     "Crecer": 3.3,
+     "Crecer_idx": 56,
+     "Invertir": 5.3,
+     "Invertir_idx": 90,
      "Urgencia": 14.4,
      "Urgencia_idx": 244,
-     "Soltar": 0.0,
-     "Soltar_idx": 0,
-     "Invertir": 0.0,
-     "Invertir_idx": 0,
-     "Crecer": 0.0,
-     "Crecer_idx": 0
+     "Soltar": 4.2,
+     "Soltar_idx": 71
     },
     "Necesidad de liquidez inmediata para pagar deudas": {
      "total": 6.9,
+     "Crecer": 2.3,
+     "Crecer_idx": 33,
+     "Invertir": 6.0,
+     "Invertir_idx": 87,
      "Urgencia": 16.9,
      "Urgencia_idx": 245,
-     "Soltar": 0.0,
-     "Soltar_idx": 0,
-     "Invertir": 0.0,
-     "Invertir_idx": 0,
-     "Crecer": 0.0,
-     "Crecer_idx": 0
+     "Soltar": 4.2,
+     "Soltar_idx": 61
     },
     "Necesita una remodelación costosa y no la puedo costear": {
      "total": 4.5,
+     "Crecer": 5.1,
+     "Crecer_idx": 113,
+     "Invertir": 5.3,
+     "Invertir_idx": 118,
      "Urgencia": 11.0,
      "Urgencia_idx": 244,
-     "Soltar": 0.0,
-     "Soltar_idx": 0,
-     "Invertir": 0.0,
-     "Invertir_idx": 0,
-     "Crecer": 0.0,
-     "Crecer_idx": 0
+     "Soltar": 5.2,
+     "Soltar_idx": 116
     },
     "Necesidad de liquidez inmediata para pagar los estudios de mis hijos": {
      "total": 2.4,
+     "Crecer": 0.9,
+     "Crecer_idx": 38,
+     "Invertir": 4.5,
+     "Invertir_idx": 188,
      "Urgencia": 5.9,
      "Urgencia_idx": 246,
-     "Soltar": 0.0,
-     "Soltar_idx": 0,
-     "Invertir": 0.0,
-     "Invertir_idx": 0,
-     "Crecer": 0.0,
-     "Crecer_idx": 0
+     "Soltar": 2.1,
+     "Soltar_idx": 88
     },
     "OTROS PUSH": {
      "total": 19.0,
+     "Crecer": 22.9,
+     "Crecer_idx": 121,
+     "Invertir": 15.8,
+     "Invertir_idx": 83,
      "Urgencia": 46.6,
      "Urgencia_idx": 245,
-     "Soltar": 0.0,
-     "Soltar_idx": 0,
-     "Invertir": 0.0,
-     "Invertir_idx": 0,
-     "Crecer": 0.0,
-     "Crecer_idx": 0
+     "Soltar": 15.6,
+     "Soltar_idx": 82
     },
     "Aumento de inseguridad en la zona": {
      "total": 14.5,
+     "Crecer": 17.8,
+     "Crecer_idx": 123,
+     "Invertir": 12.8,
+     "Invertir_idx": 88,
      "Urgencia": 35.6,
      "Urgencia_idx": 246,
-     "Soltar": 0.0,
-     "Soltar_idx": 0,
-     "Invertir": 0.0,
-     "Invertir_idx": 0,
-     "Crecer": 0.0,
-     "Crecer_idx": 0
+     "Soltar": 11.5,
+     "Soltar_idx": 79
     },
     "Aumento de costos en servicios / mantenimiento": {
      "total": 5.9,
+     "Crecer": 6.5,
+     "Crecer_idx": 110,
+     "Invertir": 6.0,
+     "Invertir_idx": 102,
      "Urgencia": 14.4,
      "Urgencia_idx": 244,
-     "Soltar": 0.0,
-     "Soltar_idx": 0,
-     "Invertir": 0.0,
-     "Invertir_idx": 0,
-     "Crecer": 0.0,
-     "Crecer_idx": 0
+     "Soltar": 5.2,
+     "Soltar_idx": 88
     },
     "__base__": {
      "total": 290,
+     "Crecer": 214,
+     "Invertir": 133,
      "Urgencia": 118,
-     "Soltar": 62,
-     "Invertir": 47,
-     "Crecer": 63
+     "Soltar": 96
     }
    },
    "persona": {
@@ -740,131 +745,131 @@
    "job": {
     "LIQUIDEZ PARA OTROS FINES": {
      "total": 65.2,
+     "Crecer": 87.9,
+     "Crecer_idx": 135,
+     "Invertir": 49.6,
+     "Invertir_idx": 76,
      "Urgencia": 56.8,
      "Urgencia_idx": 87,
-     "Soltar": 48.4,
-     "Soltar_idx": 74,
-     "Invertir": 63.8,
-     "Invertir_idx": 98,
-     "Crecer": 98.4,
-     "Crecer_idx": 151
+     "Soltar": 45.8,
+     "Soltar_idx": 70
     },
     "Comprar otra propiedad": {
      "total": 64.5,
+     "Crecer": 87.4,
+     "Crecer_idx": 136,
+     "Invertir": 48.1,
+     "Invertir_idx": 75,
      "Urgencia": 55.1,
      "Urgencia_idx": 85,
-     "Soltar": 48.4,
-     "Soltar_idx": 75,
-     "Invertir": 63.8,
-     "Invertir_idx": 99,
-     "Crecer": 98.4,
-     "Crecer_idx": 153
+     "Soltar": 43.8,
+     "Soltar_idx": 68
     },
     "Rentar en otro lugar": {
      "total": 2.1,
+     "Crecer": 2.3,
+     "Crecer_idx": 110,
+     "Invertir": 2.3,
+     "Invertir_idx": 110,
      "Urgencia": 1.7,
      "Urgencia_idx": 81,
-     "Soltar": 6.5,
-     "Soltar_idx": 310,
-     "Invertir": 0.0,
-     "Invertir_idx": 0,
-     "Crecer": 0.0,
-     "Crecer_idx": 0
+     "Soltar": 6.2,
+     "Soltar_idx": 295
     },
     "Mantenimiento / renovación / construcción de otra propiedad": {
      "total": 0.0,
+     "Crecer": 0.0,
+     "Crecer_idx": null,
+     "Invertir": 0.0,
+     "Invertir_idx": null,
      "Urgencia": 0.0,
      "Urgencia_idx": null,
      "Soltar": 0.0,
-     "Soltar_idx": null,
-     "Invertir": 0.0,
-     "Invertir_idx": null,
-     "Crecer": 0.0,
-     "Crecer_idx": null
+     "Soltar_idx": null
     },
     "Repartir el dinero entre mis hijos / herencia repartida entre hermanos": {
      "total": 0.0,
+     "Crecer": 0.0,
+     "Crecer_idx": null,
+     "Invertir": 0.0,
+     "Invertir_idx": null,
      "Urgencia": 0.0,
      "Urgencia_idx": null,
      "Soltar": 0.0,
-     "Soltar_idx": null,
-     "Invertir": 0.0,
-     "Invertir_idx": null,
-     "Crecer": 0.0,
-     "Crecer_idx": null
+     "Soltar_idx": null
     },
     "Comprar un carro": {
      "total": 0.0,
+     "Crecer": 0.0,
+     "Crecer_idx": null,
+     "Invertir": 0.0,
+     "Invertir_idx": null,
      "Urgencia": 0.0,
      "Urgencia_idx": null,
      "Soltar": 0.0,
-     "Soltar_idx": null,
-     "Invertir": 0.0,
-     "Invertir_idx": null,
-     "Crecer": 0.0,
-     "Crecer_idx": null
+     "Soltar_idx": null
     },
     "INVERTIR EL DINERO": {
      "total": 34.1,
+     "Crecer": 25.7,
+     "Crecer_idx": 75,
+     "Invertir": 74.4,
+     "Invertir_idx": 218,
      "Urgencia": 25.4,
      "Urgencia_idx": 74,
-     "Soltar": 56.5,
-     "Soltar_idx": 166,
-     "Invertir": 72.3,
-     "Invertir_idx": 212,
-     "Crecer": 0.0,
-     "Crecer_idx": 0
+     "Soltar": 51.0,
+     "Soltar_idx": 150
     },
     "Invertir el dinero": {
      "total": 34.1,
+     "Crecer": 25.7,
+     "Crecer_idx": 75,
+     "Invertir": 74.4,
+     "Invertir_idx": 218,
      "Urgencia": 25.4,
      "Urgencia_idx": 74,
-     "Soltar": 56.5,
-     "Soltar_idx": 166,
-     "Invertir": 72.3,
-     "Invertir_idx": 212,
-     "Crecer": 0.0,
-     "Crecer_idx": 0
+     "Soltar": 51.0,
+     "Soltar_idx": 150
     },
     "LIQUIDEZ PARA UNA EMERGENCIA": {
      "total": 16.9,
+     "Crecer": 8.9,
+     "Crecer_idx": 53,
+     "Invertir": 10.5,
+     "Invertir_idx": 62,
      "Urgencia": 41.5,
      "Urgencia_idx": 246,
-     "Soltar": 0.0,
-     "Soltar_idx": 0,
-     "Invertir": 0.0,
-     "Invertir_idx": 0,
-     "Crecer": 0.0,
-     "Crecer_idx": 0
+     "Soltar": 16.7,
+     "Soltar_idx": 99
     },
     "Pagar deudas": {
      "total": 16.9,
+     "Crecer": 8.9,
+     "Crecer_idx": 53,
+     "Invertir": 10.5,
+     "Invertir_idx": 62,
      "Urgencia": 41.5,
      "Urgencia_idx": 246,
-     "Soltar": 0.0,
-     "Soltar_idx": 0,
-     "Invertir": 0.0,
-     "Invertir_idx": 0,
-     "Crecer": 0.0,
-     "Crecer_idx": 0
+     "Soltar": 16.7,
+     "Soltar_idx": 99
     },
     "Emergencia médica (pagar medicinas, operación, rehabilitación)": {
      "total": 0.0,
+     "Crecer": 0.0,
+     "Crecer_idx": null,
+     "Invertir": 0.0,
+     "Invertir_idx": null,
      "Urgencia": 0.0,
      "Urgencia_idx": null,
      "Soltar": 0.0,
-     "Soltar_idx": null,
-     "Invertir": 0.0,
-     "Invertir_idx": null,
-     "Crecer": 0.0,
-     "Crecer_idx": null
+     "Soltar_idx": null
     },
     "__base__": {
      "total": 290,
+     "Crecer": 214,
+     "Invertir": 133,
      "Urgencia": 118,
-     "Soltar": 62,
-     "Invertir": 47,
-     "Crecer": 63
+     "Soltar": 96
     }
    },
    "persona": {
@@ -1004,175 +1009,175 @@
    "job": {
     "Inmuebles México": {
      "total": 2.1,
+     "Crecer": 2.8,
+     "Crecer_idx": 133,
+     "Invertir": 0.8,
+     "Invertir_idx": 38,
      "Urgencia": 3.4,
      "Urgencia_idx": 162,
-     "Soltar": 1.6,
-     "Soltar_idx": 76,
-     "Invertir": 2.1,
-     "Invertir_idx": 100,
-     "Crecer": 0.0,
-     "Crecer_idx": 0
+     "Soltar": 1.0,
+     "Soltar_idx": 48
     },
     "Century 21": {
      "total": 17.2,
-     "Urgencia": 16.1,
-     "Urgencia_idx": 94,
-     "Soltar": 14.5,
-     "Soltar_idx": 84,
+     "Crecer": 18.7,
+     "Crecer_idx": 109,
      "Invertir": 12.8,
      "Invertir_idx": 74,
-     "Crecer": 25.4,
-     "Crecer_idx": 148
+     "Urgencia": 16.1,
+     "Urgencia_idx": 94,
+     "Soltar": 14.6,
+     "Soltar_idx": 85
     },
     "RE/MAX": {
      "total": 2.1,
+     "Crecer": 2.3,
+     "Crecer_idx": 110,
+     "Invertir": 3.0,
+     "Invertir_idx": 143,
      "Urgencia": 1.7,
      "Urgencia_idx": 81,
-     "Soltar": 1.6,
-     "Soltar_idx": 76,
-     "Invertir": 4.3,
-     "Invertir_idx": 205,
-     "Crecer": 1.6,
-     "Crecer_idx": 76
+     "Soltar": 2.1,
+     "Soltar_idx": 100
     },
     "Inmuebles 24": {
      "total": 17.6,
+     "Crecer": 17.3,
+     "Crecer_idx": 98,
+     "Invertir": 22.6,
+     "Invertir_idx": 128,
      "Urgencia": 11.9,
      "Urgencia_idx": 68,
-     "Soltar": 24.2,
-     "Soltar_idx": 138,
-     "Invertir": 23.4,
-     "Invertir_idx": 133,
-     "Crecer": 17.5,
-     "Crecer_idx": 99
+     "Soltar": 19.8,
+     "Soltar_idx": 112
     },
     "Casas Ara": {
      "total": 7.6,
+     "Crecer": 8.9,
+     "Crecer_idx": 117,
+     "Invertir": 4.5,
+     "Invertir_idx": 59,
      "Urgencia": 5.1,
      "Urgencia_idx": 67,
-     "Soltar": 6.5,
-     "Soltar_idx": 86,
-     "Invertir": 10.6,
-     "Invertir_idx": 139,
-     "Crecer": 11.1,
-     "Crecer_idx": 146
+     "Soltar": 6.2,
+     "Soltar_idx": 82
     },
     "Compramos tu casa": {
      "total": 1.4,
+     "Crecer": 1.9,
+     "Crecer_idx": 136,
+     "Invertir": 0.8,
+     "Invertir_idx": 57,
      "Urgencia": 0.8,
      "Urgencia_idx": 57,
      "Soltar": 0.0,
-     "Soltar_idx": 0,
-     "Invertir": 2.1,
-     "Invertir_idx": 150,
-     "Crecer": 3.2,
-     "Crecer_idx": 229
+     "Soltar_idx": 0
     },
     "Tuhabi": {
      "total": 12.4,
+     "Crecer": 12.1,
+     "Crecer_idx": 98,
+     "Invertir": 8.3,
+     "Invertir_idx": 67,
      "Urgencia": 11.0,
      "Urgencia_idx": 89,
-     "Soltar": 12.9,
-     "Soltar_idx": 104,
-     "Invertir": 8.5,
-     "Invertir_idx": 69,
-     "Crecer": 17.5,
-     "Crecer_idx": 141
+     "Soltar": 11.5,
+     "Soltar_idx": 93
     },
     "La Haus": {
      "total": 0.3,
+     "Crecer": 0.0,
+     "Crecer_idx": 0,
+     "Invertir": 0.8,
+     "Invertir_idx": 267,
      "Urgencia": 0.0,
      "Urgencia_idx": 0,
      "Soltar": 0.0,
-     "Soltar_idx": 0,
-     "Invertir": 2.1,
-     "Invertir_idx": 700,
-     "Crecer": 0.0,
-     "Crecer_idx": 0
+     "Soltar_idx": 0
     },
     "Propiedades.com": {
      "total": 2.1,
+     "Crecer": 1.9,
+     "Crecer_idx": 90,
+     "Invertir": 4.5,
+     "Invertir_idx": 214,
      "Urgencia": 1.7,
      "Urgencia_idx": 81,
-     "Soltar": 0.0,
-     "Soltar_idx": 0,
-     "Invertir": 8.5,
-     "Invertir_idx": 405,
-     "Crecer": 0.0,
-     "Crecer_idx": 0
+     "Soltar": 1.0,
+     "Soltar_idx": 48
     },
     "Lamudi": {
      "total": 1.4,
+     "Crecer": 1.9,
+     "Crecer_idx": 136,
+     "Invertir": 1.5,
+     "Invertir_idx": 107,
      "Urgencia": 0.8,
      "Urgencia_idx": 57,
-     "Soltar": 1.6,
-     "Soltar_idx": 114,
-     "Invertir": 0.0,
-     "Invertir_idx": 0,
-     "Crecer": 3.2,
-     "Crecer_idx": 229
+     "Soltar": 1.0,
+     "Soltar_idx": 71
     },
     "Tecnocasa": {
      "total": 5.9,
+     "Crecer": 7.0,
+     "Crecer_idx": 119,
+     "Invertir": 7.5,
+     "Invertir_idx": 127,
      "Urgencia": 7.6,
      "Urgencia_idx": 129,
-     "Soltar": 3.2,
-     "Soltar_idx": 54,
-     "Invertir": 8.5,
-     "Invertir_idx": 144,
-     "Crecer": 3.2,
-     "Crecer_idx": 54
+     "Soltar": 4.2,
+     "Soltar_idx": 71
     },
     "Por mi cuenta (sin intermediarios)": {
      "total": 17.6,
+     "Crecer": 13.1,
+     "Crecer_idx": 74,
+     "Invertir": 18.0,
+     "Invertir_idx": 102,
      "Urgencia": 21.2,
      "Urgencia_idx": 120,
-     "Soltar": 21.0,
-     "Soltar_idx": 119,
-     "Invertir": 12.8,
-     "Invertir_idx": 73,
-     "Crecer": 11.1,
-     "Crecer_idx": 63
+     "Soltar": 24.0,
+     "Soltar_idx": 136
     },
     "Otra marca (texto libre)": {
      "total": 10.7,
+     "Crecer": 11.2,
+     "Crecer_idx": 105,
+     "Invertir": 12.8,
+     "Invertir_idx": 120,
      "Urgencia": 15.3,
      "Urgencia_idx": 143,
-     "Soltar": 12.9,
-     "Soltar_idx": 121,
-     "Invertir": 4.3,
-     "Invertir_idx": 40,
-     "Crecer": 4.8,
-     "Crecer_idx": 45
+     "Soltar": 13.5,
+     "Soltar_idx": 126
     },
     "Just Sale": {
      "total": 0.3,
+     "Crecer": 0.0,
+     "Crecer_idx": 0,
+     "Invertir": 0.8,
+     "Invertir_idx": 267,
      "Urgencia": 0.8,
      "Urgencia_idx": 267,
-     "Soltar": 0.0,
-     "Soltar_idx": 0,
-     "Invertir": 0.0,
-     "Invertir_idx": 0,
-     "Crecer": 0.0,
-     "Crecer_idx": 0
+     "Soltar": 1.0,
+     "Soltar_idx": 333
     },
     "Vende tu casa YA!": {
      "total": 1.4,
+     "Crecer": 0.9,
+     "Crecer_idx": 64,
+     "Invertir": 1.5,
+     "Invertir_idx": 107,
      "Urgencia": 2.5,
      "Urgencia_idx": 179,
      "Soltar": 0.0,
-     "Soltar_idx": 0,
-     "Invertir": 0.0,
-     "Invertir_idx": 0,
-     "Crecer": 1.6,
-     "Crecer_idx": 114
+     "Soltar_idx": 0
     },
     "__base__": {
      "total": 290,
+     "Crecer": 214,
+     "Invertir": 133,
      "Urgencia": 118,
-     "Soltar": 62,
-     "Invertir": 47,
-     "Crecer": 63
+     "Soltar": 96
     }
    },
    "persona": {
@@ -1373,65 +1378,65 @@
    "job": {
     "5 al 10%": {
      "total": 34.5,
+     "Crecer": 36.9,
+     "Crecer_idx": 107,
+     "Invertir": 34.8,
+     "Invertir_idx": 101,
      "Urgencia": 31.7,
      "Urgencia_idx": 92,
-     "Soltar": 45.2,
-     "Soltar_idx": 131,
-     "Invertir": 22.6,
-     "Invertir_idx": 66,
-     "Crecer": 37.8,
-     "Crecer_idx": 110
+     "Soltar": 38.2,
+     "Soltar_idx": 111
     },
     "Menos del 5%": {
      "total": 28.5,
+     "Crecer": 27.5,
+     "Crecer_idx": 96,
+     "Invertir": 25.8,
+     "Invertir_idx": 91,
      "Urgencia": 28.0,
      "Urgencia_idx": 98,
-     "Soltar": 21.4,
-     "Soltar_idx": 75,
-     "Invertir": 35.5,
-     "Invertir_idx": 125,
-     "Crecer": 31.1,
-     "Crecer_idx": 109
+     "Soltar": 27.9,
+     "Soltar_idx": 98
     },
     "No lo bajaría": {
      "total": 28.5,
+     "Crecer": 26.2,
+     "Crecer_idx": 92,
+     "Invertir": 33.7,
+     "Invertir_idx": 118,
      "Urgencia": 34.1,
      "Urgencia_idx": 120,
-     "Soltar": 33.3,
-     "Soltar_idx": 117,
-     "Invertir": 32.3,
-     "Invertir_idx": 113,
-     "Crecer": 11.1,
-     "Crecer_idx": 39
+     "Soltar": 30.9,
+     "Soltar_idx": 108
     },
     "11 al 20%": {
      "total": 8.0,
+     "Crecer": 8.7,
+     "Crecer_idx": 109,
+     "Invertir": 5.6,
+     "Invertir_idx": 70,
      "Urgencia": 6.1,
      "Urgencia_idx": 76,
-     "Soltar": 0.0,
-     "Soltar_idx": 0,
-     "Invertir": 9.7,
-     "Invertir_idx": 121,
-     "Crecer": 17.8,
-     "Crecer_idx": 222
+     "Soltar": 2.9,
+     "Soltar_idx": 36
     },
     "Más del 20%": {
      "total": 0.5,
+     "Crecer": 0.7,
+     "Crecer_idx": 140,
+     "Invertir": 0.0,
+     "Invertir_idx": 0,
      "Urgencia": 0.0,
      "Urgencia_idx": 0,
      "Soltar": 0.0,
-     "Soltar_idx": 0,
-     "Invertir": 0.0,
-     "Invertir_idx": 0,
-     "Crecer": 2.2,
-     "Crecer_idx": 440
+     "Soltar_idx": 0
     },
     "__base__": {
      "total": 200,
+     "Crecer": 149,
+     "Invertir": 89,
      "Urgencia": 82,
-     "Soltar": 42,
-     "Invertir": 31,
-     "Crecer": 45
+     "Soltar": 68
     }
    },
    "persona": {
@@ -1522,54 +1527,54 @@
    "job": {
     "Buena": {
      "total": 38.8,
+     "Crecer": 39.0,
+     "Crecer_idx": 101,
+     "Invertir": 43.5,
+     "Invertir_idx": 112,
      "Urgencia": 35.1,
      "Urgencia_idx": 90,
-     "Soltar": 37.0,
-     "Soltar_idx": 95,
-     "Invertir": 46.7,
-     "Invertir_idx": 120,
-     "Crecer": 41.7,
-     "Crecer_idx": 107
+     "Soltar": 35.1,
+     "Soltar_idx": 90
     },
     "Regular": {
      "total": 10.7,
+     "Crecer": 11.7,
+     "Crecer_idx": 109,
+     "Invertir": 10.9,
+     "Invertir_idx": 102,
      "Urgencia": 13.5,
      "Urgencia_idx": 126,
-     "Soltar": 11.1,
-     "Soltar_idx": 104,
-     "Invertir": 0.0,
-     "Invertir_idx": 0,
-     "Crecer": 12.5,
-     "Crecer_idx": 117
+     "Soltar": 8.1,
+     "Soltar_idx": 76
     },
     "Muy buena": {
      "total": 23.3,
+     "Crecer": 20.8,
+     "Crecer_idx": 89,
+     "Invertir": 26.1,
+     "Invertir_idx": 112,
      "Urgencia": 16.2,
      "Urgencia_idx": 70,
-     "Soltar": 29.6,
-     "Soltar_idx": 127,
-     "Invertir": 33.3,
-     "Invertir_idx": 143,
-     "Crecer": 20.8,
-     "Crecer_idx": 89
+     "Soltar": 29.7,
+     "Soltar_idx": 127
     },
     "Excelente": {
      "total": 27.2,
+     "Crecer": 28.6,
+     "Crecer_idx": 105,
+     "Invertir": 19.6,
+     "Invertir_idx": 72,
      "Urgencia": 35.1,
      "Urgencia_idx": 129,
-     "Soltar": 22.2,
-     "Soltar_idx": 82,
-     "Invertir": 20.0,
-     "Invertir_idx": 74,
-     "Crecer": 25.0,
-     "Crecer_idx": 92
+     "Soltar": 27.0,
+     "Soltar_idx": 99
     },
     "__base__": {
      "total": 103,
+     "Crecer": 77,
+     "Invertir": 46,
      "Urgencia": 37,
-     "Soltar": 27,
-     "Invertir": 15,
-     "Crecer": 24
+     "Soltar": 37
     }
    },
    "persona": {
@@ -1632,131 +1637,131 @@
    "job": {
     "Temo que haya costos o comisiones ocultas": {
      "total": 24.0,
+     "Crecer": 26.2,
+     "Crecer_idx": 109,
+     "Invertir": 23.6,
+     "Invertir_idx": 98,
      "Urgencia": 34.1,
      "Urgencia_idx": 142,
-     "Soltar": 28.6,
-     "Soltar_idx": 119,
-     "Invertir": 9.7,
-     "Invertir_idx": 40,
-     "Crecer": 11.1,
-     "Crecer_idx": 46
+     "Soltar": 35.3,
+     "Soltar_idx": 147
     },
     "No conozco bien cómo funciona este tipo de servicio": {
      "total": 30.0,
+     "Crecer": 31.5,
+     "Crecer_idx": 105,
+     "Invertir": 29.2,
+     "Invertir_idx": 97,
      "Urgencia": 32.9,
      "Urgencia_idx": 110,
-     "Soltar": 26.2,
-     "Soltar_idx": 87,
-     "Invertir": 29.0,
-     "Invertir_idx": 97,
-     "Crecer": 28.9,
-     "Crecer_idx": 96
+     "Soltar": 26.5,
+     "Soltar_idx": 88
     },
     "Confío más en una inmobiliaria tradicional": {
      "total": 19.0,
+     "Crecer": 20.1,
+     "Crecer_idx": 106,
+     "Invertir": 16.9,
+     "Invertir_idx": 89,
      "Urgencia": 26.8,
      "Urgencia_idx": 141,
-     "Soltar": 11.9,
-     "Soltar_idx": 63,
-     "Invertir": 12.9,
-     "Invertir_idx": 68,
-     "Crecer": 15.6,
-     "Crecer_idx": 82
+     "Soltar": 19.1,
+     "Soltar_idx": 101
     },
     "Los procesos digitales son riesgosos e impersonales": {
      "total": 12.0,
+     "Crecer": 13.4,
+     "Crecer_idx": 112,
+     "Invertir": 12.4,
+     "Invertir_idx": 103,
      "Urgencia": 17.1,
      "Urgencia_idx": 143,
-     "Soltar": 9.5,
-     "Soltar_idx": 79,
-     "Invertir": 9.7,
-     "Invertir_idx": 81,
-     "Crecer": 6.7,
-     "Crecer_idx": 56
+     "Soltar": 11.8,
+     "Soltar_idx": 98
     },
     "Prefiero venderla de manera directa": {
      "total": 26.5,
+     "Crecer": 26.2,
+     "Crecer_idx": 99,
+     "Invertir": 23.6,
+     "Invertir_idx": 89,
      "Urgencia": 35.4,
      "Urgencia_idx": 134,
-     "Soltar": 23.8,
-     "Soltar_idx": 90,
-     "Invertir": 19.4,
-     "Invertir_idx": 73,
-     "Crecer": 17.8,
-     "Crecer_idx": 67
+     "Soltar": 25.0,
+     "Soltar_idx": 94
     },
     "No las conocía": {
      "total": 54.5,
+     "Crecer": 53.7,
+     "Crecer_idx": 99,
+     "Invertir": 58.4,
+     "Invertir_idx": 107,
      "Urgencia": 50.0,
      "Urgencia_idx": 92,
-     "Soltar": 52.4,
-     "Soltar_idx": 96,
-     "Invertir": 67.7,
-     "Invertir_idx": 124,
-     "Crecer": 55.6,
-     "Crecer_idx": 102
+     "Soltar": 52.9,
+     "Soltar_idx": 97
     },
     "No me gusta la idea de que una empresa “revenda” mi casa": {
      "total": 11.5,
+     "Crecer": 12.1,
+     "Crecer_idx": 105,
+     "Invertir": 11.2,
+     "Invertir_idx": 97,
      "Urgencia": 14.6,
      "Urgencia_idx": 127,
-     "Soltar": 4.8,
-     "Soltar_idx": 42,
-     "Invertir": 12.9,
-     "Invertir_idx": 112,
-     "Crecer": 11.1,
-     "Crecer_idx": 97
+     "Soltar": 11.8,
+     "Soltar_idx": 103
     },
     "Ofrecen menos dinero de lo que vale mi casa": {
      "total": 16.5,
+     "Crecer": 13.4,
+     "Crecer_idx": 81,
+     "Invertir": 13.5,
+     "Invertir_idx": 82,
      "Urgencia": 22.0,
      "Urgencia_idx": 133,
-     "Soltar": 19.0,
-     "Soltar_idx": 115,
-     "Invertir": 0.0,
-     "Invertir_idx": 0,
-     "Crecer": 15.6,
-     "Crecer_idx": 95
+     "Soltar": 20.6,
+     "Soltar_idx": 125
     },
     "Mi casa no cumple con las condiciones que piden": {
      "total": 2.5,
+     "Crecer": 3.4,
+     "Crecer_idx": 136,
+     "Invertir": 2.2,
+     "Invertir_idx": 88,
      "Urgencia": 3.7,
      "Urgencia_idx": 148,
-     "Soltar": 2.4,
-     "Soltar_idx": 96,
-     "Invertir": 3.2,
-     "Invertir_idx": 128,
-     "Crecer": 0.0,
-     "Crecer_idx": 0
+     "Soltar": 2.9,
+     "Soltar_idx": 116
     },
     "Son estrictos con los requisitos": {
      "total": 5.0,
+     "Crecer": 4.7,
+     "Crecer_idx": 94,
+     "Invertir": 3.4,
+     "Invertir_idx": 68,
      "Urgencia": 7.3,
      "Urgencia_idx": 146,
-     "Soltar": 4.8,
-     "Soltar_idx": 96,
-     "Invertir": 3.2,
-     "Invertir_idx": 64,
-     "Crecer": 2.2,
-     "Crecer_idx": 44
+     "Soltar": 5.9,
+     "Soltar_idx": 118
     },
     "Otra (Especificar)": {
      "total": 2.0,
+     "Crecer": 2.0,
+     "Crecer_idx": 100,
+     "Invertir": 1.1,
+     "Invertir_idx": 55,
      "Urgencia": 2.4,
      "Urgencia_idx": 120,
-     "Soltar": 2.4,
-     "Soltar_idx": 120,
-     "Invertir": 0.0,
-     "Invertir_idx": 0,
-     "Crecer": 2.2,
-     "Crecer_idx": 110
+     "Soltar": 1.5,
+     "Soltar_idx": 75
     },
     "__base__": {
      "total": 200,
+     "Crecer": 149,
+     "Invertir": 89,
      "Urgencia": 82,
-     "Soltar": 42,
-     "Invertir": 31,
-     "Crecer": 45
+     "Soltar": 68
     }
    },
    "persona": {
@@ -1896,98 +1901,98 @@
    "job": {
     "Redes sociales": {
      "total": 39.3,
+     "Crecer": 41.1,
+     "Crecer_idx": 105,
+     "Invertir": 45.1,
+     "Invertir_idx": 115,
      "Urgencia": 35.6,
      "Urgencia_idx": 91,
-     "Soltar": 41.9,
-     "Soltar_idx": 107,
-     "Invertir": 44.7,
-     "Invertir_idx": 114,
-     "Crecer": 39.7,
-     "Crecer_idx": 101
+     "Soltar": 38.5,
+     "Soltar_idx": 98
     },
     "Casas Inmobiliarias": {
      "total": 43.8,
+     "Crecer": 45.3,
+     "Crecer_idx": 103,
+     "Invertir": 50.4,
+     "Invertir_idx": 115,
      "Urgencia": 44.1,
      "Urgencia_idx": 101,
-     "Soltar": 35.5,
-     "Soltar_idx": 81,
-     "Invertir": 57.4,
-     "Invertir_idx": 131,
-     "Crecer": 41.3,
-     "Crecer_idx": 94
+     "Soltar": 36.5,
+     "Soltar_idx": 83
     },
     "Boca a boca: Ofrecer a contactos potenciales": {
      "total": 54.8,
+     "Crecer": 53.3,
+     "Crecer_idx": 97,
+     "Invertir": 55.6,
+     "Invertir_idx": 101,
      "Urgencia": 50.8,
      "Urgencia_idx": 93,
-     "Soltar": 61.3,
-     "Soltar_idx": 112,
-     "Invertir": 57.4,
-     "Invertir_idx": 105,
-     "Crecer": 54.0,
-     "Crecer_idx": 99
+     "Soltar": 63.5,
+     "Soltar_idx": 116
     },
     "Páginas web / apps especializadas en venta de propiedades": {
      "total": 27.6,
+     "Crecer": 30.4,
+     "Crecer_idx": 110,
+     "Invertir": 34.6,
+     "Invertir_idx": 125,
      "Urgencia": 20.3,
      "Urgencia_idx": 74,
-     "Soltar": 25.8,
-     "Soltar_idx": 93,
-     "Invertir": 42.6,
-     "Invertir_idx": 154,
-     "Crecer": 31.7,
-     "Crecer_idx": 115
+     "Soltar": 27.1,
+     "Soltar_idx": 98
     },
     "Agente": {
      "total": 15.5,
+     "Crecer": 17.3,
+     "Crecer_idx": 112,
+     "Invertir": 18.0,
+     "Invertir_idx": 116,
      "Urgencia": 10.2,
      "Urgencia_idx": 66,
-     "Soltar": 16.1,
-     "Soltar_idx": 104,
-     "Invertir": 23.4,
-     "Invertir_idx": 151,
-     "Crecer": 19.0,
-     "Crecer_idx": 123
+     "Soltar": 12.5,
+     "Soltar_idx": 81
     },
     "Anuncios impresos": {
      "total": 23.1,
+     "Crecer": 25.7,
+     "Crecer_idx": 111,
+     "Invertir": 22.6,
+     "Invertir_idx": 98,
      "Urgencia": 22.0,
      "Urgencia_idx": 95,
-     "Soltar": 22.6,
-     "Soltar_idx": 98,
-     "Invertir": 21.3,
-     "Invertir_idx": 92,
-     "Crecer": 27.0,
-     "Crecer_idx": 117
+     "Soltar": 21.9,
+     "Soltar_idx": 95
     },
     "Ferias/Expos inmobiliarios": {
      "total": 4.1,
+     "Crecer": 4.7,
+     "Crecer_idx": 115,
+     "Invertir": 4.5,
+     "Invertir_idx": 110,
      "Urgencia": 3.4,
      "Urgencia_idx": 83,
-     "Soltar": 4.8,
-     "Soltar_idx": 117,
-     "Invertir": 4.3,
-     "Invertir_idx": 105,
-     "Crecer": 4.8,
-     "Crecer_idx": 117
+     "Soltar": 6.2,
+     "Soltar_idx": 151
     },
     "Otro (texto libre)": {
      "total": 2.1,
-     "Urgencia": 2.5,
-     "Urgencia_idx": 119,
-     "Soltar": 3.2,
-     "Soltar_idx": 152,
+     "Crecer": 2.8,
+     "Crecer_idx": 133,
      "Invertir": 0.0,
      "Invertir_idx": 0,
-     "Crecer": 1.6,
-     "Crecer_idx": 76
+     "Urgencia": 2.5,
+     "Urgencia_idx": 119,
+     "Soltar": 2.1,
+     "Soltar_idx": 100
     },
     "__base__": {
      "total": 290,
+     "Crecer": 214,
+     "Invertir": 133,
      "Urgencia": 118,
-     "Soltar": 62,
-     "Invertir": 47,
-     "Crecer": 63
+     "Soltar": 96
     }
    },
    "persona": {
@@ -2182,241 +2187,241 @@
    "tbl": {
     "FORMALIDAD EN EL PROCESO": {
      "total": 53.4,
+     "Crecer": 53.6,
+     "Crecer_idx": 100,
+     "Invertir": 52.2,
+     "Invertir_idx": 98,
      "Urgencia": 54.7,
      "Urgencia_idx": 102,
-     "Soltar": 51.9,
-     "Soltar_idx": 97,
-     "Invertir": 53.0,
-     "Invertir_idx": 99,
-     "Crecer": 52.7,
-     "Crecer_idx": 99
+     "Soltar": 51.8,
+     "Soltar_idx": 97
     },
     "Que cumpla con los tiempos acordados para pagos y trámites": {
      "total": 6.9,
-     "Urgencia": 6.8,
-     "Urgencia_idx": 99,
-     "Soltar": 7.0,
-     "Soltar_idx": 101,
+     "Crecer": 7.0,
+     "Crecer_idx": 101,
      "Invertir": 7.0,
      "Invertir_idx": 101,
-     "Crecer": 6.9,
-     "Crecer_idx": 100
+     "Urgencia": 6.8,
+     "Urgencia_idx": 99,
+     "Soltar": 6.8,
+     "Soltar_idx": 99
     },
     "Que proporcione la documentación necesaria (identificaciones, comprobantes, etc.).": {
      "total": 6.2,
+     "Crecer": 6.6,
+     "Crecer_idx": 106,
+     "Invertir": 6.8,
+     "Invertir_idx": 110,
      "Urgencia": 5.5,
      "Urgencia_idx": 89,
-     "Soltar": 6.9,
-     "Soltar_idx": 111,
-     "Invertir": 6.2,
-     "Invertir_idx": 100,
-     "Crecer": 6.9,
-     "Crecer_idx": 111
+     "Soltar": 6.2,
+     "Soltar_idx": 100
     },
     "Que cumpla con los tiempos de escrituración y entrega acordados.": {
      "total": 5.7,
+     "Crecer": 5.6,
+     "Crecer_idx": 98,
+     "Invertir": 6.0,
+     "Invertir_idx": 105,
      "Urgencia": 6.3,
      "Urgencia_idx": 111,
-     "Soltar": 5.0,
-     "Soltar_idx": 88,
-     "Invertir": 6.4,
-     "Invertir_idx": 112,
-     "Crecer": 4.7,
-     "Crecer_idx": 82
+     "Soltar": 4.9,
+     "Soltar_idx": 86
     },
     "Que tenga decisión real de compra, sin alargar el proceso innecesariamente.": {
      "total": 5.8,
+     "Crecer": 6.1,
+     "Crecer_idx": 105,
+     "Invertir": 5.1,
+     "Invertir_idx": 88,
      "Urgencia": 5.9,
      "Urgencia_idx": 102,
-     "Soltar": 5.6,
-     "Soltar_idx": 97,
-     "Invertir": 5.4,
-     "Invertir_idx": 93,
-     "Crecer": 6.0,
-     "Crecer_idx": 103
+     "Soltar": 5.5,
+     "Soltar_idx": 95
     },
     "Que muestre seriedad y respeto durante las negociaciones.": {
      "total": 4.8,
+     "Crecer": 4.7,
+     "Crecer_idx": 98,
+     "Invertir": 5.1,
+     "Invertir_idx": 106,
      "Urgencia": 5.1,
      "Urgencia_idx": 106,
-     "Soltar": 4.7,
-     "Soltar_idx": 98,
-     "Invertir": 5.2,
-     "Invertir_idx": 108,
-     "Crecer": 4.0,
-     "Crecer_idx": 83
+     "Soltar": 5.1,
+     "Soltar_idx": 106
     },
     "Que esté dispuesto a cubrir los gastos que le correspondan.": {
      "total": 4.2,
+     "Crecer": 4.3,
+     "Crecer_idx": 102,
+     "Invertir": 3.8,
+     "Invertir_idx": 90,
      "Urgencia": 4.0,
      "Urgencia_idx": 95,
      "Soltar": 4.1,
-     "Soltar_idx": 98,
-     "Invertir": 5.0,
-     "Invertir_idx": 119,
-     "Crecer": 3.9,
-     "Crecer_idx": 93
+     "Soltar_idx": 98
     },
     "Que esté dispuesto a firmar compromisos o apartados si se requiere.": {
      "total": 4.3,
+     "Crecer": 4.3,
+     "Crecer_idx": 100,
+     "Invertir": 3.6,
+     "Invertir_idx": 84,
      "Urgencia": 4.3,
      "Urgencia_idx": 100,
-     "Soltar": 4.7,
-     "Soltar_idx": 109,
-     "Invertir": 3.3,
-     "Invertir_idx": 77,
-     "Crecer": 4.9,
-     "Crecer_idx": 114
+     "Soltar": 4.2,
+     "Soltar_idx": 98
     },
     "Que se presente una oferta clara y formal por escrito.": {
      "total": 4.3,
+     "Crecer": 4.5,
+     "Crecer_idx": 105,
+     "Invertir": 3.8,
+     "Invertir_idx": 88,
      "Urgencia": 5.0,
      "Urgencia_idx": 116,
-     "Soltar": 3.1,
-     "Soltar_idx": 72,
-     "Invertir": 4.4,
-     "Invertir_idx": 102,
-     "Crecer": 4.3,
-     "Crecer_idx": 100
+     "Soltar": 4.2,
+     "Soltar_idx": 98
     },
     "Que no imponga trámites o requisitos complicados o innecesarios": {
      "total": 4.2,
+     "Crecer": 3.6,
+     "Crecer_idx": 86,
+     "Invertir": 4.2,
+     "Invertir_idx": 100,
      "Urgencia": 4.5,
      "Urgencia_idx": 107,
-     "Soltar": 4.1,
-     "Soltar_idx": 98,
-     "Invertir": 4.1,
-     "Invertir_idx": 98,
-     "Crecer": 3.7,
-     "Crecer_idx": 88
+     "Soltar": 4.3,
+     "Soltar_idx": 102
     },
     "Que respete el estado y condiciones del inmueble tal como se acuerdan.": {
      "total": 3.8,
+     "Crecer": 3.9,
+     "Crecer_idx": 103,
+     "Invertir": 3.6,
+     "Invertir_idx": 95,
      "Urgencia": 3.9,
      "Urgencia_idx": 103,
-     "Soltar": 4.1,
-     "Soltar_idx": 108,
-     "Invertir": 3.3,
-     "Invertir_idx": 87,
-     "Crecer": 3.9,
-     "Crecer_idx": 103
+     "Soltar": 3.7,
+     "Soltar_idx": 97
     },
     "Que mantenga comunicación constante y formal durante el proceso.": {
      "total": 3.1,
+     "Crecer": 3.0,
+     "Crecer_idx": 97,
+     "Invertir": 3.0,
+     "Invertir_idx": 97,
      "Urgencia": 3.5,
      "Urgencia_idx": 113,
-     "Soltar": 2.6,
-     "Soltar_idx": 84,
-     "Invertir": 2.7,
-     "Invertir_idx": 87,
-     "Crecer": 3.3,
-     "Crecer_idx": 106
+     "Soltar": 2.9,
+     "Soltar_idx": 94
     },
     "SEGURIDAD": {
      "total": 35.2,
+     "Crecer": 35.7,
+     "Crecer_idx": 101,
+     "Invertir": 35.5,
+     "Invertir_idx": 101,
      "Urgencia": 34.1,
      "Urgencia_idx": 97,
-     "Soltar": 34.6,
-     "Soltar_idx": 98,
-     "Invertir": 36.4,
-     "Invertir_idx": 103,
-     "Crecer": 37.1,
-     "Crecer_idx": 105
+     "Soltar": 35.1,
+     "Soltar_idx": 100
     },
     "Que ofrezca un pago seguro y garantizado (transferencia, cheque certificado, etc.).": {
      "total": 10.6,
+     "Crecer": 11.0,
+     "Crecer_idx": 104,
+     "Invertir": 11.6,
+     "Invertir_idx": 109,
      "Urgencia": 9.7,
      "Urgencia_idx": 92,
      "Soltar": 10.4,
-     "Soltar_idx": 98,
-     "Invertir": 13.0,
-     "Invertir_idx": 123,
-     "Crecer": 10.6,
-     "Crecer_idx": 100
+     "Soltar_idx": 98
     },
     "Que no genere riesgos legales o fiscales para el vendedor.": {
      "total": 7.3,
+     "Crecer": 7.1,
+     "Crecer_idx": 97,
+     "Invertir": 7.1,
+     "Invertir_idx": 97,
      "Urgencia": 6.5,
      "Urgencia_idx": 89,
-     "Soltar": 7.8,
-     "Soltar_idx": 107,
-     "Invertir": 7.7,
-     "Invertir_idx": 105,
-     "Crecer": 7.8,
-     "Crecer_idx": 107
+     "Soltar": 7.5,
+     "Soltar_idx": 103
     },
     "Que ofrezca una operación transparente y sin intermediarios dudosos.": {
      "total": 6.2,
+     "Crecer": 6.3,
+     "Crecer_idx": 102,
+     "Invertir": 5.6,
+     "Invertir_idx": 90,
      "Urgencia": 6.5,
      "Urgencia_idx": 105,
-     "Soltar": 6.0,
-     "Soltar_idx": 97,
-     "Invertir": 5.2,
-     "Invertir_idx": 84,
-     "Crecer": 6.6,
-     "Crecer_idx": 106
+     "Soltar": 6.2,
+     "Soltar_idx": 100
     },
     "Que el comprador tenga capacidad económica comprobable.": {
      "total": 6.4,
+     "Crecer": 6.3,
+     "Crecer_idx": 98,
+     "Invertir": 7.0,
+     "Invertir_idx": 109,
      "Urgencia": 6.4,
      "Urgencia_idx": 100,
-     "Soltar": 5.9,
-     "Soltar_idx": 92,
-     "Invertir": 6.6,
-     "Invertir_idx": 103,
-     "Crecer": 6.6,
-     "Crecer_idx": 103
+     "Soltar": 6.1,
+     "Soltar_idx": 95
     },
     "Que cuente con asesoría notarial o bancaria propia para agilizar el cierre": {
      "total": 4.8,
+     "Crecer": 5.0,
+     "Crecer_idx": 104,
+     "Invertir": 4.1,
+     "Invertir_idx": 85,
      "Urgencia": 5.0,
      "Urgencia_idx": 104,
-     "Soltar": 4.5,
-     "Soltar_idx": 94,
-     "Invertir": 3.9,
-     "Invertir_idx": 81,
-     "Crecer": 5.5,
-     "Crecer_idx": 115
+     "Soltar": 4.9,
+     "Soltar_idx": 102
     },
     "PRECIO JUSTO": {
      "total": 11.4,
+     "Crecer": 10.7,
+     "Crecer_idx": 94,
+     "Invertir": 12.3,
+     "Invertir_idx": 108,
      "Urgencia": 11.2,
      "Urgencia_idx": 98,
-     "Soltar": 13.5,
-     "Soltar_idx": 118,
-     "Invertir": 10.6,
-     "Invertir_idx": 93,
-     "Crecer": 10.2,
-     "Crecer_idx": 89
+     "Soltar": 13.1,
+     "Soltar_idx": 115
     },
     "Que respete mi avalúo justo": {
      "total": 6.6,
+     "Crecer": 5.9,
+     "Crecer_idx": 89,
+     "Invertir": 7.6,
+     "Invertir_idx": 115,
      "Urgencia": 6.2,
      "Urgencia_idx": 94,
-     "Soltar": 9.1,
-     "Soltar_idx": 138,
-     "Invertir": 6.0,
-     "Invertir_idx": 91,
-     "Crecer": 5.2,
-     "Crecer_idx": 79
+     "Soltar": 8.5,
+     "Soltar_idx": 129
     },
     "Que no solicite reducciones excesivas de precio.": {
      "total": 4.8,
+     "Crecer": 4.8,
+     "Crecer_idx": 100,
+     "Invertir": 4.7,
+     "Invertir_idx": 98,
      "Urgencia": 5.0,
      "Urgencia_idx": 104,
-     "Soltar": 4.4,
-     "Soltar_idx": 92,
-     "Invertir": 4.6,
-     "Invertir_idx": 96,
-     "Crecer": 5.0,
-     "Crecer_idx": 104
+     "Soltar": 4.5,
+     "Soltar_idx": 94
     },
     "__base__": {
      "total": 290,
+     "Crecer": 214,
+     "Invertir": 133,
      "Urgencia": 118,
-     "Soltar": 62,
-     "Invertir": 47,
-     "Crecer": 63
+     "Soltar": 96
     }
    }
   },
@@ -2532,296 +2537,296 @@
    "tbl": {
     "IMAGEN PROFESIONAL": {
      "total": 26.8,
+     "Crecer": 27.0,
+     "Crecer_idx": 101,
+     "Invertir": 26.6,
+     "Invertir_idx": 99,
      "Urgencia": 26.5,
      "Urgencia_idx": 99,
      "Soltar": 26.6,
-     "Soltar_idx": 99,
-     "Invertir": 27.0,
-     "Invertir_idx": 101,
-     "Crecer": 27.2,
-     "Crecer_idx": 101
+     "Soltar_idx": 99
     },
     "Profesional": {
      "total": 4.7,
-     "Urgencia": 4.5,
-     "Urgencia_idx": 96,
-     "Soltar": 4.9,
-     "Soltar_idx": 104,
+     "Crecer": 4.7,
+     "Crecer_idx": 100,
      "Invertir": 4.7,
      "Invertir_idx": 100,
-     "Crecer": 4.7,
-     "Crecer_idx": 100
+     "Urgencia": 4.5,
+     "Urgencia_idx": 96,
+     "Soltar": 4.8,
+     "Soltar_idx": 102
     },
     "Experta en el sector": {
      "total": 4.4,
+     "Crecer": 4.5,
+     "Crecer_idx": 102,
+     "Invertir": 4.3,
+     "Invertir_idx": 98,
      "Urgencia": 4.3,
      "Urgencia_idx": 98,
      "Soltar": 4.2,
-     "Soltar_idx": 95,
-     "Invertir": 4.4,
-     "Invertir_idx": 100,
-     "Crecer": 4.5,
-     "Crecer_idx": 102
+     "Soltar_idx": 95
     },
     "De confianza": {
      "total": 4.5,
+     "Crecer": 4.5,
+     "Crecer_idx": 100,
+     "Invertir": 4.5,
+     "Invertir_idx": 100,
      "Urgencia": 4.4,
      "Urgencia_idx": 98,
      "Soltar": 4.5,
-     "Soltar_idx": 100,
-     "Invertir": 4.6,
-     "Invertir_idx": 102,
-     "Crecer": 4.5,
-     "Crecer_idx": 100
+     "Soltar_idx": 100
     },
     "Transparente": {
      "total": 4.5,
+     "Crecer": 4.6,
+     "Crecer_idx": 102,
+     "Invertir": 4.4,
+     "Invertir_idx": 98,
      "Urgencia": 4.4,
      "Urgencia_idx": 98,
-     "Soltar": 4.6,
-     "Soltar_idx": 102,
-     "Invertir": 4.7,
-     "Invertir_idx": 104,
-     "Crecer": 4.5,
-     "Crecer_idx": 100
+     "Soltar": 4.5,
+     "Soltar_idx": 100
     },
     "Innovadora": {
      "total": 4.2,
+     "Crecer": 4.2,
+     "Crecer_idx": 100,
+     "Invertir": 4.2,
+     "Invertir_idx": 100,
      "Urgencia": 4.3,
      "Urgencia_idx": 102,
-     "Soltar": 4.0,
-     "Soltar_idx": 95,
-     "Invertir": 4.0,
-     "Invertir_idx": 95,
-     "Crecer": 4.2,
-     "Crecer_idx": 100
+     "Soltar": 4.1,
+     "Soltar_idx": 98
     },
     "Segura": {
      "total": 4.6,
+     "Crecer": 4.6,
+     "Crecer_idx": 100,
+     "Invertir": 4.5,
+     "Invertir_idx": 98,
      "Urgencia": 4.6,
      "Urgencia_idx": 100,
      "Soltar": 4.5,
-     "Soltar_idx": 98,
-     "Invertir": 4.5,
-     "Invertir_idx": 98,
-     "Crecer": 4.8,
-     "Crecer_idx": 104
+     "Soltar_idx": 98
     },
     "ACOMPAÑAMIENTO EN EL PROCESO": {
      "total": 31.7,
+     "Crecer": 31.5,
+     "Crecer_idx": 99,
+     "Invertir": 31.8,
+     "Invertir_idx": 100,
      "Urgencia": 31.8,
      "Urgencia_idx": 100,
-     "Soltar": 32.5,
-     "Soltar_idx": 103,
-     "Invertir": 30.9,
-     "Invertir_idx": 97,
-     "Crecer": 31.5,
-     "Crecer_idx": 99
+     "Soltar": 32.4,
+     "Soltar_idx": 102
     },
     "Tiene cobertura amplia y estructura sólida": {
      "total": 4.5,
+     "Crecer": 4.5,
+     "Crecer_idx": 100,
+     "Invertir": 4.5,
+     "Invertir_idx": 100,
      "Urgencia": 4.6,
      "Urgencia_idx": 102,
-     "Soltar": 4.7,
-     "Soltar_idx": 104,
-     "Invertir": 4.4,
-     "Invertir_idx": 98,
-     "Crecer": 4.3,
-     "Crecer_idx": 96
+     "Soltar": 4.6,
+     "Soltar_idx": 102
     },
     "Proporciona asesoría integral": {
      "total": 4.6,
+     "Crecer": 4.5,
+     "Crecer_idx": 98,
+     "Invertir": 4.6,
+     "Invertir_idx": 100,
      "Urgencia": 4.5,
      "Urgencia_idx": 98,
-     "Soltar": 4.8,
-     "Soltar_idx": 104,
-     "Invertir": 4.7,
-     "Invertir_idx": 102,
-     "Crecer": 4.7,
-     "Crecer_idx": 102
+     "Soltar": 4.7,
+     "Soltar_idx": 102
     },
     "Tiene cobertura nacional": {
      "total": 4.8,
+     "Crecer": 4.9,
+     "Crecer_idx": 102,
+     "Invertir": 4.8,
+     "Invertir_idx": 100,
      "Urgencia": 4.7,
      "Urgencia_idx": 98,
-     "Soltar": 5.3,
-     "Soltar_idx": 110,
-     "Invertir": 4.3,
-     "Invertir_idx": 90,
-     "Crecer": 5.1,
-     "Crecer_idx": 106
+     "Soltar": 5.2,
+     "Soltar_idx": 108
     },
     "Tiene una estructura sólida": {
      "total": 4.4,
-     "Urgencia": 4.6,
-     "Urgencia_idx": 105,
-     "Soltar": 4.1,
-     "Soltar_idx": 93,
+     "Crecer": 4.3,
+     "Crecer_idx": 98,
      "Invertir": 4.5,
      "Invertir_idx": 102,
-     "Crecer": 4.3,
-     "Crecer_idx": 98
+     "Urgencia": 4.6,
+     "Urgencia_idx": 105,
+     "Soltar": 4.3,
+     "Soltar_idx": 98
     },
     "Ofrece acompañamiento de un experto": {
      "total": 4.5,
+     "Crecer": 4.5,
+     "Crecer_idx": 100,
+     "Invertir": 4.6,
+     "Invertir_idx": 102,
      "Urgencia": 4.5,
      "Urgencia_idx": 100,
      "Soltar": 4.7,
-     "Soltar_idx": 104,
-     "Invertir": 4.4,
-     "Invertir_idx": 98,
-     "Crecer": 4.4,
-     "Crecer_idx": 98
+     "Soltar_idx": 104
     },
     "Maneja bien los trámites legales y notariales": {
      "total": 4.4,
+     "Crecer": 4.5,
+     "Crecer_idx": 102,
+     "Invertir": 4.3,
+     "Invertir_idx": 98,
      "Urgencia": 4.4,
      "Urgencia_idx": 100,
      "Soltar": 4.6,
-     "Soltar_idx": 105,
-     "Invertir": 4.1,
-     "Invertir_idx": 93,
-     "Crecer": 4.6,
-     "Crecer_idx": 105
+     "Soltar_idx": 105
     },
     "Facilita todo el proceso de venta": {
      "total": 4.4,
+     "Crecer": 4.4,
+     "Crecer_idx": 100,
+     "Invertir": 4.7,
+     "Invertir_idx": 107,
      "Urgencia": 4.5,
      "Urgencia_idx": 102,
      "Soltar": 4.4,
-     "Soltar_idx": 100,
-     "Invertir": 4.5,
-     "Invertir_idx": 102,
-     "Crecer": 4.2,
-     "Crecer_idx": 95
+     "Soltar_idx": 100
     },
     "ECONOMÍA": {
      "total": 24.3,
+     "Crecer": 24.3,
+     "Crecer_idx": 100,
+     "Invertir": 24.1,
+     "Invertir_idx": 99,
      "Urgencia": 24.8,
      "Urgencia_idx": 102,
-     "Soltar": 23.6,
-     "Soltar_idx": 97,
-     "Invertir": 24.5,
-     "Invertir_idx": 101,
-     "Crecer": 24.0,
-     "Crecer_idx": 99
+     "Soltar": 23.9,
+     "Soltar_idx": 98
     },
     "Ofrece precios justos": {
      "total": 4.1,
-     "Urgencia": 4.3,
-     "Urgencia_idx": 105,
-     "Soltar": 3.8,
-     "Soltar_idx": 93,
+     "Crecer": 4.1,
+     "Crecer_idx": 100,
      "Invertir": 4.2,
      "Invertir_idx": 102,
-     "Crecer": 3.8,
-     "Crecer_idx": 93
+     "Urgencia": 4.3,
+     "Urgencia_idx": 105,
+     "Soltar": 3.9,
+     "Soltar_idx": 95
     },
     "Da opciones de pago o liquidez rápida": {
      "total": 8.1,
+     "Crecer": 8.1,
+     "Crecer_idx": 100,
+     "Invertir": 7.9,
+     "Invertir_idx": 98,
      "Urgencia": 8.5,
      "Urgencia_idx": 105,
-     "Soltar": 7.5,
-     "Soltar_idx": 93,
-     "Invertir": 8.2,
-     "Invertir_idx": 101,
-     "Crecer": 7.8,
-     "Crecer_idx": 96
+     "Soltar": 7.8,
+     "Soltar_idx": 96
     },
     "Evita gastos innecesarios": {
      "total": 3.9,
+     "Crecer": 3.9,
+     "Crecer_idx": 100,
+     "Invertir": 3.6,
+     "Invertir_idx": 92,
      "Urgencia": 4.0,
      "Urgencia_idx": 103,
      "Soltar": 3.9,
-     "Soltar_idx": 100,
-     "Invertir": 3.4,
-     "Invertir_idx": 87,
-     "Crecer": 4.0,
-     "Crecer_idx": 103
+     "Soltar_idx": 100
     },
     "Maximiza el valor del inmueble": {
      "total": 4.1,
+     "Crecer": 4.1,
+     "Crecer_idx": 100,
+     "Invertir": 4.1,
+     "Invertir_idx": 100,
      "Urgencia": 4.0,
      "Urgencia_idx": 98,
      "Soltar": 4.3,
-     "Soltar_idx": 105,
-     "Invertir": 4.1,
-     "Invertir_idx": 100,
-     "Crecer": 4.1,
-     "Crecer_idx": 100
+     "Soltar_idx": 105
     },
     "Cumple con los montos acordados": {
      "total": 4.2,
+     "Crecer": 4.2,
+     "Crecer_idx": 100,
+     "Invertir": 4.2,
+     "Invertir_idx": 100,
      "Urgencia": 4.1,
      "Urgencia_idx": 98,
      "Soltar": 4.1,
-     "Soltar_idx": 98,
-     "Invertir": 4.5,
-     "Invertir_idx": 107,
-     "Crecer": 4.3,
-     "Crecer_idx": 102
+     "Soltar_idx": 98
     },
     "CONVENIENCIA": {
      "total": 17.2,
+     "Crecer": 17.2,
+     "Crecer_idx": 100,
+     "Invertir": 17.5,
+     "Invertir_idx": 102,
      "Urgencia": 16.9,
      "Urgencia_idx": 98,
-     "Soltar": 17.3,
-     "Soltar_idx": 101,
-     "Invertir": 17.6,
-     "Invertir_idx": 102,
-     "Crecer": 17.3,
-     "Crecer_idx": 101
+     "Soltar": 17.1,
+     "Soltar_idx": 99
     },
     "Ofrece garantías y seguridad documental": {
      "total": 4.3,
+     "Crecer": 4.2,
+     "Crecer_idx": 98,
+     "Invertir": 4.4,
+     "Invertir_idx": 102,
      "Urgencia": 4.2,
      "Urgencia_idx": 98,
      "Soltar": 4.2,
-     "Soltar_idx": 98,
-     "Invertir": 4.6,
-     "Invertir_idx": 107,
-     "Crecer": 4.3,
-     "Crecer_idx": 100
+     "Soltar_idx": 98
     },
     "Buen servicio al cliente": {
      "total": 4.5,
+     "Crecer": 4.5,
+     "Crecer_idx": 100,
+     "Invertir": 4.7,
+     "Invertir_idx": 104,
      "Urgencia": 4.4,
      "Urgencia_idx": 98,
      "Soltar": 4.6,
-     "Soltar_idx": 102,
-     "Invertir": 4.6,
-     "Invertir_idx": 102,
-     "Crecer": 4.6,
-     "Crecer_idx": 102
+     "Soltar_idx": 102
     },
     "Sus procesos son ágiles / rápidos": {
      "total": 4.2,
-     "Urgencia": 4.3,
-     "Urgencia_idx": 102,
-     "Soltar": 3.8,
-     "Soltar_idx": 90,
+     "Crecer": 4.2,
+     "Crecer_idx": 100,
      "Invertir": 4.1,
      "Invertir_idx": 98,
-     "Crecer": 4.3,
-     "Crecer_idx": 102
+     "Urgencia": 4.3,
+     "Urgencia_idx": 102,
+     "Soltar": 4.0,
+     "Soltar_idx": 95
     },
     "Comunicación constante y fluida": {
      "total": 4.2,
-     "Urgencia": 4.0,
-     "Urgencia_idx": 95,
-     "Soltar": 4.7,
-     "Soltar_idx": 112,
+     "Crecer": 4.3,
+     "Crecer_idx": 102,
      "Invertir": 4.3,
      "Invertir_idx": 102,
-     "Crecer": 4.1,
-     "Crecer_idx": 98
+     "Urgencia": 4.0,
+     "Urgencia_idx": 95,
+     "Soltar": 4.4,
+     "Soltar_idx": 105
     },
     "__base__": {
      "total": 290,
+     "Crecer": 214,
+     "Invertir": 133,
      "Urgencia": 118,
-     "Soltar": 62,
-     "Invertir": 47,
-     "Crecer": 63
+     "Soltar": 96
     }
    }
   }
