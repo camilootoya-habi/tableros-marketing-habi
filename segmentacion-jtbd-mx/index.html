@@ -54,6 +54,12 @@
   .terr .copy li { font-size: 14px; color: var(--text); font-weight: 600; padding: 7px 12px;
     background: var(--card); border: 1px solid var(--border); border-radius: 6px; }
   .terr .copy li::before { content: "💬 "; }
+  table.rob { border-collapse: collapse; font-size: 13px; margin: 6px 0 2px; min-width: 420px; }
+  table.rob th, table.rob td { padding: 8px 14px; text-align: center; border-bottom: 1px solid var(--border); }
+  table.rob thead th { color: var(--muted); font-weight: 600; font-size: 12px; }
+  table.rob thead th small { color: var(--muted-3); font-weight: 400; }
+  table.rob td.it { text-align: left; font-weight: 600; color: var(--text); }
+  table.rob tbody td { font-variant-numeric: tabular-nums; color: var(--text-2); }
   .card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 18px 20px; margin: 16px 0; }
   .card h2 { font-size: 16px; color: var(--text); font-weight: 650; margin-bottom: 4px; }
   .card .lead { color: var(--muted); font-size: 13px; margin-bottom: 14px; }
@@ -191,6 +197,12 @@
           <p class="note">La diagonal = penetración de cada job. Fuera de la diagonal = cuántos comparten ambos jobs.</p>
         </div>
       </div>
+      <p class="doc-narr" style="margin-top:16px"><b>¿Y por qué 4 jobs y no las combinaciones?</b> Probamos
+        segmentar por las mezclas de motivaciones (Crecer+Urgencia, Invertir+Soltar, etc.): aparecen las
+        <b>15 combinaciones posibles</b>, pero el <b>80% queda con base &lt;30</b> (varias en n=2–9), el umbral
+        que el propio estudio marca como "base pequeña para análisis". Partir 290 personas en 15 celdas destroza
+        la muestra, así que el <b>nivel accionable son los 4 jobs</b>. (Las únicas mezclas con base usable son de
+        la "familia Crecer": puro, +Invertir, +Urgencia — un detalle a explotar más adelante si hace falta.)</p>
     </section>
 
     <!-- Objetivo -->
@@ -222,16 +234,31 @@
       <p class="doc-narr" id="p17-narr"></p>
     </section>
 
-    <!-- Veredicto + pivote -->
+    <!-- Veredicto + comprobación de robustez -->
     <section class="card" id="pivote" style="border-color:var(--accent)">
-      <div class="kicker">Veredicto de las láminas 10 y 11</div>
-      <h2>Estas dos preguntas <span style="color:var(--accent)">no</span> distinguen entre jobs</h2>
-      <p class="lead">El formato condicional casi no se enciende: en la lámina 10 solo <b>1 celda</b> se sale de
-        rango (desviación máx. 29 pts) y en la lámina 11 <b>ninguna</b> (máx. 8 pts). Todos los jobs valoran lo
-        mismo del proceso (formalidad + pago seguro) y los mismos drivers de marca (confianza + transparencia).
-        <b>Conclusión honesta: para P.1 y P.17, el JTBD no aporta insight diferencial</b> — son necesidades
-        transversales. Así que reconstruimos <b>otras</b> preguntas del estudio por JTBD; ahí sí aparecen
-        diferencias accionables 👇</p>
+      <div class="kicker">Veredicto + comprobación de robustez</div>
+      <h2>Estas dos preguntas <span style="color:var(--accent)">no</span> distinguen entre jobs (y lo verificamos)</h2>
+      <p class="lead">El formato condicional casi no se enciende. ¿Será culpa del método? Reconstruimos ambas
+        láminas por <b>varias vías</b> y contamos cuántas celdas "prenden" (índice fuera de 80–120 / diferencia
+        notable entre jobs). Si la planura aguanta todos los métodos, es real:</p>
+      <div class="ct-wrap">
+        <table class="rob">
+          <thead><tr><th>Lámina</th><th>Penetración<br><small>(solapado, la del doc)</small></th>
+            <th>Excluyente<br><small>(job dominante)</small></th><th>Best-worst<br><small>(Más − Menos)</small></th></tr></thead>
+          <tbody>
+            <tr><td class="it">P.17 — drivers de marca</td><td>0 celdas</td><td>0 celdas</td><td>—</td></tr>
+            <tr><td class="it">P.10 — MaxDiff necesidades</td><td>1 celda</td><td>4 celdas</td><td>1 señal</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="doc-narr"><b>P.17 → plana por todas las vías</b> (0 celdas siempre): la gente etiqueta marcas
+        liberalmente, así que casi todos asocian casi todo. Genuinamente no discrimina por job — aquí no hay
+        insight escondido. <b>P.10 → a lo sumo UNA señal robusta:</b> <em>Soltar</em> valora más "respete mi
+        avalúo justo" (aparece en las 3 vías). Nuestra lente de penetración la atenúa (1 celda) y ni con el método
+        más favorable (excluyente, 4 celdas) llega a sostener una estrategia. <b>Veredicto: ni con el método más
+        favorable estas dos láminas dan un insight accionable</b> — son necesidades transversales.</p>
+      <p class="lead" style="margin-top:12px">Así que reconstruimos <b>otras</b> preguntas del estudio por JTBD;
+        ahí sí aparecen diferencias accionables 👇</p>
     </section>
 
     <!-- Preguntas que SÍ discriminan -->
