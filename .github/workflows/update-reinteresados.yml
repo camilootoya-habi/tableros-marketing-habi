@@ -32,11 +32,17 @@ jobs:
           GCP_PROJECT: ${{ secrets.GCP_PROJECT }}
         run: python3 scripts/run_queries.py --only funnel-reinteresados-mx
 
+      - name: Run ciclo-asignados query
+        run: |
+          bq query --use_legacy_sql=false --format=json --max_rows=500 \
+            < funnel-reinteresados-mx/query_ciclo_asignados.sql \
+            > funnel-reinteresados-mx/ciclo_asignados.json
+
       - name: Commit and push
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add funnel-reinteresados-mx/data.json
+          git add funnel-reinteresados-mx/data.json funnel-reinteresados-mx/ciclo_asignados.json
           if git diff --staged --quiet; then
             echo "Sin cambios en data.json"; exit 0
           fi
@@ -47,7 +53,7 @@ jobs:
             echo "push rechazado, rebase y reintento ($i)"
             git fetch origin main
             git rebase -X ours origin/main || { git rebase --abort; git reset --hard origin/main; git checkout origin/main -- . ; }
-            git add funnel-reinteresados-mx/data.json
+            git add funnel-reinteresados-mx/data.json funnel-reinteresados-mx/ciclo_asignados.json
             git diff --staged --quiet || git commit -m "Auto-update reinteresados data.json $(date -u +%Y-%m-%dT%H:%MZ)"
           done
           echo "No se pudo pushear tras 5 intentos"; exit 1

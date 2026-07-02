@@ -111,6 +111,10 @@
   <p class="note">Registros y calificados por <b>día de creación</b>. <b>Clic en una barra</b> para filtrar TODO el tablero por esa fecha (toca de nuevo para quitar). <span id="datefilter"></span></p>
   <div class="card"><div class="chart-wrap"><canvas id="chartDaily"></canvas></div></div>
 
+  <h2 style="margin-top:26px">Impacto en asignados por ciclo comercial <span class="help" data-tip="A partir de la WBR mart (papyrus-master.sellers_data_mart.sellers_leads_asignados_marketing_wbr_mart). Fila 1 = asignados de las 6 fuentes de marketing (WEB, Ventanas, Leadform, Broker, Habimetro, CRM; se excluye 'Otro') por semana WBR (ciclo comercial). Fila 2 = de esos, los que tienen UTM de reinteresados. Fila 3 = ratio (reinteresados / total).">?</span></h2>
+  <p class="note">Cuánto pesan los reinteresados dentro del total de asignados de marketing, por ciclo comercial (semana WBR).</p>
+  <div class="card"><div class="tbl-wrap" id="cicloImpacto"></div></div>
+
   <h2 id="h2geo" style="margin-top:26px">Registros por estado</h2>
   <p class="note">Registros por <span id="geoword">estado</span>, de mayor a menor. <b>Clic en una fila para filtrar</b> todo el tablero (toca de nuevo para quitar el filtro). <span id="geocount"></span></p>
   <div class="card" id="regEstado"></div>
@@ -180,7 +184,7 @@ const STAGES=[
   ['Cierres (MM)','#f59e0b',l=>l.filter(x=>x.cierre).length,'oportunidad_del_negocio = Cierre - Comprado (compra cerrada del Market Maker).'],
   ['Contrato firmado (Inmo)','#0d9488',l=>l.filter(x=>x.contrato).length,'oportunidad_inmobiliaria = Contrato firmado (cierre del flujo Inmobiliaria).']];
 const KCLS=['s1','s2','s3','s4'];
-let dailyChart=null, leadsAll=[], country='MX', selectedGeo=null, selectedDate=null;
+let dailyChart=null, leadsAll=[], country='MX', selectedGeo=null, selectedDate=null, cicloAll=[];
 
 let firstLoad=true;
 function mapRaw(raw){ return raw.map(r=>({pais:r.pais, geo:r.geo||'Sin dato', area:r.area||'Sin dato', sid:(r.sid==null?'':String(r.sid)), slabel:r.slabel||'Sin estado',
@@ -193,6 +197,8 @@ async function loadData(){
   let raw=[];
   try{ raw=await (await fetch('data.json?t='+Date.now())).json(); }catch(e){}
   leadsAll=mapRaw(raw);
+  try{ cicloAll=(await (await fetch('ciclo_asignados.json?t='+Date.now())).json())
+        .map(r=>({pais:r.pais, ciclo:r.ciclo, total:N(r.total_asignados), reint:N(r.asignados_reint)})); }catch(e){ cicloAll=[]; }
   const lbl=document.getElementById('lastUpd');
   if(lbl){ lbl.textContent='Recargado '+new Date().toLocaleTimeString('es',{hour:'2-digit',minute:'2-digit'}); }
   if(btn){ btn.disabled=false; btn.textContent='🔄 Recargar'; }
@@ -223,6 +229,24 @@ function apply(){
   if(selectedGeo!==null) f=f.filter(l=>l.geo===selectedGeo);
   if(selectedDate!==null) f=f.filter(l=>l.fc===selectedDate);
   render(f);
+  renderCiclo();
+}
+
+const CICLO_PAIS={MX:'mexico',CO:'colombia'};
+function renderCiclo(){
+  const el=document.getElementById('cicloImpacto'); if(!el) return;
+  const rows=cicloAll.filter(r=>r.pais===CICLO_PAIS[country]).sort((a,b)=>a.ciclo<b.ciclo?-1:1);
+  if(!rows.length){ el.innerHTML='<p class="note">Sin datos de asignados para este país.</p>'; return; }
+  const th=rows.map(r=>`<th style="text-align:right;white-space:nowrap">${r.ciclo.slice(5)}</th>`).join('');
+  const totRow=rows.map(r=>`<td style="text-align:right">${fmt(r.total)}</td>`).join('');
+  const reRow=rows.map(r=>`<td style="text-align:right">${fmt(r.reint)}</td>`).join('');
+  const ratioRow=rows.map(r=>{const p=r.total?(r.reint/r.total*100):0;
+    return `<td style="text-align:right;font-weight:700;color:${p>0?'var(--accent)':'var(--text-muted)'}">${p.toFixed(1)}%</td>`;}).join('');
+  el.innerHTML=`<table><thead><tr><th style="white-space:nowrap">Ciclo (semana)</th>${th}</tr></thead><tbody>
+    <tr><td style="white-space:nowrap">Asignados marketing (6 fuentes)</td>${totRow}</tr>
+    <tr><td style="white-space:nowrap">Asignados reinteresados</td>${reRow}</tr>
+    <tr><td style="white-space:nowrap"><b>Ratio reinteresados</b></td>${ratioRow}</tr>
+  </tbody></table>`;
 }
 
 function renderGabi(L){
