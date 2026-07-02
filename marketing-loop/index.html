@@ -71,7 +71,7 @@
   <div class="grid">
     <section class="panel"><h3>Respuestas por tipo</h3><div id="respBreak"></div></section>
     <section class="panel"><h3>Funnel de reactivación <span class="help" title="Recreados (con UTM reinteresados) → Calificado (backbone 20/63) → Asignado (WBR mart) → Cita → Cierre.">?</span></h3><div id="funnel"></div></section>
-    <section class="panel wide"><h3>Calidad del lead: reinteresados vs WEB nuevo <span class="help" title="Conversión de reinteresados vs leads WEB nuevos (misma fuente, sin UTM reinteresados) desde 15-jun. Verde = reinteresados mejor.">?</span></h3><div id="comparativa"></div></section>
+    <section class="panel wide"><h3>Funnel comparativo · reinteresados vs WEB nuevo <span class="help" title="Conversión por etapa de cada cohorte (% de su base). Reinteresados = UTM reinteresados; WEB nuevo = fuente WEB sin esa UTM, desde 15-jun. Δ en puntos porcentuales; verde = reinteresados mejor.">?</span></h3><div id="comparativa"></div></section>
     <section class="panel wide"><h3>Creación diaria + promedio móvil (7d)</h3><div style="position:relative;height:280px"><canvas id="chartCrea"></canvas></div></section>
     <section class="panel wide">
       <h3>Impacto en asignados por ciclo comercial <span class="help" title="Asignados de las 6 fuentes de marketing (fuente_id_tig) vs reinteresados, por ciclo/semana. Ratio = % que representan los reinteresados.">?</span></h3>
@@ -147,10 +147,20 @@ function renderComparativa(){
   if(!rows.length){ el.innerHTML='<p class="muted">Sin datos.</p>'; return; }
   const R=rows.find(x=>x.cohorte==='Reinteresados')||{}, N=rows.find(x=>x.cohorte==='WEB nuevo')||{};
   const mets=[['Calificado','calif_pct'],['Asignado','asignado_pct'],['Cita','cita_pct'],['Cierre','cierre_pct']];
-  el.innerHTML=`<table><thead><tr><th>Métrica</th><th style="text-align:right">Reinteresados<br><span class="muted">${fmt(R.leads)} leads</span></th><th style="text-align:right">WEB nuevo<br><span class="muted">${fmt(N.leads)} leads</span></th><th style="text-align:right">Δ (pp)</th></tr></thead><tbody>`+
-    mets.map(([n,k])=>{const a=+R[k]||0,b=+N[k]||0,d=a-b,col=d>0?'var(--ok)':d<0?'var(--bad)':'var(--text-muted)';
-      return `<tr><td>${n}</td><td style="text-align:right;font-weight:700">${pct(a)}</td><td style="text-align:right">${pct(b)}</td><td style="text-align:right;font-weight:800;color:${col}">${d>0?'+':''}${d.toFixed(1)}</td></tr>`;}).join('')+
-    `</tbody></table><p class="note">Δ = reinteresados − WEB nuevo, en puntos porcentuales (pp). Verde = reinteresados mejor.</p>`;
+  const head=`<div class="rowline" style="font-size:11px;text-transform:uppercase;letter-spacing:.4px;font-weight:700;color:var(--text-muted)">
+    <div class="lab">Etapa</div>
+    <div style="flex:1"><span style="color:var(--accent)">■</span> Reinteresados <span class="muted">${fmt(R.leads)}</span> &nbsp; <span style="color:var(--text-muted)">■</span> WEB nuevo <span class="muted">${fmt(N.leads)}</span></div>
+    <div style="width:70px;text-align:right">Δ pp</div></div>`;
+  el.innerHTML=head+mets.map(([n,k])=>{
+    const a=+R[k]||0,b=+N[k]||0,d=a-b,mx=Math.max(a,b,1),col=d>0?'var(--ok)':d<0?'var(--bad)':'var(--text-muted)';
+    return `<div class="rowline">
+      <div class="lab">${n}</div>
+      <div style="flex:1">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px"><div class="bar" style="height:15px"><div style="width:${(a/mx*100).toFixed(0)}%;background:var(--accent)"></div></div><span style="width:52px;font-size:12.5px;text-align:right;font-weight:700">${pct(a)}</span></div>
+        <div style="display:flex;align-items:center;gap:8px"><div class="bar" style="height:15px"><div style="width:${(b/mx*100).toFixed(0)}%;background:var(--text-muted)"></div></div><span style="width:52px;font-size:12.5px;text-align:right;color:var(--text-muted)">${pct(b)}</span></div>
+      </div>
+      <div style="width:70px;text-align:right;font-weight:800;color:${col}">${d>0?'+':''}${d.toFixed(1)}</div></div>`;
+  }).join('')+`<p class="note">Barra violeta = reinteresados, gris = WEB nuevo (% de conversión de cada cohorte por etapa). Δ = diferencia en puntos porcentuales; verde = reinteresados mejor.</p>`;
 }
 
 function movavg(a,w){return a.map((_,i)=>{const s=a.slice(Math.max(0,i-w+1),i+1);return s.reduce((x,y)=>x+y,0)/s.length;});}
