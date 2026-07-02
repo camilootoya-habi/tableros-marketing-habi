@@ -1,0 +1,173 @@
+<title>Marketing Loop — Reinterés de leads</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<style>
+  :root{--bg:#f7f8fa;--card:#fff;--border:#e5e7eb;--text:#1f2937;--text-title:#111827;--text-muted:#6b7280;
+    --accent:#4f46e5;--ok:#10b981;--warn:#f59e0b;--bad:#ef4444;--sky:#0ea5e9}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--text);font:14px/1.5 -apple-system,Segoe UI,Roboto,sans-serif;padding:22px;max-width:1100px;margin:0 auto}
+  h1{font-size:22px;color:var(--text-title);margin:0 0 2px}
+  h2{font-size:16px;color:var(--text-title);margin:26px 0 4px}
+  .note{color:var(--text-muted);font-size:12.5px;margin:2px 0 10px}
+  .muted{color:var(--text-muted)}
+  .card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px;margin:8px 0}
+  .row{display:flex;gap:12px;flex-wrap:wrap}
+  .country-cards{display:flex;gap:8px;margin:12px 0}
+  .ccard{cursor:pointer;border:1px solid var(--border);background:var(--card);border-radius:10px;padding:9px 16px;font:inherit;font-size:14px;font-weight:600}
+  .ccard.active{background:var(--accent);color:#fff;border-color:var(--accent)}
+  .kpi{flex:1;min-width:150px}
+  .kpi .v{font-size:26px;font-weight:800;color:var(--text-title)}
+  .kpi .l{font-size:12px;color:var(--text-muted)}
+  .chip{display:inline-block;padding:2px 9px;border-radius:999px;font-size:12px;font-weight:700}
+  table{border-collapse:collapse;width:100%;font-size:13px}
+  th,td{padding:6px 9px;border-bottom:1px solid var(--border);text-align:left}
+  .tbl-wrap{overflow-x:auto}
+  .bar{background:#f1f5f9;border-radius:5px;height:20px;flex:1}
+  .bar>div{height:100%;border-radius:5px;min-width:2px}
+  .help{display:inline-block;width:15px;height:15px;border-radius:50%;background:var(--text-muted);color:#fff;font-size:10px;text-align:center;line-height:15px;cursor:help;font-weight:700}
+  .btnsel{cursor:pointer;border:1px solid var(--border);background:var(--card);border-radius:8px;padding:6px 12px;font:inherit;font-size:12.5px}
+</style>
+
+<h1>Marketing Loop — Reinterés de leads</h1>
+<p class="note">Resultados en vivo del programa de reinterés. Fuente: hubspot.deals (~7 min) + WBR mart + hojas de respuestas. <span id="upd" class="muted"></span></p>
+<div class="country-cards" id="countryCards"></div>
+
+<h2>Salud de la línea WhatsApp <span class="help" title="Calidad, tier y estado de la línea en Infobip (misma data que Meta). La calidad baja con bloqueos/reportes; targetear leads tibios y buen contenido la sube.">?</span></h2>
+<div class="card" id="linea"></div>
+
+<h2>Base y respuestas</h2>
+<div class="card"><div class="row" id="kpisResp"></div></div>
+<div class="card" id="respBreak"></div>
+
+<h2>Funnel de reactivación <span class="help" title="Recreados (con UTM reinteresados) → Calificado (backbone 20/63) → Asignado (WBR mart) → Cita → Cierre.">?</span></h2>
+<div class="card" id="funnel"></div>
+
+<h2>Calidad del lead: reinteresados vs WEB nuevo <span class="help" title="Compara conversión de reinteresados contra leads WEB nuevos (misma fuente, sin UTM reinteresados) creados desde el 15-jun. Responde si son de mejor/peor/igual calidad.">?</span></h2>
+<div class="card" id="comparativa"></div>
+
+<h2>Creación diaria + promedio móvil (7d)</h2>
+<div class="card"><div style="position:relative;height:260px"><canvas id="chartCrea"></canvas></div></div>
+
+<h2>Impacto en asignados por ciclo comercial <span class="help" title="Asignados de las 6 fuentes de marketing (por fuente_id_tig) vs los de reinteresados, por ciclo/semana. Ratio = % que representan los reinteresados.">?</span></h2>
+<div class="row" style="gap:8px;margin:6px 0 10px">
+  <button class="btnsel" data-t="ciclo" id="bt-ciclo">Ciclo comercial (Mié→Mar)</button>
+  <button class="btnsel" data-t="semana" id="bt-semana">Semana (Lun→Dom)</button>
+</div>
+<div class="card"><div class="tbl-wrap" id="ciclo"></div></div>
+
+<script>
+let D=null, country='MX', cicloTipo='ciclo', creaChart=null;
+const CIP={MX:'mexico',CO:'colombia'};
+const fmt=v=>(v==null?'—':Number(v).toLocaleString('es-CO'));
+const pct=v=>(v==null?'—':Number(v).toFixed(1)+'%');
+
+async function load(){
+  try{ D=await (await fetch('data.json?t='+Date.now())).json(); }catch(e){ document.body.insertAdjacentHTML('beforeend','<p>Error cargando data.json</p>'); return; }
+  document.getElementById('upd').textContent = D.updated? ('· datos '+D.updated):'';
+  renderCards(); selectCountry('MX');
+}
+function renderCards(){
+  document.getElementById('countryCards').innerHTML=['MX','CO'].map(c=>
+    `<button class="ccard ${c===country?'active':''}" data-c="${c}">${c==='MX'?'🇲🇽 México':'🇨🇴 Colombia'}</button>`).join('');
+  document.querySelectorAll('.ccard').forEach(b=>b.onclick=()=>selectCountry(b.dataset.c));
+}
+function selectCountry(c){ country=c; renderCards(); renderAll(); }
+function renderAll(){ renderLinea(); renderResp(); renderFunnel(); renderComparativa(); renderCrea(); renderCiclo(); }
+
+function renderLinea(){
+  const l=(D.linea||{})[country];
+  const el=document.getElementById('linea');
+  if(!l){ el.innerHTML='<p class="note">Sin dato de línea.</p>'; return; }
+  const qc={HIGH:'var(--ok)',MEDIUM:'var(--warn)',LOW:'var(--bad)',UNKNOWN:'var(--text-muted)'}[l.quality]||'var(--text-muted)';
+  const tip = l.quality==='LOW'?'⚠ Calidad baja: reducir volumen, targetear solo leads tibios y revisar contenido; considerar rotar de línea.'
+    : l.quality==='MEDIUM'?'Calidad media: cuidar el ritmo y mandar a quien más probablemente responda para que suba.'
+    : l.quality==='HIGH'?'Calidad alta: la línea está sana.'
+    : 'Sin histórico de calidad reciente.';
+  el.innerHTML=`<div class="row">
+    <div class="kpi"><div class="l">Línea</div><div class="v" style="font-size:18px">${l.sender||'—'}</div></div>
+    <div class="kpi"><div class="l">Calidad</div><div class="v"><span class="chip" style="background:${qc};color:#fff">${l.quality||'—'}</span></div></div>
+    <div class="kpi"><div class="l">Tier (24h)</div><div class="v" style="font-size:18px">${(l.tier||'—').replace('LIMIT_','')}</div></div>
+    <div class="kpi"><div class="l">Estado</div><div class="v" style="font-size:18px">${l.status||'—'}</div></div>
+  </div><p class="note" style="margin-top:8px">${tip}</p>`;
+}
+
+function renderResp(){
+  const r=(D.respuestas||{})[country]||{}; const base=(D.base_enviada||{})[country]||0;
+  const tasa=base?(r.total_respuestas/base*100):0;
+  document.getElementById('kpisResp').innerHTML=`
+    <div class="kpi"><div class="l">Base contactada (histórica)</div><div class="v">${fmt(base)}</div></div>
+    <div class="kpi"><div class="l">Respuestas</div><div class="v">${fmt(r.total_respuestas)}</div></div>
+    <div class="kpi"><div class="l">Tasa de respuesta</div><div class="v">${pct(tasa)}</div></div>`;
+  const tot=r.total_respuestas||1;
+  const items=[['Interesado',r.interesado,'var(--ok)'],['Ya vendió',r.ya_vendio,'var(--sky)'],['Pide baja',r.pide_baja,'var(--bad)']];
+  document.getElementById('respBreak').innerHTML='<div style="font-size:12.5px;font-weight:700;margin-bottom:8px">Desglose de respuestas</div>'+
+    items.map(([n,v,c])=>`<div class="row" style="align-items:center;margin:6px 0">
+      <div style="width:90px;font-size:13px">${n}</div>
+      <div class="bar"><div style="width:${(v/tot*100).toFixed(1)}%;background:${c}"></div></div>
+      <div style="width:120px;font-size:13px"><b>${fmt(v)}</b> <span class="muted">${(v/tot*100).toFixed(1)}%</span></div></div>`).join('');
+}
+
+function renderFunnel(){
+  const f=(D.funnel||[]).find(x=>x.pais===country);
+  const el=document.getElementById('funnel');
+  if(!f){ el.innerHTML='<p class="note">Sin datos.</p>'; return; }
+  const steps=[['Recreados',+f.recreados],['Calificados',+f.calificados],['Asignados',+f.asignados],['Citas',+f.citas],['Cierres',+f.cierres]];
+  const base=steps[0][1]||1, max=base;
+  el.innerHTML=steps.map(([n,v],i)=>{
+    const prev=i?steps[i-1][1]:v; const cvr=prev?(v/prev*100):0;
+    return `<div class="row" style="align-items:center;margin:6px 0">
+      <div style="width:110px;font-size:13px">${n}</div>
+      <div class="bar"><div style="width:${(v/max*100).toFixed(1)}%;background:var(--accent)"></div></div>
+      <div style="width:150px;font-size:13px"><b>${fmt(v)}</b> ${i?`<span class="muted">${cvr.toFixed(0)}% del paso previo</span>`:''}</div></div>`;
+  }).join('');
+}
+
+function renderComparativa(){
+  const rows=(D.comparativa||[]).filter(x=>x.pais===country);
+  const el=document.getElementById('comparativa');
+  if(rows.length<1){ el.innerHTML='<p class="note">Sin datos.</p>'; return; }
+  const R=rows.find(x=>x.cohorte==='Reinteresados')||{}, N=rows.find(x=>x.cohorte==='WEB nuevo')||{};
+  const mets=[['Calificado','calif_pct'],['Asignado','asignado_pct'],['Cita','cita_pct'],['Cierre','cierre_pct']];
+  const head=`<div class="row" style="font-size:12px;font-weight:700;color:var(--text-muted)">
+    <div style="width:110px"></div><div style="flex:1">Reinteresados (${fmt(R.leads)})</div><div style="flex:1">WEB nuevo (${fmt(N.leads)})</div><div style="width:90px">Δ</div></div>`;
+  el.innerHTML=head+mets.map(([n,k])=>{
+    const a=+R[k]||0,b=+N[k]||0,mx=Math.max(a,b,1); const d=a-b;
+    const col=d>0?'var(--ok)':d<0?'var(--bad)':'var(--text-muted)';
+    return `<div class="row" style="align-items:center;margin:8px 0">
+      <div style="width:110px;font-size:13px">${n}</div>
+      <div style="flex:1"><div class="bar"><div style="width:${(a/mx*100).toFixed(0)}%;background:var(--accent)"></div></div><span class="muted" style="font-size:12px">${pct(a)}</span></div>
+      <div style="flex:1"><div class="bar"><div style="width:${(b/mx*100).toFixed(0)}%;background:#94a3b8"></div></div><span class="muted" style="font-size:12px">${pct(b)}</span></div>
+      <div style="width:90px;font-weight:700;color:${col}">${d>0?'+':''}${d.toFixed(1)} pp</div></div>`;
+  }).join('')+`<p class="note" style="margin-top:8px">Δ = reinteresados − WEB nuevo (puntos porcentuales). Verde = reinteresados mejor.</p>`;
+}
+
+function movavg(arr,w){ return arr.map((_,i)=>{const s=arr.slice(Math.max(0,i-w+1),i+1);return s.reduce((a,b)=>a+b,0)/s.length;}); }
+function renderCrea(){
+  const rows=(D.creacion||[]).filter(x=>x.pais===country).sort((a,b)=>a.fecha<b.fecha?-1:1);
+  const labels=rows.map(r=>r.fecha.slice(5)), creados=rows.map(r=>+r.creados), cvr=rows.map(r=>r.creados>0?(+r.calificados/+r.creados*100):0);
+  const cvrMA=movavg(cvr,7);
+  if(creaChart) creaChart.destroy();
+  creaChart=new Chart(document.getElementById('chartCrea'),{data:{labels,datasets:[
+    {type:'bar',label:'Creados',data:creados,backgroundColor:'#c7d2fe',yAxisID:'y'},
+    {type:'line',label:'CVR→calif (%) prom. móvil 7d',data:cvrMA,borderColor:'var(--accent)',tension:.3,yAxisID:'y1',pointRadius:0}
+  ]},options:{responsive:true,maintainAspectRatio:false,interaction:{mode:'index'},
+    scales:{y:{position:'left',title:{display:true,text:'Creados'}},y1:{position:'right',min:0,max:100,grid:{drawOnChartArea:false},title:{display:true,text:'CVR %'}}}}});
+}
+
+function renderCiclo(){
+  const el=document.getElementById('ciclo');
+  const rows=(D.ciclo||[]).filter(r=>r.pais===CIP[country] && r.tipo===cicloTipo).sort((a,b)=>a.bucket<b.bucket?-1:1);
+  ['ciclo','semana'].forEach(t=>{const b=document.getElementById('bt-'+t); const on=t===cicloTipo;
+    b.style.background=on?'var(--accent)':'var(--card)'; b.style.color=on?'#fff':'var(--text)'; b.style.fontWeight=on?'700':'400';});
+  if(!rows.length){ el.innerHTML='<p class="note">Sin datos.</p>'; return; }
+  const th=rows.map(r=>`<th style="text-align:right;white-space:nowrap">${r.bucket.slice(5)}</th>`).join('');
+  const tr=(lab,f)=>`<tr><td style="white-space:nowrap">${lab}</td>${rows.map(f).join('')}</tr>`;
+  el.innerHTML=`<table><thead><tr><th>${cicloTipo==='ciclo'?'Ciclo (inicia Mié)':'Semana (inicia Lun)'}</th>${th}</tr></thead><tbody>
+    ${tr('Asignados marketing',r=>`<td style="text-align:right">${fmt(+r.total_asignados)}</td>`)}
+    ${tr('Asignados reinteresados',r=>`<td style="text-align:right">${fmt(+r.asignados_reint)}</td>`)}
+    ${tr('<b>Ratio reinteresados</b>',r=>{const p=+r.total_asignados?(+r.asignados_reint/+r.total_asignados*100):0;return `<td style="text-align:right;font-weight:700;color:${p>0?'var(--accent)':'var(--text-muted)'}">${p.toFixed(1)}%</td>`;})}
+  </tbody></table>`;
+}
+document.getElementById('bt-ciclo').onclick=()=>{cicloTipo='ciclo';renderCiclo();};
+document.getElementById('bt-semana').onclick=()=>{cicloTipo='semana';renderCiclo();};
+load();
+</script>
