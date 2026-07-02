@@ -111,8 +111,12 @@
   <p class="note">Registros y calificados por <b>día de creación</b>. <b>Clic en una barra</b> para filtrar TODO el tablero por esa fecha (toca de nuevo para quitar). <span id="datefilter"></span></p>
   <div class="card"><div class="chart-wrap"><canvas id="chartDaily"></canvas></div></div>
 
-  <h2 style="margin-top:26px">Impacto en asignados por ciclo comercial <span class="help" data-tip="A partir de la WBR mart (papyrus-master.sellers_data_mart.sellers_leads_asignados_marketing_wbr_mart). Fila 1 = asignados de las 6 fuentes de marketing (WEB, Ventanas, Leadform, Broker, Habimetro, CRM; se excluye 'Otro') por semana WBR (ciclo comercial). Fila 2 = de esos, los que tienen UTM de reinteresados. Fila 3 = ratio (reinteresados / total).">?</span></h2>
-  <p class="note">Cuánto pesan los reinteresados dentro del total de asignados de marketing, por ciclo comercial (semana WBR).</p>
+  <h2 style="margin-top:26px">Impacto en asignados por ciclo comercial <span class="help" data-tip="A partir de la WBR mart (sellers_leads_asignados_marketing_wbr_mart), filtrando las 6 fuentes de marketing por fuente_id_tig igual que los demás tableros. MX = web(3), estudio inmueble(7), comercial(35), broker(39), propiedades(46), lead forms(47). CO = web(3), estudio inmueble(7), crm(20), comercial(35), broker(39), leadforms(47). Fila 1 = total asignados de esas fuentes por bucket. Fila 2 = de esos, los que tienen UTM de reinteresados. Fila 3 = ratio (reinteresados / total).">?</span></h2>
+  <p class="note">Cuánto pesan los reinteresados dentro del total de asignados de marketing. Elige la vista temporal:</p>
+  <div id="cicloTipoSel" style="display:flex;gap:8px;margin:6px 0 12px">
+    <button data-t="ciclo"  class="ctipo" style="cursor:pointer;border:1px solid var(--border);background:var(--card);border-radius:8px;padding:6px 12px;font:inherit;font-size:12.5px">Ciclo comercial (Mié→Mar)</button>
+    <button data-t="semana" class="ctipo" style="cursor:pointer;border:1px solid var(--border);background:var(--card);border-radius:8px;padding:6px 12px;font:inherit;font-size:12.5px">Semana (Lun→Dom)</button>
+  </div>
   <div class="card"><div class="tbl-wrap" id="cicloImpacto"></div></div>
 
   <h2 id="h2geo" style="margin-top:26px">Registros por estado</h2>
@@ -198,13 +202,16 @@ async function loadData(){
   try{ raw=await (await fetch('data.json?t='+Date.now())).json(); }catch(e){}
   leadsAll=mapRaw(raw);
   try{ cicloAll=(await (await fetch('ciclo_asignados.json?t='+Date.now())).json())
-        .map(r=>({pais:r.pais, ciclo:r.ciclo, total:N(r.total_asignados), reint:N(r.asignados_reint)})); }catch(e){ cicloAll=[]; }
+        .map(r=>({tipo:r.tipo||'ciclo', pais:r.pais, bucket:r.bucket||r.ciclo, total:N(r.total_asignados), reint:N(r.asignados_reint)})); }catch(e){ cicloAll=[]; }
   const lbl=document.getElementById('lastUpd');
   if(lbl){ lbl.textContent='Recargado '+new Date().toLocaleTimeString('es',{hour:'2-digit',minute:'2-digit'}); }
   if(btn){ btn.disabled=false; btn.textContent='🔄 Recargar'; }
   if(firstLoad){ firstLoad=false; selectCountry('MX'); } else { renderCards(); apply(); }
+  try{ renderCiclo(); }catch(e){ console.error('renderCiclo',e); }
 }
 loadData();
+document.querySelectorAll('#cicloTipoSel .ctipo').forEach(b=>b.addEventListener('click',()=>setCicloTipo(b.dataset.t)));
+setCicloTipo('ciclo');
 
 function countryLeads(){ return leadsAll.filter(l=>l.pais===country); }
 
@@ -233,16 +240,25 @@ function apply(){
 }
 
 const CICLO_PAIS={MX:'mexico',CO:'colombia'};
+let cicloTipo='ciclo';
+function setCicloTipo(t){ cicloTipo=t;
+  document.querySelectorAll('#cicloTipoSel .ctipo').forEach(b=>{
+    const on=b.dataset.t===t; b.style.background=on?'var(--accent)':'var(--card)';
+    b.style.color=on?'#fff':'var(--text)'; b.style.borderColor=on?'var(--accent)':'var(--border)'; b.style.fontWeight=on?'700':'400';
+  });
+  renderCiclo();
+}
 function renderCiclo(){
   const el=document.getElementById('cicloImpacto'); if(!el) return;
-  const rows=cicloAll.filter(r=>r.pais===CICLO_PAIS[country]).sort((a,b)=>a.ciclo<b.ciclo?-1:1);
+  const rows=cicloAll.filter(r=>r.pais===CICLO_PAIS[country] && r.tipo===cicloTipo).sort((a,b)=>a.bucket<b.bucket?-1:1);
   if(!rows.length){ el.innerHTML='<p class="note">Sin datos de asignados para este país.</p>'; return; }
-  const th=rows.map(r=>`<th style="text-align:right;white-space:nowrap">${r.ciclo.slice(5)}</th>`).join('');
+  const th=rows.map(r=>`<th style="text-align:right;white-space:nowrap">${r.bucket.slice(5)}</th>`).join('');
   const totRow=rows.map(r=>`<td style="text-align:right">${fmt(r.total)}</td>`).join('');
   const reRow=rows.map(r=>`<td style="text-align:right">${fmt(r.reint)}</td>`).join('');
   const ratioRow=rows.map(r=>{const p=r.total?(r.reint/r.total*100):0;
     return `<td style="text-align:right;font-weight:700;color:${p>0?'var(--accent)':'var(--text-muted)'}">${p.toFixed(1)}%</td>`;}).join('');
-  el.innerHTML=`<table><thead><tr><th style="white-space:nowrap">Ciclo (semana)</th>${th}</tr></thead><tbody>
+  const h1=cicloTipo==='ciclo'?'Ciclo comercial (inicia Mié)':'Semana (inicia Lun)';
+  el.innerHTML=`<table><thead><tr><th style="white-space:nowrap">${h1}</th>${th}</tr></thead><tbody>
     <tr><td style="white-space:nowrap">Asignados marketing (6 fuentes)</td>${totRow}</tr>
     <tr><td style="white-space:nowrap">Asignados reinteresados</td>${reRow}</tr>
     <tr><td style="white-space:nowrap"><b>Ratio reinteresados</b></td>${ratioRow}</tr>
