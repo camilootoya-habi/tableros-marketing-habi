@@ -188,7 +188,8 @@ const STAGES=[
   ['Cierres (MM)','#f59e0b',l=>l.filter(x=>x.cierre).length,'oportunidad_del_negocio = Cierre - Comprado (compra cerrada del Market Maker).'],
   ['Contrato firmado (Inmo)','#0d9488',l=>l.filter(x=>x.contrato).length,'oportunidad_inmobiliaria = Contrato firmado (cierre del flujo Inmobiliaria).']];
 const KCLS=['s1','s2','s3','s4'];
-let dailyChart=null, leadsAll=[], country='MX', selectedGeo=null, selectedDate=null, cicloAll=[];
+let dailyChart=null, leadsAll=[], country='MX', selectedGeo=null, selectedDate=null, cicloAll=[], cicloTipo='ciclo';
+const CICLO_PAIS={MX:'mexico',CO:'colombia'};
 
 let firstLoad=true;
 function mapRaw(raw){ return raw.map(r=>({pais:r.pais, geo:r.geo||'Sin dato', area:r.area||'Sin dato', sid:(r.sid==null?'':String(r.sid)), slabel:r.slabel||'Sin estado',
@@ -239,8 +240,6 @@ function apply(){
   renderCiclo();
 }
 
-const CICLO_PAIS={MX:'mexico',CO:'colombia'};
-let cicloTipo='ciclo';
 function setCicloTipo(t){ cicloTipo=t;
   document.querySelectorAll('#cicloTipoSel .ctipo').forEach(b=>{
     const on=b.dataset.t===t; b.style.background=on?'var(--accent)':'var(--card)';
