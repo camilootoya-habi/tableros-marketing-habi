@@ -1,8 +1,11 @@
 <title>Marketing Loop — Reinterés de leads</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 <style>
-  :root{--bg:#f7f8fa;--card:#fff;--border:#e5e7eb;--text:#1f2937;--text-title:#111827;--text-muted:#6b7280;
-    --accent:#4f46e5;--ok:#10b981;--warn:#f59e0b;--bad:#ef4444;--sky:#0ea5e9}
+  :root{--bg:#0f141c;--card:#1a212e;--border:#2b3446;--text:#e5e7eb;--text-title:#f9fafb;--text-muted:#9aa4b2;
+    --accent:#818cf8;--ok:#34d399;--warn:#fbbf24;--bad:#f87171;--sky:#38bdf8;--barbg:#243044}
+  body.light{--bg:#f7f8fa;--card:#fff;--border:#e5e7eb;--text:#1f2937;--text-title:#111827;--text-muted:#6b7280;
+    --accent:#4f46e5;--ok:#10b981;--warn:#f59e0b;--bad:#ef4444;--sky:#0ea5e9;--barbg:#f1f5f9}
+  .theme-btn{position:fixed;top:16px;right:16px;background:var(--card);border:1px solid var(--border);color:var(--text);border-radius:8px;padding:6px 12px;font-size:13px;cursor:pointer;z-index:10}
   *{box-sizing:border-box}
   body{margin:0;background:var(--bg);color:var(--text);font:14px/1.5 -apple-system,Segoe UI,Roboto,sans-serif;padding:24px}
   .back-link{display:inline-flex;align-items:center;gap:6px;padding:6px 12px;background:var(--card);border:1px solid var(--border);border-radius:6px;color:var(--text-muted);text-decoration:none;font-size:13px;margin-bottom:16px}
@@ -23,12 +26,13 @@
   table{border-collapse:collapse;width:100%;font-size:13px}
   th,td{padding:6px 9px;border-bottom:1px solid var(--border);text-align:left}
   .tbl-wrap{overflow-x:auto}
-  .bar{background:#f1f5f9;border-radius:5px;height:20px;flex:1}
+  .bar{background:var(--barbg);border-radius:5px;height:20px;flex:1}
   .bar>div{height:100%;border-radius:5px;min-width:2px}
   .help{display:inline-block;width:15px;height:15px;border-radius:50%;background:var(--text-muted);color:#fff;font-size:10px;text-align:center;line-height:15px;cursor:help;font-weight:700}
   .btnsel{cursor:pointer;border:1px solid var(--border);background:var(--card);border-radius:8px;padding:6px 12px;font:inherit;font-size:12.5px}
 </style>
 
+<button class="theme-btn" id="themeBtn">☀️ Claro</button>
 <a href="https://camilootoya-habi.github.io/tableros-marketing-habi/" class="back-link">← Volver al hub</a>
 <h1>Marketing Loop — Reinterés de leads</h1>
 <p class="note">Resultados en vivo del programa de reinterés. Fuente: hubspot.deals (~7 min) + WBR mart + hojas de respuestas. <span id="upd" class="muted"></span></p>
@@ -172,5 +176,11 @@ function renderCiclo(){
 }
 document.getElementById('bt-ciclo').onclick=()=>{cicloTipo='ciclo';renderCiclo();};
 document.getElementById('bt-semana').onclick=()=>{cicloTipo='semana';renderCiclo();};
+// tema: oscuro por defecto, con opción de claro (persistente)
+function applyTheme(t){ const light=t==='light'; document.body.classList.toggle('light',light);
+  document.getElementById('themeBtn').textContent = light?'🌙 Oscuro':'☀️ Claro';
+  if(window.Chart){ Chart.defaults.color = light?'#6b7280':'#9aa4b2'; Chart.defaults.borderColor = light?'#e5e7eb':'#2b3446'; if(creaChart) renderCrea(); } }
+document.getElementById('themeBtn').onclick=()=>{ const next=document.body.classList.contains('light')?'dark':'light'; try{localStorage.setItem('ml-theme',next);}catch(e){} applyTheme(next); };
+applyTheme((()=>{try{return localStorage.getItem('ml-theme')||'dark';}catch(e){return 'dark';}})());
 load();
 </script>
