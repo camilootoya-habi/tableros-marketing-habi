@@ -4,7 +4,9 @@
   :root{--bg:#f7f8fa;--card:#fff;--border:#e5e7eb;--text:#1f2937;--text-title:#111827;--text-muted:#6b7280;
     --accent:#4f46e5;--ok:#10b981;--warn:#f59e0b;--bad:#ef4444;--sky:#0ea5e9}
   *{box-sizing:border-box}
-  body{margin:0;background:var(--bg);color:var(--text);font:14px/1.5 -apple-system,Segoe UI,Roboto,sans-serif;padding:22px;max-width:1100px;margin:0 auto}
+  body{margin:0;background:var(--bg);color:var(--text);font:14px/1.5 -apple-system,Segoe UI,Roboto,sans-serif;padding:24px}
+  .back-link{display:inline-flex;align-items:center;gap:6px;padding:6px 12px;background:var(--card);border:1px solid var(--border);border-radius:6px;color:var(--text-muted);text-decoration:none;font-size:13px;margin-bottom:16px}
+  .back-link:hover{color:var(--accent);border-color:var(--accent)}
   h1{font-size:22px;color:var(--text-title);margin:0 0 2px}
   h2{font-size:16px;color:var(--text-title);margin:26px 0 4px}
   .note{color:var(--text-muted);font-size:12.5px;margin:2px 0 10px}
@@ -27,6 +29,7 @@
   .btnsel{cursor:pointer;border:1px solid var(--border);background:var(--card);border-radius:8px;padding:6px 12px;font:inherit;font-size:12.5px}
 </style>
 
+<a href="https://camilootoya-habi.github.io/tableros-marketing-habi/" class="back-link">← Volver al hub</a>
 <h1>Marketing Loop — Reinterés de leads</h1>
 <p class="note">Resultados en vivo del programa de reinterés. Fuente: hubspot.deals (~7 min) + WBR mart + hojas de respuestas. <span id="upd" class="muted"></span></p>
 <div class="country-cards" id="countryCards"></div>
