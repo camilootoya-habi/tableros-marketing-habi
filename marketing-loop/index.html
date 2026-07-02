@@ -30,6 +30,11 @@
   .bar>div{height:100%;border-radius:5px;min-width:2px}
   .help{display:inline-block;width:15px;height:15px;border-radius:50%;background:var(--text-muted);color:#fff;font-size:10px;text-align:center;line-height:15px;cursor:help;font-weight:700}
   .btnsel{cursor:pointer;border:1px solid var(--border);background:var(--card);border-radius:8px;padding:6px 12px;font:inherit;font-size:12.5px}
+  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(380px,1fr));gap:16px;align-items:start;margin-top:10px}
+  .panel{min-width:0}
+  .panel.wide{grid-column:1/-1}
+  .panel h2{margin:0 0 6px}
+  .panel .card{margin:0}
 </style>
 
 <button class="theme-btn" id="themeBtn">☀️ Claro</button>
@@ -38,28 +43,46 @@
 <p class="note">Resultados en vivo del programa de reinterés. Fuente: hubspot.deals (~7 min) + WBR mart + hojas de respuestas. <span id="upd" class="muted"></span></p>
 <div class="country-cards" id="countryCards"></div>
 
-<h2>Salud de la línea WhatsApp <span class="help" title="Calidad, tier y estado de la línea en Infobip (misma data que Meta). La calidad baja con bloqueos/reportes; targetear leads tibios y buen contenido la sube.">?</span></h2>
-<div class="card" id="linea"></div>
+<div class="grid">
+  <section class="panel wide">
+    <h2>Salud de la línea WhatsApp <span class="help" title="Calidad, tier y estado de la línea en Infobip (misma data que Meta). La calidad baja con bloqueos/reportes; targetear leads tibios y buen contenido la sube.">?</span></h2>
+    <div class="card" id="linea"></div>
+  </section>
 
-<h2>Base y respuestas</h2>
-<div class="card"><div class="row" id="kpisResp"></div></div>
-<div class="card" id="respBreak"></div>
+  <section class="panel">
+    <h2>Base y respuestas</h2>
+    <div class="card"><div class="row" id="kpisResp"></div></div>
+  </section>
 
-<h2>Funnel de reactivación <span class="help" title="Recreados (con UTM reinteresados) → Calificado (backbone 20/63) → Asignado (WBR mart) → Cita → Cierre.">?</span></h2>
-<div class="card" id="funnel"></div>
+  <section class="panel">
+    <h2>Respuestas por tipo</h2>
+    <div class="card" id="respBreak"></div>
+  </section>
 
-<h2>Calidad del lead: reinteresados vs WEB nuevo <span class="help" title="Compara conversión de reinteresados contra leads WEB nuevos (misma fuente, sin UTM reinteresados) creados desde el 15-jun. Responde si son de mejor/peor/igual calidad.">?</span></h2>
-<div class="card" id="comparativa"></div>
+  <section class="panel">
+    <h2>Funnel de reactivación <span class="help" title="Recreados (con UTM reinteresados) → Calificado (backbone 20/63) → Asignado (WBR mart) → Cita → Cierre.">?</span></h2>
+    <div class="card" id="funnel"></div>
+  </section>
 
-<h2>Creación diaria + promedio móvil (7d)</h2>
-<div class="card"><div style="position:relative;height:260px"><canvas id="chartCrea"></canvas></div></div>
+  <section class="panel">
+    <h2>Calidad: reinteresados vs WEB nuevo <span class="help" title="Compara conversión de reinteresados contra leads WEB nuevos (misma fuente, sin UTM reinteresados) creados desde el 15-jun. Responde si son de mejor/peor/igual calidad.">?</span></h2>
+    <div class="card" id="comparativa"></div>
+  </section>
 
-<h2>Impacto en asignados por ciclo comercial <span class="help" title="Asignados de las 6 fuentes de marketing (por fuente_id_tig) vs los de reinteresados, por ciclo/semana. Ratio = % que representan los reinteresados.">?</span></h2>
-<div class="row" style="gap:8px;margin:6px 0 10px">
-  <button class="btnsel" data-t="ciclo" id="bt-ciclo">Ciclo comercial (Mié→Mar)</button>
-  <button class="btnsel" data-t="semana" id="bt-semana">Semana (Lun→Dom)</button>
+  <section class="panel wide">
+    <h2>Creación diaria + promedio móvil (7d)</h2>
+    <div class="card"><div style="position:relative;height:260px"><canvas id="chartCrea"></canvas></div></div>
+  </section>
+
+  <section class="panel wide">
+    <h2>Impacto en asignados por ciclo comercial <span class="help" title="Asignados de las 6 fuentes de marketing (por fuente_id_tig) vs los de reinteresados, por ciclo/semana. Ratio = % que representan los reinteresados.">?</span></h2>
+    <div class="row" style="gap:8px;margin:6px 0 10px">
+      <button class="btnsel" data-t="ciclo" id="bt-ciclo">Ciclo comercial (Mié→Mar)</button>
+      <button class="btnsel" data-t="semana" id="bt-semana">Semana (Lun→Dom)</button>
+    </div>
+    <div class="card"><div class="tbl-wrap" id="ciclo"></div></div>
+  </section>
 </div>
-<div class="card"><div class="tbl-wrap" id="ciclo"></div></div>
 
 <script>
 let D=null, country='MX', cicloTipo='ciclo', creaChart=null;
@@ -106,7 +129,7 @@ function renderResp(){
     <div class="kpi"><div class="l">Tasa de respuesta</div><div class="v">${pct(tasa)}</div></div>`;
   const tot=r.total_respuestas||1;
   const items=[['Interesado',r.interesado,'var(--ok)'],['Ya vendió',r.ya_vendio,'var(--sky)'],['Pide baja',r.pide_baja,'var(--bad)']];
-  document.getElementById('respBreak').innerHTML='<div style="font-size:12.5px;font-weight:700;margin-bottom:8px">Desglose de respuestas</div>'+
+  document.getElementById('respBreak').innerHTML=
     items.map(([n,v,c])=>`<div class="row" style="align-items:center;margin:6px 0">
       <div style="width:90px;font-size:13px">${n}</div>
       <div class="bar"><div style="width:${(v/tot*100).toFixed(1)}%;background:${c}"></div></div>
