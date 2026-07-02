@@ -64,14 +64,15 @@
   <div class="sub">Resultados en vivo del programa. Fuentes: hubspot.deals (~7 min) · WBR mart · hojas de respuestas · Infobip. <span id="upd"></span></div>
   <div class="pills" id="pills"></div>
 
-  <div class="eyebrow">Resumen</div>
+  <div class="eyebrow">Salud de la línea</div>
   <div class="stats" id="stats"></div>
+  <p class="note" id="lineaTip"></p>
 
-  <div class="eyebrow">Detalle</div>
+  <div class="eyebrow">Funnel y respuestas</div>
   <div class="grid">
+    <section class="panel"><h3>Funnel de reactivación <span class="help" title="Base contactada → Respuestas → Interesados → Calificados (backbone 20/63) → Asignados (WBR mart) → Citas → Cierres. % = del paso previo.">?</span></h3><div id="funnel"></div></section>
     <section class="panel"><h3>Respuestas por tipo</h3><div id="respBreak"></div></section>
-    <section class="panel"><h3>Funnel de reactivación <span class="help" title="Recreados (con UTM reinteresados) → Calificado (backbone 20/63) → Asignado (WBR mart) → Cita → Cierre.">?</span></h3><div id="funnel"></div></section>
-    <section class="panel wide"><h3>Funnel comparativo · reinteresados vs WEB nuevo <span class="help" title="Conversión por etapa de cada cohorte (% de su base). Reinteresados = UTM reinteresados; WEB nuevo = fuente WEB sin esa UTM, desde 15-jun. Δ en puntos porcentuales; verde = reinteresados mejor.">?</span></h3><div id="comparativa"></div></section>
+    <section class="panel wide"><h3>Funnel comparativo · reinteresados vs WEB nuevo <span class="help" title="Dos funnels lado a lado: conversión por etapa de cada cohorte (% de su base). WEB nuevo = fuente WEB sin UTM reinteresados, desde 15-jun.">?</span></h3><div id="comparativa"></div></section>
     <section class="panel wide"><h3>Creación diaria + promedio móvil (7d)</h3><div style="position:relative;height:280px"><canvas id="chartCrea"></canvas></div></section>
     <section class="panel wide">
       <h3>Impacto en asignados por ciclo comercial <span class="help" title="Asignados de las 6 fuentes de marketing (fuente_id_tig) vs reinteresados, por ciclo/semana. Ratio = % que representan los reinteresados.">?</span></h3>
@@ -104,41 +105,58 @@ function renderPills(){
 function selectCountry(c){ country=c; renderPills(); renderStats(); renderResp(); renderFunnel(); renderComparativa(); renderCrea(); renderCiclo(); }
 
 function renderStats(){
-  const r=(D.respuestas||{})[country]||{}, base=(D.base_enviada||{})[country]||0, l=(D.linea||{})[country]||{};
-  const tasa=base?(r.total_respuestas/base*100):0;
+  const l=(D.linea||{})[country]||{};
   const qc={HIGH:'var(--ok)',MEDIUM:'var(--warn)',LOW:'var(--bad)',UNKNOWN:'var(--text-muted)'}[l.quality]||'var(--text-muted)';
   const cards=[
-    ['Base contactada', fmt(base), 'histórica'],
-    ['Respuestas', fmt(r.total_respuestas), pct(tasa)+' tasa'],
-    ['Interesados', fmt(r.interesado), r.total_respuestas?((r.interesado/r.total_respuestas*100).toFixed(0)+'% de respuestas'):''],
-    ['Piden baja', fmt(r.pide_baja), r.total_respuestas?((r.pide_baja/r.total_respuestas*100).toFixed(0)+'% de respuestas'):''],
-    ['Calidad de línea', `<span class="chip" style="background:${qc}">${l.quality||'—'}</span>`, (l.tier||'').replace('LIMIT_','tier ')+' · '+(l.status||'')],
+    ['Calidad de línea', `<span class="chip" style="background:${qc}">${l.quality||'—'}</span>`, l.sender||''],
+    ['Tier (24h)', (l.tier||'—').replace('LIMIT_',''), 'límite Meta/Infobip'],
+    ['Estado', l.status||'—', 'conexión'],
   ];
-  document.getElementById('stats').innerHTML=cards.map(([l,v,s])=>
-    `<div class="stat"><div class="l">${l}</div><div class="v">${v}</div><div class="s">${s||''}</div></div>`).join('');
+  document.getElementById('stats').innerHTML=cards.map(([lab,v,s])=>
+    `<div class="stat"><div class="l">${lab}</div><div class="v">${v}</div><div class="s">${s||''}</div></div>`).join('');
+  const tip = l.quality==='LOW'?'⚠ Calidad baja: reducir volumen, targetear solo leads tibios y revisar contenido; considerar rotar de línea.'
+    : l.quality==='MEDIUM'?'Calidad media: cuidar el ritmo y priorizar a quien más probablemente responda para que suba.'
+    : l.quality==='HIGH'?'Calidad alta: la línea está sana.'
+    : 'Sin histórico de calidad reciente.';
+  document.getElementById('lineaTip').textContent=tip;
 }
 
 function renderResp(){
   const r=(D.respuestas||{})[country]||{}, tot=r.total_respuestas||1;
-  const items=[['Interesado',r.interesado,'var(--ok)'],['Ya vendió',r.ya_vendio,'var(--sky)'],['Pide baja',r.pide_baja,'var(--bad)']];
-  document.getElementById('respBreak').innerHTML=items.map(([n,v,c])=>`<div class="rowline">
-    <div class="lab">${n}</div>
-    <div class="bar"><div style="width:${(v/tot*100).toFixed(1)}%;background:${c}"></div></div>
-    <div class="val"><b>${fmt(v)}</b> <span class="muted">${(v/tot*100).toFixed(1)}%</span></div></div>`).join('');
+  // columnas verticales, de mayor a menor
+  const items=[['Ya vendió',+r.ya_vendio||0,'var(--sky)'],['Interesado',+r.interesado||0,'var(--ok)'],['Pide baja',+r.pide_baja||0,'var(--bad)']]
+    .sort((a,b)=>b[1]-a[1]);
+  const max=Math.max(1,...items.map(i=>i[1]));
+  document.getElementById('respBreak').innerHTML=
+    `<div style="display:flex;align-items:flex-end;justify-content:space-around;gap:16px;height:220px;padding-top:8px">`+
+    items.map(([n,v,c])=>`<div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%">
+        <div style="font-weight:800;color:var(--text-title);font-size:15px;margin-bottom:5px">${fmt(v)}</div>
+        <div style="width:100%;background:${c};border-radius:8px 8px 0 0;height:${Math.max(4,(v/max*100)).toFixed(0)}%"></div>
+        <div style="margin-top:8px;font-size:13px">${n}</div>
+        <div class="muted" style="font-size:11.5px">${(v/tot*100).toFixed(1)}%</div>
+      </div>`).join('')+`</div>`;
 }
 
 function renderFunnel(){
-  const f=(D.funnel||[]).find(x=>x.pais===country);
+  const f=(D.funnel||[]).find(x=>x.pais===country)||{};
+  const r=(D.respuestas||{})[country]||{}, base=(D.base_enviada||{})[country]||0;
   const el=document.getElementById('funnel');
-  if(!f){ el.innerHTML='<p class="muted">Sin datos.</p>'; return; }
-  const steps=[['Recreados',+f.recreados],['Calificados',+f.calificados],['Asignados',+f.asignados],['Citas',+f.citas],['Cierres',+f.cierres]];
+  const steps=[
+    ['Base contactada', base],
+    ['Respuestas', +r.total_respuestas||0],
+    ['Interesados', +r.interesado||0],
+    ['Calificados', +f.calificados||0],
+    ['Asignados', +f.asignados||0],
+    ['Citas', +f.citas||0],
+    ['Cierres', +f.cierres||0],
+  ];
   const max=steps[0][1]||1;
   el.innerHTML=steps.map(([n,v],i)=>{
     const prev=i?steps[i-1][1]:v, cvr=prev?(v/prev*100):0;
     return `<div class="rowline"><div class="lab">${n}</div>
-      <div class="bar"><div style="width:${(v/max*100).toFixed(1)}%;background:var(--accent)"></div></div>
-      <div class="val"><b>${fmt(v)}</b> ${i?`<span class="muted">${cvr.toFixed(0)}%</span>`:''}</div></div>`;
-  }).join('');
+      <div class="bar"><div style="width:${Math.max(0.5,v/max*100).toFixed(1)}%;background:var(--accent)"></div></div>
+      <div class="val"><b>${fmt(v)}</b> ${i?`<span class="muted">${cvr.toFixed(cvr<10?1:0)}%</span>`:''}</div></div>`;
+  }).join('')+`<p class="note">% = conversión respecto al paso previo. De "Calificados" en adelante son los reinteresados recreados (incluye positivos de llamada).</p>`;
 }
 
 function renderComparativa(){
@@ -147,20 +165,20 @@ function renderComparativa(){
   if(!rows.length){ el.innerHTML='<p class="muted">Sin datos.</p>'; return; }
   const R=rows.find(x=>x.cohorte==='Reinteresados')||{}, N=rows.find(x=>x.cohorte==='WEB nuevo')||{};
   const mets=[['Calificado','calif_pct'],['Asignado','asignado_pct'],['Cita','cita_pct'],['Cierre','cierre_pct']];
-  const head=`<div class="rowline" style="font-size:11px;text-transform:uppercase;letter-spacing:.4px;font-weight:700;color:var(--text-muted)">
-    <div class="lab">Etapa</div>
-    <div style="flex:1"><span style="color:var(--accent)">■</span> Reinteresados <span class="muted">${fmt(R.leads)}</span> &nbsp; <span style="color:var(--text-muted)">■</span> WEB nuevo <span class="muted">${fmt(N.leads)}</span></div>
-    <div style="width:70px;text-align:right">Δ pp</div></div>`;
-  el.innerHTML=head+mets.map(([n,k])=>{
-    const a=+R[k]||0,b=+N[k]||0,d=a-b,mx=Math.max(a,b,1),col=d>0?'var(--ok)':d<0?'var(--bad)':'var(--text-muted)';
-    return `<div class="rowline">
-      <div class="lab">${n}</div>
-      <div style="flex:1">
-        <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px"><div class="bar" style="height:15px"><div style="width:${(a/mx*100).toFixed(0)}%;background:var(--accent)"></div></div><span style="width:52px;font-size:12.5px;text-align:right;font-weight:700">${pct(a)}</span></div>
-        <div style="display:flex;align-items:center;gap:8px"><div class="bar" style="height:15px"><div style="width:${(b/mx*100).toFixed(0)}%;background:var(--text-muted)"></div></div><span style="width:52px;font-size:12.5px;text-align:right;color:var(--text-muted)">${pct(b)}</span></div>
-      </div>
-      <div style="width:70px;text-align:right;font-weight:800;color:${col}">${d>0?'+':''}${d.toFixed(1)}</div></div>`;
-  }).join('')+`<p class="note">Barra violeta = reinteresados, gris = WEB nuevo (% de conversión de cada cohorte por etapa). Δ = diferencia en puntos porcentuales; verde = reinteresados mejor.</p>`;
+  const miniFunnel=(titulo,C,color,leads)=>`
+    <div style="flex:1;min-width:260px">
+      <div style="font-size:13px;font-weight:700;color:var(--text-title);margin-bottom:2px">${titulo}</div>
+      <div class="muted" style="font-size:12px;margin-bottom:12px">${fmt(leads)} leads · % de su base</div>
+      ${mets.map(([n,k])=>{const v=+C[k]||0; return `<div class="rowline">
+        <div class="lab" style="width:82px">${n}</div>
+        <div class="bar"><div style="width:${Math.max(0.5,v).toFixed(1)}%;background:${color}"></div></div>
+        <div class="val" style="width:56px"><b>${pct(v)}</b></div></div>`;}).join('')}
+    </div>`;
+  el.innerHTML=`<div style="display:flex;gap:32px;flex-wrap:wrap">
+    ${miniFunnel('🔁 Reinteresados', R, 'var(--accent)', R.leads)}
+    ${miniFunnel('🌐 WEB nuevo', N, 'var(--text-muted)', N.leads)}
+  </div>
+  <p class="note">Dos funnels lado a lado (cada barra = % de conversión sobre la base de su cohorte). WEB nuevo = fuente WEB sin UTM reinteresados, desde 15-jun.</p>`;
 }
 
 function movavg(a,w){return a.map((_,i)=>{const s=a.slice(Math.max(0,i-w+1),i+1);return s.reduce((x,y)=>x+y,0)/s.length;});}
