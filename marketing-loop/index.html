@@ -20,8 +20,17 @@
     --shadow:0 10px 30px rgba(15,23,42,.10);
   }
   *{margin:0;padding:0;box-sizing:border-box}
-  body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,-apple-system,sans-serif;padding:22px;line-height:1.5}
-  .wrap{max-width:1280px;margin:0 auto}
+  body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,-apple-system,sans-serif;padding:24px;line-height:1.5}
+  .wrap{width:100%}
+  .controls{display:flex;gap:12px;flex-wrap:wrap;margin:14px 0}
+  .control-card{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:11px 16px}
+  .control-card.grow{flex:1;min-width:220px}
+  .control-label{font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--text-muted);font-weight:700;margin-bottom:8px}
+  .filter-bar{display:flex;gap:4px;flex-wrap:wrap;align-items:center}
+  .filter-bar label{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--text);cursor:pointer;padding:4px 10px;border-radius:6px}
+  .filter-bar label:hover{background:var(--border)}
+  .filter-bar .select-all{border-right:1px solid var(--border);padding-right:12px;margin-right:4px}
+  select.sel{background:var(--bg);color:var(--text);border:1px solid var(--border-strong);border-radius:6px;padding:8px 12px;font:inherit;font-size:13px;cursor:pointer}
   a.back{display:inline-flex;gap:6px;align-items:center;padding:6px 12px;background:var(--card);border:1px solid var(--border);border-radius:8px;color:var(--text-muted);text-decoration:none;font-size:13px}
   a.back:hover{color:var(--accent);border-color:var(--accent)}
   .theme-btn{float:right;background:var(--card);border:1px solid var(--border);color:var(--text);border-radius:8px;padding:6px 12px;font-size:13px;cursor:pointer}
@@ -62,7 +71,19 @@
   <a href="https://camilootoya-habi.github.io/tableros-marketing-habi/" class="back">← Volver al hub</a>
   <h1>Marketing Loop · Reinterés de leads</h1>
   <div class="sub">Resultados en vivo del programa. Fuentes: hubspot.deals (~7 min) · WBR mart · hojas de respuestas · Infobip. <span id="upd"></span></div>
-  <div class="pills" id="pills"></div>
+  <div class="controls">
+    <div class="control-card">
+      <div class="control-label">País</div>
+      <div class="filter-bar">
+        <label><input type="radio" name="pais" value="MX" checked> 🇲🇽 México</label>
+        <label><input type="radio" name="pais" value="CO"> 🇨🇴 Colombia</label>
+      </div>
+    </div>
+    <div class="control-card">
+      <div class="control-label">Temporalidad · gráfica de creación</div>
+      <select class="sel" id="granSel"><option value="D">Diario</option><option value="W" selected>Semanal (lun–dom)</option></select>
+    </div>
+  </div>
 
   <div class="eyebrow">Salud de la línea</div>
   <div class="stats" id="stats"></div>
@@ -86,7 +107,7 @@
 </div>
 
 <script>
-let D=null, country='MX', cicloTipo='ciclo', creaChart=null;
+let D=null, country='MX', cicloTipo='ciclo', gran='W', creaChart=null;
 const CIP={MX:'mexico',CO:'colombia'};
 const fmt=v=>(v==null?'—':Number(v).toLocaleString('es-CO'));
 const pct=v=>(v==null?'—':Number(v).toFixed(1)+'%');
@@ -95,14 +116,11 @@ async function load(){
   try{ D=await (await fetch('data.json?t='+Date.now())).json(); }
   catch(e){ document.getElementById('stats').innerHTML='<p class="muted">Error cargando data.json</p>'; return; }
   document.getElementById('upd').textContent = D.updated? ('· datos '+D.updated):'';
-  renderPills(); selectCountry('MX');
+  document.querySelectorAll('input[name=pais]').forEach(r=>r.onchange=()=>selectCountry(r.value));
+  document.getElementById('granSel').onchange=e=>{gran=e.target.value;renderCrea();};
+  selectCountry('MX');
 }
-function renderPills(){
-  document.getElementById('pills').innerHTML=['MX','CO'].map(c=>
-    `<button class="pill ${c===country?'on':''}" data-c="${c}">${c==='MX'?'🇲🇽 México':'🇨🇴 Colombia'}</button>`).join('');
-  document.querySelectorAll('.pill').forEach(b=>b.onclick=()=>selectCountry(b.dataset.c));
-}
-function selectCountry(c){ country=c; renderPills(); renderStats(); renderResp(); renderFunnel(); renderComparativa(); renderCrea(); renderCiclo(); }
+function selectCountry(c){ country=c; renderStats(); renderResp(); renderFunnel(); renderComparativa(); renderCrea(); renderCiclo(); }
 
 function renderStats(){
   const l=(D.linea||{})[country]||{};
@@ -181,14 +199,24 @@ function renderComparativa(){
 
 function movavg(a,w){return a.map((_,i)=>{const s=a.slice(Math.max(0,i-w+1),i+1);return s.reduce((x,y)=>x+y,0)/s.length;});}
 function renderCrea(){
-  const rows=(D.creacion||[]).filter(x=>x.pais===country).sort((a,b)=>a.fecha<b.fecha?-1:1);
-  const labels=rows.map(r=>r.fecha.slice(5)), creados=rows.map(r=>+r.creados);
-  const cvr=rows.map(r=>+r.creados>0?(+r.calificados/+r.creados*100):0), cvrMA=movavg(cvr,7);
+  const src=(D.creacion||[]).filter(x=>x.pais===country).sort((a,b)=>a.fecha<b.fecha?-1:1);
+  let labels, creados, cvrMA, lineLabel;
+  if(gran==='W'){
+    const wk={};
+    src.forEach(r=>{const d=new Date(r.fecha+'T00:00:00'),off=(d.getDay()+6)%7,mon=new Date(d);mon.setDate(d.getDate()-off);
+      const k=mon.toISOString().slice(0,10);(wk[k]=wk[k]||{c:0,q:0}).c+=+r.creados;wk[k].q+=+r.calificados;});
+    const keys=Object.keys(wk).sort();
+    labels=keys.map(k=>k.slice(5)); creados=keys.map(k=>wk[k].c);
+    cvrMA=keys.map(k=>wk[k].c>0?(wk[k].q/wk[k].c*100):0); lineLabel='CVR→calif % (semanal)';
+  }else{
+    labels=src.map(r=>r.fecha.slice(5)); creados=src.map(r=>+r.creados);
+    cvrMA=movavg(src.map(r=>+r.creados>0?(+r.calificados/+r.creados*100):0),7); lineLabel='CVR→calif % (prom. móvil 7d)';
+  }
   const light=document.body.classList.contains('light');
   if(creaChart) creaChart.destroy();
   creaChart=new Chart(document.getElementById('chartCrea'),{data:{labels,datasets:[
     {type:'bar',label:'Creados',data:creados,backgroundColor:light?'#c7d2fe':'#3b3f7a',yAxisID:'y',borderRadius:3},
-    {type:'line',label:'CVR→calif % (prom. móvil 7d)',data:cvrMA,borderColor:'#818cf8',backgroundColor:'#818cf8',tension:.35,yAxisID:'y1',pointRadius:0,borderWidth:2}
+    {type:'line',label:lineLabel,data:cvrMA,borderColor:'#818cf8',backgroundColor:'#818cf8',tension:.35,yAxisID:'y1',pointRadius:0,borderWidth:2}
   ]},options:{responsive:true,maintainAspectRatio:false,interaction:{mode:'index',intersect:false},
     plugins:{legend:{labels:{color:light?'#475569':'#94a3b8'}}},
     scales:{x:{ticks:{color:light?'#64748b':'#94a3b8'},grid:{display:false}},
