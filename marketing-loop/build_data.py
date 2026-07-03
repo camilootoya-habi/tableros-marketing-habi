@@ -43,7 +43,7 @@ def norm_date(s):
     m=re.match(r"(\d{2})-(\d{2})-(\d{4})",s)   # DD-MM-YYYY
     if m: return f"{m.group(3)}-{m.group(2)}-{m.group(1)}"
     return None
-def diario(pais):
+def diario(pais, crea=None):
     env={}
     for r in fetch_private_csv(SENT_PATH[pais]):
         if "hatsapp" in (r.get("canal") or "").lower():
@@ -57,8 +57,14 @@ def diario(pais):
         if not d: continue
         resp[d]=resp.get(d,0)+1
         if "INTERESADO" in (r.get("ETAPA") or "").upper(): inter[d]=inter.get(d,0)+1
-    dias=sorted(set(env)|set(resp)|set(inter))
-    return [{"fecha":d,"enviados":env.get(d,0),"respuestas":resp.get(d,0),"interesados":inter.get(d,0)} for d in dias]
+    cre={}; cal={}
+    for r in (crea or []):
+        if r.get("pais")==pais:
+            d=norm_date(r.get("fecha"))
+            if d: cre[d]=int(r.get("creados") or 0); cal[d]=int(r.get("calificados") or 0)
+    dias=sorted(set(env)|set(resp)|set(inter)|set(cre))
+    return [{"fecha":d,"enviados":env.get(d,0),"respuestas":resp.get(d,0),"interesados":inter.get(d,0),
+             "creados":cre.get(d,0),"calificados":cal.get(d,0)} for d in dias]
 
 def respuestas(pais):
     rows = sheet(csv_url(SS_RESP, RESP_GID[pais]))
@@ -112,15 +118,16 @@ def by_pais(rows, key="pais"):
     for r in rows: out.setdefault(r.get(key), []).append(r)
     return out
 
+CREA = q("query_creacion.sql")
 data = {
   "updated": os.environ.get("BUILD_TS",""),
   "comparativa": q("query_comparativa.sql"),
   "funnel": q("query_funnel.sql"),
-  "creacion": q("query_creacion.sql"),
+  "creacion": CREA,
   "ciclo": q("query_ciclo.sql"),
   "respuestas": {p: respuestas(p) for p in ("MX","CO")},
   "base_enviada": {p: base_enviada(p) for p in ("MX","CO")},
-  "diario": {p: diario(p) for p in ("MX","CO")},
+  "diario": {p: diario(p, CREA) for p in ("MX","CO")},
   "linea": {"MX": linea("MX","5215590883423"), "CO": linea("CO","573009110453")},
 }
 open(os.path.join(HERE,"data.json"),"w").write(json.dumps(data, ensure_ascii=False, separators=(",",":")))

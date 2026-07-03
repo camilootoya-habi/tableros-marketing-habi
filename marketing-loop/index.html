@@ -63,7 +63,12 @@
   th,td{padding:7px 10px;border-bottom:1px solid var(--border);text-align:left;white-space:nowrap}
   .tbl-wrap{overflow-x:auto}
   .tabletitle{font-size:16px;color:var(--text-title);font-weight:700;margin:24px 0 10px;display:flex;align-items:center;gap:6px}
-  .ch{position:relative;height:190px}
+  .ch{position:relative;height:180px}
+  .g5{grid-template-columns:repeat(5,1fr)}
+  @media(max-width:1400px){.g5{grid-template-columns:repeat(3,1fr)}}
+  @media(max-width:900px){.g5{grid-template-columns:repeat(2,1fr)}}
+  @media(max-width:600px){.g5{grid-template-columns:1fr}}
+  .panel h3.sm{font-size:12.5px;margin-bottom:10px}
   /* Formato de tabla copiado del tablero de referencia (tablero-marketing) — tabla sola, contenedor propio */
   #ciclo{background:var(--card);border:1px solid var(--border);border-radius:10px;overflow-x:auto;margin-bottom:8px}
   #ciclo table{width:100%;border-collapse:separate;border-spacing:0;font-size:13px}
@@ -136,14 +141,18 @@
     <section class="panel"><h3>Funnel comparativo · reinteresados vs WEB nuevo <span class="help" title="Dos funnels lado a lado: conversión por etapa de cada cohorte (% de su base). WEB nuevo = fuente WEB sin UTM reinteresados, desde 15-jun.">?</span></h3><div id="comparativa"></div></section>
   </div>
 
-  <div class="tabletitle">Evolución diaria <span class="help" title="Serie diaria. Fila 1 = valor absoluto por día; fila 2 = promedio móvil de 7 días. Base enviada = envíos WhatsApp/día (repo del programa). Conversión a respuesta = respuestas ÷ enviados. Conversión respuesta→interesado = interesados ÷ respuestas.">?</span></div>
-  <div class="grid">
-    <section class="panel"><h3>Base enviada (WhatsApp)</h3><div class="ch"><canvas id="c_env"></canvas></div></section>
-    <section class="panel"><h3>Conversión a respuesta</h3><div class="ch"><canvas id="c_cr"></canvas></div></section>
-    <section class="panel"><h3>Conversión respuesta → interesado</h3><div class="ch"><canvas id="c_ci"></canvas></div></section>
-    <section class="panel"><h3>Base enviada · prom. móvil 7d</h3><div class="ch"><canvas id="c_env_ma"></canvas></div></section>
-    <section class="panel"><h3>Conversión a respuesta · prom. móvil 7d</h3><div class="ch"><canvas id="c_cr_ma"></canvas></div></section>
-    <section class="panel"><h3>Conversión resp → interesado · prom. móvil 7d</h3><div class="ch"><canvas id="c_ci_ma"></canvas></div></section>
+  <div class="tabletitle">Evolución diaria <span class="help" title="Serie diaria. Fila 1 = valor absoluto por día (barras); fila 2 = promedio móvil de 7 días (línea). Pasa el mouse sobre cualquier punto para ver el dato (y el tamaño de muestra en las conversiones).">?</span></div>
+  <div class="grid g5">
+    <section class="panel"><h3 class="sm">Base enviada (WhatsApp) <span class="help" title="Mensajes de reactivación enviados por WhatsApp por día (fuente: repo del programa, fecha de envío).">?</span></h3><div class="ch"><canvas id="c_env"></canvas></div></section>
+    <section class="panel"><h3 class="sm">Conversión a respuesta <span class="help" title="Respuestas recibidas ÷ mensajes enviados ese día (%). Aproximado: las respuestas llegan con rezago respecto al envío.">?</span></h3><div class="ch"><canvas id="c_cr"></canvas></div></section>
+    <section class="panel"><h3 class="sm">Conversión respuesta → interesado <span class="help" title="De los que respondieron ese día, % que eligió 'Interesado' (vs Ya vendió / Pide baja). Tooltip muestra n de respuestas.">?</span></h3><div class="ch"><canvas id="c_ci"></canvas></div></section>
+    <section class="panel"><h3 class="sm">Conversión interesado → creado <span class="help" title="Leads recreados ÷ interesados (%). Recreados = negocios con UTM reinteresados creados ese día (hubspot.deals). Puede pasar de 100% porque incluye positivos de llamada.">?</span></h3><div class="ch"><canvas id="c_ic"></canvas></div></section>
+    <section class="panel"><h3 class="sm">Conversión creado → calificado <span class="help" title="Calificados (backbone estados 20/63) ÷ recreados ese día (%). Por fecha de creación.">?</span></h3><div class="ch"><canvas id="c_cc"></canvas></div></section>
+    <section class="panel"><h3 class="sm">Base enviada · prom. móvil 7d <span class="help" title="Promedio móvil de 7 días de los mensajes enviados por día.">?</span></h3><div class="ch"><canvas id="c_env_ma"></canvas></div></section>
+    <section class="panel"><h3 class="sm">Conversión a respuesta · prom. móvil 7d <span class="help" title="Promedio móvil de 7 días de respuestas ÷ enviados.">?</span></h3><div class="ch"><canvas id="c_cr_ma"></canvas></div></section>
+    <section class="panel"><h3 class="sm">Conversión resp → interesado · prom. móvil 7d <span class="help" title="Promedio móvil de 7 días de interesados ÷ respuestas.">?</span></h3><div class="ch"><canvas id="c_ci_ma"></canvas></div></section>
+    <section class="panel"><h3 class="sm">Conversión interesado → creado · prom. móvil 7d <span class="help" title="Promedio móvil de 7 días de recreados ÷ interesados.">?</span></h3><div class="ch"><canvas id="c_ic_ma"></canvas></div></section>
+    <section class="panel"><h3 class="sm">Conversión creado → calificado · prom. móvil 7d <span class="help" title="Promedio móvil de 7 días de calificados ÷ recreados.">?</span></h3><div class="ch"><canvas id="c_cc_ma"></canvas></div></section>
   </div>
 </div>
 
@@ -170,24 +179,33 @@ function mkChart(id,labels,data,o={}){
   diaCharts.push(new Chart(el,{type:o.type||'line',data:{labels,datasets:[{data,
       borderColor:'#818cf8',backgroundColor:o.type==='bar'?(light?'#c7d2fe':'#3b3f7a'):'#818cf8',
       tension:.35,pointRadius:0,borderWidth:2,borderRadius:3,spanGaps:true}]},
-    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},
-      tooltip:{callbacks:{label:c=>c.parsed.y==null?'—':(o.pct?c.parsed.y.toFixed(1)+'%':fmt(Math.round(c.parsed.y)))}}},
+    options:{responsive:true,maintainAspectRatio:false,interaction:{mode:'index',intersect:false},
+      plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>{
+        const y=c.parsed.y; if(y==null) return '—';
+        if(o.pct){ const n=o.num&&o.num[c.dataIndex], d=o.den&&o.den[c.dataIndex];
+          return y.toFixed(1)+'%'+((n!=null&&d!=null)?` (${fmt(n)} de ${fmt(d)})`:''); }
+        return fmt(Math.round(y)); }}}},
       scales:{x:{ticks:{color:light?'#64748b':'#94a3b8',maxTicksLimit:8},grid:{display:false}},
         y:{beginAtZero:true,max:o.pct?100:undefined,ticks:{color:light?'#64748b':'#94a3b8'},grid:{color:light?'#e2e8f0':'#22304a'}}}}}));
 }
 function renderDiario(){
   const arr=(D.diario||{})[country]||[];
   const labels=arr.map(r=>r.fecha.slice(5));
-  const env=arr.map(r=>+r.enviados);
-  const cr=arr.map(r=>+r.enviados>0?(+r.respuestas/+r.enviados*100):null);
-  const ci=arr.map(r=>+r.respuestas>0?(+r.interesados/+r.respuestas*100):null);
+  const env=arr.map(r=>+r.enviados), resp=arr.map(r=>+r.respuestas), inter=arr.map(r=>+r.interesados),
+        crea=arr.map(r=>+r.creados), cal=arr.map(r=>+r.calificados);
+  const div=(a,b)=>a.map((_,i)=>b[i]>0?(a[i]/b[i]*100):null);
+  const cr=div(resp,env), ci=div(inter,resp), ic=div(crea,inter), cc=div(cal,crea);
   diaCharts.forEach(c=>c.destroy()); diaCharts=[];
   mkChart('c_env',labels,env,{type:'bar'});
-  mkChart('c_cr',labels,cr,{type:'bar',pct:true});
-  mkChart('c_ci',labels,ci,{type:'bar',pct:true});
+  mkChart('c_cr',labels,cr,{type:'bar',pct:true,num:resp,den:env});
+  mkChart('c_ci',labels,ci,{type:'bar',pct:true,num:inter,den:resp});
+  mkChart('c_ic',labels,ic,{type:'bar',pct:true,num:crea,den:inter});
+  mkChart('c_cc',labels,cc,{type:'bar',pct:true,num:cal,den:crea});
   mkChart('c_env_ma',labels,movavg(env,7));
   mkChart('c_cr_ma',labels,movavg(cr,7),{pct:true});
   mkChart('c_ci_ma',labels,movavg(ci,7),{pct:true});
+  mkChart('c_ic_ma',labels,movavg(ic,7),{pct:true});
+  mkChart('c_cc_ma',labels,movavg(cc,7),{pct:true});
 }
 
 function renderStats(){
