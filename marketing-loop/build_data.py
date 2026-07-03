@@ -27,6 +27,39 @@ RESP_GID = {"MX":"1470880789","CO":"158300647"}
 ENV_GID  = {"MX":"241433433","CO":"1571565293"}
 def csv_url(ss,gid): return f"https://docs.google.com/spreadsheets/d/{ss}/export?format=csv&gid={gid}"
 
+# --- serie diaria: envíos (repo privado) + respuestas/interesados (hoja) ---
+GH_TOKEN = os.environ.get("GH_READ_TOKEN")
+PRIV_REPO = "camilootoya-habi/marketing-loop-lead-nurturing"
+SENT_PATH = {"MX":"backbone-mx-batch/infobip_sent_history_mx.csv","CO":"backbone-mx-batch/infobip_sent_history_co.csv"}
+def fetch_private_csv(path):
+    if not GH_TOKEN: print("  ⚠ sin GH_READ_TOKEN, no leo envíos privados"); return []
+    out=subprocess.run(["curl","-s","-H",f"Authorization: token {GH_TOKEN}","-H","Accept: application/vnd.github.raw",
+        f"https://api.github.com/repos/{PRIV_REPO}/contents/{path}"],capture_output=True,text=True,timeout=60).stdout
+    return list(csv.DictReader(io.StringIO(out)))
+def norm_date(s):
+    s=(s or "").strip()
+    m=re.match(r"(\d{4})-(\d{2})-(\d{2})",s)
+    if m: return f"{m.group(1)}-{m.group(2)}-{m.group(3)}"
+    m=re.match(r"(\d{2})-(\d{2})-(\d{4})",s)   # DD-MM-YYYY
+    if m: return f"{m.group(3)}-{m.group(2)}-{m.group(1)}"
+    return None
+def diario(pais):
+    env={}
+    for r in fetch_private_csv(SENT_PATH[pais]):
+        if "hatsapp" in (r.get("canal") or "").lower():
+            d=norm_date(r.get("fecha_envio"))
+            if d: env[d]=env.get(d,0)+1
+    resp={}; inter={}
+    for r in sheet(csv_url(SS_RESP, RESP_GID[pais])):
+        d=None
+        for k,v in r.items():
+            if k and "Fecha" in k and v: d=norm_date(v); break
+        if not d: continue
+        resp[d]=resp.get(d,0)+1
+        if "INTERESADO" in (r.get("ETAPA") or "").upper(): inter[d]=inter.get(d,0)+1
+    dias=sorted(set(env)|set(resp)|set(inter))
+    return [{"fecha":d,"enviados":env.get(d,0),"respuestas":resp.get(d,0),"interesados":inter.get(d,0)} for d in dias]
+
 def respuestas(pais):
     rows = sheet(csv_url(SS_RESP, RESP_GID[pais]))
     hoy = datetime.date.today()
@@ -87,6 +120,7 @@ data = {
   "ciclo": q("query_ciclo.sql"),
   "respuestas": {p: respuestas(p) for p in ("MX","CO")},
   "base_enviada": {p: base_enviada(p) for p in ("MX","CO")},
+  "diario": {p: diario(p) for p in ("MX","CO")},
   "linea": {"MX": linea("MX","5215590883423"), "CO": linea("CO","573009110453")},
 }
 open(os.path.join(HERE,"data.json"),"w").write(json.dumps(data, ensure_ascii=False, separators=(",",":")))

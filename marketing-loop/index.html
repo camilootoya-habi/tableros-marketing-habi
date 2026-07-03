@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🔁</text></svg>">
 <title>Marketing Loop — Reinterés de leads</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 <style>
   :root{
     --bg:#0f172a;--card:#1e293b;--border:#334155;--border-strong:#475569;
@@ -62,6 +63,7 @@
   th,td{padding:7px 10px;border-bottom:1px solid var(--border);text-align:left;white-space:nowrap}
   .tbl-wrap{overflow-x:auto}
   .tabletitle{font-size:16px;color:var(--text-title);font-weight:700;margin:24px 0 10px;display:flex;align-items:center;gap:6px}
+  .ch{position:relative;height:190px}
   /* Formato de tabla copiado del tablero de referencia (tablero-marketing) — tabla sola, contenedor propio */
   #ciclo{background:var(--card);border:1px solid var(--border);border-radius:10px;overflow-x:auto;margin-bottom:8px}
   #ciclo table{width:100%;border-collapse:separate;border-spacing:0;font-size:13px}
@@ -133,6 +135,16 @@
     <section class="panel"><h3>Respuestas por tipo</h3><div id="respBreak"></div></section>
     <section class="panel"><h3>Funnel comparativo · reinteresados vs WEB nuevo <span class="help" title="Dos funnels lado a lado: conversión por etapa de cada cohorte (% de su base). WEB nuevo = fuente WEB sin UTM reinteresados, desde 15-jun.">?</span></h3><div id="comparativa"></div></section>
   </div>
+
+  <div class="tabletitle">Evolución diaria <span class="help" title="Serie diaria. Fila 1 = valor absoluto por día; fila 2 = promedio móvil de 7 días. Base enviada = envíos WhatsApp/día (repo del programa). Conversión a respuesta = respuestas ÷ enviados. Conversión respuesta→interesado = interesados ÷ respuestas.">?</span></div>
+  <div class="grid">
+    <section class="panel"><h3>Base enviada (WhatsApp)</h3><div class="ch"><canvas id="c_env"></canvas></div></section>
+    <section class="panel"><h3>Conversión a respuesta</h3><div class="ch"><canvas id="c_cr"></canvas></div></section>
+    <section class="panel"><h3>Conversión respuesta → interesado</h3><div class="ch"><canvas id="c_ci"></canvas></div></section>
+    <section class="panel"><h3>Base enviada · prom. móvil 7d</h3><div class="ch"><canvas id="c_env_ma"></canvas></div></section>
+    <section class="panel"><h3>Conversión a respuesta · prom. móvil 7d</h3><div class="ch"><canvas id="c_cr_ma"></canvas></div></section>
+    <section class="panel"><h3>Conversión resp → interesado · prom. móvil 7d</h3><div class="ch"><canvas id="c_ci_ma"></canvas></div></section>
+  </div>
 </div>
 
 <script>
@@ -149,7 +161,34 @@ async function load(){
   document.getElementById('granSel').onchange=e=>{cicloTipo=e.target.value;renderCiclo();};
   selectCountry('MX');
 }
-function selectCountry(c){ country=c; renderStats(); renderResp(); renderFunnel(); renderComparativa(); renderCiclo(); }
+function selectCountry(c){ country=c; renderStats(); renderResp(); renderFunnel(); renderComparativa(); renderCiclo(); renderDiario(); }
+
+let diaCharts=[];
+function movavg(a,w){return a.map((_,i)=>{const s=a.slice(Math.max(0,i-w+1),i+1).filter(x=>x!=null);return s.length?s.reduce((x,y)=>x+y,0)/s.length:null;});}
+function mkChart(id,labels,data,o={}){
+  const light=document.body.classList.contains('light'), el=document.getElementById(id); if(!el||!window.Chart) return;
+  diaCharts.push(new Chart(el,{type:o.type||'line',data:{labels,datasets:[{data,
+      borderColor:'#818cf8',backgroundColor:o.type==='bar'?(light?'#c7d2fe':'#3b3f7a'):'#818cf8',
+      tension:.35,pointRadius:0,borderWidth:2,borderRadius:3,spanGaps:true}]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},
+      tooltip:{callbacks:{label:c=>c.parsed.y==null?'—':(o.pct?c.parsed.y.toFixed(1)+'%':fmt(Math.round(c.parsed.y)))}}},
+      scales:{x:{ticks:{color:light?'#64748b':'#94a3b8',maxTicksLimit:8},grid:{display:false}},
+        y:{beginAtZero:true,max:o.pct?100:undefined,ticks:{color:light?'#64748b':'#94a3b8'},grid:{color:light?'#e2e8f0':'#22304a'}}}}}));
+}
+function renderDiario(){
+  const arr=(D.diario||{})[country]||[];
+  const labels=arr.map(r=>r.fecha.slice(5));
+  const env=arr.map(r=>+r.enviados);
+  const cr=arr.map(r=>+r.enviados>0?(+r.respuestas/+r.enviados*100):null);
+  const ci=arr.map(r=>+r.respuestas>0?(+r.interesados/+r.respuestas*100):null);
+  diaCharts.forEach(c=>c.destroy()); diaCharts=[];
+  mkChart('c_env',labels,env,{type:'bar'});
+  mkChart('c_cr',labels,cr,{pct:true});
+  mkChart('c_ci',labels,ci,{pct:true});
+  mkChart('c_env_ma',labels,movavg(env,7));
+  mkChart('c_cr_ma',labels,movavg(cr,7),{pct:true});
+  mkChart('c_ci_ma',labels,movavg(ci,7),{pct:true});
+}
 
 function renderStats(){
   const l=(D.linea||{})[country]||{};
@@ -260,7 +299,8 @@ function renderCiclo(){
   el.scrollLeft=el.scrollWidth;   // fijar a la derecha (periodo más reciente siempre visible)
 }
 function applyTheme(t){const light=t==='light';document.body.classList.toggle('light',light);
-  document.getElementById('themeBtn').textContent=light?'🌙 Oscuro':'☀️ Claro';}
+  document.getElementById('themeBtn').textContent=light?'🌙 Oscuro':'☀️ Claro';
+  if(window.Chart&&diaCharts.length) renderDiario();}
 document.getElementById('themeBtn').onclick=()=>{const n=document.body.classList.contains('light')?'dark':'light';try{localStorage.setItem('ml-theme',n);}catch(e){}applyTheme(n);};
 applyTheme((()=>{try{return localStorage.getItem('ml-theme')||'dark';}catch(e){return 'dark';}})());
 load();
