@@ -206,6 +206,7 @@ function renderCiclo(){
     ${tr('Reinteresados (WEB)',r=>`<td style="text-align:right">${fmt(+r.asignados_reint)}</td>`)}
     ${tr('<b>Reint vs Total Marketing</b>',r=>ratio(+r.asignados_reint,+r.total_asignados))}
     ${tr('<b>Reint vs WEB</b>',r=>ratio(+r.asignados_reint,+r.asignados_web))}
+    ${tr('Total Marketing sin reinteresados',r=>`<td style="text-align:right;color:var(--text-muted)">${fmt((+r.total_asignados)-(+r.asignados_reint))}</td>`)}
   </tbody></table>`;
 }
 function applyTheme(t){const light=t==='light';document.body.classList.toggle('light',light);
