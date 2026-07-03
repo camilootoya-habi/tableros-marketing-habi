@@ -137,7 +137,7 @@
 
   <div class="grid">
     <section class="panel"><h3>Funnel de reactivación <span class="help" title="Base contactada → Respuestas → Interesados → Calificados (backbone 20/63) → Asignados (WBR mart) → Citas → Cierres. % = del paso previo.">?</span></h3><div id="funnel"></div></section>
-    <section class="panel"><h3>Respuestas por tipo</h3><div id="respBreak"></div></section>
+    <section class="panel"><h3>Respuestas por tipo <span class="help" title="Área 100% apilada: % que representa cada tipo de respuesta (Interesado / Ya vendió / Pide baja) sobre el total de respuestas de cada uno de los últimos 14 días.">?</span></h3><div class="ch" style="height:240px"><canvas id="c_resp"></canvas></div></section>
     <section class="panel"><h3>Funnel comparativo · reinteresados vs WEB nuevo <span class="help" title="Dos funnels lado a lado: conversión por etapa de cada cohorte (% de su base). WEB nuevo = fuente WEB sin UTM reinteresados, desde 15-jun.">?</span></h3><div id="comparativa"></div></section>
   </div>
 
@@ -147,17 +147,17 @@
     <section class="panel"><h3 class="sm">Conversión a respuesta <span class="help" title="Respuestas recibidas ÷ mensajes enviados ese día (%). Aproximado: las respuestas llegan con rezago respecto al envío.">?</span></h3><div class="ch"><canvas id="c_cr"></canvas></div></section>
     <section class="panel"><h3 class="sm">Conversión respuesta → interesado <span class="help" title="De los que respondieron ese día, % que eligió 'Interesado' (vs Ya vendió / Pide baja). Tooltip muestra n de respuestas.">?</span></h3><div class="ch"><canvas id="c_ci"></canvas></div></section>
     <section class="panel"><h3 class="sm">Conversión interesado → creado <span class="help" title="Leads recreados ÷ interesados (%). Recreados = negocios con UTM reinteresados creados ese día (hubspot.deals). Puede pasar de 100% porque incluye positivos de llamada.">?</span></h3><div class="ch"><canvas id="c_ic"></canvas></div></section>
-    <section class="panel"><h3 class="sm">Conversión creado → calificado <span class="help" title="Calificados (backbone estados 20/63) ÷ recreados ese día (%). Por fecha de creación.">?</span></h3><div class="ch"><canvas id="c_cc"></canvas></div></section>
+    <section class="panel"><h3 class="sm">Conversión creado → calificado MM <span class="help" title="Calificados de Market Maker (backbone estados 20/63: No gestionado / Sin pricing inicial) ÷ recreados ese día (%). Por fecha de creación.">?</span></h3><div class="ch"><canvas id="c_cc"></canvas></div></section>
     <section class="panel"><h3 class="sm">Base enviada · prom. móvil 7d <span class="help" title="Promedio móvil de 7 días de los mensajes enviados por día.">?</span></h3><div class="ch"><canvas id="c_env_ma"></canvas></div></section>
     <section class="panel"><h3 class="sm">Conversión a respuesta · prom. móvil 7d <span class="help" title="Promedio móvil de 7 días de respuestas ÷ enviados.">?</span></h3><div class="ch"><canvas id="c_cr_ma"></canvas></div></section>
     <section class="panel"><h3 class="sm">Conversión resp → interesado · prom. móvil 7d <span class="help" title="Promedio móvil de 7 días de interesados ÷ respuestas.">?</span></h3><div class="ch"><canvas id="c_ci_ma"></canvas></div></section>
     <section class="panel"><h3 class="sm">Conversión interesado → creado · prom. móvil 7d <span class="help" title="Promedio móvil de 7 días de recreados ÷ interesados.">?</span></h3><div class="ch"><canvas id="c_ic_ma"></canvas></div></section>
-    <section class="panel"><h3 class="sm">Conversión creado → calificado · prom. móvil 7d <span class="help" title="Promedio móvil de 7 días de calificados ÷ recreados.">?</span></h3><div class="ch"><canvas id="c_cc_ma"></canvas></div></section>
+    <section class="panel"><h3 class="sm">Conversión creado → calificado MM · prom. móvil 7d <span class="help" title="Promedio móvil de 7 días de calificados de Market Maker ÷ recreados.">?</span></h3><div class="ch"><canvas id="c_cc_ma"></canvas></div></section>
   </div>
 </div>
 
 <script>
-let D=null, country='MX', cicloTipo='semana';
+let D=null, country='MX', cicloTipo='semana', respChart=null;
 const CIP={MX:'mexico',CO:'colombia'};
 const fmt=v=>(v==null?'—':Number(v).toLocaleString('es-CO'));
 const pct=v=>(v==null?'—':Number(v).toFixed(1)+'%');
@@ -233,17 +233,23 @@ function renderStats(){
 }
 
 function renderResp(){
-  const r=(D.respuestas||{})[country]||{}, tot=r.total_respuestas||1;
-  const items=[['Ya vendió',+r.ya_vendio||0,'var(--sky)'],['Interesado',+r.interesado||0,'var(--ok)'],['Pide baja',+r.pide_baja||0,'var(--bad)']]
-    .sort((a,b)=>b[1]-a[1]);
-  const max=Math.max(1,...items.map(i=>i[1]));
-  // área de barras (altura fija, alturas proporcionales) + fila de etiquetas aparte
-  const bars=items.map(([n,v,c])=>`<div style="flex:1;position:relative;height:${Math.max(1,v/max*100).toFixed(1)}%;background:${c};border-radius:8px 8px 0 0">
-      <span style="position:absolute;top:-22px;left:0;right:0;text-align:center;font-weight:800;color:var(--text-title);font-size:14px">${fmt(v)}</span></div>`).join('');
-  const labs=items.map(([n,v])=>`<div style="flex:1;text-align:center;font-size:13px">${n}<div class="muted" style="font-size:11.5px">${(v/tot*100).toFixed(1)}%</div></div>`).join('');
-  document.getElementById('respBreak').innerHTML=
-    `<div style="display:flex;align-items:flex-end;gap:20px;height:200px;padding-top:24px">${bars}</div>
-     <div style="display:flex;gap:20px;margin-top:10px">${labs}</div>`;
+  const arr=((D.diario||{})[country]||[]).slice(-14);
+  const el=document.getElementById('c_resp'); if(!el||!window.Chart) return;
+  const light=document.body.classList.contains('light');
+  const labels=arr.map(r=>r.fecha.slice(5));
+  const tot=arr.map(r=>(+r.interesados)+(+r.ya_vendio)+(+r.pide_baja));
+  const P=k=>arr.map((r,i)=>tot[i]>0?(+r[k]/tot[i]*100):0);
+  const ds=(lab,k,c)=>({label:lab,data:P(k),backgroundColor:c+'cc',borderColor:c,fill:true,tension:.3,pointRadius:0,borderWidth:1});
+  if(respChart) respChart.destroy();
+  respChart=new Chart(el,{type:'line',data:{labels,datasets:[
+    ds('Ya vendió','ya_vendio','#38bdf8'),
+    ds('Interesado','interesados','#34d399'),
+    ds('Pide baja','pide_baja','#f87171'),
+  ]},options:{responsive:true,maintainAspectRatio:false,interaction:{mode:'index',intersect:false},
+    plugins:{legend:{display:true,labels:{color:light?'#334155':'#e2e8f0',boxWidth:10,font:{size:11}}},
+      tooltip:{callbacks:{label:c=>c.dataset.label+': '+c.parsed.y.toFixed(0)+'%'}}},
+    scales:{x:{stacked:true,ticks:{color:light?'#64748b':'#94a3b8',maxTicksLimit:8},grid:{display:false}},
+      y:{stacked:true,min:0,max:100,ticks:{color:light?'#64748b':'#94a3b8',callback:v=>v+'%'},grid:{color:light?'#e2e8f0':'#22304a'}}}}});
 }
 
 function renderFunnel(){
@@ -318,7 +324,7 @@ function renderCiclo(){
 }
 function applyTheme(t){const light=t==='light';document.body.classList.toggle('light',light);
   document.getElementById('themeBtn').textContent=light?'🌙 Oscuro':'☀️ Claro';
-  if(window.Chart&&diaCharts.length) renderDiario();}
+  if(window.Chart&&diaCharts.length){ renderDiario(); renderResp(); }}
 document.getElementById('themeBtn').onclick=()=>{const n=document.body.classList.contains('light')?'dark':'light';try{localStorage.setItem('ml-theme',n);}catch(e){}applyTheme(n);};
 applyTheme((()=>{try{return localStorage.getItem('ml-theme')||'dark';}catch(e){return 'dark';}})());
 load();

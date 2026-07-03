@@ -49,14 +49,17 @@ def diario(pais, crea=None):
         if "hatsapp" in (r.get("canal") or "").lower():
             d=norm_date(r.get("fecha_envio"))
             if d: env[d]=env.get(d,0)+1
-    resp={}; inter={}
+    resp={}; inter={}; yv={}; pb={}
     for r in sheet(csv_url(SS_RESP, RESP_GID[pais])):
         d=None
         for k,v in r.items():
             if k and "Fecha" in k and v: d=norm_date(v); break
         if not d: continue
         resp[d]=resp.get(d,0)+1
-        if "INTERESADO" in (r.get("ETAPA") or "").upper(): inter[d]=inter.get(d,0)+1
+        et=(r.get("ETAPA") or "").upper()
+        if "INTERESADO" in et: inter[d]=inter.get(d,0)+1
+        elif "YA VENDIO" in et: yv[d]=yv.get(d,0)+1
+        elif "PIDE BAJA" in et: pb[d]=pb.get(d,0)+1
     cre={}; cal={}
     for r in (crea or []):
         if r.get("pais")==pais:
@@ -64,6 +67,7 @@ def diario(pais, crea=None):
             if d: cre[d]=int(r.get("creados") or 0); cal[d]=int(r.get("calificados") or 0)
     dias=sorted(set(env)|set(resp)|set(inter)|set(cre))
     return [{"fecha":d,"enviados":env.get(d,0),"respuestas":resp.get(d,0),"interesados":inter.get(d,0),
+             "ya_vendio":yv.get(d,0),"pide_baja":pb.get(d,0),
              "creados":cre.get(d,0),"calificados":cal.get(d,0)} for d in dias]
 
 def respuestas(pais):
