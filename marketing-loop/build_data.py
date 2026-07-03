@@ -122,7 +122,75 @@ def by_pais(rows, key="pais"):
     for r in rows: out.setdefault(r.get(key), []).append(r)
     return out
 
+# --- funnel por cosecha (atribuido al último envío) / por fecha de evento ---
+LEDGER_PATHS = {
+  "MX": ["backbone-mx-batch/decoy_mx_ledger.csv","backbone-mx-batch/backbone-leads-mx-ledger.csv","backbone-mx-batch/mapping_confianza.csv"],
+  "CO": ["backbone-mx-batch/backbone-leads-co-ledger.csv","backbone-mx-batch/decoy_co_ledger.csv"],
+}
+def bucket(dstr, tipo):
+    try: y,m,dd = map(int, dstr.split("-"))
+    except: return None
+    dt=datetime.date(y,m,dd)
+    if tipo=="dia": return dstr
+    if tipo=="mes": return f"{y:04d}-{m:02d}-01"
+    if tipo=="semana": return (dt-datetime.timedelta(days=dt.weekday())).isoformat()          # lunes
+    if tipo=="ciclo":  return (dt-datetime.timedelta(days=(dt.weekday()-2)%7)).isoformat()     # miércoles
+def funnel_tables(pais, recre):
+    sends={}
+    for r in fetch_private_csv(SENT_PATH[pais]):
+        if "hatsapp" not in (r.get("canal") or "").lower(): continue
+        d=norm_date(r.get("fecha_envio")); ph=r.get("telefono_10")
+        if d and ph: sends.setdefault(ph,[]).append(d)
+    for ph in sends: sends[ph].sort()
+    def last_send(ph,before):
+        L=sends.get(ph);  prev=[x for x in (L or []) if x<=before]
+        return prev[-1] if prev else (L[0] if L else None)
+    resp=[]; nid2phone={}
+    for r in sheet(csv_url(SS_RESP, RESP_GID[pais])):
+        d=None
+        for k,v in r.items():
+            if k and "Fecha" in k and v: d=norm_date(v); break
+        ph=n10(r.get("Telefono")); nid=(r.get("NID") or "").strip()
+        if ph and nid.isdigit(): nid2phone[nid]=ph
+        if d and ph: resp.append((ph,d,(r.get("ETAPA") or "").upper()))
+    old2new={}
+    for path in LEDGER_PATHS[pais]:
+        for r in fetch_private_csv(path):
+            on=(r.get("old_nid") or "").strip(); nn=(r.get("new_nid") or r.get("decoy_nid") or "").strip()
+            if on and nn: old2new[on]=nn
+    new_info={ r["nid"]:(r["fecha_creacion"], int(r["calif"])) for r in recre if r.get("pais")==pais and r.get("nid") }
+    out={"cosecha":{},"evento":{}}
+    for tipo in ("dia","ciclo","semana","mes"):
+        C={}; E={}
+        def add(D,b,k):
+            if not b: return
+            D.setdefault(b,{"enviados":0,"respondieron":0,"interesados":0,"creados":0,"calificados":0})[k]+=1
+        for ph,dates in sends.items():
+            for d in dates:
+                b=bucket(d,tipo); add(E,b,"enviados"); add(C,b,"enviados")
+        for ph,d,et in resp:
+            add(E,bucket(d,tipo),"respondieron")
+            if "INTERESADO" in et: add(E,bucket(d,tipo),"interesados")
+            cs=last_send(ph,d)
+            if cs:
+                add(C,bucket(cs,tipo),"respondieron")
+                if "INTERESADO" in et: add(C,bucket(cs,tipo),"interesados")
+        for on,nn in old2new.items():
+            info=new_info.get(nn)
+            if not info: continue
+            cd,cal=info
+            add(E,bucket(cd,tipo),"creados")
+            if cal: add(E,bucket(cd,tipo),"calificados")
+            ph=nid2phone.get(on); cs=last_send(ph,cd) if ph else None
+            if cs:
+                add(C,bucket(cs,tipo),"creados")
+                if cal: add(C,bucket(cs,tipo),"calificados")
+        out["cosecha"][tipo]=[{"bucket":b,**v} for b,v in sorted(C.items())]
+        out["evento"][tipo]=[{"bucket":b,**v} for b,v in sorted(E.items())]
+    return out
+
 CREA = q("query_creacion.sql")
+RECRE = q("query_recreados.sql")
 data = {
   "updated": os.environ.get("BUILD_TS",""),
   "comparativa": q("query_comparativa.sql"),
@@ -132,6 +200,7 @@ data = {
   "respuestas": {p: respuestas(p) for p in ("MX","CO")},
   "base_enviada": {p: base_enviada(p) for p in ("MX","CO")},
   "diario": {p: diario(p, CREA) for p in ("MX","CO")},
+  "funnel_tabla": {p: funnel_tables(p, RECRE) for p in ("MX","CO")},
   "linea": {"MX": linea("MX","5215590883423"), "CO": linea("CO","573009110453")},
 }
 open(os.path.join(HERE,"data.json"),"w").write(json.dumps(data, ensure_ascii=False, separators=(",",":")))

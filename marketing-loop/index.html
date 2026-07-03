@@ -70,18 +70,18 @@
   @media(max-width:600px){.g5{grid-template-columns:1fr}}
   .panel h3.sm{font-size:12.5px;margin-bottom:10px}
   /* Formato de tabla copiado del tablero de referencia (tablero-marketing) — tabla sola, contenedor propio */
-  #ciclo{background:var(--card);border:1px solid var(--border);border-radius:10px;overflow-x:auto;margin-bottom:8px}
-  #ciclo table{width:100%;border-collapse:separate;border-spacing:0;font-size:13px}
-  #ciclo thead th{background:var(--border);color:var(--text-muted);font-weight:600;text-transform:uppercase;font-size:11px;letter-spacing:.5px;padding:11px 13px;text-align:right;position:sticky;top:0;z-index:2;white-space:nowrap;border:none}
-  #ciclo thead th:first-child{text-align:left;min-width:210px;position:sticky;left:0;z-index:3;background:var(--border);border-right:2px solid var(--border-strong)}
-  #ciclo thead th.cur{font-style:italic;color:var(--warn)}
-  #ciclo thead th.cur::after{content:'*';margin-left:3px}
-  #ciclo tbody td{padding:10px 13px;text-align:right;border-top:1px solid var(--border);white-space:nowrap}
-  #ciclo tbody td:first-child{text-align:left;font-weight:500;color:var(--text-muted);position:sticky;left:0;z-index:1;background:var(--card);border-right:2px solid var(--border-strong)}
-  #ciclo tbody tr:hover td{background:var(--card-hover)}
-  #ciclo tbody tr:hover td:first-child{background:var(--card-hover)}
-  #ciclo tbody tr.row-total td{font-weight:700;color:var(--text-title);font-size:14px;background:var(--row-total)}
-  #ciclo tbody tr.row-total td:first-child{background:var(--row-total)}
+  .ftab{background:var(--card);border:1px solid var(--border);border-radius:10px;overflow-x:auto;margin-bottom:8px}
+  .ftab table{width:100%;border-collapse:separate;border-spacing:0;font-size:13px}
+  .ftab thead th{background:var(--border);color:var(--text-muted);font-weight:600;text-transform:uppercase;font-size:11px;letter-spacing:.5px;padding:11px 13px;text-align:right;position:sticky;top:0;z-index:2;white-space:nowrap;border:none}
+  .ftab thead th:first-child{text-align:left;min-width:210px;position:sticky;left:0;z-index:3;background:var(--border);border-right:2px solid var(--border-strong)}
+  .ftab thead th.cur{font-style:italic;color:var(--warn)}
+  .ftab thead th.cur::after{content:'*';margin-left:3px}
+  .ftab tbody td{padding:10px 13px;text-align:right;border-top:1px solid var(--border);white-space:nowrap}
+  .ftab tbody td:first-child{text-align:left;font-weight:500;color:var(--text-muted);position:sticky;left:0;z-index:1;background:var(--card);border-right:2px solid var(--border-strong)}
+  .ftab tbody tr:hover td{background:var(--card-hover)}
+  .ftab tbody tr:hover td:first-child{background:var(--card-hover)}
+  .ftab tbody tr.row-total td{font-weight:700;color:var(--text-title);font-size:14px;background:var(--row-total)}
+  .ftab tbody tr.row-total td:first-child{background:var(--row-total)}
   .help-btn{display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;border-radius:50%;background:var(--border);color:var(--text-muted);border:none;font-size:11px;font-weight:700;cursor:pointer;margin-left:6px;vertical-align:middle;padding:0;line-height:1}
   .help-btn:hover{background:var(--accent);color:var(--accent-on)}
   .help-dialog{background:var(--card);color:var(--text);border:1px solid var(--border);border-radius:10px;padding:24px 28px;max-width:560px;box-shadow:var(--shadow)}
@@ -122,7 +122,7 @@
   <p class="note" id="lineaTip"></p>
 
   <div class="tabletitle">Impacto en asignados <button type="button" class="help-btn" onclick="document.getElementById('helpImpacto').showModal()" aria-label="Explicación">?</button></div>
-  <div class="tbl-wrap" id="ciclo"></div>
+  <div class="tbl-wrap ftab" id="ciclo"></div>
   <dialog id="helpImpacto" class="help-dialog">
     <h3>Impacto en asignados — cómo se calcula</h3>
     <p>Fuente: <b>WBR mart oficial</b> (<code>papyrus-master.sellers_data_mart.sellers_leads_asignados_marketing_wbr_mart</code>), contando <code>nid</code> únicos por período.</p>
@@ -155,10 +155,23 @@
     <section class="panel"><h3 class="sm">Conversión interesado → creado · prom. móvil 7d <span class="help" title="Promedio móvil de 7 días de recreados ÷ interesados.">?</span></h3><div class="ch"><canvas id="c_ic_ma"></canvas></div></section>
     <section class="panel"><h3 class="sm">Conversión creado → calificado MM · prom. móvil 7d <span class="help" title="Promedio móvil de 7 días de calificados de Market Maker ÷ recreados.">?</span></h3><div class="ch"><canvas id="c_cc_ma"></canvas></div></section>
   </div>
+
+  <div class="tabletitle">Funnel del programa
+    <button type="button" class="help-btn" onclick="document.getElementById('helpFun').showModal()" aria-label="Explicación">?</button>
+    <select class="sel" id="funView" style="margin-left:14px;font-weight:400"><option value="cosecha">Por cosecha (fecha de envío)</option><option value="evento">Por fecha de evento</option></select>
+  </div>
+  <div class="tbl-wrap ftab" id="funtab"></div>
+  <dialog id="helpFun" class="help-dialog">
+    <h3>Funnel del programa — cosecha vs fecha de evento</h3>
+    <p><b>Por cosecha:</b> todo se atribuye a la <b>fecha en que se envió el mensaje</b> al lead original. De los mensajes enviados en el período X, cuántos respondieron, se interesaron, se crearon y calificaron — sin importar cuándo ocurrió cada evento. Es la <b>conversión real</b> del envío. Atribución: al último envío antes del evento.</p>
+    <p><b>Por fecha de evento:</b> cada fila se cuenta por la fecha de su propio evento — enviados por fecha de envío, respuestas por fecha de respuesta, creados/calificados por fecha de creación. Útil para monitoreo operativo, pero mezcla cohortes.</p>
+    <p>Enlace por teléfono/NID entre: envíos (<code>infobip_sent_history</code>) · respuestas (hoja) · recreación (<code>ledger</code>) · <code>hubspot.deals</code>. Sujeta al filtro de País y Temporalidad de arriba; últimos 20 períodos.</p>
+    <button class="close-btn" onclick="document.getElementById('helpFun').close()">Cerrar</button>
+  </dialog>
 </div>
 
 <script>
-let D=null, country='MX', cicloTipo='semana', respChart=null;
+let D=null, country='MX', cicloTipo='semana', funView='cosecha', respChart=null;
 const CIP={MX:'mexico',CO:'colombia'};
 const fmt=v=>(v==null?'—':Number(v).toLocaleString('es-CO'));
 const pct=v=>(v==null?'—':Number(v).toFixed(1)+'%');
@@ -168,10 +181,30 @@ async function load(){
   catch(e){ document.getElementById('stats').innerHTML='<p class="muted">Error cargando data.json</p>'; return; }
   document.getElementById('upd').textContent = D.updated? ('· datos '+D.updated):'';
   document.querySelectorAll('input[name=pais]').forEach(r=>r.onchange=()=>selectCountry(r.value));
-  document.getElementById('granSel').onchange=e=>{cicloTipo=e.target.value;renderCiclo();};
+  document.getElementById('granSel').onchange=e=>{cicloTipo=e.target.value;renderCiclo();renderFuntab();};
+  document.getElementById('funView').onchange=e=>{funView=e.target.value;renderFuntab();};
   selectCountry('MX');
 }
-function selectCountry(c){ country=c; renderStats(); renderResp(); renderFunnel(); renderComparativa(); renderCiclo(); renderDiario(); }
+function selectCountry(c){ country=c; renderStats(); renderResp(); renderFunnel(); renderComparativa(); renderCiclo(); renderDiario(); renderFuntab(); }
+function renderFuntab(){
+  const el=document.getElementById('funtab'); if(!el) return;
+  let rows=((((D.funnel_tabla||{})[country]||{})[funView]||{})[cicloTipo]||[]).slice(-20);
+  if(!rows.length){ el.innerHTML='<p class="muted" style="padding:12px">Sin datos.</p>'; return; }
+  const MES=['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+  const lbl=b=> cicloTipo==='mes' ? (MES[+b.slice(5,7)-1]+' '+b.slice(2,4)) : b.slice(5);
+  const last=rows.length-1, cur=i=> i===last?' class="cur"':'';
+  const th=rows.map((r,i)=>`<th${cur(i)} style="text-align:right">${lbl(r.bucket)}</th>`).join('');
+  const tr=(lab,key,cls='')=>`<tr class="${cls}"><td>${lab}</td>${rows.map((r,i)=>`<td${cur(i)} style="text-align:right">${fmt(+r[key])}</td>`).join('')}</tr>`;
+  const hcol={dia:'Día',ciclo:'Ciclo (inicia Mié)',semana:'Semana (inicia Lun)',mes:'Mes'}[cicloTipo]||'Periodo';
+  el.innerHTML=`<table><thead><tr><th>${hcol}</th>${th}</tr></thead><tbody>
+    ${tr('Enviados','enviados','row-total')}
+    ${tr('Respondieron','respondieron')}
+    ${tr('Interesados','interesados')}
+    ${tr('Creados','creados')}
+    ${tr('Calificados MM','calificados')}
+  </tbody></table>`;
+  el.scrollLeft=el.scrollWidth;
+}
 
 let diaCharts=[];
 function movavg(a,w){return a.map((_,i)=>{const s=a.slice(Math.max(0,i-w+1),i+1).filter(x=>x!=null);return s.length?s.reduce((x,y)=>x+y,0)/s.length:null;});}
