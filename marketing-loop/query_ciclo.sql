@@ -22,6 +22,13 @@ joined AS (
   SELECT m.nid, m.pais, m.dia, m.fuente_id_tig, IF(r.nid IS NOT NULL, 1, 0) AS es_reint
   FROM mart m LEFT JOIN reint r ON r.nid = m.nid
 )
+SELECT 'dia' AS tipo, pais,
+  CAST(dia AS STRING) AS bucket,
+  COUNT(DISTINCT nid) AS total_asignados,
+  COUNT(DISTINCT IF(fuente_id_tig=3, nid, NULL)) AS asignados_web,
+  COUNT(DISTINCT IF(es_reint=1, nid, NULL)) AS asignados_reint
+FROM joined GROUP BY pais, bucket
+UNION ALL
 SELECT 'ciclo' AS tipo, pais,
   CAST(DATE_SUB(dia, INTERVAL MOD(EXTRACT(DAYOFWEEK FROM dia) - 4 + 7, 7) DAY) AS STRING) AS bucket,  -- Miércoles
   COUNT(DISTINCT nid) AS total_asignados,

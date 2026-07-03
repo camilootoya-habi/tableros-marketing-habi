@@ -59,8 +59,11 @@
   table{border-collapse:collapse;width:100%;font-size:13px}
   th,td{padding:7px 10px;border-bottom:1px solid var(--border);text-align:left;white-space:nowrap}
   .tbl-wrap{overflow-x:auto}
-  #ciclo th.cur, #ciclo td.cur{background:rgba(251,191,36,.16);color:var(--text-title);font-weight:800}
-  #ciclo table th:first-child, #ciclo table td:first-child{position:sticky;left:0;background:var(--card);z-index:1;text-align:left}
+  #ciclo .cur{color:var(--warn);font-style:italic}
+  #ciclo th.cur{font-weight:700}
+  #ciclo th.cur::after{content:'*';margin-left:3px}
+  #ciclo table th:first-child, #ciclo table td:first-child{position:sticky;left:0;background:var(--card);z-index:1;text-align:left;font-style:normal}
+  #ciclo thead th{color:var(--text-muted);text-transform:uppercase;font-size:11px;letter-spacing:.4px}
   .help{display:inline-flex;width:15px;height:15px;border-radius:50%;background:var(--border-strong);color:var(--card);font-size:10px;align-items:center;justify-content:center;cursor:help;font-weight:800}
   .btnsel{cursor:pointer;border:1px solid var(--border);background:transparent;color:var(--text);border-radius:8px;padding:5px 12px;font:inherit;font-size:12.5px}
   .note{color:var(--text-muted);font-size:12px;margin-top:10px}
@@ -83,7 +86,7 @@
     </div>
     <div class="control-card">
       <div class="control-label">Temporalidad</div>
-      <select class="sel" id="granSel"><option value="ciclo" selected>Ciclo comercial (Mié→Mar)</option><option value="semana">Semana (Lun→Dom)</option><option value="mes">Mes</option></select>
+      <select class="sel" id="granSel"><option value="dia">Diario</option><option value="ciclo" selected>Ciclo comercial (Mié→Mar)</option><option value="semana">Semana (Lun→Dom)</option><option value="mes">Mes</option></select>
     </div>
   </div>
 
@@ -207,7 +210,7 @@ function renderCiclo(){
   const th=rows.map((r,i)=>`<th${cur(i)} style="text-align:right">${lbl(r.bucket)}</th>`).join('');
   const tr=(lab,f)=>`<tr><td>${lab}</td>${rows.map((r,i)=>f(r,i)).join('')}</tr>`;
   const ratio=(num,den,i)=>`<td${cur(i)} style="text-align:right;font-weight:800;color:${num>0?'var(--accent)':'var(--text-muted)'}">${den?(num/den*100).toFixed(1):'0.0'}%</td>`;
-  const hcol=cicloTipo==='mes'?'Mes':(cicloTipo==='ciclo'?'Ciclo (inicia Mié)':'Semana (inicia Lun)');
+  const hcol={dia:'Día',ciclo:'Ciclo (inicia Mié)',semana:'Semana (inicia Lun)',mes:'Mes'}[cicloTipo]||'Periodo';
   el.innerHTML=`<table><thead><tr><th>${hcol}</th>${th}</tr></thead><tbody>
     ${tr('Total Marketing',(r,i)=>`<td${cur(i)} style="text-align:right">${fmt(+r.total_asignados)}</td>`)}
     ${tr('WEB',(r,i)=>`<td${cur(i)} style="text-align:right">${fmt(+r.asignados_web)}</td>`)}
