@@ -14,7 +14,7 @@ d AS (
     IF(oportunidad_del_negocio='Cierre - Comprado',1,0) AS cierre
   FROM `sellers-main-prod.hubspot.deals`
   WHERE country IN ('México','Colombia') AND fuente='WEB'
-    AND CAST(createdate AS DATE) >= '2026-06-15'
+    AND CAST(createdate AS DATE) >= DATE_SUB(CURRENT_DATE(), INTERVAL 14 DAY)
   QUALIFY ROW_NUMBER() OVER (PARTITION BY nid ORDER BY createdate DESC)=1
 )
 SELECT

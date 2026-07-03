@@ -13,6 +13,7 @@ d AS (
     IF(oportunidad_del_negocio='Cierre - Comprado',1,0) AS cierre
   FROM `sellers-main-prod.hubspot.deals`
   WHERE country IN ('México','Colombia') AND utm_campaign LIKE '%reinteresados%'
+    AND CAST(createdate AS DATE) >= DATE_SUB(CURRENT_DATE(), INTERVAL 14 DAY)   -- solo leads creados en los últimos 14 días
   QUALIFY ROW_NUMBER() OVER (PARTITION BY nid ORDER BY createdate DESC)=1
 )
 SELECT

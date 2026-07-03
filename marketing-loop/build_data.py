@@ -29,12 +29,24 @@ def csv_url(ss,gid): return f"https://docs.google.com/spreadsheets/d/{ss}/export
 
 def respuestas(pais):
     rows = sheet(csv_url(SS_RESP, RESP_GID[pais]))
+    hoy = datetime.date.today()
+    ini = hoy - datetime.timedelta(days=14)   # ventana: últimos 14 días completos, sin incluir hoy: [hoy-14, hoy-1]
+    def fdate(r):
+        for k,v in r.items():
+            if k and "Fecha" in k and v:
+                m = re.search(r"(\d{4})-(\d{2})-(\d{2})", v)
+                if m:
+                    try: return datetime.date(int(m.group(1)),int(m.group(2)),int(m.group(3)))
+                    except: return None
+        return None
     c = {"INTERESADO":0,"YA VENDIO":0,"PIDE BAJA":0}
     for r in rows:
+        d = fdate(r)
+        if not d or d < ini or d >= hoy: continue   # excluye hoy y >14 días
         et = (r.get("ETAPA") or "").strip().upper()
         if et in c: c[et]+=1
     total = sum(c.values())
-    return {"interesado":c["INTERESADO"], "ya_vendio":c["YA VENDIO"], "pide_baja":c["PIDE BAJA"], "total_respuestas":total}
+    return {"interesado":c["INTERESADO"], "ya_vendio":c["YA VENDIO"], "pide_baja":c["PIDE BAJA"], "total_respuestas":total, "ventana":"14d"}
 
 def base_enviada(pais):
     # hoja de envíos: primeras filas metadata, luego teléfonos por columna

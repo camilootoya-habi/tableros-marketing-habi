@@ -153,7 +153,6 @@ function renderFunnel(){
   const r=(D.respuestas||{})[country]||{}, base=(D.base_enviada||{})[country]||0;
   const el=document.getElementById('funnel');
   const steps=[
-    ['Base contactada', base],
     ['Respuestas', +r.total_respuestas||0],
     ['Interesados', +r.interesado||0],
     ['Calificados', +f.calificados||0],
@@ -162,12 +161,15 @@ function renderFunnel(){
     ['Cierres', +f.cierres||0],
   ];
   const max=steps[0][1]||1;
-  el.innerHTML=steps.map(([n,v],i)=>{
-    const prev=i?steps[i-1][1]:v, cvr=prev?(v/prev*100):0;
-    return `<div class="rowline"><div class="lab">${n}</div>
+  const rows=steps.map(([n,v],i)=>{
+    const prev=i?steps[i-1][1]:v, vb=base?(v/base*100):0, vp=prev?(v/prev*100):0;
+    return `<div class="rowline"><div class="lab" style="width:84px">${n}</div>
       <div class="bar"><div style="width:${Math.max(0.5,v/max*100).toFixed(1)}%;background:var(--accent)"></div></div>
-      <div class="val"><b>${fmt(v)}</b> ${i?`<span class="muted">${cvr.toFixed(cvr<10?1:0)}%</span>`:''}</div></div>`;
-  }).join('')+`<p class="note">% = conversión respecto al paso previo. De "Calificados" en adelante son los reinteresados recreados (incluye positivos de llamada).</p>`;
+      <div class="val" style="width:158px"><b>${fmt(v)}</b>
+        <div class="muted" style="font-size:11px">${vb.toFixed(vb<10?2:1)}% base · ${i?vp.toFixed(0)+'% prev':'—'}</div></div></div>`;
+  }).join('');
+  el.innerHTML=`<div style="font-size:12px;color:var(--text-muted);margin-bottom:10px">Base contactada (total programa): <b style="color:var(--text-title)">${fmt(base)}</b></div>${rows}
+    <p class="note">Últimos 14 días (por fecha de creación). Cada etapa: % de la <b>base contactada</b> y % del <b>paso previo</b>. La base contactada es el total del programa (los envíos aún no están fechados en el hub).</p>`;
 }
 
 function renderComparativa(){
