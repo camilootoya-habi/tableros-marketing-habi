@@ -145,7 +145,7 @@
   <div class="tabletitle">Comportamiento · últimos 14 días <span class="help" title="Estas tres tarjetas se calculan sobre los leads/respuestas de los últimos 14 días: el funnel de reactivación (creados en 14 días), el desglose de respuestas por tipo y la comparación de calidad reinteresados vs WEB nuevo.">?</span></div>
   <div class="grid">
     <section class="panel"><h3>Funnel de reactivación <span class="help" title="Base contactada → Respuestas → Interesados → Calificados (backbone 20/63) → Asignados (WBR mart) → Citas → Cierres. % = del paso previo.">?</span></h3><div id="funnel"></div></section>
-    <section class="panel"><h3>Respuestas por tipo <span class="help" title="Área 100% apilada: % que representa cada tipo de respuesta (Interesado / Ya vendió / Pide baja) sobre el total de respuestas de cada uno de los últimos 14 días.">?</span></h3><div style="position:relative;width:100%;aspect-ratio:1.55;flex:1"><canvas id="c_resp"></canvas></div></section>
+    <section class="panel"><h3>Respuestas por tipo <span class="help" title="Área 100% apilada: % que representa cada tipo de respuesta (Interesado / Ya vendió / Pide baja) sobre el total de respuestas de cada uno de los últimos 14 días.">?</span></h3><div style="position:relative;width:100%;height:230px"><canvas id="c_resp"></canvas></div></section>
     <section class="panel"><h3>Funnel comparativo · reinteresados vs WEB nuevo <span class="help" title="Dos funnels lado a lado: conversión por etapa de cada cohorte (% de su base). WEB nuevo = fuente WEB sin UTM reinteresados, desde 15-jun.">?</span></h3><div id="comparativa"></div></section>
   </div>
 
@@ -487,7 +487,7 @@ function renderComparativa(){
   const R=rows.find(x=>x.cohorte==='Reinteresados')||{}, N=rows.find(x=>x.cohorte==='WEB nuevo')||{};
   const mets=[['Calificado','calif_pct'],['Asignado','asignado_pct'],['Cita','cita_pct'],['Cierre','cierre_pct']];
   const miniFunnel=(titulo,C,color,leads)=>`
-    <div style="flex:1;min-width:260px">
+    <div style="flex:1;min-width:185px">
       <div style="font-size:13px;font-weight:700;color:var(--text-title);margin-bottom:2px">${titulo}</div>
       <div class="muted" style="font-size:12px;margin-bottom:12px">${fmt(leads)} leads · % de su base</div>
       ${mets.map(([n,k])=>{const v=+C[k]||0; return `<div class="rowline">
@@ -497,7 +497,7 @@ function renderComparativa(){
     </div>`;
   const acR=(+R.asignado_pct>0)?(+R.cita_pct/+R.asignado_pct*100):0;
   const acN=(+N.asignado_pct>0)?(+N.cita_pct/+N.asignado_pct*100):0;
-  el.innerHTML=`<div style="display:flex;gap:32px;flex-wrap:wrap">
+  el.innerHTML=`<div style="display:flex;gap:16px;flex-wrap:wrap">
     ${miniFunnel('🔁 Reinteresados', R, 'var(--accent)', R.leads)}
     ${miniFunnel('🌐 WEB nuevo', N, 'var(--text-muted)', N.leads)}
   </div>
