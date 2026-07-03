@@ -200,6 +200,52 @@ def funnel_tables(pais, recre):
         out["evento"][tipo]=[{"bucket":b,**v} for b,v in sorted(E.items())]
     return out
 
+def antifunnel(pais, recre):
+    """Distribución por ESTADO ACTUAL del backbone de los leads recreados, bucketeada por fecha_creacion
+    en cada granularidad (dia/ciclo/semana/mes). Salida: {series:{tipo:[{bucket,estados:{label:n}}]}, meta:{label:{estado_id,calif}}}."""
+    rows=[r for r in recre if r.get("pais")==pais and r.get("fecha_creacion")]
+    series={}
+    for tipo in ("dia","ciclo","semana","mes"):
+        agg={}
+        for r in rows:
+            b=bucket(r.get("fecha_creacion"), tipo)
+            if not b: continue
+            lab=(r.get("estado_label") or "Sin estado")
+            agg.setdefault(b,{})
+            agg[b][lab]=agg[b].get(lab,0)+1
+        series[tipo]=[{"bucket":b,"estados":est} for b,est in sorted(agg.items())]
+    meta={}
+    for r in rows:
+        lab=(r.get("estado_label") or "Sin estado")
+        if lab not in meta:
+            meta[lab]={"estado_id":r.get("estado_id"),"calif":int(r.get("calif") or 0)}
+    return {"series":series,"meta":meta}
+
+def cohorte_origen(pais):
+    """Respond rate y % interesados por TRIMESTRE de fecha de creación del LEAD ORIGINAL.
+    Solo cubre los envíos 'auto' (los que capturaron nid + fecha_creacion_original); une envíos↔respuestas por nid.
+    Salida: [{bucket:'YYYY-QN', enviados, respondieron, interesados}] ordenado."""
+    resp=set(); inter=set()
+    for r in sheet(csv_url(SS_RESP, RESP_GID[pais])):
+        nid=(r.get("NID") or "").strip()
+        if not (nid and nid.isdigit()): continue
+        resp.add(nid)
+        if "INTERESADO" in (r.get("ETAPA") or "").upper(): inter.add(nid)
+    seen={}   # dedup por nid original
+    for r in fetch_private_csv(SENT_PATH[pais]):
+        nid=(r.get("nid") or "").strip(); fco=norm_date(r.get("fecha_creacion_original"))
+        if nid and fco and nid not in seen: seen[nid]=fco
+    agg={}
+    for nid,fco in seen.items():
+        try: y,m=fco[:4], int(fco[5:7])
+        except: continue
+        b=f"{y}-Q{(m-1)//3+1}"
+        a=agg.setdefault(b,{"bucket":b,"enviados":0,"respondieron":0,"interesados":0})
+        a["enviados"]+=1
+        if nid in resp: a["respondieron"]+=1
+        if nid in inter: a["interesados"]+=1
+    return [agg[k] for k in sorted(agg)]
+
 CREA = q("query_creacion.sql")
 RECRE = q("query_recreados.sql")
 data = {
@@ -212,6 +258,9 @@ data = {
   "base_enviada": {p: base_enviada(p) for p in ("MX","CO")},
   "diario": {p: diario(p, CREA) for p in ("MX","CO")},
   "funnel_tabla": {p: funnel_tables(p, RECRE) for p in ("MX","CO")},
+  "antifunnel": {p: antifunnel(p, RECRE) for p in ("MX","CO")},
+  "cohorte_origen": {p: cohorte_origen(p) for p in ("MX","CO")},
+  "hoy": {r["pais"]: int(r.get("creados_hoy") or 0) for r in q("query_hoy.sql")},
   "linea": {"MX": linea("MX","5215590883423"), "CO": linea("CO","573009110453")},
 }
 open(os.path.join(HERE,"data.json"),"w").write(json.dumps(data, ensure_ascii=False, separators=(",",":")))
