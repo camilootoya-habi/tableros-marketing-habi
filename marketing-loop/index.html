@@ -10,12 +10,14 @@
     --bg:#0f172a;--card:#1e293b;--border:#334155;--border-strong:#475569;
     --text:#e2e8f0;--text-title:#f8fafc;--text-muted:#94a3b8;
     --accent:#818cf8;--ok:#34d399;--warn:#fbbf24;--bad:#f87171;--sky:#38bdf8;--barbg:#0f1e33;
+    --card-hover:#263348;--row-total:#1a2744;
     --shadow:0 10px 30px rgba(0,0,0,.35);
   }
   body.light{
     --bg:#f5f7fa;--card:#fff;--border:#e2e8f0;--border-strong:#cbd5e1;
     --text:#334155;--text-title:#0f172a;--text-muted:#64748b;
     --accent:#6366f1;--ok:#10b981;--warn:#b45309;--bad:#dc2626;--sky:#0ea5e9;--barbg:#eef2f7;
+    --card-hover:#f1f5f9;--row-total:#eef2ff;
     --shadow:0 10px 30px rgba(15,23,42,.10);
   }
   *{margin:0;padding:0;box-sizing:border-box}
@@ -59,11 +61,20 @@
   table{border-collapse:collapse;width:100%;font-size:13px}
   th,td{padding:7px 10px;border-bottom:1px solid var(--border);text-align:left;white-space:nowrap}
   .tbl-wrap{overflow-x:auto}
-  #ciclo .cur{color:var(--warn);font-style:italic}
-  #ciclo th.cur{font-weight:700}
-  #ciclo th.cur::after{content:'*';margin-left:3px}
-  #ciclo table th:first-child, #ciclo table td:first-child{position:sticky;left:0;background:var(--card);z-index:1;text-align:left;font-style:normal}
-  #ciclo thead th{color:var(--text-muted);text-transform:uppercase;font-size:11px;letter-spacing:.4px}
+  /* Formato de tabla copiado del tablero de referencia (tablero-marketing) */
+  #ciclo{border-radius:10px;overflow-x:auto}
+  #ciclo table{width:100%;border-collapse:separate;border-spacing:0;font-size:13px}
+  #ciclo thead th{background:var(--border);color:var(--text-muted);font-weight:600;text-transform:uppercase;font-size:11px;letter-spacing:.5px;padding:11px 13px;text-align:right;position:sticky;top:0;z-index:2;white-space:nowrap;border:none}
+  #ciclo thead th:first-child{text-align:left;min-width:210px;position:sticky;left:0;z-index:3;background:var(--border);border-right:2px solid var(--border-strong)}
+  #ciclo thead th.cur{font-style:italic;color:var(--warn)}
+  #ciclo thead th.cur::after{content:'*';margin-left:3px}
+  #ciclo tbody td{padding:10px 13px;text-align:right;border-top:1px solid var(--border);white-space:nowrap}
+  #ciclo tbody td:first-child{text-align:left;font-weight:500;color:var(--text-muted);position:sticky;left:0;z-index:1;background:var(--card);border-right:2px solid var(--border-strong)}
+  #ciclo tbody tr:hover td{background:var(--card-hover)}
+  #ciclo tbody tr:hover td:first-child{background:var(--card-hover)}
+  #ciclo tbody tr.row-total td{font-weight:700;color:var(--text-title);font-size:14px;background:var(--row-total)}
+  #ciclo tbody tr.row-total td:first-child{background:var(--row-total)}
+  #ciclo tbody td.cur{color:var(--warn);font-style:italic}
   .help{display:inline-flex;width:15px;height:15px;border-radius:50%;background:var(--border-strong);color:var(--card);font-size:10px;align-items:center;justify-content:center;cursor:help;font-weight:800}
   .btnsel{cursor:pointer;border:1px solid var(--border);background:transparent;color:var(--text);border-radius:8px;padding:5px 12px;font:inherit;font-size:12.5px}
   .note{color:var(--text-muted);font-size:12px;margin-top:10px}
@@ -124,18 +135,18 @@ function selectCountry(c){ country=c; renderStats(); renderResp(); renderFunnel(
 function renderStats(){
   const l=(D.linea||{})[country]||{};
   const qc={HIGH:'var(--ok)',MEDIUM:'var(--warn)',LOW:'var(--bad)',UNKNOWN:'var(--text-muted)'}[l.quality]||'var(--text-muted)';
-  const cards=[
-    ['Calidad de línea', `<span class="chip" style="background:${qc}">${l.quality||'—'}</span>`, l.sender||''],
-    ['Tier (24h)', (l.tier||'—').replace('LIMIT_',''), 'límite Meta/Infobip'],
-    ['Estado', l.status||'—', 'conexión'],
-  ];
-  document.getElementById('stats').innerHTML=cards.map(([lab,v,s])=>
-    `<div class="stat"><div class="l">${lab}</div><div class="v">${v}</div><div class="s">${s||''}</div></div>`).join('');
   const tip = l.quality==='LOW'?'⚠ Calidad baja: reducir volumen, targetear solo leads tibios y revisar contenido; considerar rotar de línea.'
     : l.quality==='MEDIUM'?'Calidad media: cuidar el ritmo y priorizar a quien más probablemente responda para que suba.'
     : l.quality==='HIGH'?'Calidad alta: la línea está sana.'
     : 'Sin histórico de calidad reciente.';
-  document.getElementById('lineaTip').textContent=tip;
+  const cards=[
+    ['Calidad de línea', `<span class="chip" style="background:${qc}">${l.quality||'—'}</span>`, tip],
+    ['Tier (24h)', (l.tier||'—').replace('LIMIT_',''), 'límite Meta/Infobip'],
+    ['Estado', l.status||'—', (l.sender||'')+' · conexión'],
+  ];
+  document.getElementById('stats').innerHTML=cards.map(([lab,v,s])=>
+    `<div class="stat"><div class="l">${lab}</div><div class="v">${v}</div><div class="s">${s||''}</div></div>`).join('');
+  document.getElementById('lineaTip').textContent='';
 }
 
 function renderResp(){
@@ -208,11 +219,11 @@ function renderCiclo(){
   const last=rows.length-1;
   const cur=i=> i===last?' class="cur"':'';
   const th=rows.map((r,i)=>`<th${cur(i)} style="text-align:right">${lbl(r.bucket)}</th>`).join('');
-  const tr=(lab,f)=>`<tr><td>${lab}</td>${rows.map((r,i)=>f(r,i)).join('')}</tr>`;
+  const tr=(lab,f,cls='')=>`<tr class="${cls}"><td>${lab}</td>${rows.map((r,i)=>f(r,i)).join('')}</tr>`;
   const ratio=(num,den,i)=>`<td${cur(i)} style="text-align:right;font-weight:800;color:${num>0?'var(--accent)':'var(--text-muted)'}">${den?(num/den*100).toFixed(1):'0.0'}%</td>`;
   const hcol={dia:'Día',ciclo:'Ciclo (inicia Mié)',semana:'Semana (inicia Lun)',mes:'Mes'}[cicloTipo]||'Periodo';
   el.innerHTML=`<table><thead><tr><th>${hcol}</th>${th}</tr></thead><tbody>
-    ${tr('Total Marketing',(r,i)=>`<td${cur(i)} style="text-align:right">${fmt(+r.total_asignados)}</td>`)}
+    ${tr('Total Marketing',(r,i)=>`<td${cur(i)} style="text-align:right">${fmt(+r.total_asignados)}</td>`,'row-total')}
     ${tr('WEB',(r,i)=>`<td${cur(i)} style="text-align:right">${fmt(+r.asignados_web)}</td>`)}
     ${tr('Reinteresados (WEB)',(r,i)=>`<td${cur(i)} style="text-align:right">${fmt(+r.asignados_reint)}</td>`)}
     ${tr('<b>Reint vs Total Marketing</b>',(r,i)=>ratio(+r.asignados_reint,+r.total_asignados,i))}
