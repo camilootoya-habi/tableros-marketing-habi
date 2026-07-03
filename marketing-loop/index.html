@@ -5,7 +5,6 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🔁</text></svg>">
 <title>Marketing Loop — Reinterés de leads</title>
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 <style>
   :root{
     --bg:#0f172a;--card:#1e293b;--border:#334155;--border-strong:#475569;
@@ -45,9 +44,10 @@
   .stat .l{font-size:11.5px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.4px;font-weight:600}
   .stat .v{font-size:28px;font-weight:800;color:var(--text-title);margin-top:3px;line-height:1.1}
   .stat .s{font-size:12px;color:var(--text-muted);margin-top:2px}
-  .grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:stretch}
+  .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;align-items:stretch}
   .panel{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:18px;display:flex;flex-direction:column}
   .panel.wide{grid-column:1 / -1}
+  @media(max-width:1100px){.grid{grid-template-columns:1fr 1fr}}
   .panel h3{font-size:14.5px;color:var(--text-title);font-weight:700;margin-bottom:14px;display:flex;align-items:center;gap:6px}
   .muted{color:var(--text-muted)}
   .chip{display:inline-block;padding:3px 11px;border-radius:999px;font-size:13px;font-weight:800;color:#0b1220}
@@ -80,8 +80,8 @@
       </div>
     </div>
     <div class="control-card">
-      <div class="control-label">Temporalidad · gráfica de creación</div>
-      <select class="sel" id="granSel"><option value="D">Diario</option><option value="W" selected>Semanal (lun–dom)</option></select>
+      <div class="control-label">Temporalidad</div>
+      <select class="sel" id="granSel"><option value="ciclo" selected>Ciclo comercial (Mié→Mar)</option><option value="semana">Semana (Lun→Dom)</option></select>
     </div>
   </div>
 
@@ -93,21 +93,16 @@
   <div class="grid">
     <section class="panel"><h3>Funnel de reactivación <span class="help" title="Base contactada → Respuestas → Interesados → Calificados (backbone 20/63) → Asignados (WBR mart) → Citas → Cierres. % = del paso previo.">?</span></h3><div id="funnel"></div></section>
     <section class="panel"><h3>Respuestas por tipo</h3><div id="respBreak"></div></section>
-    <section class="panel wide"><h3>Funnel comparativo · reinteresados vs WEB nuevo <span class="help" title="Dos funnels lado a lado: conversión por etapa de cada cohorte (% de su base). WEB nuevo = fuente WEB sin UTM reinteresados, desde 15-jun.">?</span></h3><div id="comparativa"></div></section>
-    <section class="panel wide"><h3>Creación diaria + promedio móvil (7d)</h3><div style="position:relative;height:280px"><canvas id="chartCrea"></canvas></div></section>
+    <section class="panel"><h3>Funnel comparativo · reinteresados vs WEB nuevo <span class="help" title="Dos funnels lado a lado: conversión por etapa de cada cohorte (% de su base). WEB nuevo = fuente WEB sin UTM reinteresados, desde 15-jun.">?</span></h3><div id="comparativa"></div></section>
     <section class="panel wide">
-      <h3>Impacto en asignados por ciclo comercial <span class="help" title="Asignados de las 6 fuentes de marketing (fuente_id_tig) vs reinteresados, por ciclo/semana. Ratio = % que representan los reinteresados.">?</span></h3>
-      <div style="display:flex;gap:8px;margin-bottom:12px">
-        <button class="btnsel" id="bt-ciclo">Ciclo comercial (Mié→Mar)</button>
-        <button class="btnsel" id="bt-semana">Semana (Lun→Dom)</button>
-      </div>
+      <h3>Impacto en asignados por ciclo comercial <span class="help" title="Asignados de las 6 fuentes de marketing (fuente_id_tig) vs reinteresados, por período (según el filtro de Temporalidad de arriba). Ratio = % que representan los reinteresados.">?</span></h3>
       <div class="tbl-wrap" id="ciclo"></div>
     </section>
   </div>
 </div>
 
 <script>
-let D=null, country='MX', cicloTipo='ciclo', gran='W', creaChart=null;
+let D=null, country='MX', cicloTipo='ciclo';
 const CIP={MX:'mexico',CO:'colombia'};
 const fmt=v=>(v==null?'—':Number(v).toLocaleString('es-CO'));
 const pct=v=>(v==null?'—':Number(v).toFixed(1)+'%');
@@ -117,10 +112,10 @@ async function load(){
   catch(e){ document.getElementById('stats').innerHTML='<p class="muted">Error cargando data.json</p>'; return; }
   document.getElementById('upd').textContent = D.updated? ('· datos '+D.updated):'';
   document.querySelectorAll('input[name=pais]').forEach(r=>r.onchange=()=>selectCountry(r.value));
-  document.getElementById('granSel').onchange=e=>{gran=e.target.value;renderCrea();};
+  document.getElementById('granSel').onchange=e=>{cicloTipo=e.target.value;renderCiclo();};
   selectCountry('MX');
 }
-function selectCountry(c){ country=c; renderStats(); renderResp(); renderFunnel(); renderComparativa(); renderCrea(); renderCiclo(); }
+function selectCountry(c){ country=c; renderStats(); renderResp(); renderFunnel(); renderComparativa(); renderCiclo(); }
 
 function renderStats(){
   const l=(D.linea||{})[country]||{};
@@ -197,38 +192,9 @@ function renderComparativa(){
   <p class="note">Dos funnels lado a lado (cada barra = % de conversión sobre la base de su cohorte). WEB nuevo = fuente WEB sin UTM reinteresados, desde 15-jun.</p>`;
 }
 
-function movavg(a,w){return a.map((_,i)=>{const s=a.slice(Math.max(0,i-w+1),i+1);return s.reduce((x,y)=>x+y,0)/s.length;});}
-function renderCrea(){
-  const src=(D.creacion||[]).filter(x=>x.pais===country).sort((a,b)=>a.fecha<b.fecha?-1:1);
-  let labels, creados, cvrMA, lineLabel;
-  if(gran==='W'){
-    const wk={};
-    src.forEach(r=>{const d=new Date(r.fecha+'T00:00:00'),off=(d.getDay()+6)%7,mon=new Date(d);mon.setDate(d.getDate()-off);
-      const k=mon.toISOString().slice(0,10);(wk[k]=wk[k]||{c:0,q:0}).c+=+r.creados;wk[k].q+=+r.calificados;});
-    const keys=Object.keys(wk).sort();
-    labels=keys.map(k=>k.slice(5)); creados=keys.map(k=>wk[k].c);
-    cvrMA=keys.map(k=>wk[k].c>0?(wk[k].q/wk[k].c*100):0); lineLabel='CVR→calif % (semanal)';
-  }else{
-    labels=src.map(r=>r.fecha.slice(5)); creados=src.map(r=>+r.creados);
-    cvrMA=movavg(src.map(r=>+r.creados>0?(+r.calificados/+r.creados*100):0),7); lineLabel='CVR→calif % (prom. móvil 7d)';
-  }
-  const light=document.body.classList.contains('light');
-  if(creaChart) creaChart.destroy();
-  creaChart=new Chart(document.getElementById('chartCrea'),{data:{labels,datasets:[
-    {type:'bar',label:'Creados',data:creados,backgroundColor:light?'#c7d2fe':'#3b3f7a',yAxisID:'y',borderRadius:3},
-    {type:'line',label:lineLabel,data:cvrMA,borderColor:'#818cf8',backgroundColor:'#818cf8',tension:.35,yAxisID:'y1',pointRadius:0,borderWidth:2}
-  ]},options:{responsive:true,maintainAspectRatio:false,interaction:{mode:'index',intersect:false},
-    plugins:{legend:{labels:{color:light?'#475569':'#94a3b8'}}},
-    scales:{x:{ticks:{color:light?'#64748b':'#94a3b8'},grid:{display:false}},
-      y:{position:'left',ticks:{color:light?'#64748b':'#94a3b8'},grid:{color:light?'#e2e8f0':'#243044'}},
-      y1:{position:'right',min:0,max:100,ticks:{color:light?'#64748b':'#94a3b8'},grid:{drawOnChartArea:false}}}}});
-}
-
 function renderCiclo(){
   const el=document.getElementById('ciclo');
   const rows=(D.ciclo||[]).filter(r=>r.pais===CIP[country] && r.tipo===cicloTipo).sort((a,b)=>a.bucket<b.bucket?-1:1);
-  ['ciclo','semana'].forEach(t=>{const b=document.getElementById('bt-'+t),on=t===cicloTipo;
-    b.style.background=on?'var(--accent)':'transparent';b.style.color=on?'#fff':'var(--text)';b.style.borderColor=on?'var(--accent)':'var(--border)';});
   if(!rows.length){ el.innerHTML='<p class="muted">Sin datos.</p>'; return; }
   const th=rows.map(r=>`<th style="text-align:right">${r.bucket.slice(5)}</th>`).join('');
   const tr=(lab,f)=>`<tr><td>${lab}</td>${rows.map(f).join('')}</tr>`;
@@ -238,12 +204,8 @@ function renderCiclo(){
     ${tr('<b>Ratio reinteresados</b>',r=>{const p=+r.total_asignados?(+r.asignados_reint/+r.total_asignados*100):0;return `<td style="text-align:right;font-weight:800;color:${p>0?'var(--accent)':'var(--text-muted)'}">${p.toFixed(1)}%</td>`;})}
   </tbody></table>`;
 }
-document.getElementById('bt-ciclo').onclick=()=>{cicloTipo='ciclo';renderCiclo();};
-document.getElementById('bt-semana').onclick=()=>{cicloTipo='semana';renderCiclo();};
-
 function applyTheme(t){const light=t==='light';document.body.classList.toggle('light',light);
-  document.getElementById('themeBtn').textContent=light?'🌙 Oscuro':'☀️ Claro';
-  if(window.Chart&&creaChart) renderCrea();}
+  document.getElementById('themeBtn').textContent=light?'🌙 Oscuro':'☀️ Claro';}
 document.getElementById('themeBtn').onclick=()=>{const n=document.body.classList.contains('light')?'dark':'light';try{localStorage.setItem('ml-theme',n);}catch(e){}applyTheme(n);};
 applyTheme((()=>{try{return localStorage.getItem('ml-theme')||'dark';}catch(e){return 'dark';}})());
 load();
