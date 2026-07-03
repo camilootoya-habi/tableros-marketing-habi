@@ -36,6 +36,12 @@ def fetch_private_csv(path):
     out=subprocess.run(["curl","-s","-H",f"Authorization: token {GH_TOKEN}","-H","Accept: application/vnd.github.raw",
         f"https://api.github.com/repos/{PRIV_REPO}/contents/{path}"],capture_output=True,text=True,timeout=60).stdout
     return list(csv.DictReader(io.StringIO(out)))
+def fetch_private_json(path):
+    if not GH_TOKEN: print("  ⚠ sin GH_READ_TOKEN, no leo geo_health"); return None
+    out=subprocess.run(["curl","-s","-H",f"Authorization: token {GH_TOKEN}","-H","Accept: application/vnd.github.raw",
+        f"https://api.github.com/repos/{PRIV_REPO}/contents/{path}"],capture_output=True,text=True,timeout=60).stdout
+    try: return json.loads(out)
+    except: return None
 def norm_date(s):
     s=(s or "").strip()
     m=re.match(r"(\d{4})-(\d{2})-(\d{2})",s)
@@ -261,6 +267,7 @@ data = {
   "antifunnel": {p: antifunnel(p, RECRE) for p in ("MX","CO")},
   "cohorte_origen": {p: cohorte_origen(p) for p in ("MX","CO")},
   "hoy": {r["pais"]: int(r.get("creados_hoy") or 0) for r in q("query_hoy.sql")},
+  "geo_health": fetch_private_json("backbone-mx-batch/geo_health.json"),
   "linea": {"MX": linea("MX","5215590883423"), "CO": linea("CO","573009110453")},
 }
 open(os.path.join(HERE,"data.json"),"w").write(json.dumps(data, ensure_ascii=False, separators=(",",":")))

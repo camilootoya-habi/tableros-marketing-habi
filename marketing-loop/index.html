@@ -126,6 +126,7 @@
 
   <div class="eyebrow">Indicadores de salud</div>
   <div class="stats" id="stats"></div>
+  <div id="geoAlarm"></div>
   <p class="note" id="lineaTip"></p>
 
   <div class="tabletitle">Impacto en asignados <button type="button" class="help-btn" onclick="document.getElementById('helpImpacto').showModal()" aria-label="Explicación">?</button></div>
@@ -271,7 +272,7 @@ async function load(){
   document.getElementById('funView').onchange=e=>{funView=e.target.value;renderFuntab();};
   selectCountry('MX');
 }
-function selectCountry(c){ country=c; renderStats(); renderResp(); renderFunnel(); renderComparativa(); renderCiclo(); renderDiario(); renderFuntab(); renderAntifunnel(); renderCohorteOrigen(); }
+function selectCountry(c){ country=c; renderStats(); renderResp(); renderFunnel(); renderComparativa(); renderCiclo(); renderDiario(); renderFuntab(); renderAntifunnel(); renderCohorteOrigen(); renderGeoAlarm(); }
 // Celdas "valor + %" con heatmap por fila (verde=conversión alta, rojo=baja), copiado del tablero de referencia.
 function heatCells(values, denoms){
   const pcts=values.map((v,i)=> denoms[i]>0 ? v/denoms[i]*100 : null);   // período sin base → null (celda vacía)
@@ -427,6 +428,24 @@ function renderResp(){
       tooltip:{callbacks:{label:c=>c.dataset.label+': '+c.parsed.y.toFixed(0)+'%'}}},
     scales:{x:{stacked:true,ticks:{color:light?'#64748b':'#94a3b8',maxTicksLimit:8},grid:{display:false}},
       y:{stacked:true,min:0,max:100,ticks:{color:light?'#64748b':'#94a3b8',callback:v=>v+'%'},grid:{color:light?'#e2e8f0':'#22304a'}}}}});
+}
+
+function renderGeoAlarm(){
+  const el=document.getElementById('geoAlarm'); if(!el) return;
+  const h=(D.geo_health||{}).MX;
+  if(country!=='MX'||!h){ el.innerHTML=''; return; }   // el señuelo es MX-only
+  const wrong=+h.wrong||0, inflight=+h.in_flight||0, pend=+h.pending_fix_replication||0, pbq=+h.pending_bq||0;
+  const ok=wrong===0, bd=ok?'var(--ok)':'var(--bad)', bg=ok?'rgba(52,211,153,.12)':'rgba(248,113,113,.14)';
+  const msg=ok
+    ? 'Geo de recreación sana — 0 leads con geo señuelo sin corregir.'
+    : `<b>${fmt(wrong)} lead(s) recreados con geo señuelo SIN corregir (&gt;24h)</b> — el barrido no los está arreglando, revisar.`;
+  const ctx=[];
+  if(inflight) ctx.push(`${fmt(inflight)} recién corregido(s)`);
+  if(pend) ctx.push(`${fmt(pend)} esperando replicación`);
+  if(pbq) ctx.push(`${fmt(pbq)} sin replicar en BQ`);
+  el.innerHTML=`<div style="margin:12px 0;padding:11px 15px;border:1px solid ${bd};background:${bg};border-radius:10px;font-size:13px;color:var(--text)">
+    <span style="color:${bd};font-weight:800">${ok?'✓':'⚠'} Salud geo (recreación MX)</span> · ${msg}
+    ${ctx.length?`<div class="muted" style="font-size:11.5px;margin-top:3px">${ctx.join(' · ')} · últ. chequeo ${h.last_check||'—'}</div>`:''}</div>`;
 }
 
 function renderCohorteOrigen(){
