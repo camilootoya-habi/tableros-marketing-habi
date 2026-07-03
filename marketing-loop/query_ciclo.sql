@@ -7,7 +7,7 @@ WITH reint AS (
   WHERE utm_campaign LIKE '%reinteresados%' AND country IN ('México','Colombia')
 ),
 mart AS (
-  SELECT DISTINCT nid, pais, dia
+  SELECT DISTINCT nid, pais, dia, fuente_id_tig
   FROM `papyrus-master.sellers_data_mart.sellers_leads_asignados_marketing_wbr_mart`
   WHERE dia >= DATE_SUB(CURRENT_DATE(), INTERVAL 16 WEEK)
     -- 6 fuentes de marketing por país (por fuente_id_tig, igual que los demás tableros):
@@ -19,18 +19,20 @@ mart AS (
     )
 ),
 joined AS (
-  SELECT m.nid, m.pais, m.dia, IF(r.nid IS NOT NULL, 1, 0) AS es_reint
+  SELECT m.nid, m.pais, m.dia, m.fuente_id_tig, IF(r.nid IS NOT NULL, 1, 0) AS es_reint
   FROM mart m LEFT JOIN reint r ON r.nid = m.nid
 )
 SELECT 'ciclo' AS tipo, pais,
   CAST(DATE_SUB(dia, INTERVAL MOD(EXTRACT(DAYOFWEEK FROM dia) - 4 + 7, 7) DAY) AS STRING) AS bucket,  -- Miércoles
   COUNT(DISTINCT nid) AS total_asignados,
+  COUNT(DISTINCT IF(fuente_id_tig=3, nid, NULL)) AS asignados_web,
   COUNT(DISTINCT IF(es_reint=1, nid, NULL)) AS asignados_reint
 FROM joined GROUP BY pais, bucket
 UNION ALL
 SELECT 'semana' AS tipo, pais,
   CAST(DATE_TRUNC(dia, WEEK(MONDAY)) AS STRING) AS bucket,  -- Lunes
   COUNT(DISTINCT nid) AS total_asignados,
+  COUNT(DISTINCT IF(fuente_id_tig=3, nid, NULL)) AS asignados_web,
   COUNT(DISTINCT IF(es_reint=1, nid, NULL)) AS asignados_reint
 FROM joined GROUP BY pais, bucket
 ORDER BY tipo, pais, bucket

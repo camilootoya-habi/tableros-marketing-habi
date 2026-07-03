@@ -91,7 +91,7 @@
 
   <div class="grid">
     <section class="panel wide">
-      <h3>Impacto en asignados por ciclo comercial <span class="help" title="Asignados de las 6 fuentes de marketing (fuente_id_tig) vs reinteresados, por período (según el filtro de Temporalidad de arriba). Ratio = % que representan los reinteresados.">?</span></h3>
+      <h3>Impacto en asignados <span class="help" title="Total Marketing = asignados de las 6 fuentes (fuente_id_tig). WEB = solo fuente WEB. Reinteresados (WEB) = los de UTM reinteresados. Ratios: reinteresados / total marketing y reinteresados / WEB. Por período (filtro Temporalidad).">?</span></h3>
       <div class="tbl-wrap" id="ciclo"></div>
     </section>
     <section class="panel"><h3>Funnel de reactivación <span class="help" title="Base contactada → Respuestas → Interesados → Calificados (backbone 20/63) → Asignados (WBR mart) → Citas → Cierres. % = del paso previo.">?</span></h3><div id="funnel"></div></section>
@@ -199,10 +199,13 @@ function renderCiclo(){
   if(!rows.length){ el.innerHTML='<p class="muted">Sin datos.</p>'; return; }
   const th=rows.map(r=>`<th style="text-align:right">${r.bucket.slice(5)}</th>`).join('');
   const tr=(lab,f)=>`<tr><td>${lab}</td>${rows.map(f).join('')}</tr>`;
+  const ratio=(num,den)=>`<td style="text-align:right;font-weight:800;color:${num>0?'var(--accent)':'var(--text-muted)'}">${den?(num/den*100).toFixed(1):'0.0'}%</td>`;
   el.innerHTML=`<table><thead><tr><th>${cicloTipo==='ciclo'?'Ciclo (inicia Mié)':'Semana (inicia Lun)'}</th>${th}</tr></thead><tbody>
-    ${tr('Asignados marketing',r=>`<td style="text-align:right">${fmt(+r.total_asignados)}</td>`)}
-    ${tr('Asignados reinteresados',r=>`<td style="text-align:right">${fmt(+r.asignados_reint)}</td>`)}
-    ${tr('<b>Ratio reinteresados</b>',r=>{const p=+r.total_asignados?(+r.asignados_reint/+r.total_asignados*100):0;return `<td style="text-align:right;font-weight:800;color:${p>0?'var(--accent)':'var(--text-muted)'}">${p.toFixed(1)}%</td>`;})}
+    ${tr('Total Marketing',r=>`<td style="text-align:right">${fmt(+r.total_asignados)}</td>`)}
+    ${tr('WEB',r=>`<td style="text-align:right">${fmt(+r.asignados_web)}</td>`)}
+    ${tr('Reinteresados (WEB)',r=>`<td style="text-align:right">${fmt(+r.asignados_reint)}</td>`)}
+    ${tr('<b>Reint vs Total Marketing</b>',r=>ratio(+r.asignados_reint,+r.total_asignados))}
+    ${tr('<b>Reint vs WEB</b>',r=>ratio(+r.asignados_reint,+r.asignados_web))}
   </tbody></table>`;
 }
 function applyTheme(t){const light=t==='light';document.body.classList.toggle('light',light);
