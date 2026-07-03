@@ -10,14 +10,14 @@
     --bg:#0f172a;--card:#1e293b;--border:#334155;--border-strong:#475569;
     --text:#e2e8f0;--text-title:#f8fafc;--text-muted:#94a3b8;
     --accent:#818cf8;--ok:#34d399;--warn:#fbbf24;--bad:#f87171;--sky:#38bdf8;--barbg:#0f1e33;
-    --card-hover:#263348;--row-total:#1a2744;
+    --card-hover:#263348;--row-total:#1a2744;--accent-on:#f8fafc;--backdrop:rgba(15,23,42,.75);
     --shadow:0 10px 30px rgba(0,0,0,.35);
   }
   body.light{
     --bg:#f5f7fa;--card:#fff;--border:#e2e8f0;--border-strong:#cbd5e1;
     --text:#334155;--text-title:#0f172a;--text-muted:#64748b;
     --accent:#6366f1;--ok:#10b981;--warn:#b45309;--bad:#dc2626;--sky:#0ea5e9;--barbg:#eef2f7;
-    --card-hover:#f1f5f9;--row-total:#eef2ff;
+    --card-hover:#f1f5f9;--row-total:#eef2ff;--accent-on:#fff;--backdrop:rgba(15,23,42,.35);
     --shadow:0 10px 30px rgba(15,23,42,.10);
   }
   *{margin:0;padding:0;box-sizing:border-box}
@@ -75,7 +75,15 @@
   #ciclo tbody tr:hover td:first-child{background:var(--card-hover)}
   #ciclo tbody tr.row-total td{font-weight:700;color:var(--text-title);font-size:14px;background:var(--row-total)}
   #ciclo tbody tr.row-total td:first-child{background:var(--row-total)}
-  #ciclo tbody td.cur{color:var(--warn);font-style:italic}
+  .help-btn{display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;border-radius:50%;background:var(--border);color:var(--text-muted);border:none;font-size:11px;font-weight:700;cursor:pointer;margin-left:6px;vertical-align:middle;padding:0;line-height:1}
+  .help-btn:hover{background:var(--accent);color:var(--accent-on)}
+  .help-dialog{background:var(--card);color:var(--text);border:1px solid var(--border);border-radius:10px;padding:24px 28px;max-width:560px;box-shadow:var(--shadow)}
+  .help-dialog::backdrop{background:var(--backdrop)}
+  .help-dialog h3{color:var(--text-title);font-size:16px;font-weight:700;margin-bottom:14px}
+  .help-dialog p{font-size:13px;line-height:1.55;color:var(--text-muted);margin-bottom:9px}
+  .help-dialog code{background:var(--border);padding:1px 5px;border-radius:4px;font-size:12px;color:var(--text-title)}
+  .help-dialog b{color:var(--accent)}
+  .help-dialog .close-btn{margin-top:14px;background:var(--border);color:var(--text);border:none;padding:7px 18px;border-radius:6px;cursor:pointer;font-size:13px;font-weight:600}
   .help{display:inline-flex;width:15px;height:15px;border-radius:50%;background:var(--border-strong);color:var(--card);font-size:10px;align-items:center;justify-content:center;cursor:help;font-weight:800}
   .btnsel{cursor:pointer;border:1px solid var(--border);background:transparent;color:var(--text);border-radius:8px;padding:5px 12px;font:inherit;font-size:12.5px}
   .note{color:var(--text-muted);font-size:12px;margin-top:10px}
@@ -106,8 +114,19 @@
   <div class="stats" id="stats"></div>
   <p class="note" id="lineaTip"></p>
 
-  <div class="tabletitle">Impacto en asignados <span class="help" title="Total Marketing = asignados de las 6 fuentes (fuente_id_tig). WEB = solo fuente WEB. Reinteresados (WEB) = los de UTM reinteresados. Ratios: reinteresados / total marketing y reinteresados / WEB. Por período (filtro Temporalidad).">?</span></div>
+  <div class="tabletitle">Impacto en asignados <button type="button" class="help-btn" onclick="document.getElementById('helpImpacto').showModal()" aria-label="Explicación">?</button></div>
   <div class="tbl-wrap" id="ciclo"></div>
+  <dialog id="helpImpacto" class="help-dialog">
+    <h3>Impacto en asignados — cómo se calcula</h3>
+    <p>Fuente: <b>WBR mart oficial</b> (<code>papyrus-master.sellers_data_mart.sellers_leads_asignados_marketing_wbr_mart</code>), contando <code>nid</code> únicos por período.</p>
+    <p><b>Total Marketing</b>: asignados de las 6 fuentes de marketing filtradas por <code>fuente_id_tig</code> — MX: 3, 7, 35, 39, 46, 47 · CO: 3, 7, 20, 35, 39, 47.</p>
+    <p><b>WEB</b>: subconjunto con <code>fuente_id_tig = 3</code>.</p>
+    <p><b>Reinteresados (WEB)</b>: los <code>nid</code> con <code>utm_campaign LIKE '%reinteresados%'</code> (<code>hubspot.deals</code>).</p>
+    <p><b>Reinteresados vs Total Marketing</b> y <b>vs WEB</b>: ratios de participación (reint ÷ total, reint ÷ web).</p>
+    <p><b>Total Marketing sin reinteresados</b>: total − reinteresados = asignados que habríamos tenido sin el programa.</p>
+    <p><b>Período</b>: bucketeo por día / ciclo comercial (Mié–Mar) / semana (Lun–Dom) / mes según el filtro de <b>Temporalidad</b>; se muestran los últimos 20. El <code>*</code> marca el período en curso (datos parciales).</p>
+    <button class="close-btn" onclick="document.getElementById('helpImpacto').close()">Cerrar</button>
+  </dialog>
 
   <div class="grid">
     <section class="panel"><h3>Funnel de reactivación <span class="help" title="Base contactada → Respuestas → Interesados → Calificados (backbone 20/63) → Asignados (WBR mart) → Citas → Cierres. % = del paso previo.">?</span></h3><div id="funnel"></div></section>
@@ -226,8 +245,8 @@ function renderCiclo(){
     ${tr('Total Marketing',(r,i)=>`<td${cur(i)} style="text-align:right">${fmt(+r.total_asignados)}</td>`,'row-total')}
     ${tr('WEB',(r,i)=>`<td${cur(i)} style="text-align:right">${fmt(+r.asignados_web)}</td>`)}
     ${tr('Reinteresados (WEB)',(r,i)=>`<td${cur(i)} style="text-align:right">${fmt(+r.asignados_reint)}</td>`)}
-    ${tr('<b>Reint vs Total Marketing</b>',(r,i)=>ratio(+r.asignados_reint,+r.total_asignados,i))}
-    ${tr('<b>Reint vs WEB</b>',(r,i)=>ratio(+r.asignados_reint,+r.asignados_web,i))}
+    ${tr('<b>Reinteresados vs Total Marketing</b>',(r,i)=>ratio(+r.asignados_reint,+r.total_asignados,i))}
+    ${tr('<b>Reinteresados vs WEB</b>',(r,i)=>ratio(+r.asignados_reint,+r.asignados_web,i))}
     ${tr('Total Marketing sin reinteresados',(r,i)=>`<td${cur(i)} style="text-align:right;color:var(--text-muted)">${fmt((+r.total_asignados)-(+r.asignados_reint))}</td>`)}
   </tbody></table>`;
   el.scrollLeft=el.scrollWidth;   // fijar a la derecha (periodo más reciente siempre visible)
