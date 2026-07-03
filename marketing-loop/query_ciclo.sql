@@ -9,7 +9,7 @@ WITH reint AS (
 mart AS (
   SELECT DISTINCT nid, pais, dia, fuente_id_tig
   FROM `papyrus-master.sellers_data_mart.sellers_leads_asignados_marketing_wbr_mart`
-  WHERE dia >= DATE_SUB(CURRENT_DATE(), INTERVAL 16 WEEK)
+  WHERE dia >= DATE_SUB(CURRENT_DATE(), INTERVAL 20 MONTH)   -- suficiente para 20 periodos en cualquier granularidad
     -- 6 fuentes de marketing por país (por fuente_id_tig, igual que los demás tableros):
     -- MX = web(3), estudio inmueble(7), comercial(35), broker(39), propiedades(46), lead forms(47)
     -- CO = web(3), estudio inmueble(7), crm(20), comercial(35), broker(39), leadforms(47)
@@ -31,6 +31,13 @@ FROM joined GROUP BY pais, bucket
 UNION ALL
 SELECT 'semana' AS tipo, pais,
   CAST(DATE_TRUNC(dia, WEEK(MONDAY)) AS STRING) AS bucket,  -- Lunes
+  COUNT(DISTINCT nid) AS total_asignados,
+  COUNT(DISTINCT IF(fuente_id_tig=3, nid, NULL)) AS asignados_web,
+  COUNT(DISTINCT IF(es_reint=1, nid, NULL)) AS asignados_reint
+FROM joined GROUP BY pais, bucket
+UNION ALL
+SELECT 'mes' AS tipo, pais,
+  CAST(DATE_TRUNC(dia, MONTH) AS STRING) AS bucket,  -- primer día del mes
   COUNT(DISTINCT nid) AS total_asignados,
   COUNT(DISTINCT IF(fuente_id_tig=3, nid, NULL)) AS asignados_web,
   COUNT(DISTINCT IF(es_reint=1, nid, NULL)) AS asignados_reint

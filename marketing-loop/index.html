@@ -59,6 +59,8 @@
   table{border-collapse:collapse;width:100%;font-size:13px}
   th,td{padding:7px 10px;border-bottom:1px solid var(--border);text-align:left;white-space:nowrap}
   .tbl-wrap{overflow-x:auto}
+  #ciclo th.cur, #ciclo td.cur{background:rgba(251,191,36,.16);color:var(--text-title);font-weight:800}
+  #ciclo table th:first-child, #ciclo table td:first-child{position:sticky;left:0;background:var(--card);z-index:1;text-align:left}
   .help{display:inline-flex;width:15px;height:15px;border-radius:50%;background:var(--border-strong);color:var(--card);font-size:10px;align-items:center;justify-content:center;cursor:help;font-weight:800}
   .btnsel{cursor:pointer;border:1px solid var(--border);background:transparent;color:var(--text);border-radius:8px;padding:5px 12px;font:inherit;font-size:12.5px}
   .note{color:var(--text-muted);font-size:12px;margin-top:10px}
@@ -81,7 +83,7 @@
     </div>
     <div class="control-card">
       <div class="control-label">Temporalidad</div>
-      <select class="sel" id="granSel"><option value="ciclo" selected>Ciclo comercial (Mié→Mar)</option><option value="semana">Semana (Lun→Dom)</option></select>
+      <select class="sel" id="granSel"><option value="ciclo" selected>Ciclo comercial (Mié→Mar)</option><option value="semana">Semana (Lun→Dom)</option><option value="mes">Mes</option></select>
     </div>
   </div>
 
@@ -195,19 +197,26 @@ function renderComparativa(){
 
 function renderCiclo(){
   const el=document.getElementById('ciclo');
-  const rows=(D.ciclo||[]).filter(r=>r.pais===CIP[country] && r.tipo===cicloTipo).sort((a,b)=>a.bucket<b.bucket?-1:1);
+  let rows=(D.ciclo||[]).filter(r=>r.pais===CIP[country] && r.tipo===cicloTipo).sort((a,b)=>a.bucket<b.bucket?-1:1);
+  rows=rows.slice(-20);   // últimos 20 periodos
   if(!rows.length){ el.innerHTML='<p class="muted">Sin datos.</p>'; return; }
-  const th=rows.map(r=>`<th style="text-align:right">${r.bucket.slice(5)}</th>`).join('');
-  const tr=(lab,f)=>`<tr><td>${lab}</td>${rows.map(f).join('')}</tr>`;
-  const ratio=(num,den)=>`<td style="text-align:right;font-weight:800;color:${num>0?'var(--accent)':'var(--text-muted)'}">${den?(num/den*100).toFixed(1):'0.0'}%</td>`;
-  el.innerHTML=`<table><thead><tr><th>${cicloTipo==='ciclo'?'Ciclo (inicia Mié)':'Semana (inicia Lun)'}</th>${th}</tr></thead><tbody>
-    ${tr('Total Marketing',r=>`<td style="text-align:right">${fmt(+r.total_asignados)}</td>`)}
-    ${tr('WEB',r=>`<td style="text-align:right">${fmt(+r.asignados_web)}</td>`)}
-    ${tr('Reinteresados (WEB)',r=>`<td style="text-align:right">${fmt(+r.asignados_reint)}</td>`)}
-    ${tr('<b>Reint vs Total Marketing</b>',r=>ratio(+r.asignados_reint,+r.total_asignados))}
-    ${tr('<b>Reint vs WEB</b>',r=>ratio(+r.asignados_reint,+r.asignados_web))}
-    ${tr('Total Marketing sin reinteresados',r=>`<td style="text-align:right;color:var(--text-muted)">${fmt((+r.total_asignados)-(+r.asignados_reint))}</td>`)}
+  const MES=['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+  const lbl=b=> cicloTipo==='mes' ? (MES[+b.slice(5,7)-1]+' '+b.slice(2,4)) : b.slice(5);
+  const last=rows.length-1;
+  const cur=i=> i===last?' class="cur"':'';
+  const th=rows.map((r,i)=>`<th${cur(i)} style="text-align:right">${lbl(r.bucket)}</th>`).join('');
+  const tr=(lab,f)=>`<tr><td>${lab}</td>${rows.map((r,i)=>f(r,i)).join('')}</tr>`;
+  const ratio=(num,den,i)=>`<td${cur(i)} style="text-align:right;font-weight:800;color:${num>0?'var(--accent)':'var(--text-muted)'}">${den?(num/den*100).toFixed(1):'0.0'}%</td>`;
+  const hcol=cicloTipo==='mes'?'Mes':(cicloTipo==='ciclo'?'Ciclo (inicia Mié)':'Semana (inicia Lun)');
+  el.innerHTML=`<table><thead><tr><th>${hcol}</th>${th}</tr></thead><tbody>
+    ${tr('Total Marketing',(r,i)=>`<td${cur(i)} style="text-align:right">${fmt(+r.total_asignados)}</td>`)}
+    ${tr('WEB',(r,i)=>`<td${cur(i)} style="text-align:right">${fmt(+r.asignados_web)}</td>`)}
+    ${tr('Reinteresados (WEB)',(r,i)=>`<td${cur(i)} style="text-align:right">${fmt(+r.asignados_reint)}</td>`)}
+    ${tr('<b>Reint vs Total Marketing</b>',(r,i)=>ratio(+r.asignados_reint,+r.total_asignados,i))}
+    ${tr('<b>Reint vs WEB</b>',(r,i)=>ratio(+r.asignados_reint,+r.asignados_web,i))}
+    ${tr('Total Marketing sin reinteresados',(r,i)=>`<td${cur(i)} style="text-align:right;color:var(--text-muted)">${fmt((+r.total_asignados)-(+r.asignados_reint))}</td>`)}
   </tbody></table>`;
+  el.scrollLeft=el.scrollWidth;   // fijar a la derecha (periodo más reciente siempre visible)
 }
 function applyTheme(t){const light=t==='light';document.body.classList.toggle('light',light);
   document.getElementById('themeBtn').textContent=light?'🌙 Oscuro':'☀️ Claro';}
