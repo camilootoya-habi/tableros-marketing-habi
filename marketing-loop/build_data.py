@@ -145,20 +145,34 @@ def funnel_tables(pais, recre):
     def last_send(ph,before):
         L=sends.get(ph);  prev=[x for x in (L or []) if x<=before]
         return prev[-1] if prev else (L[0] if L else None)
-    resp=[]; nid2phone={}
+    # respuestas: (telefono, nid_original, fecha, etapa)
+    resp=[]
     for r in sheet(csv_url(SS_RESP, RESP_GID[pais])):
         d=None
         for k,v in r.items():
             if k and "Fecha" in k and v: d=norm_date(v); break
         ph=n10(r.get("Telefono")); nid=(r.get("NID") or "").strip()
-        if ph and nid.isdigit(): nid2phone[nid]=ph
-        if d and ph: resp.append((ph,d,(r.get("ETAPA") or "").upper()))
-    old2new={}
+        if d and ph: resp.append((ph,nid,d,(r.get("ETAPA") or "").upper()))
+    # info del lead recreado, indexada por nid nuevo y por deal_id (=id_negocio). El deal_id cubre los decoy (sin new_nid).
+    info_nid={}; info_deal={}
+    for r in recre:
+        if r.get("pais")!=pais: continue
+        rec=(r.get("fecha_creacion"), int(r.get("calif") or 0))
+        if r.get("nid"): info_nid[str(r["nid"])]=rec
+        if r.get("deal_id"): info_deal[str(r["deal_id"])]=rec
+    # ledger: old_nid -> (fecha_recreacion, calificó). Enlaza por new_nid o, si es decoy (sin nid), por deal_id.
+    old2rec={}
     for path in LEDGER_PATHS[pais]:
         for r in fetch_private_csv(path):
-            on=(r.get("old_nid") or "").strip(); nn=(r.get("new_nid") or r.get("decoy_nid") or "").strip()
-            if on and nn: old2new[on]=nn
-    new_info={ r["nid"]:(r["fecha_creacion"], int(r["calif"])) for r in recre if r.get("pais")==pais and r.get("nid") }
+            on=(r.get("old_nid") or "").strip()
+            if not on: continue
+            nn=(r.get("new_nid") or r.get("decoy_nid") or "").strip()
+            did=(r.get("new_deal_id") or r.get("decoy_deal_id") or "").strip()
+            info=info_nid.get(nn) or info_deal.get(did)
+            ts=(r.get("timestamp") or "")[:10]
+            fecha=(info[0] if info else None) or (ts or None)
+            calif=info[1] if info else 0
+            old2rec[on]=(fecha,calif)
     out={"cosecha":{},"evento":{}}
     for tipo in ("dia","ciclo","semana","mes"):
         C={}; E={}
@@ -168,23 +182,20 @@ def funnel_tables(pais, recre):
         for ph,dates in sends.items():
             for d in dates:
                 b=bucket(d,tipo); add(E,b,"enviados"); add(C,b,"enviados")
-        for ph,d,et in resp:
-            add(E,bucket(d,tipo),"respondieron")
-            if "INTERESADO" in et: add(E,bucket(d,tipo),"interesados")
-            cs=last_send(ph,d)
-            if cs:
-                add(C,bucket(cs,tipo),"respondieron")
-                if "INTERESADO" in et: add(C,bucket(cs,tipo),"interesados")
-        for on,nn in old2new.items():
-            info=new_info.get(nn)
-            if not info: continue
-            cd,cal=info
-            add(E,bucket(cd,tipo),"creados")
-            if cal: add(E,bucket(cd,tipo),"calificados")
-            ph=nid2phone.get(on); cs=last_send(ph,cd) if ph else None
-            if cs:
-                add(C,bucket(cs,tipo),"creados")
-                if cal: add(C,bucket(cs,tipo),"calificados")
+        # creados/calificados se anclan al INTERESADO (recreamos el 100%): creados = interesados recreados.
+        # cosecha → cohorte del envío que originó la respuesta; evento → fecha real de recreación.
+        for ph,nid,d,et in resp:
+            be=bucket(d,tipo); cs=last_send(ph,d); bc=bucket(cs,tipo) if cs else None
+            add(E,be,"respondieron"); add(C,bc,"respondieron")
+            if "INTERESADO" not in et: continue
+            add(E,be,"interesados"); add(C,bc,"interesados")
+            rec=old2rec.get(nid)
+            if not rec: continue
+            fecha,cal=rec
+            add(C,bc,"creados")
+            if cal: add(C,bc,"calificados")
+            add(E,bucket(fecha,tipo),"creados")
+            if cal: add(E,bucket(fecha,tipo),"calificados")
         out["cosecha"][tipo]=[{"bucket":b,**v} for b,v in sorted(C.items())]
         out["evento"][tipo]=[{"bucket":b,**v} for b,v in sorted(E.items())]
     return out

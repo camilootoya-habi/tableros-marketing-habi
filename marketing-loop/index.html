@@ -84,6 +84,8 @@
   .ftab tbody tr.row-total td:first-child{background:var(--row-total)}
   .help-btn{display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;border-radius:50%;background:var(--border);color:var(--text-muted);border:none;font-size:11px;font-weight:700;cursor:pointer;margin-left:6px;vertical-align:middle;padding:0;line-height:1}
   .help-btn:hover{background:var(--accent);color:var(--accent-on)}
+  .ftab tbody tr.row-stage .n{font-weight:600;color:var(--text)}
+  .ftab tbody tr.row-stage .p{font-size:11px;opacity:.85;margin-left:6px}
   .help-dialog{background:var(--card);color:var(--text);border:1px solid var(--border);border-radius:10px;padding:24px 28px;max-width:560px;box-shadow:var(--shadow)}
   .help-dialog::backdrop{background:var(--backdrop)}
   .help-dialog h3{color:var(--text-title);font-size:16px;font-weight:700;margin-bottom:14px}
@@ -165,7 +167,8 @@
     <h3>Funnel del programa — cosecha vs fecha de evento</h3>
     <p><b>Por cosecha:</b> todo se atribuye a la <b>fecha en que se envió el mensaje</b> al lead original. De los mensajes enviados en el período X, cuántos respondieron, se interesaron, se crearon y calificaron — sin importar cuándo ocurrió cada evento. Es la <b>conversión real</b> del envío. Atribución: al último envío antes del evento.</p>
     <p><b>Por fecha de evento:</b> cada fila se cuenta por la fecha de su propio evento — enviados por fecha de envío, respuestas por fecha de respuesta, creados/calificados por fecha de creación. Útil para monitoreo operativo, pero mezcla cohortes.</p>
-    <p>Enlace por teléfono/NID entre: envíos (<code>infobip_sent_history</code>) · respuestas (hoja) · recreación (<code>ledger</code>) · <code>hubspot.deals</code>. Sujeta al filtro de País y Temporalidad de arriba; últimos 20 períodos.</p>
+    <p><b>Conversión (%):</b> a la derecha de cada valor absoluto va el % respecto a la etapa anterior — Respondieron/Enviados, Interesados/Respondieron, Creados/Interesados, Calificados/Creados. El color es un <b>heatmap por fila</b>: verde = conversión más alta entre los períodos mostrados, rojo = más baja. <b>Creados/Interesados = 100%</b> porque recreamos el 100% de los interesados; Calificados MM usa el estado real del backbone (20/63).</p>
+    <p>Enlace por teléfono/NID/deal_id entre: envíos (<code>infobip_sent_history</code>) · respuestas (hoja) · recreación (<code>ledger</code>, enlazado por <code>new_nid</code> o <code>deal_id</code> para los decoy) · <code>tabla_inmuebles_general</code>. Sujeta al filtro de País y Temporalidad de arriba; últimos 20 períodos.</p>
     <button class="close-btn" onclick="document.getElementById('helpFun').close()">Cerrar</button>
   </dialog>
 </div>
@@ -186,6 +189,20 @@ async function load(){
   selectCountry('MX');
 }
 function selectCountry(c){ country=c; renderStats(); renderResp(); renderFunnel(); renderComparativa(); renderCiclo(); renderDiario(); renderFuntab(); }
+// Celdas "valor + %" con heatmap por fila (verde=conversión alta, rojo=baja), copiado del tablero de referencia.
+function heatCells(values, denoms){
+  const pcts=values.map((v,i)=> denoms[i]>0 ? v/denoms[i]*100 : 0);
+  const min=Math.min(...pcts), max=Math.max(...pcts), realRange=max-min, range=realRange||1;
+  const last=values.length-1;
+  return values.map((v,i)=>{
+    let clr;
+    if(realRange<0.05){ clr='var(--text-muted)'; }                    // fila plana (ej. Creados=100%): color neutro, no rojo
+    else{ const ratio=(pcts[i]-min)/range;
+      clr=`rgb(${Math.round(248-ratio*196)},${Math.round(52+ratio*159)},${Math.round(52+ratio*101)})`; }
+    const ps=pcts[i]>=10?pcts[i].toFixed(1):pcts[i].toFixed(2);
+    return `<td${i===last?' class="cur"':''} style="text-align:right"><span class="n">${fmt(v)}</span><span class="p" style="color:${clr}">${ps}%</span></td>`;
+  }).join('');
+}
 function renderFuntab(){
   const el=document.getElementById('funtab'); if(!el) return;
   let rows=((((D.funnel_tabla||{})[country]||{})[funView]||{})[cicloTipo]||[]).slice(-20);
@@ -193,15 +210,18 @@ function renderFuntab(){
   const MES=['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
   const lbl=b=> cicloTipo==='mes' ? (MES[+b.slice(5,7)-1]+' '+b.slice(2,4)) : b.slice(5);
   const last=rows.length-1, cur=i=> i===last?' class="cur"':'';
+  const col=k=>rows.map(r=>+r[k]||0);
   const th=rows.map((r,i)=>`<th${cur(i)} style="text-align:right">${lbl(r.bucket)}</th>`).join('');
-  const tr=(lab,key,cls='')=>`<tr class="${cls}"><td>${lab}</td>${rows.map((r,i)=>`<td${cur(i)} style="text-align:right">${fmt(+r[key])}</td>`).join('')}</tr>`;
+  // fila base: solo absoluto. filas de conversión: absoluto + % del paso anterior, con heatmap por fila.
+  const base=`<tr class="row-total"><td>Enviados</td>${rows.map((r,i)=>`<td${cur(i)} style="text-align:right">${fmt(+r.enviados)}</td>`).join('')}</tr>`;
+  const step=(lab,key,denKey)=>`<tr class="row-stage"><td>${lab}</td>${heatCells(col(key),col(denKey))}</tr>`;
   const hcol={dia:'Día',ciclo:'Ciclo (inicia Mié)',semana:'Semana (inicia Lun)',mes:'Mes'}[cicloTipo]||'Periodo';
   el.innerHTML=`<table><thead><tr><th>${hcol}</th>${th}</tr></thead><tbody>
-    ${tr('Enviados','enviados','row-total')}
-    ${tr('Respondieron','respondieron')}
-    ${tr('Interesados','interesados')}
-    ${tr('Creados','creados')}
-    ${tr('Calificados MM','calificados')}
+    ${base}
+    ${step('Respondieron','respondieron','enviados')}
+    ${step('Interesados','interesados','respondieron')}
+    ${step('Creados','creados','interesados')}
+    ${step('Calificados MM','calificados','creados')}
   </tbody></table>`;
   el.scrollLeft=el.scrollWidth;
 }
@@ -331,9 +351,9 @@ function renderComparativa(){
     ${miniFunnel('🔁 Reinteresados', R, 'var(--accent)', R.leads)}
     ${miniFunnel('🌐 WEB nuevo', N, 'var(--text-muted)', N.leads)}
   </div>
-  <div style="margin-top:14px;padding-top:12px;border-top:1px solid var(--border);font-size:13px">
-    <div style="font-size:11px;text-transform:uppercase;letter-spacing:.4px;color:var(--text-muted);font-weight:700;margin-bottom:6px">Conversión asignado → cita agendada</div>
-    🔁 Reinteresados: <b style="color:var(--accent)">${pct(acR)}</b> &nbsp;·&nbsp; 🌐 WEB nuevo: <b>${pct(acN)}</b>
+  <div style="margin-top:16px;background:rgba(251,191,36,.14);border:1px solid var(--warn);border-radius:10px;padding:14px 16px">
+    <div style="font-size:11.5px;text-transform:uppercase;letter-spacing:.5px;color:var(--warn);font-weight:800;margin-bottom:8px">Conversión asignado → cita agendada</div>
+    <div style="font-size:20px;font-weight:800;color:var(--text-title)">🔁 Reinteresados <span style="color:var(--accent)">${pct(acR)}</span> &nbsp;·&nbsp; 🌐 WEB nuevo <span style="color:var(--text-muted)">${pct(acN)}</span></div>
   </div>
   <p class="note">Dos funnels lado a lado (cada barra = % de conversión sobre la base de su cohorte). Asignado→cita = citas ÷ asignados. WEB nuevo = fuente WEB sin UTM reinteresados, desde 15-jun.</p>`;
 }
