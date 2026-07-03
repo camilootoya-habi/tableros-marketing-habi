@@ -160,10 +160,11 @@ function renderStats(){
     : 'Sin histórico de calidad reciente.';
   const dias=(D.ciclo||[]).filter(r=>r.pais===CIP[country]&&r.tipo==='dia').sort((a,b)=>a.bucket<b.bucket?-1:1).slice(-7);
   const avg7=dias.length?dias.reduce((s,r)=>s+(+r.asignados_reint||0),0)/dias.length:0;
-  const META=50, cumpl=avg7/META*100, cumColor=cumpl>=100?'var(--ok)':cumpl>=60?'var(--warn)':'var(--bad)';
+  const META=32, cumpl=avg7/META*100, cumColor=cumpl>=100?'var(--ok)':cumpl>=60?'var(--warn)':'var(--bad)';
   const FLUJO={MX:1500,CO:1500};
+  const metaTip='Meta 32 asignados/día = 3% de conversión sobre los 7.500 mensajes semanales enviados (7.500 × 3% ÷ 7 días ≈ 32).';
   const cards=[
-    ['Prom. móvil 7d · asig. reinteresados', avg7.toFixed(1), `<span style="color:${cumColor}">meta ${META}/día · ${cumpl.toFixed(0)}% cumplimiento</span>`],
+    ['Prom. móvil 7d · asig. reinteresados <span class="help" title="'+metaTip+'">?</span>', avg7.toFixed(1), `<span style="color:${cumColor}">meta ${META}/día · ${cumpl.toFixed(0)}% cumplimiento</span>`],
     ['Flujo diario programado', fmt(FLUJO[country]), 'mensajes/día · L–V (cron)'],
     ['Calidad de línea', `<span class="chip" style="background:${qc}">${l.quality||'—'}</span>`, tip],
     ['Tier (24h)', (l.tier||'—').replace('LIMIT_',''), 'límite Meta/Infobip'],
