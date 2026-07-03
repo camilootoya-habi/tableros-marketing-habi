@@ -183,8 +183,8 @@ function renderDiario(){
   const ci=arr.map(r=>+r.respuestas>0?(+r.interesados/+r.respuestas*100):null);
   diaCharts.forEach(c=>c.destroy()); diaCharts=[];
   mkChart('c_env',labels,env,{type:'bar'});
-  mkChart('c_cr',labels,cr,{pct:true});
-  mkChart('c_ci',labels,ci,{pct:true});
+  mkChart('c_cr',labels,cr,{type:'bar',pct:true});
+  mkChart('c_ci',labels,ci,{type:'bar',pct:true});
   mkChart('c_env_ma',labels,movavg(env,7));
   mkChart('c_cr_ma',labels,movavg(cr,7),{pct:true});
   mkChart('c_ci_ma',labels,movavg(ci,7),{pct:true});
