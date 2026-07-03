@@ -106,11 +106,11 @@
     </div>
     <div class="control-card">
       <div class="control-label">Temporalidad</div>
-      <select class="sel" id="granSel"><option value="dia">Diario</option><option value="ciclo" selected>Ciclo comercial (Mié→Mar)</option><option value="semana">Semana (Lun→Dom)</option><option value="mes">Mes</option></select>
+      <select class="sel" id="granSel"><option value="dia">Diario</option><option value="ciclo">Ciclo comercial (Mié→Mar)</option><option value="semana" selected>Semana (Lun→Dom)</option><option value="mes">Mes</option></select>
     </div>
   </div>
 
-  <div class="eyebrow">Salud de la línea</div>
+  <div class="eyebrow">Indicadores de salud</div>
   <div class="stats" id="stats"></div>
   <p class="note" id="lineaTip"></p>
 
@@ -136,7 +136,7 @@
 </div>
 
 <script>
-let D=null, country='MX', cicloTipo='ciclo';
+let D=null, country='MX', cicloTipo='semana';
 const CIP={MX:'mexico',CO:'colombia'};
 const fmt=v=>(v==null?'—':Number(v).toLocaleString('es-CO'));
 const pct=v=>(v==null?'—':Number(v).toFixed(1)+'%');
@@ -158,7 +158,13 @@ function renderStats(){
     : l.quality==='MEDIUM'?'Calidad media: cuidar el ritmo y priorizar a quien más probablemente responda para que suba.'
     : l.quality==='HIGH'?'Calidad alta: la línea está sana.'
     : 'Sin histórico de calidad reciente.';
+  const dias=(D.ciclo||[]).filter(r=>r.pais===CIP[country]&&r.tipo==='dia').sort((a,b)=>a.bucket<b.bucket?-1:1).slice(-7);
+  const avg7=dias.length?dias.reduce((s,r)=>s+(+r.asignados_reint||0),0)/dias.length:0;
+  const META=50, cumpl=avg7/META*100, cumColor=cumpl>=100?'var(--ok)':cumpl>=60?'var(--warn)':'var(--bad)';
+  const FLUJO={MX:1500,CO:1500};
   const cards=[
+    ['Prom. móvil 7d · asig. reinteresados', avg7.toFixed(1), `<span style="color:${cumColor}">meta ${META}/día · ${cumpl.toFixed(0)}% cumplimiento</span>`],
+    ['Flujo diario programado', fmt(FLUJO[country]), 'mensajes/día · L–V (cron)'],
     ['Calidad de línea', `<span class="chip" style="background:${qc}">${l.quality||'—'}</span>`, tip],
     ['Tier (24h)', (l.tier||'—').replace('LIMIT_',''), 'límite Meta/Infobip'],
     ['Estado', l.status||'—', (l.sender||'')+' · conexión'],
@@ -239,15 +245,16 @@ function renderCiclo(){
   const cur=i=> i===last?' class="cur"':'';
   const th=rows.map((r,i)=>`<th${cur(i)} style="text-align:right">${lbl(r.bucket)}</th>`).join('');
   const tr=(lab,f,cls='')=>`<tr class="${cls}"><td>${lab}</td>${rows.map((r,i)=>f(r,i)).join('')}</tr>`;
+  const H=t=>`<span class="help" title="${t.replace(/"/g,'&quot;')}">?</span> `;
   const ratio=(num,den,i)=>`<td${cur(i)} style="text-align:right;font-weight:800;color:${num>0?'var(--accent)':'var(--text-muted)'}">${den?(num/den*100).toFixed(1):'0.0'}%</td>`;
   const hcol={dia:'Día',ciclo:'Ciclo (inicia Mié)',semana:'Semana (inicia Lun)',mes:'Mes'}[cicloTipo]||'Periodo';
   el.innerHTML=`<table><thead><tr><th>${hcol}</th>${th}</tr></thead><tbody>
-    ${tr('Total Marketing',(r,i)=>`<td${cur(i)} style="text-align:right">${fmt(+r.total_asignados)}</td>`,'row-total')}
-    ${tr('WEB',(r,i)=>`<td${cur(i)} style="text-align:right">${fmt(+r.asignados_web)}</td>`)}
-    ${tr('Reinteresados (WEB)',(r,i)=>`<td${cur(i)} style="text-align:right">${fmt(+r.asignados_reint)}</td>`)}
-    ${tr('<b>Reinteresados vs Total Marketing</b>',(r,i)=>ratio(+r.asignados_reint,+r.total_asignados,i))}
-    ${tr('<b>Reinteresados vs WEB</b>',(r,i)=>ratio(+r.asignados_reint,+r.asignados_web,i))}
-    ${tr('Total Marketing sin reinteresados',(r,i)=>`<td${cur(i)} style="text-align:right;color:var(--text-muted)">${fmt((+r.total_asignados)-(+r.asignados_reint))}</td>`)}
+    ${tr(H('Asignados de las 6 fuentes de marketing (fuente_id_tig) por período, desde la WBR mart.')+'Total Marketing',(r,i)=>`<td${cur(i)} style="text-align:right">${fmt(+r.total_asignados)}</td>`,'row-total')}
+    ${tr(H('Asignados solo de fuente WEB (fuente_id_tig=3).')+'WEB',(r,i)=>`<td${cur(i)} style="text-align:right">${fmt(+r.asignados_web)}</td>`)}
+    ${tr(H('Asignados con utm_campaign LIKE %reinteresados% (hubspot.deals). Son WEB.')+'Reinteresados (WEB)',(r,i)=>`<td${cur(i)} style="text-align:right">${fmt(+r.asignados_reint)}</td>`)}
+    ${tr(H('Reinteresados ÷ Total Marketing = participación de reinteresados en todo el marketing asignado.')+'<b>Reinteresados vs Total Marketing</b>',(r,i)=>ratio(+r.asignados_reint,+r.total_asignados,i))}
+    ${tr(H('Reinteresados ÷ WEB = participación de reinteresados dentro de los asignados WEB.')+'<b>Reinteresados vs WEB</b>',(r,i)=>ratio(+r.asignados_reint,+r.asignados_web,i))}
+    ${tr(H('Total Marketing − Reinteresados = asignados que habríamos tenido sin el programa de reinterés.')+'Total Marketing sin reinteresados',(r,i)=>`<td${cur(i)} style="text-align:right;color:var(--text-muted)">${fmt((+r.total_asignados)-(+r.asignados_reint))}</td>`)}
   </tbody></table>`;
   el.scrollLeft=el.scrollWidth;   // fijar a la derecha (periodo más reciente siempre visible)
 }
