@@ -395,9 +395,9 @@ function renderStats(){
   const _hoy=ymd(new Date());   // excluir hoy (día parcial que subestima el promedio)
   const dias=(D.ciclo||[]).filter(r=>r.pais===CIP[country]&&r.tipo==='dia'&&r.bucket<_hoy).sort((a,b)=>a.bucket<b.bucket?-1:1).slice(-7);
   const avg7=dias.length?dias.reduce((s,r)=>s+(+r.asignados_reint||0),0)/dias.length:0;
-  const META=32, cumpl=avg7/META*100, cumColor=cumpl>=100?'var(--ok)':cumpl>=60?'var(--warn)':'var(--bad)';
-  const FLUJO={MX:1500,CO:1500};
-  const metaTip='Promedio de asignados reinteresados de los últimos 7 días COMPLETOS (excluye hoy, que aún es parcial). Meta 32/día = 3% de conversión sobre los 7.500 mensajes semanales (7.500 × 3% ÷ 7 ≈ 32).';
+  const META=30, cumpl=avg7/META*100, cumColor=cumpl>=100?'var(--ok)':cumpl>=60?'var(--warn)':'var(--bad)';
+  const FLUJO={MX:1700,CO:1700};
+  const metaTip='Promedio de asignados reinteresados de los últimos 7 días COMPLETOS (excluye hoy, que aún es parcial). Meta 30/día = 2,5% de conversión sobre los 8.500 mensajes semanales (8.500 × 2,5% ÷ 7 ≈ 30).';
   const cards=[
     ['Leads creados hoy <span class="help" title="Negocios con UTM reinteresados creados hoy (hubspot.deals, la fuente que refresca más rápido, ~7 min). Hora local del país.">?</span>', fmt((D.hoy||{})[country]||0), 'hubspot.deals · hoy'],
     ['Prom. móvil 7d · asig. reinteresados <span class="help" title="'+metaTip+'">?</span>', avg7.toFixed(1), `<span style="color:${cumColor}">meta ${META}/día · ${cumpl.toFixed(0)}% cumplimiento</span>`, 'key'],
