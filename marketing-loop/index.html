@@ -216,6 +216,17 @@ const CIP={MX:'mexico',CO:'colombia'};
 const fmt=v=>(v==null?'—':Number(v).toLocaleString('es-CO'));
 const pct=v=>(v==null?'—':Number(v).toFixed(1)+'%');
 const z=v=>(+v)?fmt(v):'<span class="muted">·</span>';   // muestra "·" en períodos vacíos
+// fecha de descarga vía query (última corrida del cron) → legible + "hace cuánto"
+function fmtUpdated(iso){
+  const m=(iso||'').match(/(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})/); if(!m) return iso||'—';
+  const MES=['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+  const utc=new Date(Date.UTC(+m[1],+m[2]-1,+m[3],+m[4],+m[5]));
+  const dm=Math.max(0,Math.round((Date.now()-utc.getTime())/60000));
+  const rel = dm<60?`hace ${dm} min` : dm<1440?`hace ${Math.floor(dm/60)}h ${dm%60}m` : `hace ${Math.floor(dm/1440)}d`;
+  const cd=new Date(utc.getTime()-6*3600000);   // CDMX = UTC-6 (sin horario de verano desde 2022)
+  const p=n=>String(n).padStart(2,'0');
+  return `${cd.getUTCDate()} ${MES[cd.getUTCMonth()]} ${cd.getUTCFullYear()}, ${p(cd.getUTCHours())}:${p(cd.getUTCMinutes())} CDMX · ${rel}`;
+}
 // --- eje de períodos: últimos N buckets de la granularidad (incluye vacíos), formato igual a build_data.bucket() ---
 const pad2=x=>String(x).padStart(2,'0');
 const ymd=d=>d.getFullYear()+'-'+pad2(d.getMonth()+1)+'-'+pad2(d.getDate());
@@ -266,7 +277,9 @@ function stateHelp(lab){
 async function load(){
   try{ D=await (await fetch('data.json?t='+Date.now())).json(); }
   catch(e){ document.getElementById('stats').innerHTML='<p class="muted">Error cargando data.json</p>'; return; }
-  document.getElementById('upd').textContent = D.updated? ('· datos '+D.updated):'';
+  document.getElementById('upd').innerHTML = D.updated
+    ? `<span style="display:inline-block;margin-top:6px;padding:3px 10px;border-radius:999px;background:var(--card);border:1px solid var(--border);font-size:12px;color:var(--text-muted)">🕓 Datos descargados vía query: <b style="color:var(--text)">${fmtUpdated(D.updated)}</b></span>`
+    : '';
   document.querySelectorAll('input[name=pais]').forEach(r=>r.onchange=()=>selectCountry(r.value));
   document.getElementById('granSel').onchange=e=>{cicloTipo=e.target.value;renderCiclo();renderFuntab();renderAntifunnel();};
   document.getElementById('funView').onchange=e=>{funView=e.target.value;renderFuntab();};

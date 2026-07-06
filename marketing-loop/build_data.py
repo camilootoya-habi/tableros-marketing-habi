@@ -255,7 +255,7 @@ def cohorte_origen(pais):
 CREA = q("query_creacion.sql")
 RECRE = q("query_recreados.sql")
 data = {
-  "updated": os.environ.get("BUILD_TS",""),
+  "updated": os.environ.get("BUILD_TS") or datetime.datetime.utcnow().strftime("%Y-%m-%dT%H:%MZ"),  # fecha de descarga vía query (corrida del cron)
   "comparativa": q("query_comparativa.sql"),
   "funnel": q("query_funnel.sql"),
   "creacion": CREA,
