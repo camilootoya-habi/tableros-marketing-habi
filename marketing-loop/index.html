@@ -444,22 +444,34 @@ function renderResp(){
       y:{stacked:true,min:0,max:100,ticks:{color:light?'#64748b':'#94a3b8',callback:v=>v+'%'},grid:{color:light?'#e2e8f0':'#22304a'}}}}});
 }
 
+function healthLine(ok,titulo,msg,detail,last){
+  const bd=ok?'var(--ok)':'var(--bad)', bg=ok?'rgba(52,211,153,.12)':'rgba(248,113,113,.14)';
+  return `<div style="padding:10px 14px;border:1px solid ${bd};background:${bg};border-radius:10px;font-size:13px;color:var(--text)">
+    <span style="color:${bd};font-weight:800">${ok?'✓':'⚠'} ${titulo}</span> · ${msg}
+    ${(detail||last)?`<div class="muted" style="font-size:11px;margin-top:3px">${detail?detail+' · ':''}${last?'últ. chequeo '+last:''}</div>`:''}</div>`;
+}
 function renderGeoAlarm(){
   const el=document.getElementById('geoAlarm'); if(!el) return;
-  const h=(D.geo_health||{}).MX;
-  if(country!=='MX'||!h){ el.innerHTML=''; return; }   // el señuelo es MX-only
-  const wrong=+h.wrong||0, inflight=+h.in_flight||0, pend=+h.pending_fix_replication||0, pbq=+h.pending_bq||0;
-  const ok=wrong===0, bd=ok?'var(--ok)':'var(--bad)', bg=ok?'rgba(52,211,153,.12)':'rgba(248,113,113,.14)';
-  const msg=ok
-    ? 'Geo de recreación sana — 0 leads con geo señuelo sin corregir.'
-    : `<b>${fmt(wrong)} lead(s) recreados con geo señuelo SIN corregir (&gt;24h)</b> — el barrido no los está arreglando, revisar.`;
-  const ctx=[];
-  if(inflight) ctx.push(`${fmt(inflight)} recién corregido(s)`);
-  if(pend) ctx.push(`${fmt(pend)} esperando replicación`);
-  if(pbq) ctx.push(`${fmt(pbq)} sin replicar en BQ`);
-  el.innerHTML=`<div style="margin:12px 0;padding:11px 15px;border:1px solid ${bd};background:${bg};border-radius:10px;font-size:13px;color:var(--text)">
-    <span style="color:${bd};font-weight:800">${ok?'✓':'⚠'} Salud geo (recreación MX)</span> · ${msg}
-    ${ctx.length?`<div class="muted" style="font-size:11.5px;margin-top:3px">${ctx.join(' · ')} · últ. chequeo ${h.last_check||'—'}</div>`:''}</div>`;
+  const lines=[];
+  // GEO señuelo — solo MX (CO no usa receta señuelo)
+  if(country==='MX'){
+    const g=(D.geo_health||{}).MX;
+    if(g){
+      const w=+g.wrong||0, ok=w===0, ctx=[];
+      if(+g.in_flight) ctx.push(`${fmt(+g.in_flight)} recién corregido(s)`);
+      if(+g.pending_fix_replication) ctx.push(`${fmt(+g.pending_fix_replication)} esperando replicación`);
+      if(+g.pending_bq) ctx.push(`${fmt(+g.pending_bq)} sin replicar en BQ`);
+      lines.push(healthLine(ok,'Salud geo (recreación MX)', ok?'0 leads con geo señuelo sin corregir.':`<b>${fmt(w)} recreados con geo señuelo SIN corregir (&gt;24h)</b> — revisar barrido.`, ctx.join(' · '), g.last_check));
+    }
+  }
+  // SIN DIRECCIÓN — ambos países
+  const a=(D.address_health||{})[country];
+  if(a){
+    const m=+a.missing||0, ok=m===0, ctx=[];
+    if(+a.backfilled) ctx.push(`${fmt(+a.backfilled)} backfilleado(s)`);
+    lines.push(healthLine(ok,`Sin dirección (recreación ${country})`, ok?'0 recreados sin dirección.':`<b>${fmt(m)} recreados sin dirección</b> — comercial no puede gestionarlos.`, ctx.join(' · '), a.last_check));
+  }
+  el.innerHTML = lines.length ? `<div style="margin:12px 0;display:flex;flex-direction:column;gap:6px">${lines.join('')}</div>` : '';
 }
 
 function renderCohorteOrigen(){

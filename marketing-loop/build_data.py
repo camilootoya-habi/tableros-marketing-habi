@@ -268,6 +268,7 @@ data = {
   "cohorte_origen": {p: cohorte_origen(p) for p in ("MX","CO")},
   "hoy": {r["pais"]: int(r.get("creados_hoy") or 0) for r in q("query_hoy.sql")},
   "geo_health": fetch_private_json("backbone-mx-batch/geo_health.json"),
+  "address_health": fetch_private_json("backbone-mx-batch/address_health.json"),
   "linea": {"MX": linea("MX","5215590883423"), "CO": linea("CO","573009110453")},
 }
 open(os.path.join(HERE,"data.json"),"w").write(json.dumps(data, ensure_ascii=False, separators=(",",":")))
