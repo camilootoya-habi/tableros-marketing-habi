@@ -252,8 +252,29 @@ def cohorte_origen(pais):
         if nid in inter: a["interesados"]+=1
     return [agg[k] for k in sorted(agg)]
 
+COMP_FIELDS=["direccion","telefono","email","nombre","geo","zona","tipo","area","banos",
+             "medios_banos","habitaciones","garaje","ascensor","piso","antiguedad","precio","estrato"]
+def completitud(pais, rows):
+    """Completitud de datos de los leads creados: por período, total creados + cuántos tienen cada campo poblado.
+    Salida: {series:{tipo:[{bucket,total,<campo>:have}]}, na:[campos no aplicables al país]}."""
+    sub=[r for r in rows if r.get("pais")==pais]
+    na=[f for f in COMP_FIELDS if sub and all((r.get("c_"+f) in (None,"","None")) for r in sub)]
+    series={}
+    for t in ("dia","ciclo","semana","mes"):
+        agg={}
+        for r in sub:
+            b=bucket(r.get("fecha_creacion"), t)
+            if not b: continue
+            a=agg.setdefault(b, {"bucket":b,"total":0})
+            a["total"]+=1
+            for f in COMP_FIELDS:
+                if str(r.get("c_"+f))=="1": a[f]=a.get(f,0)+1
+        series[t]=[agg[k] for k in sorted(agg)]
+    return {"series":series,"na":na}
+
 CREA = q("query_creacion.sql")
 RECRE = q("query_recreados.sql")
+COMP = q("query_completitud.sql")
 data = {
   "updated": os.environ.get("BUILD_TS") or datetime.datetime.utcnow().strftime("%Y-%m-%dT%H:%MZ"),  # fecha de descarga vía query (corrida del cron)
   "comparativa": q("query_comparativa.sql"),
@@ -265,6 +286,7 @@ data = {
   "diario": {p: diario(p, CREA) for p in ("MX","CO")},
   "funnel_tabla": {p: funnel_tables(p, RECRE) for p in ("MX","CO")},
   "antifunnel": {p: antifunnel(p, RECRE) for p in ("MX","CO")},
+  "completitud": {p: completitud(p, COMP) for p in ("MX","CO")},
   "cohorte_origen": {p: cohorte_origen(p) for p in ("MX","CO")},
   "hoy": {r["pais"]: int(r.get("creados_hoy") or 0) for r in q("query_hoy.sql")},
   "geo_health": fetch_private_json("backbone-mx-batch/geo_health.json"),

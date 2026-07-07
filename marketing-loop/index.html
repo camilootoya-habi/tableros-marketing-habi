@@ -208,6 +208,18 @@
     <p>Sujeta al filtro de <b>País</b> y <b>Temporalidad</b> de arriba; últimos 20 períodos. El <code>*</code> marca el período en curso.</p>
     <button class="close-btn" onclick="document.getElementById('helpAnti').close()">Cerrar</button>
   </dialog>
+
+  <div class="tabletitle">Completitud de datos · con qué creamos los leads
+    <button type="button" class="help-btn" onclick="document.getElementById('helpComp').showModal()" aria-label="Explicación">?</button>
+  </div>
+  <div class="tbl-wrap ftab" id="completitud"></div>
+  <dialog id="helpComp" class="help-dialog">
+    <h3>Completitud de datos — con qué datos estamos creando los leads</h3>
+    <p>Para los leads recreados (UTM reinteresados) creados en cada período: fila 1 = <b>total creados</b>; cada fila siguiente = un <b>campo del payload</b> y cuántos leads quedaron con ese campo <b>poblado</b> en el backbone (conteo + % del total, con heatmap por fila).</p>
+    <p>«Poblado»: texto no vacío; geo no nula; numéricos &gt; 0. Bucketeo por <b>fecha de creación</b> según la <b>Temporalidad</b>; últimos 20 períodos; sujeto al filtro de <b>País</b> (los campos que no aplican al país no se muestran).</p>
+    <p>Mide la <b>calidad de lo que creamos</b>. La fidelidad al lead original será otro indicador aparte.</p>
+    <button class="close-btn" onclick="document.getElementById('helpComp').close()">Cerrar</button>
+  </dialog>
 </div>
 
 <script>
@@ -281,11 +293,11 @@ async function load(){
     ? `<span style="display:inline-block;margin-top:6px;padding:3px 10px;border-radius:999px;background:var(--card);border:1px solid var(--border);font-size:12px;color:var(--text-muted)">🕓 Datos descargados vía query: <b style="color:var(--text)">${fmtUpdated(D.updated)}</b></span>`
     : '';
   document.querySelectorAll('input[name=pais]').forEach(r=>r.onchange=()=>selectCountry(r.value));
-  document.getElementById('granSel').onchange=e=>{cicloTipo=e.target.value;renderCiclo();renderFuntab();renderAntifunnel();};
+  document.getElementById('granSel').onchange=e=>{cicloTipo=e.target.value;renderCiclo();renderFuntab();renderAntifunnel();renderCompletitud();};
   document.getElementById('funView').onchange=e=>{funView=e.target.value;renderFuntab();};
   selectCountry('MX');
 }
-function selectCountry(c){ country=c; renderStats(); renderResp(); renderFunnel(); renderComparativa(); renderCiclo(); renderDiario(); renderFuntab(); renderAntifunnel(); renderCohorteOrigen(); renderGeoAlarm(); }
+function selectCountry(c){ country=c; renderStats(); renderResp(); renderFunnel(); renderComparativa(); renderCiclo(); renderDiario(); renderFuntab(); renderAntifunnel(); renderCompletitud(); renderCohorteOrigen(); renderGeoAlarm(); }
 // Celdas "valor + %" con heatmap por fila (verde=conversión alta, rojo=baja), copiado del tablero de referencia.
 function heatCells(values, denoms){
   const pcts=values.map((v,i)=> denoms[i]>0 ? v/denoms[i]*100 : null);   // período sin base → null (celda vacía)
@@ -376,14 +388,15 @@ function mkChart(id,labels,data,o={}){
           return y.toFixed(1)+'%'+((n!=null&&d!=null)?` (${fmt(n)} de ${fmt(d)})`:''); }
         return fmt(Math.round(y)); }}}},
       scales:{x:{ticks:{color:light?'#64748b':'#94a3b8',maxTicksLimit:8},grid:{display:false}},
-        y:{beginAtZero:true,max:o.pct?100:undefined,ticks:{color:light?'#64748b':'#94a3b8'},grid:{color:light?'#e2e8f0':'#22304a'}}}}}));
+        y:{beginAtZero:!o.pct,ticks:{color:light?'#64748b':'#94a3b8',callback:o.pct?(v=>v+'%'):undefined},grid:{color:light?'#e2e8f0':'#22304a'}}}}}));
 }
 function renderDiario(){
   const arr=(D.diario||{})[country]||[];
   const labels=arr.map(r=>r.fecha.slice(5));
   const env=arr.map(r=>+r.enviados), resp=arr.map(r=>+r.respuestas), inter=arr.map(r=>+r.interesados),
         crea=arr.map(r=>+r.creados), cal=arr.map(r=>+r.calificados);
-  const div=(a,b)=>a.map((_,i)=>b[i]>0?(a[i]/b[i]*100):null);
+  const MIN_N=5;   // ignora días con denominador <5 (muestra muy chica → % ruidoso que dispara el eje)
+  const div=(a,b)=>a.map((_,i)=>b[i]>=MIN_N?(a[i]/b[i]*100):null);
   const cr=div(resp,env), ci=div(inter,resp), ic=div(crea,inter), cc=div(cal,crea);
   diaCharts.forEach(c=>c.destroy()); diaCharts=[];
   mkChart('c_env',labels,env,{type:'bar'});
@@ -450,6 +463,27 @@ function healthLine(ok,titulo,msg,detail,last){
     <span style="color:${bd};font-weight:800">${ok?'✓':'⚠'} ${titulo}</span> · ${msg}
     ${(detail||last)?`<div class="muted" style="font-size:11px;margin-top:3px">${detail?detail+' · ':''}${last?'últ. chequeo '+last:''}</div>`:''}</div>`;
 }
+const COMP_LABELS={direccion:'Dirección',telefono:'Teléfono',email:'Email',nombre:'Nombre',geo:'Geo (lat/lon)',zona:'Zona mediana',tipo:'Tipo de inmueble',area:'Área',banos:'Baños',medios_banos:'Medios baños',habitaciones:'Habitaciones',garaje:'Garaje',ascensor:'Ascensor',piso:'Piso',antiguedad:'Antigüedad',precio:'Precio',estrato:'Estrato'};
+const COMP_ORDER=['direccion','telefono','email','nombre','geo','zona','tipo','area','banos','medios_banos','habitaciones','garaje','ascensor','piso','antiguedad','precio','estrato'];
+function renderCompletitud(){
+  const el=document.getElementById('completitud'); if(!el) return;
+  const c=(D.completitud||{})[country]||{};
+  const byB={}; ((c.series||{})[cicloTipo]||[]).forEach(r=>byB[r.bucket]=r);
+  const rows=lastPeriods(cicloTipo,20).map(b=>byB[b]||{bucket:b,total:0});   // últimos 20 períodos, rellena vacíos
+  const na=new Set(c.na||[]);
+  const MES=['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+  const lbl=b=> cicloTipo==='mes' ? (MES[+b.slice(5,7)-1]+' '+b.slice(2,4)) : b.slice(5);
+  const last=rows.length-1, cur=i=> i===last?' class="cur"':'';
+  const th=rows.map((r,i)=>`<th${cur(i)} style="text-align:right">${lbl(r.bucket)}</th>`).join('');
+  const tot=rows.map(r=>+r.total||0);
+  const totalRow=`<tr class="row-total"><td>${H('Total de leads recreados (WEB) creados en el período. Es el denominador de los % de abajo.')}Leads creados</td>${rows.map((r,i)=>`<td${cur(i)} style="text-align:right">${z(+r.total)}</td>`).join('')}</tr>`;
+  const body=COMP_ORDER.filter(f=>!na.has(f)).map(f=>
+    `<tr class="row-stage"><td>${H('Cuántos de los leads creados tienen «'+COMP_LABELS[f]+'» poblado en el backbone.')}${COMP_LABELS[f]}</td>${heatCells(rows.map(r=>+r[f]||0),tot)}</tr>`
+  ).join('');
+  el.innerHTML=`<table><thead><tr><th>Campo</th>${th}</tr></thead><tbody>${totalRow}${body}</tbody></table>`;
+  el.scrollLeft=el.scrollWidth;
+}
+
 function renderGeoAlarm(){
   const el=document.getElementById('geoAlarm'); if(!el) return;
   const lines=[];
