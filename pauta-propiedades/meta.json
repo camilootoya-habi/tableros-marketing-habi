@@ -1,0 +1,8 @@
+{
+  "title": "Pauta Propiedades.com",
+  "description": "Rendimiento de la pauta automatizada de publicaciones de Propiedades.com en Meta (objetivo Tráfico → listing). Métricas por publicación y por cliente inmobiliario: gasto, impresiones, clics al enlace, CTR y costo por clic. Selector de cliente y estado. Fuente: Marketing API de Meta, actualización manual.",
+  "country": "MX",
+  "section": "dashboard",
+  "order": 140,
+  "tab": "performance-mexico"
+}
