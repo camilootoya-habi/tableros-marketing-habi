@@ -129,6 +129,12 @@
   <div id="geoAlarm"></div>
   <p class="note" id="lineaTip"></p>
 
+  <div class="tabletitle">Salida real · últimos 14 días
+    <span class="help" title="Metido ≠ enviado ≠ entregado. 'Encolados' = mensajes aceptados por Infobip (HTTP 200). 'Enviados/Entregados' = lo que Meta realmente procesó (WhatsApp Business Management API, en UTC). Con la línea en LOW, Meta throttlea la salida: encolar más NO significa llegar a más. El respond rate correcto se mide sobre ENTREGADOS.">?</span>
+  </div>
+  <div id="salidaAlarm"></div>
+  <div id="salida"></div>
+
   <div class="tabletitle">Impacto en asignados <button type="button" class="help-btn" onclick="document.getElementById('helpImpacto').showModal()" aria-label="Explicación">?</button></div>
   <div class="tbl-wrap ftab" id="ciclo"></div>
   <dialog id="helpImpacto" class="help-dialog">
@@ -297,7 +303,7 @@ async function load(){
   document.getElementById('funView').onchange=e=>{funView=e.target.value;renderFuntab();};
   selectCountry('MX');
 }
-function selectCountry(c){ country=c; renderStats(); renderResp(); renderFunnel(); renderComparativa(); renderCiclo(); renderDiario(); renderFuntab(); renderAntifunnel(); renderCompletitud(); renderCohorteOrigen(); renderGeoAlarm(); }
+function selectCountry(c){ country=c; renderStats(); renderSalida(); renderResp(); renderFunnel(); renderComparativa(); renderCiclo(); renderDiario(); renderFuntab(); renderAntifunnel(); renderCompletitud(); renderCohorteOrigen(); renderGeoAlarm(); }
 // Celdas "valor + %" con heatmap por fila (verde=conversión alta, rojo=baja), copiado del tablero de referencia.
 function heatCells(values, denoms){
   const pcts=values.map((v,i)=> denoms[i]>0 ? v/denoms[i]*100 : null);   // período sin base → null (celda vacía)
@@ -422,15 +428,16 @@ function renderStats(){
   const dias=(D.ciclo||[]).filter(r=>r.pais===CIP[country]&&r.tipo==='dia'&&r.bucket<_hoy).sort((a,b)=>a.bucket<b.bucket?-1:1).slice(-7);
   const avg7=dias.length?dias.reduce((s,r)=>s+(+r.asignados_reint||0),0)/dias.length:0;
   const META=30, cumpl=avg7/META*100, cumColor=cumpl>=100?'var(--ok)':cumpl>=60?'var(--warn)':'var(--bad)';
-  const FLUJO={MX:1700,CO:1700};
+  const FLUJO={MX:500,CO:500};
   const metaTip='Promedio de asignados reinteresados de los últimos 7 días COMPLETOS (excluye hoy, que aún es parcial). Meta 30/día = 2,5% de conversión sobre los 8.500 mensajes semanales (8.500 × 2,5% ÷ 7 ≈ 30).';
   const cards=[
     ['Leads creados hoy <span class="help" title="Negocios con UTM reinteresados creados hoy (hubspot.deals, la fuente que refresca más rápido, ~7 min). Hora local del país.">?</span>', fmt((D.hoy||{})[country]||0), 'hubspot.deals · hoy'],
     ['Prom. móvil 7d · asig. reinteresados <span class="help" title="'+metaTip+'">?</span>', avg7.toFixed(1), `<span style="color:${cumColor}">meta ${META}/día · ${cumpl.toFixed(0)}% cumplimiento</span>`, 'key'],
     ['Flujo diario programado', fmt(FLUJO[country]), 'mensajes/día · L–V (cron)'],
-    ['Calidad de línea', `<span class="chip" style="background:${qc}">${l.quality||'—'}</span>`, tip],
-    ['Tier (24h)', (l.tier||'—').replace('LIMIT_',''), 'límite Meta/Infobip'],
-    ['Estado', l.status||'—', (l.sender||'')+' · conexión'],
+    ['Calidad de línea', `<span class="chip" style="background:${qc}">${l.quality||'—'}</span>`, tip+' · fuente: Meta'],
+    ['Tier (24h)', (l.tier||'—').replace('LIMIT_',''), 'límite · '+(l.tier_source==='infobip'?'Infobip':'Meta')],
+    ['Estado', `<span style="font-size:19px;font-weight:700">${l.status==='CONNECTED'?'Conectada':(l.status||'—')}</span>`, (l.sender||'')+(l.throughput?' · throughput '+l.throughput:'')],
+    ['Revisión cuenta', `<span style="font-size:19px;font-weight:700">${l.review==='APPROVED'?'Aprobada':(l.review||'—')}</span>`, 'account_review · Meta'],
   ];
   document.getElementById('stats').innerHTML=cards.map(([lab,v,s,cls])=>
     `<div class="stat${cls?' '+cls:''}"><div class="l">${lab}</div><div class="v">${v}</div><div class="s">${s||''}</div></div>`).join('');
@@ -506,6 +513,35 @@ function renderGeoAlarm(){
     lines.push(healthLine(ok,`Sin dirección (recreación ${country})`, ok?'0 recreados sin dirección.':`<b>${fmt(m)} recreados sin dirección</b> — comercial no puede gestionarlos.`, ctx.join(' · '), a.last_check));
   }
   el.innerHTML = lines.length ? `<div style="margin:12px 0;display:flex;flex-direction:column;gap:6px">${lines.join('')}</div>` : '';
+}
+
+function renderSalida(){
+  const s=(D.salida||{})[country];
+  const el=document.getElementById('salida'), al=document.getElementById('salidaAlarm');
+  if(!el) return;
+  if(!s||!s.totales){ el.innerHTML='<p class="note">Sin datos de salida real (Meta analytics no disponible en esta corrida).</p>'; if(al)al.innerHTML=''; return; }
+  const t=s.totales;
+  const pct=x=>x==null?'—':(x*100).toFixed(x<0.1?1:0)+'%';
+  const shared   = s.tasa_salida!=null && s.tasa_salida>1.1;    // Meta cuenta más que lo encolado → línea compartida con otro flujo
+  const throttled= s.tasa_salida!=null && s.tasa_salida<0.7 && !shared;
+  const box=(lab,v,sub,color)=>`<div class="stat" style="flex:1 1 130px"><div class="l">${lab}</div><div class="v"${color?` style="color:${color}"`:''}>${fmt(v)}</div><div class="s">${sub||''}</div></div>`;
+  const arr=(p,warn)=>`<div style="align-self:center;text-align:center;padding:0 2px;font-size:11px;color:${warn?'var(--bad)':'var(--text-muted)'};white-space:nowrap">→<div style="font-weight:700;font-size:13px">${p}</div></div>`;
+  el.innerHTML=`<div style="display:flex;gap:6px;flex-wrap:wrap;align-items:stretch;margin-bottom:6px">
+    ${box('Encolados', t.encolados, 'a Infobip · HTTP 200')}
+    ${arr(shared?'n/d':pct(s.tasa_salida), throttled)}
+    ${box('Enviados (Meta)', t.enviados, shared?'TODA la línea (compartida)':'que Meta sí sacó', throttled?'var(--bad)':'')}
+    ${arr(pct(s.tasa_entrega))}
+    ${box('Entregados', t.entregados, 'llegaron al celular')}
+    ${arr(shared?'n/d':pct(s.respond_rate))}
+    ${box('Respondieron', t.respondieron, shared?'nuestras respuestas':'sobre entregados')}
+  </div>
+  <p class="note">Ventana ${s.ventana}. ${shared
+    ? '<b>⚠ Línea compartida:</b> Meta reporta más envíos que los que encolamos nosotros → este número también lo usa otro flujo, así que no se puede aislar la salida de reactivación. Para medirla/protegerla haría falta una línea dedicada.'
+    : `<b>Tasa de salida</b> ${pct(s.tasa_salida)} (Meta ÷ encolado) · <b>entrega</b> ${pct(s.tasa_entrega)} · <b>respond rate real</b> ${pct(s.respond_rate)} (sobre entregados).`} Meta cuenta en UTC → ±1 día de desfase vs nuestro conteo.</p>`;
+  if(al) al.innerHTML = throttled
+    ? `<div style="margin:12px 0">${healthLine(false,'Throttling de salida ('+country+')',
+        `Solo <b>${pct(s.tasa_salida)}</b> de lo encolado sale de Meta — la línea en <b>${((D.linea||{})[country]||{}).quality||'baja'}</b> está frenando la salida. Encolar más no llega a más: bajar volumen / priorizar tibios / rotar número.`, '', '')}</div>`
+    : '';
 }
 
 function renderCohorteOrigen(){

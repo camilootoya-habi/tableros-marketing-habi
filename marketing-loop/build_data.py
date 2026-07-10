@@ -3,7 +3,7 @@
 Fuentes: BigQuery (comparativa, funnel, creación, ciclo) + hojas públicas (respuestas, envíos base) + Infobip (calidad línea).
 Uso: python3 build_data.py   (corre desde la carpeta del tablero; requiere bq autenticado).
 Infobip opcional: env INFOBIP_BASE_URL + INFOBIP_MX_API_KEY + INFOBIP_CO_API_KEY."""
-import json, os, csv, io, subprocess, datetime, re, sys
+import json, os, csv, io, subprocess, datetime, re, sys, calendar
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 def q(name):
@@ -122,6 +122,72 @@ def linea(pais, sender):
                 return {"sender":sender,"quality":s.get("qualityRating"),"tier":s.get("limit"),"status":s.get("connectionStatus")}
     except Exception as e: print(f"WARN infobip {pais}: {e}")
     return None
+
+# --- Meta (WhatsApp Business Management API) — fuente autoritativa de salud + salida real ---
+META_TOKEN = os.environ.get("META_ACCESS_TOKEN")
+GRAPH  = "https://graph.facebook.com/v21.0"
+WABA   = {"MX":"1364183988959673","CO":"3861160544193112"}
+SENDER = {"MX":"5215590883423","CO":"573009110453"}
+def graph(path, params):
+    if not META_TOKEN: return None
+    args=["curl","-s","-G",f"{GRAPH}/{path}"]
+    for k,v in params.items(): args+=["--data-urlencode",f"{k}={v}"]
+    args+=["--data-urlencode",f"access_token={META_TOKEN}"]
+    try: return json.loads(subprocess.run(args,capture_output=True,text=True,timeout=45).stdout)
+    except Exception as e: print(f"WARN graph {path}: {e}"); return None
+
+def linea_meta(pais):
+    """Salud de línea DIRECTO de Meta (más fiel que Infobip; CO salía UNKNOWN en Infobip y es MEDIUM en Meta).
+    tier suele venir vacío por Graph → se completa con Infobip como respaldo."""
+    waba, sender = WABA[pais], SENDER[pais]
+    ph  = graph(f"{waba}/phone_numbers", {"fields":"display_phone_number,quality_rating,messaging_limit_tier,status,throughput","limit":50})
+    inf = graph(waba, {"fields":"account_review_status"})
+    out = {"sender":sender,"quality":None,"tier":None,"status":None,
+           "review":(inf or {}).get("account_review_status"),"throughput":None,"source":"meta"}
+    QMAP={"GREEN":"HIGH","YELLOW":"MEDIUM","RED":"LOW","UNKNOWN":"UNKNOWN"}   # vocab Meta → el que ya usa el tablero
+    for p in ((ph or {}).get("data") or []):
+        if n10(p.get("display_phone_number"))==n10(sender):
+            out["quality"]=QMAP.get(p.get("quality_rating"), p.get("quality_rating"))
+            out["tier"]=p.get("messaging_limit_tier")
+            out["status"]=p.get("status"); out["throughput"]=(p.get("throughput") or {}).get("level")
+    if out["quality"] is None:          # Meta no respondió → cae a Infobip completo
+        return linea(pais, sender) or out
+    if not out["tier"]:                 # tier vacío por Graph → respaldo Infobip
+        ib=linea(pais, sender)
+        if ib: out["tier"]=ib.get("tier"); out["tier_source"]="infobip"
+    return out
+
+def meta_analytics(pais, days=14):
+    """{YYYY-MM-DD: {enviados, entregados}} por día (Meta), filtrado a nuestra línea. Meta cuenta en UTC."""
+    end   = datetime.datetime.utcnow().replace(hour=0,minute=0,second=0,microsecond=0)+datetime.timedelta(days=1)
+    start = end - datetime.timedelta(days=days+2)
+    s,e = calendar.timegm(start.timetuple()), calendar.timegm(end.timetuple())
+    d = graph(WABA[pais], {"fields":f"analytics.start({s}).end({e}).granularity(DAY).phone_numbers(['{SENDER[pais]}'])"})
+    out={}
+    for p in ((((d or {}).get("analytics") or {}).get("data_points")) or []):
+        day=datetime.datetime.utcfromtimestamp(p["start"]).strftime("%Y-%m-%d")
+        out[day]={"enviados":p.get("sent",0),"entregados":p.get("delivered",0)}
+    return out
+
+def salida(pais, diario_rows, resp_win, days=14):
+    """Embudo de SALIDA real: encolados (Infobip 200) → enviados (Meta) → entregados (Meta) → respondieron.
+    'Encolados' NO es 'enviados': con línea LOW Meta throttlea la salida. Ventana últimos `days` días."""
+    an = meta_analytics(pais, days)
+    hoy = datetime.date.today(); ini = hoy - datetime.timedelta(days=days)
+    enc = {r["fecha"]: r.get("enviados",0) for r in diario_rows}   # 'enviados' del diario = lo que ENCOLAMOS
+    serie=[]; tenc=tsent=tdel=0
+    for d in sorted(set(enc)|set(an)):
+        try: dd=datetime.date(*map(int,d.split("-")))
+        except: continue
+        if dd<ini or dd>=hoy: continue
+        e=enc.get(d,0); m=an.get(d,{}); s=m.get("enviados",0); de=m.get("entregados",0)
+        serie.append({"fecha":d,"encolados":e,"enviados":s,"entregados":de}); tenc+=e; tsent+=s; tdel+=de
+    resp=resp_win.get("total_respuestas",0) if resp_win else 0
+    return {"serie":serie, "ventana":f"{days}d",
+            "totales":{"encolados":tenc,"enviados":tsent,"entregados":tdel,"respondieron":resp},
+            "tasa_salida":  round(tsent/tenc,3) if tenc else None,   # Meta sacó / encolamos
+            "tasa_entrega": round(tdel/tsent,3) if tsent else None,  # entregados / enviados
+            "respond_rate": round(resp/tdel,3) if tdel else None}    # respuestas / entregados (denominador CORRECTO)
 
 def by_pais(rows, key="pais"):
     out={}
@@ -275,15 +341,17 @@ def completitud(pais, rows):
 CREA = q("query_creacion.sql")
 RECRE = q("query_recreados.sql")
 COMP = q("query_completitud.sql")
+RESP_D  = {p: respuestas(p) for p in ("MX","CO")}
+DIARIO  = {p: diario(p, CREA) for p in ("MX","CO")}
 data = {
   "updated": os.environ.get("BUILD_TS") or datetime.datetime.utcnow().strftime("%Y-%m-%dT%H:%MZ"),  # fecha de descarga vía query (corrida del cron)
   "comparativa": q("query_comparativa.sql"),
   "funnel": q("query_funnel.sql"),
   "creacion": CREA,
   "ciclo": q("query_ciclo.sql"),
-  "respuestas": {p: respuestas(p) for p in ("MX","CO")},
+  "respuestas": RESP_D,
   "base_enviada": {p: base_enviada(p) for p in ("MX","CO")},
-  "diario": {p: diario(p, CREA) for p in ("MX","CO")},
+  "diario": DIARIO,
   "funnel_tabla": {p: funnel_tables(p, RECRE) for p in ("MX","CO")},
   "antifunnel": {p: antifunnel(p, RECRE) for p in ("MX","CO")},
   "completitud": {p: completitud(p, COMP) for p in ("MX","CO")},
@@ -291,7 +359,8 @@ data = {
   "hoy": {r["pais"]: int(r.get("creados_hoy") or 0) for r in q("query_hoy.sql")},
   "geo_health": fetch_private_json("backbone-mx-batch/geo_health.json"),
   "address_health": fetch_private_json("backbone-mx-batch/address_health.json"),
-  "linea": {"MX": linea("MX","5215590883423"), "CO": linea("CO","573009110453")},
+  "linea": {p: linea_meta(p) for p in ("MX","CO")},                       # calidad/estado/review/throughput DE META
+  "salida": {p: salida(p, DIARIO[p], RESP_D[p]) for p in ("MX","CO")},    # embudo real: encolado→enviado→entregado→respondió
 }
 open(os.path.join(HERE,"data.json"),"w").write(json.dumps(data, ensure_ascii=False, separators=(",",":")))
 print("data.json OK |",
