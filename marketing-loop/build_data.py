@@ -392,20 +392,22 @@ def por_hora(pais):
     if pais != "MX" or not lines:
         return {"serie":[], "nota":"pendiente acceso al mart de CO"}
     rows = bq_sql(f'''SELECT EXTRACT(HOUR FROM {SENDAT}) hora,
-        RIGHT(REGEXP_REPLACE(to_number, r"[^0-9]", ""),10) tel10, IF({SEEN},1,0) seen
+        RIGHT(REGEXP_REPLACE(to_number, r"[^0-9]", ""),10) tel10,
+        LOWER(TRIM(status)) status, IF({SEEN},1,0) seen
       FROM `{mart_table(pais)}`
-      WHERE TRIM(from_number) IN ({lines}) AND LOWER(TRIM(status))="delivered"
-        AND DATE({SENDAT}) >= "2026-06-01"''')
+      WHERE TRIM(from_number) IN ({lines}) AND DATE({SENDAT}) >= "2026-06-01"''')
     responders = {n10(r.get("Telefono")) for r in resp_rows(pais)}; responders.discard(None)
     agg={}
     for r in rows:
         h=r.get("hora")
         if h in (None,""): continue
-        h=int(h); a=agg.setdefault(h,{"e":0,"l":0,"r":0})
-        a["e"]+=1
-        if str(r.get("seen"))=="1": a["l"]+=1
-        if r.get("tel10") in responders: a["r"]+=1
-    serie=[{"hora":h, "entregados":agg[h]["e"],
+        h=int(h); a=agg.setdefault(h,{"env":0,"e":0,"l":0,"r":0})
+        a["env"]+=1                                   # volumen total salido esa hora
+        if r.get("status")=="delivered":
+            a["e"]+=1
+            if str(r.get("seen"))=="1": a["l"]+=1
+            if r.get("tel10") in responders: a["r"]+=1
+    serie=[{"hora":h, "enviados":agg[h]["env"], "entregados":agg[h]["e"],
             "read_rate":   round(agg[h]["l"]/agg[h]["e"],3) if agg[h]["e"] else None,
             "respond_rate":round(agg[h]["r"]/agg[h]["e"],3) if agg[h]["e"] else None} for h in sorted(agg)]
     return {"serie":serie, "desde":"2026-06-01",
