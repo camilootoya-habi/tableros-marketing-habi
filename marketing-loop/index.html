@@ -102,6 +102,49 @@
   .btnsel{cursor:pointer;border:1px solid var(--border);background:transparent;color:var(--text);border-radius:8px;padding:5px 12px;font:inherit;font-size:12.5px}
   .note{color:var(--text-muted);font-size:12px;margin-top:10px}
   @media(max-width:760px){.grid{grid-template-columns:1fr}}
+  /* --- multi-hoja --- */
+  .sheet[hidden]{display:none!important}
+  .tabs{position:sticky;top:0;z-index:30;display:flex;gap:7px;flex-wrap:wrap;align-items:center;
+    background:var(--bg);padding:12px 0;margin:6px 0 22px;border-bottom:1px solid var(--border)}
+  .tab{cursor:pointer;border:1px solid var(--border);background:var(--card);color:var(--text-muted);
+    border-radius:9px;padding:8px 15px;font:inherit;font-size:13.5px;font-weight:600;white-space:nowrap;transition:background .12s,color .12s,border-color .12s}
+  .tab:hover{color:var(--text);border-color:var(--border-strong)}
+  .tab.active{background:var(--accent);color:#fff;border-color:var(--accent)}
+  .tab:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+  .sheet-head{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-bottom:6px}
+  .sheet-head h2{font-size:22px;font-weight:800;color:var(--text-title);margin:0}
+  .expseg{display:inline-flex;border:1px solid var(--border);border-radius:9px;overflow:hidden}
+  .expseg button{font:inherit;font-size:13px;font-weight:700;padding:6px 15px;border:0;background:transparent;color:var(--text-muted);cursor:pointer}
+  .expseg button.on{background:var(--accent);color:#fff}
+  /* explorador */
+  .exp-prop{margin-top:26px}
+  .exp-prop h3{font-size:16px;font-weight:700;color:var(--text-title);margin:0 0 2px;display:flex;gap:9px;align-items:baseline}
+  .exp-prop h3 .n{font-size:11.5px;font-weight:600;color:var(--text-muted)}
+  .exp-prop .cap{font-size:12.5px;color:var(--text-muted);font-family:ui-monospace,monospace;margin:0 0 10px}
+  .exp-tbl{background:var(--card);border:1px solid var(--border);border-radius:12px;overflow:hidden}
+  .exp-tbl table{border-collapse:collapse;width:100%;font-size:13px}
+  .exp-tbl th,.exp-tbl td{padding:6px 13px;text-align:right;border-bottom:1px solid var(--border);white-space:nowrap;font-variant-numeric:tabular-nums}
+  .exp-tbl th:first-child,.exp-tbl td:first-child{text-align:left;white-space:normal;width:50%}
+  .exp-tbl thead th{color:var(--text-muted);font-size:10.5px;letter-spacing:.05em;text-transform:uppercase;font-weight:700}
+  .exp-tbl tbody tr:hover{background:var(--border)}
+  .exp-tbl tr.exc td{color:var(--text-muted)}
+  .exp-tbl tr.exc td:first-child{opacity:.7}
+  .exp-tbl .val{font-weight:600;color:var(--text)}
+  .exbar{display:inline-block;height:6px;border-radius:3px;vertical-align:middle;margin-left:7px;background:var(--accent)}
+  .pill{display:inline-block;font-size:10.5px;font-weight:700;padding:2px 8px;border-radius:999px}
+  .pill.inc{background:color-mix(in srgb,var(--ok) 20%,transparent);color:var(--ok)}
+  .pill.exc{background:var(--border);color:var(--text-muted)}
+  /* docs */
+  .docs{max-width:820px}
+  .docs h3{font-size:15px;font-weight:800;color:var(--text-title);margin:28px 0 4px;letter-spacing:-.01em}
+  .docs p{font-size:14px;color:var(--text-muted);line-height:1.6;margin:0 0 10px}
+  .docs .kv{background:var(--card);border:1px solid var(--border);border-radius:12px;overflow:hidden;margin:10px 0}
+  .docs .kv table{border-collapse:collapse;width:100%;font-size:13.5px;table-layout:fixed}
+  .docs .kv td{padding:9px 14px;border-bottom:1px solid var(--border);vertical-align:top;overflow-wrap:anywhere;white-space:normal}
+  .docs .kv td:first-child{color:var(--text-muted);font-weight:600;width:180px;white-space:nowrap}
+  .docs .kv td:last-child{color:var(--text)}
+  .docs code{background:var(--border);padding:2px 7px;border-radius:5px;font-size:12.5px;color:var(--text-title);word-break:break-all}
+  .docs .flag{font-size:22px;vertical-align:-3px;margin-right:4px}
 </style>
 </head>
 <body>
@@ -109,9 +152,21 @@
   <button class="theme-btn" id="themeBtn">☀️ Claro</button>
   <a href="https://camilootoya-habi.github.io/tableros-marketing-habi/" class="back">← Volver al hub</a>
   <h1>Marketing Loop · Reinterés de leads</h1>
-  <div class="sub">Resultados en vivo del programa. Fuentes: hubspot.deals (~7 min) · WBR mart · hojas de respuestas · Infobip. <span id="upd"></span></div>
+  <div class="sub">Reinterés de leads · CO + MX. <span id="upd"></span></div>
+
+  <!-- ===== TABS (header fijo) ===== -->
+  <nav class="tabs">
+    <button class="tab" data-tab="co"   onclick="go('dash','CO')">🇨🇴 Colombia</button>
+    <button class="tab" data-tab="mx"   onclick="go('dash','MX')">🇲🇽 México</button>
+    <button class="tab" data-tab="exco" onclick="go('exp','CO')">🔎 Explorador · CO</button>
+    <button class="tab" data-tab="exmx" onclick="go('exp','MX')">🔎 Explorador · MX</button>
+    <button class="tab" data-tab="docs" onclick="go('docs')">📋 Documentación</button>
+  </nav>
+
+  <!-- ===== HOJA 1/2: TABLERO ===== -->
+  <div id="sheet-dash" class="sheet" hidden>
   <div class="controls">
-    <div class="control-card">
+    <div class="control-card" style="display:none">
       <div class="control-label">País</div>
       <div class="filter-bar">
         <label><input type="radio" name="pais" value="MX" checked> 🇲🇽 México</label>
@@ -226,10 +281,58 @@
     <p>Mide la <b>calidad de lo que creamos</b>. La fidelidad al lead original será otro indicador aparte.</p>
     <button class="close-btn" onclick="document.getElementById('helpComp').close()">Cerrar</button>
   </dialog>
+  </div><!-- /sheet-dash -->
+
+  <!-- ===== HOJA 3/4: EXPLORADOR DE LA BASE ===== -->
+  <div id="sheet-exp" class="sheet" hidden>
+    <div class="sheet-head">
+      <h2 id="expTitle">Explorador de la base · CO</h2>
+      <span class="note" id="expUpd"></span>
+    </div>
+    <p class="note" style="max-width:80ch">Ventana <b>2022-01-01 → creación &lt; hoy−180d</b>. Por cada propiedad-filtro: todos los valores, cuántas filas hay en la ventana (<b>en ventana</b>) y cuántas sobreviven TODA la cadena de filtros v3 (<b>en base</b>). Conteos a nivel fila (pre-dedup, con fanout de deals) → magnitud relativa e indicador incluido/excluido.</p>
+    <div id="expBody"></div>
+  </div>
+
+  <!-- ===== HOJA 5: DOCUMENTACIÓN ===== -->
+  <div id="sheet-docs" class="sheet" hidden>
+    <div class="sheet-head"><h2>Documentación del plan · Marketing Loop</h2></div>
+    <div class="docs">
+      <p>Reactivación de leads de sellers estancados: se les manda un WhatsApp; a quien responde <b>INTERESADO</b> se le <b>re-crea el lead</b> en el backbone para que vuelva a gestión comercial (GABI lo llama). CO + MX.</p>
+
+      <h3>Líneas de WhatsApp (Infobip · BSP)</h3>
+      <div class="kv"><table>
+        <tr><td><span class="flag">🇲🇽</span>México</td><td><code>52 1 55 9088 3423</code> · WABA <b>Tuhabi recuperación Gabi 1</b></td></tr>
+        <tr><td><span class="flag">🇨🇴</span>Colombia</td><td><code>57 300 911 0453</code> · WABA <b>Letreros SE VENDE en SAC</b></td></tr>
+        <tr><td>Calidad (Meta)</td><td>Se lee de la WhatsApp Business Management API. Al 10-jul: MX 🔴 LOW · CO 🟡 MEDIUM (ver semáforo en el tablero).</td></tr>
+      </table></div>
+
+      <h3>Plantillas aprobadas</h3>
+      <div class="kv"><table>
+        <tr><td><span class="flag">🇲🇽</span>MX · nombre</td><td><code>bot_reactivacion_leads_mx_sellers_camilootoya_16jun26</code></td></tr>
+        <tr><td><span class="flag">🇨🇴</span>CO · nombre</td><td><code>bot_reactivacion_leads_co_sellers_camilootoya_19jun26</code></td></tr>
+        <tr><td>Idioma</td><td><code>es</code></td></tr>
+        <tr><td>Header</td><td>IMAGE — <code>jcmm_mexico.png</code> / <code>jcmm_colombia.png</code> (S3)</td></tr>
+        <tr><td>Body</td><td>«<b>¿Aún vendes tu inmueble?</b>» — texto fijo, sin variables (mismo mensaje para todos)</td></tr>
+        <tr><td>Botones</td><td>QUICK_REPLY: «Quiero vender con Tuhabi» (→ INTERESADO) · «Ya no vendo» (→ baja)</td></tr>
+        <tr><td>Payloads</td><td><code>activacion_NewLeads_INTERESADO_{NID}</code> · <code>activacion_NewLeads_YAVENDIÓ_{NID}</code><br><span style="font-size:12px;color:var(--text-muted)">el NID viaja embebido → el webhook identifica al lead que respondió</span></td></tr>
+      </table></div>
+
+      <h3>UTM de las recreaciones (<code>utm_campaign</code>)</h3>
+      <div class="kv"><table>
+        <tr><td><span class="flag">🇲🇽</span>MX</td><td><code>mex-sellers-paid-experiments-web-without-leads-retargeting-national-reinteresados</code></td></tr>
+        <tr><td><span class="flag">🇨🇴</span>CO</td><td><code>col-sellers-paid-experiments-web-without-leads-retargeting-national-reinteresados</code></td></tr>
+        <tr><td>Agente (creador)</td><td><code>claude-camilo-otoya-reinteres</code></td></tr>
+      </table></div>
+
+      <h3>Definición de la base (SLA con comercial)</h3>
+      <p><b>Ventana:</b> creación <b>2022-01-01 → hoy−180 días</b>. Regla SLA: un lead con 180 días de creado que no esté <b>cerrado, captado ni descartado</b> → lo toma marketing para reinteresar.</p>
+      <p><b>Pipelines vivos</b> de gestión comercial (solo tomamos etapa «Perdido» dentro de ellos, para no robarle leads en curso al comercial): <b>Sellers - Market Maker {MX,CO} (NUEVO)</b> y <b>Nuevo - Inmobiliaria {MX,CO}</b>. En cualquier otro pipeline el lead no está en gestión viva → se toma. Detalle valor por valor en el <b>Explorador de la base</b>.</p>
+    </div>
+  </div>
 </div>
 
 <script>
-let D=null, country='MX', cicloTipo='semana', funView='cosecha', respChart=null, cohorteChart=null;
+let D=null, country='MX', cicloTipo='semana', funView='cosecha', respChart=null, cohorteChart=null, AUDIT=null, expC='CO';
 const CIP={MX:'mexico',CO:'colombia'};
 const fmt=v=>(v==null?'—':Number(v).toLocaleString('es-CO'));
 const pct=v=>(v==null?'—':Number(v).toFixed(1)+'%');
@@ -298,10 +401,62 @@ async function load(){
   document.getElementById('upd').innerHTML = D.updated
     ? `<span style="display:inline-block;margin-top:6px;padding:3px 10px;border-radius:999px;background:var(--card);border:1px solid var(--border);font-size:12px;color:var(--text-muted)">🕓 Datos descargados vía query: <b style="color:var(--text)">${fmtUpdated(D.updated)}</b></span>`
     : '';
+  try{ AUDIT=await (await fetch('audit.json?t='+Date.now())).json(); }catch(e){ AUDIT=null; }
   document.querySelectorAll('input[name=pais]').forEach(r=>r.onchange=()=>selectCountry(r.value));
   document.getElementById('granSel').onchange=e=>{cicloTipo=e.target.value;renderCiclo();renderFuntab();renderAntifunnel();renderCompletitud();};
   document.getElementById('funView').onchange=e=>{funView=e.target.value;renderFuntab();};
-  selectCountry('MX');
+  go('dash','CO');
+}
+
+// ===== router multi-hoja (tabs) =====
+function go(sheet, c){
+  const map={dash:'sheet-dash', exp:'sheet-exp', docs:'sheet-docs'};
+  const id=map[sheet]||'sheet-dash';
+  document.querySelectorAll('.sheet').forEach(s=>{ s.hidden = (s.id!==id); });
+  let tab='co';
+  if(sheet==='dash'){ tab=(c||'CO').toLowerCase();
+    const r=document.querySelector('input[name=pais][value='+(c||'CO')+']'); if(r) r.checked=true;
+    selectCountry(c||'CO'); }
+  else if(sheet==='exp'){ tab='ex'+(c||'CO').toLowerCase(); setExp(c||'CO'); }
+  else if(sheet==='docs'){ tab='docs'; }
+  document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('active', t.dataset.tab===tab));
+  window.scrollTo(0,0);
+}
+function setExp(c){ expC=c; const t=document.getElementById('expTitle'); if(t) t.textContent='Explorador de la base · '+c; renderExplorer(); }
+const escx=s=>String(s).replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+const EXPMETA={
+  "00.pipeline":["Pipeline","dónde vive el deal; solo importan los 2 pipelines vivos"],
+  "01.estado_MM":["Estado backbone · MM","calificado si ∈ 20/36/63 (o Inmo ∈ 20/36/73)"],
+  "02.estado_Inmo":["Estado backbone · Inmo","calificado si ∈ 20/36/73 (o MM ∈ 20/36/63)"],
+  "03.oport_MM":["Disposición MM","oportunidad_del_negocio: excluye cierre/vendido/descartado…"],
+  "04.oport_Inmo":["Disposición Inmo","oportunidad_inmobiliaria: excluye contrato/oferta/legal/vendido…"],
+  "05.etapa":["Etapa HubSpot","PIPELINE-AWARE: en pipelines vivos solo entra 'Perdido'"],
+  "06.comite_remo":["Comité remodelaciones","estado_comite_remodelaciones ≠ REJECTED"],
+  "07.remo_razon":["Razón rechazo remodelaciones","excluye lista estructural"],
+  "08.descartado":["Descarte duro","razon_de_descartado: excluir si poblado"],
+  "09.descarte_MM":["Descarte MM","excluye duras (mantiene 'Ya no quiere vender')"],
+  "10.descarte_Inmo":["Descarte Inmo","excluye duras (mantiene 'Ya no quiere vender')"],
+};
+function renderExplorer(){
+  const d=(AUDIT||{})[expC], el=document.getElementById('expBody');
+  document.getElementById('expUpd').textContent = (AUDIT&&AUDIT.updated) ? 'datos: '+fmtUpdated(AUDIT.updated) : '';
+  if(!d){ el.innerHTML='<p class="note">Sin datos del explorador (audit.json aún no disponible; se genera en un job aparte).</p>'; return; }
+  const parts=[];
+  for(const k of Object.keys(EXPMETA)){
+    const rows=(d[k]||[]); if(!rows.length) continue;
+    const maxB=Math.max(1,...rows.map(r=>r.base)), inc=rows.filter(r=>r.base>0).length, m=EXPMETA[k];
+    const body=rows.map(r=>{
+      const ex=r.base===0, w=Math.round(r.base/maxB*80);
+      return '<tr class="'+(ex?'exc':'')+'"><td><span class="val">'+escx(r.valor)+'</span></td>'
+        +'<td>'+(+r.ventana).toLocaleString('es')+'</td>'
+        +'<td>'+(+r.base).toLocaleString('es')+(r.base>0?'<span class="exbar" style="width:'+w+'px"></span>':'')+'</td>'
+        +'<td><span class="pill '+(ex?'exc':'inc')+'">'+(ex?'excluido':'incluido')+'</span></td></tr>';
+    }).join('');
+    parts.push('<div class="exp-prop"><h3>'+m[0]+'<span class="n">'+k.slice(3)+' · '+inc+'/'+rows.length+' incluidos</span></h3>'
+      +'<p class="cap">'+escx(m[1])+'</p>'
+      +'<div class="exp-tbl"><table><thead><tr><th>Valor</th><th>En ventana</th><th>En base</th><th></th></tr></thead><tbody>'+body+'</tbody></table></div></div>');
+  }
+  el.innerHTML=parts.join('');
 }
 function selectCountry(c){ country=c; renderStats(); renderSalida(); renderResp(); renderFunnel(); renderComparativa(); renderCiclo(); renderDiario(); renderFuntab(); renderAntifunnel(); renderCompletitud(); renderCohorteOrigen(); renderGeoAlarm(); }
 // Celdas "valor + %" con heatmap por fila (verde=conversión alta, rojo=baja), copiado del tablero de referencia.
