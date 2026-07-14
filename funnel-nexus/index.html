@@ -1,0 +1,501 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📞</text></svg>">
+<title>Funnel Nexus (WEB)</title>
+<style>
+  :root {
+    --bg: #0E1020; --card: #171A2E; --card-hover: #1F2340;
+    --border: #262A44; --border-strong: #3A3F63; --row-border: #1E2138;
+    --text: #D9DCEC; --text-title: #F5F6FC;
+    --muted: #AEB2CE; --muted-2: #7E82A6; --muted-3: #565B80;
+    --accent: #7C5CFC; --accent-on: #F5F6FC; --accent-soft: rgba(124,92,252,.14);
+    --signal: #35E0A1; --alert: #F5B544;
+    --reg: #7E82A6; --mm: #7C5CFC; --inmo: #22D3EE; --asig: #F5B544; --cierre: #F472B6; --capta: #A78BFA; --cvr: #35E0A1;
+    --sans: 'Segoe UI', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+    --mono: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+    --r: 12px;
+  }
+  body.light {
+    --bg: #F6F5FB; --card: #FFFFFF; --card-hover: #F3F1FD;
+    --border: #E7E5F2; --border-strong: #CFCBE6; --row-border: #F0EEF9;
+    --text: #3A3D57; --text-title: #16183A;
+    --muted: #565B80; --muted-2: #7E82A6; --muted-3: #9A9EBE;
+    --accent: #6D3EF0; --accent-on: #FFFFFF; --accent-soft: rgba(109,62,240,.10);
+    --signal: #10B981; --alert: #D97706;
+    --reg: #7E82A6; --mm: #6D3EF0; --inmo: #0891B2; --asig: #D97706; --cierre: #DB2777; --capta: #7C3AED; --cvr: #10B981;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: var(--sans); background: var(--bg); color: var(--text); padding: 28px 30px 48px; transition: background .2s, color .2s; -webkit-font-smoothing: antialiased; }
+  .tnum { font-variant-numeric: tabular-nums; font-feature-settings: "tnum" 1; }
+  .topbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+  .back-link { display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; background: var(--card); border: 1px solid var(--border); border-radius: 8px; color: var(--muted-2); text-decoration: none; font-size: 13px; }
+  .back-link:hover { color: var(--accent); border-color: var(--accent); }
+  .theme-btn { background: var(--card); border: 1px solid var(--border); color: var(--muted-2); border-radius: 8px; padding: 5px 11px; font-size: 14px; cursor: pointer; }
+  .theme-btn:hover { background: var(--card-hover); color: var(--accent); }
+
+  /* hero + signature (espinazo del funnel) */
+  .hero { display: grid; grid-template-columns: minmax(0,0.95fr) minmax(0,1.05fr); gap: 34px; align-items: center;
+          padding: 26px 30px; margin-bottom: 30px; border: 1px solid var(--border); border-radius: 16px;
+          background: radial-gradient(130% 150% at 0% 0%, var(--accent-soft), transparent 58%), var(--card); }
+  @media (max-width: 760px) { .hero { grid-template-columns: 1fr; gap: 22px; padding: 22px; } }
+  .eyebrow { font-size: 11px; text-transform: uppercase; letter-spacing: 1.5px; font-weight: 700; color: var(--accent); display: inline-flex; align-items: center; gap: 9px; }
+  .eyebrow::before { content: ""; width: 18px; height: 2px; background: var(--accent); border-radius: 2px; }
+  .hero h1 { font-size: 34px; font-weight: 700; letter-spacing: -1px; color: var(--text-title); margin: 13px 0 11px; line-height: 1.04; }
+  .hero h1 span { color: var(--accent); }
+  .hero-sub { color: var(--muted); font-size: 13.5px; line-height: 1.6; max-width: 44ch; }
+  .hero-sub b { color: var(--text-title); font-weight: 600; }
+  .hero-sub .sig { color: var(--signal); font-weight: 700; }
+  .funnel-bars { display: flex; flex-direction: column; gap: 9px; }
+  .fb-row { display: grid; grid-template-columns: 92px 1fr 96px; align-items: center; gap: 13px; }
+  .fb-label { font-size: 10.5px; color: var(--muted-2); text-transform: uppercase; letter-spacing: .5px; font-weight: 700; text-align: right; }
+  .fb-track { position: relative; height: 28px; background: var(--row-border); border-radius: 7px; overflow: hidden; }
+  .fb-fill { position: absolute; top: 0; left: 0; bottom: 0; width: 0; border-radius: 7px; transition: width .95s cubic-bezier(.22,1,.36,1); }
+  .fb-val { font-family: var(--mono); font-size: 14px; color: var(--text-title); font-weight: 600; text-align: right; }
+  .fb-val .fb-pct { color: var(--muted-2); font-size: 11px; margin-left: 5px; }
+  @media (prefers-reduced-motion: reduce) { .fb-fill { transition: none; } }
+
+  .controls { display: flex; flex-wrap: wrap; gap: 24px; margin-bottom: 6px; padding: 14px 18px; background: var(--card); border: 1px solid var(--border); border-radius: 12px; }
+  .ctl-group { display: flex; flex-direction: column; gap: 7px; }
+  .ctl-label { font-size: 9.5px; text-transform: uppercase; letter-spacing: .8px; color: var(--muted-3); font-weight: 700; }
+  .chips { display: flex; gap: 6px; flex-wrap: wrap; }
+  .chip { background: transparent; border: 1px solid var(--border-strong); color: var(--muted); border-radius: 8px; padding: 6px 13px; font-size: 12.5px; cursor: pointer; transition: all .12s; white-space: nowrap; }
+  .chip:hover { border-color: var(--accent); color: var(--text-title); }
+  .chip.active { background: var(--accent); border-color: var(--accent); color: var(--accent-on); font-weight: 600; box-shadow: 0 3px 12px var(--accent-soft); }
+  .chip:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  .section-title { font-size: 15px; font-weight: 700; color: var(--text-title); margin: 32px 0 14px; display: flex; align-items: baseline; gap: 11px; letter-spacing: -.2px; }
+  .section-title .num { font-family: var(--mono); font-size: 11px; font-weight: 700; color: var(--accent); background: var(--accent-soft); border-radius: 6px; padding: 3px 8px; letter-spacing: 0; align-self: center; }
+  .section-title .hint { font-weight: 400; color: var(--muted-3); font-size: 11.5px; }
+
+  .table-container { background: var(--card); border-radius: 10px; border: 1px solid var(--border); overflow-x: auto; margin-bottom: 26px; }
+  table { border-collapse: separate; border-spacing: 0; font-size: 13px; min-width: 100%; }
+  th, td { padding: 9px 13px; white-space: nowrap; text-align: right; font-variant-numeric: tabular-nums; }
+  thead th { background: var(--border); color: var(--muted-2); font-weight: 600; text-transform: uppercase; font-size: 10.5px; letter-spacing: .4px; }
+  /* primera columna (etapas) fija */
+  th.stage-h, td.stage-c { position: sticky; left: 0; z-index: 2; text-align: left; width: 210px; min-width: 210px; max-width: 210px; }
+  thead th.stage-h { background: var(--border); }
+  td.stage-c { background: var(--card); color: var(--text-title); font-weight: 600; border-right: 2px solid var(--border-strong); }
+  tbody tr:hover td.stage-c { background: var(--card-hover); }
+  td.stage-c .help { display: inline-flex; align-items: center; justify-content: center; width: 15px; height: 15px; border-radius: 50%; border: 1px solid var(--border-strong); color: var(--muted-2); font-size: 10px; font-weight: 700; margin-right: 8px; cursor: help; flex-shrink: 0; }
+  td.stage-c .help:hover { border-color: var(--accent); color: var(--accent); }
+  td.stage-c .stage-name { display: inline-flex; align-items: center; }
+  tbody td { border-top: 1px solid var(--row-border); }
+  tbody tr:hover td { background: var(--card-hover); }
+  tbody tr.cvr-row td { border-top: 2px solid var(--border-strong); color: var(--cvr); font-weight: 600; }
+  tbody tr.cvr-row td.stage-c { color: var(--cvr); }
+  .zero { color: var(--muted-3); }
+  .prov { color: var(--muted-3); font-style: italic; }
+  td.nid-c { font-family: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace; font-size: 12.5px; user-select: all; }
+  .yes { color: var(--inmo); font-weight: 700; }
+  .no { color: var(--muted-3); }
+
+  .charts-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-bottom: 22px; }
+  @media (max-width: 720px) { .charts-row { grid-template-columns: 1fr; } }
+  .spark-card { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 14px 15px 12px; }
+  .spark-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+  .spark-label { font-size: 11px; color: var(--muted-2); font-weight: 600; text-transform: uppercase; letter-spacing: .5px; }
+  .spark-delta { font-size: 11px; font-variant-numeric: tabular-nums; font-weight: 700; padding: 2px 7px; border-radius: 999px; white-space: nowrap; }
+  .spark-delta.up { color: var(--signal); background: color-mix(in srgb, var(--signal) 16%, transparent); }
+  .spark-delta.down { color: var(--alert); background: color-mix(in srgb, var(--alert) 16%, transparent); }
+  .spark-delta.flat { color: var(--muted-3); background: var(--row-border); }
+  .spark-value { font-family: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace; font-size: 26px; font-weight: 600; color: var(--text-title); line-height: 1.15; margin-top: 6px; }
+  .spark-sub { font-size: 11px; color: var(--muted-3); margin-bottom: 8px; }
+  .chart-host { position: relative; }
+  .chart-svg { width: 100%; height: 52px; display: block; overflow: visible; }
+  .chart-svg .spark-area { stroke: none; }
+  .chart-svg .spark-line { fill: none; stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; vector-effect: non-scaling-stroke; }
+  .chart-svg .spark-dot { stroke: var(--card); stroke-width: 1.5; }
+  .chart-svg .hover-band { fill: transparent; cursor: pointer; }
+  .chart-svg .hover-band.on { fill: var(--accent); opacity: .10; }
+  .chart-svg .hover-guide { stroke: var(--muted-3); stroke-dasharray: 3 3; opacity: 0; }
+  .chart-svg .hover-guide.on { opacity: .5; }
+
+  /* ventana explicativa (tooltip) */
+  .tip { position: fixed; pointer-events: none; z-index: 50; background: var(--card); border: 1px solid var(--border-strong); border-radius: 8px; padding: 9px 11px; font-size: 12px; box-shadow: 0 8px 24px rgba(0,0,0,.35); max-width: 240px; opacity: 0; transition: opacity .1s; }
+  .tip.show { opacity: 1; }
+  .tip .tt-title { font-weight: 700; color: var(--text-title); margin-bottom: 5px; }
+  .tip .tt-row { display: flex; align-items: center; gap: 6px; line-height: 1.55; }
+  .tip .tt-sw { width: 9px; height: 9px; border-radius: 2px; flex-shrink: 0; }
+  .tip .tt-lab { color: var(--muted-2); flex: 1; }
+  .tip .tt-val { font-variant-numeric: tabular-nums; font-weight: 700; color: var(--text-title); }
+  .tip .tt-note { margin-top: 6px; padding-top: 6px; border-top: 1px dashed var(--border); color: var(--muted-2); font-size: 11px; line-height: 1.45; }
+  .updated { color: var(--muted-3); font-size: 11px; margin-top: 8px; }
+</style>
+</head>
+<body>
+  <div class="topbar">
+    <a class="back-link" href="../">← Volver al hub</a>
+    <button class="theme-btn" id="themeBtn" title="Tema claro/oscuro">🌓</button>
+  </div>
+  <div class="hero">
+    <div class="hero-head">
+      <span class="eyebrow">Canal · Call center Nexus</span>
+      <h1>Funnel <span>Nexus</span></h1>
+      <p class="hero-sub">Leads fuente <b>WEB</b> con sub-fuente <b>Nexus</b> (gestión desde el call center). <span id="heroThesis"></span></p>
+    </div>
+    <div class="funnel-bars" id="spine"></div>
+  </div>
+
+  <div class="controls">
+    <div class="ctl-group"><span class="ctl-label">País</span><div class="chips" id="paisChips"></div></div>
+    <div class="ctl-group"><span class="ctl-label">Granularidad</span><div class="chips" id="granChips"></div></div>
+    <div class="ctl-group"><span class="ctl-label">Conteo por</span><div class="chips" id="modeChips"></div></div>
+  </div>
+
+  <div class="section-title"><span class="num">01</span>Funnel — últimos 20 periodos <span class="hint" id="tblHint"></span></div>
+  <div class="table-container">
+    <table>
+      <thead><tr id="tblHead"></tr></thead>
+      <tbody id="tblBody"></tbody>
+    </table>
+  </div>
+
+  <div class="section-title"><span class="num">02</span>Flujo por periodo <span class="hint" id="absHint">valores absolutos · sigue la granularidad de arriba · pasa el cursor para el detalle</span></div>
+  <div class="charts-row" id="rowAbs"></div>
+
+  <div class="section-title"><span class="num">03</span>Promedio móvil 7 días <span class="hint">siempre a nivel diario, independiente de la granularidad</span></div>
+  <div class="charts-row" id="rowMa"></div>
+
+  <div class="section-title"><span class="num">04</span>Leads creados — últimos 7 días <span class="hint" id="recHint">revisa el NID de los más recientes · más nuevo arriba</span></div>
+  <div class="table-container">
+    <table>
+      <thead><tr id="recHead"></tr></thead>
+      <tbody id="recBody"></tbody>
+    </table>
+  </div>
+
+  <p class="updated" id="updated"></p>
+  <div class="tip" id="tip"></div>
+
+<script>
+const SVGNS = "http://www.w3.org/2000/svg";
+const STAGE_LABELS = {
+  reg: "Registros", calif_mm: "Calif. MM (20,63)", calif_inmo: "Calif. INMO (20)",
+  asig: "Asignados", cierre_mm: "Cierres (MM)", captacion_inmo: "Captaciones (INMO)"
+};
+const STAGE_ORDER = ["reg","calif_mm","calif_inmo","asig","cierre_mm","captacion_inmo"];
+const STAGE_VAR = { reg:"--reg", calif_mm:"--mm", calif_inmo:"--inmo", asig:"--asig", cierre_mm:"--cierre", captacion_inmo:"--capta" };
+const STAGE_DESC = {
+  reg: "Leads WEB · sub-fuente Nexus registrados.",
+  calif_mm: "Alcanzaron calificación Market Maker (estado 20 ó 63).",
+  calif_inmo: "Alcanzaron calificación Inmobiliaria (estado 20).",
+  asig: "Asignados a comercial según el mart oficial WBR.",
+  cierre_mm: "Cierre - Comprado (compra Habi, rama MM).",
+  captacion_inmo: "Primera captación INMO. Fuente canónica en DWH — pendiente de acceso, hoy 0."
+};
+
+let DATA = null;
+const state = { pais: "CO", gran: "week", mode: "cohort" };
+const params = new URLSearchParams(location.search);
+const pp = (params.get("pais") || "").toUpperCase();
+if (pp === "CO" || pp === "MX") state.pais = pp;
+
+// ---------- fechas (UTC) ----------
+function parseD(s){ const [y,m,d]=s.split("-").map(Number); return new Date(Date.UTC(y,m-1,d)); }
+function fmtISO(dt){ return dt.toISOString().slice(0,10); }
+const MES = ["ene","feb","mar","abr","may","jun","jul","ago","sep","oct","nov","dic"];
+function periodKey(iso, gran){
+  const dt = parseD(iso);
+  if (gran === "day") return iso;
+  if (gran === "month") return fmtISO(new Date(Date.UTC(dt.getUTCFullYear(), dt.getUTCMonth(), 1)));
+  const dow = dt.getUTCDay();
+  const back = gran === "week" ? (dow + 6) % 7 : (dow - 3 + 7) % 7; // lunes / miércoles
+  const a = new Date(dt); a.setUTCDate(dt.getUTCDate() - back);
+  return fmtISO(a);
+}
+function periodLabel(iso, gran){
+  const dt = parseD(iso);
+  const dd = String(dt.getUTCDate()).padStart(2,"0"), mm = MES[dt.getUTCMonth()];
+  if (gran === "month") return `${mm} ${String(dt.getUTCFullYear()).slice(2)}`;
+  return `${dd} ${mm}`;
+}
+function fullDate(iso){ const dt=parseD(iso); return `${dt.getUTCDate()} ${MES[dt.getUTCMonth()]} ${dt.getUTCFullYear()}`; }
+function periodRange(iso, gran){
+  if (gran === "day") return fullDate(iso);
+  const s = parseD(iso); let e = new Date(s);
+  if (gran === "week" || gran === "cycle") e.setUTCDate(s.getUTCDate()+6);
+  else e = new Date(Date.UTC(s.getUTCFullYear(), s.getUTCMonth()+1, 0));
+  return `${fullDate(iso)} → ${fullDate(fmtISO(e))}`;
+}
+
+// ---------- agregación ----------
+function bucketRows(rows, gran){
+  const map = new Map();
+  for (const r of rows){
+    const k = periodKey(r.d, gran);
+    if (!map.has(k)){ const o = {k}; STAGE_ORDER.forEach(s=>o[s]=0); map.set(k,o); }
+    const o = map.get(k);
+    STAGE_ORDER.forEach(s => o[s] += (r[s]||0));
+  }
+  return [...map.values()].sort((a,b)=> a.k < b.k ? 1 : -1); // newest first
+}
+function dailySeries(rows){
+  if (!rows.length) return [];
+  const byd = new Map(rows.map(r=>[r.d, r]));
+  const first = parseD(rows.reduce((m,r)=> r.d<m?r.d:m, rows[0].d));
+  const last  = parseD(rows.reduce((m,r)=> r.d>m?r.d:m, rows[0].d));
+  const out = [];
+  for (let t=new Date(first); t<=last; t.setUTCDate(t.getUTCDate()+1)){
+    const iso = fmtISO(t); const r = byd.get(iso);
+    out.push({ d: iso, reg: r?r.reg:0, calif_mm: r?r.calif_mm:0 });
+  }
+  return out;
+}
+function movingAvg(arr, win){
+  return arr.map((_,i)=>{ const s=Math.max(0,i-win+1),sl=arr.slice(s,i+1); return sl.reduce((a,b)=>a+b,0)/sl.length; });
+}
+
+// ---------- tabla transpuesta (etapas en filas, periodos en columnas) ----------
+const ROW_DESC = {
+  reg: "Registros — leads fuente WEB con sub-fuente Nexus (base: HubSpot fuente='WEB' y sub_fuente='Nexus'). La fecha es la de creación (TIG fecha_creacion).",
+  calif_mm: "Calificados MM — leads que alcanzaron el estado 20 ó 63 en el histórico de estados Market Maker (primera calificación).",
+  calif_inmo: "Calificados INMO — leads que alcanzaron el estado 20 en el histórico INMO (real estate).",
+  asig: "Asignados — leads presentes en el mart oficial WBR de asignados a comercial (misma fuente que usa Data para el WBR).",
+  cierre_mm: "Cierres (MM) — hito 'Cierre - Comprado' del funnel de HubSpot (compra Habi, rama Market Maker).",
+  captacion_inmo: "Captaciones (INMO) — primera captación de la rama Inmobiliaria. Fuente canónica en el DWH, pendiente de acceso IAM → hoy 0.",
+  cvr: "CVR Reg→Calif MM — calificados MM ÷ registros del periodo. En modo Evento el numerador y el denominador caen en fechas distintas, así que es indicativo."
+};
+function renderTable(){
+  const cols = bucketRows(DATA[state.mode][state.pais] || [], state.gran).slice(0, 20); // 20 más recientes, newest→oldest
+
+  document.getElementById("tblHead").innerHTML =
+    `<th class="stage-h">Etapa</th>` +
+    cols.map(c=>`<th>${periodLabel(c.k, state.gran)}</th>`).join("");
+
+  const nameCell = (key, label) =>
+    `<td class="stage-c"><span class="stage-name"><span class="help" data-key="${key}">?</span>${label}</span></td>`;
+  // heat: tinte de fondo proporcional al valor dentro de su fila → la caída del funnel se ve de un vistazo
+  const heat = (color, v, mx) => (v>0 && mx>0) ? ` style="background:color-mix(in srgb, ${color} ${(7+21*v/mx).toFixed(1)}%, transparent)"` : "";
+
+  let html = "";
+  for (const s of STAGE_ORDER){
+    const vals = cols.map(c=>c[s]), mx = Math.max(...vals, 1), color = cssv(STAGE_VAR[s]);
+    html += `<tr>${nameCell(s, STAGE_LABELS[s])}` +
+      cols.map(c=>`<td${heat(color, c[s], mx)}>${cell(s, c[s])}</td>`).join("") + `</tr>`;
+  }
+  const cvrColor = cssv("--cvr");
+  const cvrVals = cols.map(c=> c.reg ? 100*c.calif_mm/c.reg : 0), cvrMx = Math.max(...cvrVals, 1);
+  const cvrCell = (cal,reg)=> reg ? Math.round(100*cal/reg)+"%" : "—";
+  html += `<tr class="cvr-row">${nameCell("cvr", "CVR Reg→Calif MM")}` +
+    cols.map((c,i)=>`<td${heat(cvrColor, cvrVals[i], cvrMx)}>${cvrCell(c.calif_mm, c.reg)}</td>`).join("") + `</tr>`;
+  document.getElementById("tblBody").innerHTML = html;
+  attachHelp("tblBody");
+
+  const gl = {day:"días", week:"semanas (lun-dom)", cycle:"ciclos comerciales (mié-mar)", month:"meses"}[state.gran];
+  document.getElementById("tblHint").textContent = `· 20 ${gl} más recientes · ${state.mode==="cohort"?"cosecha (fecha de creación)":"fecha de evento"}`;
+}
+function cell(stage, v){
+  if (stage === "captacion_inmo" && v === 0) return `<span class="prov">—</span>`;
+  return v === 0 ? `<span class="zero">0</span>` : v;
+}
+function attachHelp(hostId){
+  document.getElementById(hostId).querySelectorAll(".help").forEach(el=>{
+    const key = el.getAttribute("data-key");
+    el.addEventListener("mousemove", e=> showTip(e, {title: STAGE_LABELS[key] || "CVR Reg→Calif MM", rows: [], note: ROW_DESC[key]}));
+    el.addEventListener("mouseleave", hideTip);
+  });
+}
+
+// ---------- gráficas con ventana explicativa ----------
+const tip = document.getElementById("tip");
+function showTip(evt, data){
+  let h = `<div class="tt-title">${data.title}</div>`;
+  data.rows.forEach(r=> h += `<div class="tt-row"><span class="tt-sw" style="background:${r.color}"></span><span class="tt-lab">${r.label}</span><span class="tt-val">${r.value}</span></div>`);
+  if (data.note) h += `<div class="tt-note">${data.note}</div>`;
+  tip.innerHTML = h; tip.classList.add("show");
+  const pad=14, w=tip.offsetWidth, hh=tip.offsetHeight;
+  let x=evt.clientX+pad, y=evt.clientY+pad;
+  if (x+w>innerWidth) x=evt.clientX-w-pad;
+  if (y+hh>innerHeight) y=evt.clientY-hh-pad;
+  tip.style.left=x+"px"; tip.style.top=y+"px";
+}
+function hideTip(){ tip.classList.remove("show"); }
+
+function el(tag, attrs){ const e=document.createElementNS(SVGNS,tag); for(const k in attrs) e.setAttribute(k, attrs[k]); return e; }
+function cssv(n){ return getComputedStyle(document.body).getPropertyValue(n).trim(); }
+function modeNote(){ return state.mode==="cohort" ? "Atribuido a la cosecha de registro." : "Contado en la fecha del evento."; }
+function fmtDelta(d, isPct){
+  const arrow = d>0?"▲":(d<0?"▼":"·"), cls = d>0?"up":(d<0?"down":"flat");
+  const mag = isPct ? Math.abs(d).toFixed(0)+" pp" : (Number.isInteger(d)?Math.abs(d):Math.abs(d).toFixed(1));
+  return { cls, txt: `${arrow} ${mag}` };
+}
+function deltaOf(vals, isPct){ return vals.length<2 ? null : fmtDelta(vals[vals.length-1]-vals[vals.length-2], isPct); }
+function last(a){ return a.length ? a[a.length-1] : 0; }
+
+// sparkline: área + línea + punto final destacado + bandas de hover con ventana explicativa
+// cfg: {days, vals, varname, isPct, gran, explain(i)->{rows,note}}
+function renderChart(host, cfg){
+  const W=100, H=44, PADT=5, PADB=5, n=cfg.vals.length;
+  const svg = el("svg",{viewBox:`0 0 ${W} ${H}`, class:"chart-svg", preserveAspectRatio:"none"});
+  const color = cssv(cfg.varname);
+  const max = Math.max(...cfg.vals, cfg.isPct?1:0) || 1;
+  const step = n>1 ? W/(n-1) : 0;
+  const X = i => n>1 ? i*step : W/2;
+  const Y = v => (H-PADB) - (v/max)*(H-PADT-PADB);
+  const pts = cfg.vals.map((v,i)=>[X(i), Y(v)]);
+  if (n>=1){
+    const areaD = `M ${X(0).toFixed(1)} ${H-PADB} ` + pts.map(p=>`L ${p[0].toFixed(1)} ${p[1].toFixed(1)}`).join(" ") + ` L ${X(n-1).toFixed(1)} ${H-PADB} Z`;
+    svg.appendChild(el("path",{class:"spark-area", d:areaD, fill:color, "fill-opacity":0.14}));
+    if (n>1) svg.appendChild(el("path",{class:"spark-line", d:"M "+pts.map(p=>`${p[0].toFixed(1)} ${p[1].toFixed(1)}`).join(" L "), stroke:color}));
+    const lp = pts[n-1];
+    svg.appendChild(el("circle",{class:"spark-dot", cx:lp[0].toFixed(1), cy:lp[1].toFixed(1), r:2.6, fill:color}));
+  }
+  const guide = el("line",{class:"hover-guide", y1:0, y2:H}); svg.appendChild(guide);
+  cfg.vals.forEach((v,i)=>{
+    const cx=X(i), bw=W/Math.max(n,1);
+    const band = el("rect",{x:(cx-bw/2).toFixed(2), y:0, width:bw.toFixed(2), height:H, class:"hover-band"});
+    const title = cfg.gran ? periodRange(cfg.days[i].d, cfg.gran) : fullDate(cfg.days[i].d);
+    band.addEventListener("mousemove", e=>{ showTip(e,{title, ...cfg.explain(i)}); band.classList.add("on"); guide.setAttribute("x1",cx); guide.setAttribute("x2",cx); guide.classList.add("on"); });
+    band.addEventListener("mouseleave", ()=>{ hideTip(); band.classList.remove("on"); guide.classList.remove("on"); });
+    svg.appendChild(band);
+  });
+  host.appendChild(svg);
+}
+function card(cfg){
+  const c=document.createElement("div"); c.className="spark-card";
+  const d=cfg.delta;
+  c.innerHTML = `<div class="spark-top"><span class="spark-label">${cfg.title}</span>` +
+    (d?`<span class="spark-delta ${d.cls}" title="vs periodo anterior">${d.txt}</span>`:``) + `</div>` +
+    `<div class="spark-value">${cfg.latest}</div>` +
+    `<div class="spark-sub">${cfg.sub}</div>`;
+  const host=document.createElement("div"); host.className="chart-host"; c.appendChild(host);
+  renderChart(host, cfg); return c;
+}
+
+const GRAN_UNIT = { day:"el día", week:"la semana", cycle:"el ciclo comercial", month:"el mes" };
+function renderCharts(){
+  const rowsRaw = DATA[state.mode][state.pais] || [];
+  const tot = a => a.reduce((x,y)=>x+y,0);
+  const cReg=cssv("--reg"), cMm=cssv("--mm"), cCvr=cssv("--cvr");
+  const rowAbs=document.getElementById("rowAbs"), rowMa=document.getElementById("rowMa");
+  rowAbs.innerHTML=""; rowMa.innerHTML="";
+
+  // ---- Fila 1: atada a la granularidad seleccionada (cronológico asc) ----
+  const per = bucketRows(rowsRaw, state.gran).slice().reverse(); // oldest→newest
+  const pDays = per.map(p=>({d:p.k}));
+  const pReg = per.map(p=>p.reg), pCal = per.map(p=>p.calif_mm);
+  const pCvr = per.map(p=> p.reg ? 100*p.calif_mm/p.reg : 0);
+  const unit = GRAN_UNIT[state.gran], accCvr = tot(pReg)?(100*tot(pCal)/tot(pReg)):0;
+
+  rowAbs.appendChild(card({
+    title:"Registros", latest:last(pReg), delta:deltaOf(pReg,false), sub:`${tot(pReg)} en el rango`,
+    days:pDays, vals:pReg, varname:"--reg", isPct:false, gran:state.gran,
+    explain:i=>({ rows:[{label:"Registros", value:pReg[i], color:cReg}],
+      note:`Leads WEB · sub-fuente Nexus registrados en ${unit}. ${modeNote()}` })
+  }));
+  rowAbs.appendChild(card({
+    title:"Calificados MM", latest:last(pCal), delta:deltaOf(pCal,false), sub:`${tot(pCal)} · estados 20/63`,
+    days:pDays, vals:pCal, varname:"--mm", isPct:false, gran:state.gran,
+    explain:i=>({ rows:[{label:"Calificados MM", value:pCal[i], color:cMm}],
+      note:`Alcanzaron calificación Market Maker (estado 20 ó 63) en ${unit}. ${modeNote()}` })
+  }));
+  rowAbs.appendChild(card({
+    title:"CVR Reg→Calif MM", latest:`${Math.round(last(pCvr))}%`, delta:deltaOf(pCvr,true), sub:`${accCvr.toFixed(0)}% acumulado`,
+    days:pDays, vals:pCvr, varname:"--cvr", isPct:true, gran:state.gran,
+    explain:i=>({ rows:[
+        {label:"Registros", value:pReg[i], color:cReg},
+        {label:"Calificados MM", value:pCal[i], color:cMm},
+        {label:`CVR de ${unit}`, value:(pReg[i]?pCvr[i].toFixed(0):"0")+"%", color:cCvr}],
+      note:`Conversión Registro→Calificado MM. ${state.mode==="event"?"En modo Evento el numerador y el denominador caen en fechas distintas — es indicativo.":"calif MM ÷ registros de la cosecha."}` })
+  }));
+
+  // ---- Fila 2: SIEMPRE promedio móvil 7 días a nivel diario (ignora granularidad) ----
+  const days = dailySeries(rowsRaw);
+  const reg = days.map(d=>d.reg), cal = days.map(d=>d.calif_mm);
+  const regMa = movingAvg(reg,7), calMa = movingAvg(cal,7);
+  const cvrMa = days.map((_,i)=> regMa[i] ? 100*calMa[i]/regMa[i] : 0);
+
+  rowMa.appendChild(card({
+    title:"Registros · MA7", latest:last(regMa).toFixed(1), delta:deltaOf(regMa,false), sub:"promedio móvil 7 días · último día",
+    days, vals:regMa, varname:"--reg", isPct:false,
+    explain:i=>({ rows:[{label:"MA7 Registros", value:regMa[i].toFixed(1), color:cReg},{label:"Registros del día", value:reg[i], color:cReg}],
+      note:"Promedio de registros de los últimos 7 días (incluye este día)." })
+  }));
+  rowMa.appendChild(card({
+    title:"Calificados MM · MA7", latest:last(calMa).toFixed(1), delta:deltaOf(calMa,false), sub:"promedio móvil 7 días · último día",
+    days, vals:calMa, varname:"--mm", isPct:false,
+    explain:i=>({ rows:[{label:"MA7 Calif. MM", value:calMa[i].toFixed(1), color:cMm},{label:"Calif. MM del día", value:cal[i], color:cMm}],
+      note:"Promedio de calificados MM de los últimos 7 días." })
+  }));
+  rowMa.appendChild(card({
+    title:"CVR · MA7", latest:`${Math.round(last(cvrMa))}%`, delta:deltaOf(cvrMa,true), sub:"MA7 calif ÷ MA7 reg · último día",
+    days, vals:cvrMa, varname:"--cvr", isPct:true,
+    explain:i=>({ rows:[{label:"CVR MA7", value:cvrMa[i].toFixed(0)+"%", color:cCvr}],
+      note:"CVR suavizado: promedio móvil 7d de calificados MM dividido por el de registros." })
+  }));
+}
+
+// ---------- chips ----------
+function chips(hostId, opts, key){
+  const host=document.getElementById(hostId); host.innerHTML="";
+  opts.forEach(([val,lab])=>{
+    const b=document.createElement("button");
+    b.className="chip"+(state[key]===val?" active":""); b.textContent=lab;
+    b.onclick=()=>{ state[key]=val; renderAll(); }; host.appendChild(b);
+  });
+}
+function renderRecent(){
+  const rows = (DATA.recent && DATA.recent[state.pais]) || [];
+  document.getElementById("recHead").innerHTML =
+    `<th class="stage-h">NID</th><th style="text-align:left">Creado</th><th style="text-align:left">Agente Nexus</th><th>Calif MM</th><th>Calif INMO</th><th>Asignado</th><th>Cierre</th>`;
+  const body = document.getElementById("recBody");
+  if (!rows.length){
+    body.innerHTML = `<tr><td class="stage-c">—</td><td colspan="6" style="text-align:left;color:var(--muted-3)">Sin leads creados en los últimos 7 días.</td></tr>`;
+  } else {
+    const flag = b => b ? `<span class="yes">✓</span>` : `<span class="no">—</span>`;
+    body.innerHTML = rows.map(r =>
+      `<tr><td class="stage-c nid-c">${r.nid}</td>` +
+      `<td style="text-align:left;color:var(--muted)">${r.created || r.d_reg || "—"}</td>` +
+      `<td style="text-align:left;color:var(--muted)">${r.agent || "<span class='no'>—</span>"}</td>` +
+      `<td>${flag(r.calif_mm)}</td><td>${flag(r.calif_inmo)}</td><td>${flag(r.asig)}</td><td>${flag(r.cierre_mm)}</td></tr>`
+    ).join("");
+  }
+  document.getElementById("recHint").textContent = `${state.pais} · ${rows.length} lead(s) · revisa el NID de los más recientes · más nuevo arriba`;
+}
+// ---------- hero: espinazo del funnel (totales cohort del país) ----------
+let lastHeroPais = null;
+function renderHero(){
+  if (state.pais === lastHeroPais) return; // evita re-animar en cada toggle
+  lastHeroPais = state.pais;
+  const rows = (DATA.cohort && DATA.cohort[state.pais]) || [];
+  const T = {}; ["reg","calif_mm","asig","cierre_mm"].forEach(s=> T[s]=rows.reduce((a,r)=>a+(r[s]||0),0));
+  const stages = [
+    { label:"Registros", v:T.reg,       vr:"--reg" },
+    { label:"Califica MM", v:T.calif_mm, vr:"--mm" },
+    { label:"Asignado", v:T.asig,        vr:"--asig" },
+    { label:"Cierre", v:T.cierre_mm,     vr:"--cierre" },
+  ];
+  const base = T.reg || 1;
+  document.getElementById("spine").innerHTML = stages.map(s=>{
+    const pct = 100*s.v/base;
+    return `<div class="fb-row"><div class="fb-label">${s.label}</div>` +
+      `<div class="fb-track"><div class="fb-fill" data-w="${Math.max(pct,1.5).toFixed(1)}" style="background:var(${s.vr})"></div></div>` +
+      `<div class="fb-val tnum">${s.v}<span class="fb-pct">${pct.toFixed(0)}%</span></div></div>`;
+  }).join("");
+  requestAnimationFrame(()=> document.querySelectorAll("#spine .fb-fill").forEach(f=> f.style.width = f.getAttribute("data-w")+"%"));
+  const cvr = T.reg ? Math.round(100*T.calif_mm/T.reg) : 0;
+  document.getElementById("heroThesis").innerHTML = `De <b>${T.reg}</b> registros, <span class="sig">${cvr}%</span> califican a Market Maker.`;
+}
+function renderAll(){
+  chips("paisChips", [["CO","🇨🇴 Colombia"],["MX","🇲🇽 México"]], "pais");
+  chips("granChips", [["day","Día"],["week","Semana"],["cycle","Ciclo (mié-mar)"],["month","Mes"]], "gran");
+  chips("modeChips", [["cohort","Cosecha"],["event","Evento"]], "mode");
+  renderHero(); renderTable(); renderCharts(); renderRecent();
+}
+
+// ---------- theme ----------
+const themeBtn=document.getElementById("themeBtn");
+if (localStorage.getItem("hub-theme")==="light") document.body.classList.add("light");
+themeBtn.onclick=()=>{ document.body.classList.toggle("light"); localStorage.setItem("hub-theme", document.body.classList.contains("light")?"light":"dark"); renderCharts(); };
+
+fetch("data.json").then(r=>r.json()).then(d=>{
+  DATA=d;
+  document.getElementById("updated").textContent="Actualizado: "+(d.updated_at||"")+" · Captaciones INMO pendiente de acceso al DWH canónico (hoy 0).";
+  renderAll();
+}).catch(e=>{ document.getElementById("tblBody").innerHTML=`<tr><td>Error cargando data.json: ${e}</td></tr>`; });
+</script>
+</body>
+</html>

@@ -1,0 +1,8 @@
+{
+  "title": "Funnel Nexus (WEB)",
+  "description": "Leads WEB · sub-fuente Nexus (callcenter): funnel Registros→Calif MM/INMO→Asignados→Cierres, por cosecha o evento. Selector de granularidad (día/semana/ciclo/mes) y gráficas diarias + MA7.",
+  "country": "CO & MX",
+  "section": "dashboard",
+  "order": 130,
+  "hidden_card": true
+}
