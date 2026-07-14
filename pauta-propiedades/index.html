@@ -27,12 +27,44 @@
     .chip:hover { border-color: #818cf8; }
     .chip.active { background: #818cf8; color: #0f172a; border-color: #818cf8; font-weight: 600; }
 
-    .kpis { display: grid; grid-template-columns: repeat(5, 1fr); gap: 16px; margin-bottom: 24px; }
-    @media (max-width: 1000px) { .kpis { grid-template-columns: repeat(2, 1fr); } }
+    .alarm { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin-bottom: 24px; }
+    .alarm .alarm-label { font-size: 11px; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600; margin-right: 4px; }
+    .alarm .st { display: inline-flex; align-items: center; gap: 7px; padding: 6px 12px; border-radius: 999px; font-size: 13px; font-weight: 600; border: 1px solid; }
+    .alarm .st .dot { width: 9px; height: 9px; border-radius: 50%; }
+    .alarm .st .n { font-weight: 800; }
+    .st.ok { background: #14372a; color: #34d399; border-color: #1baf7a55; }
+    .st.ok .dot { background: #34d399; }
+    .st.dead { background: #3a1620; color: #f87171; border-color: #b91c1c66; }
+    .st.dead .dot { background: #f87171; }
+    .st.warn { background: #3a2f14; color: #fbbf24; border-color: #b4880e66; }
+    .st.warn .dot { background: #fbbf24; }
+    .st.unknown { background: #232f3f; color: #94a3b8; border-color: #33415566; }
+    .st.unknown .dot { background: #94a3b8; }
+
+    .section-title { font-size: 13px; font-weight: 700; color: #cbd5e1; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 12px; }
+    .muted { color: #475569; }
+    .impact { display: grid; grid-template-columns: repeat(3, 1fr) 2fr; gap: 16px; margin-bottom: 24px; }
+    @media (max-width: 900px) { .impact { grid-template-columns: repeat(2, 1fr); } }
+    .impact .im-card { background: #1e293b; border: 1px solid #334155; border-radius: 12px; padding: 16px; }
+    .impact .im-label { font-size: 11px; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600; }
+    .impact .im-value { font-size: 30px; font-weight: 700; margin-top: 4px; }
+    .impact .im-sub { font-size: 12px; margin-top: 6px; color: #94a3b8; }
+    .impact .im-value.pos { color: #34d399; }
+    .impact .im-value.neg { color: #f87171; }
+    .impact .im-note { display: flex; align-items: center; font-size: 12px; color: #94a3b8; line-height: 1.5; }
+    .kpis { display: grid; grid-template-columns: repeat(6, 1fr); gap: 16px; margin-bottom: 24px; }
+    @media (max-width: 1100px) { .kpis { grid-template-columns: repeat(3, 1fr); } }
+    @media (max-width: 640px) { .kpis { grid-template-columns: repeat(2, 1fr); } }
     .kpi-card { background: #1e293b; border: 1px solid #334155; border-radius: 12px; padding: 16px; }
     .kpi-label { font-size: 11px; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600; }
     .kpi-value { font-size: 30px; font-weight: 700; margin-top: 4px; }
     .kpi-sub { font-size: 12px; margin-top: 6px; color: #94a3b8; }
+
+    .mini-grid { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 10px; margin-bottom: 24px; }
+    @media (max-width: 640px) { .mini-grid { gap: 6px; } }
+    .mini-card { background: #1e293b; border: 1px solid #334155; border-radius: 10px; padding: 10px; min-width: 0; }
+    .mini-card .mini-label { font-size: 10px; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.3px; font-weight: 600; margin-bottom: 8px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .mini-wrap { position: relative; height: 130px; min-width: 0; }
 
     .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 24px; }
     @media (max-width: 900px) { .grid2 { grid-template-columns: 1fr; } }
@@ -47,9 +79,9 @@
 
     .table-card { background: #1e293b; border: 1px solid #334155; border-radius: 12px; padding: 20px; overflow-x: auto; }
     .table-card h3 { font-size: 14px; font-weight: 600; margin-bottom: 12px; color: #cbd5e1; }
-    table { width: 100%; border-collapse: collapse; font-size: 13px; min-width: 820px; }
+    table { width: 100%; border-collapse: collapse; font-size: 13px; min-width: 1040px; }
     th, td { text-align: right; padding: 8px 10px; border-bottom: 1px solid #263449; white-space: nowrap; }
-    th:nth-child(-n+4), td:nth-child(-n+4) { text-align: left; }
+    th:nth-child(-n+5), td:nth-child(-n+5) { text-align: left; }
     th { color: #94a3b8; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; cursor: pointer; user-select: none; position: sticky; top: 0; background: #1e293b; }
     th:hover { color: #f8fafc; }
     th.sorted::after { content: ' ▾'; color: #818cf8; }
@@ -60,6 +92,20 @@
     .badge { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 11px; font-weight: 600; }
     .badge.active { background: #14372a; color: #34d399; border: 1px solid #1baf7a55; }
     .badge.paused { background: #2b2f3a; color: #94a3b8; border: 1px solid #33415555; }
+    .badge.ok { background: #14372a; color: #34d399; border: 1px solid #1baf7a55; }
+    .badge.dead { background: #3a1620; color: #f87171; border: 1px solid #b91c1c66; }
+    .badge.warn { background: #3a2f14; color: #fbbf24; border: 1px solid #b4880e66; }
+    .badge.unknown { background: #232f3f; color: #94a3b8; border: 1px solid #33415566; }
+
+    .period-wrap { overflow-x: auto; }
+    .period-tbl { width: 100%; border-collapse: collapse; font-size: 13px; }
+    .period-tbl th, .period-tbl td { text-align: right; padding: 8px 12px; border-bottom: 1px solid #263449; white-space: nowrap; font-variant-numeric: tabular-nums; }
+    .period-tbl thead th { color: #94a3b8; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; }
+    .period-tbl th:first-child, .period-tbl td:first-child { text-align: left; position: sticky; left: 0; background: #1e293b; z-index: 1; font-weight: 600; color: #cbd5e1; }
+    .period-tbl td.cur, .period-tbl th.cur { background: #223049; color: #f8fafc; font-weight: 700; }
+    .period-tbl .muted { color: #475569; }
+    .period-tbl tbody tr:hover td { background: #1a2537; }
+    .period-tbl tbody tr:hover td:first-child { background: #223049; }
 
     footer.notas { color: #64748b; font-size: 12px; line-height: 1.6; border-top: 1px solid #1e293b; padding-top: 16px; margin-top: 24px; }
     footer code { background: #1e293b; padding: 1px 5px; border-radius: 3px; }
@@ -89,15 +135,41 @@
       <button class="chip" data-estado="ACTIVE">Activos</button>
       <button class="chip" data-estado="PAUSED">Pausados</button>
     </div>
+    <div class="selector-group">
+      <label>Temporalidad</label>
+      <button class="chip active" data-gran="dia">Día</button>
+      <button class="chip" data-gran="semana">Semana</button>
+      <button class="chip" data-gran="ciclo">Ciclo (Mié→Mar)</button>
+      <button class="chip" data-gran="mes">Mes</button>
+    </div>
   </div>
 
+  <div class="alarm" id="alarm"></div>
+
+  <h2 class="section-title">Impacto en leads · pre / post pauta <span style="font-weight:500;text-transform:none;letter-spacing:0;color:#64748b">(solo publicaciones con listing Activo)</span></h2>
+  <div class="impact" id="impact"></div>
+
+  <h2 class="section-title">Indicadores · últimos 14 días</h2>
   <div class="kpis">
-    <div class="kpi-card"><div class="kpi-label">Gasto</div><div class="kpi-value" id="k-gasto">—</div><div class="kpi-sub" id="k-gasto-sub"></div></div>
+    <div class="kpi-card"><div class="kpi-label">Gasto</div><div class="kpi-value" id="k-gasto">—</div></div>
     <div class="kpi-card"><div class="kpi-label">Impresiones</div><div class="kpi-value" id="k-impr">—</div></div>
     <div class="kpi-card"><div class="kpi-label">Clics al enlace</div><div class="kpi-value" id="k-clics">—</div></div>
     <div class="kpi-card"><div class="kpi-label">CTR</div><div class="kpi-value" id="k-ctr">—</div></div>
-    <div class="kpi-card"><div class="kpi-label">Costo / clic</div><div class="kpi-value" id="k-cpc">—</div><div class="kpi-sub" id="k-pubs"></div></div>
+    <div class="kpi-card"><div class="kpi-label">CPM</div><div class="kpi-value" id="k-cpm">—</div></div>
+    <div class="kpi-card"><div class="kpi-label">CPC</div><div class="kpi-value" id="k-cpc">—</div></div>
   </div>
+
+  <div class="table-card" style="margin-bottom:24px">
+    <h3 id="period-title">Evolución por período</h3>
+    <div class="hint" id="period-hint" style="font-size:11px;color:#64748b;margin-bottom:12px"></div>
+    <div class="period-wrap" id="period-wrap"></div>
+  </div>
+
+  <h2 class="section-title">Evolución diaria · valores absolutos</h2>
+  <div class="mini-grid" id="mini-abs"></div>
+
+  <h2 class="section-title">Evolución diaria · promedio móvil 7 días</h2>
+  <div class="mini-grid" id="mini-ma"></div>
 
   <div class="grid2">
     <div class="chart-card">
@@ -120,13 +192,16 @@
         <tr>
           <th data-k="id_aviso">Publicación</th>
           <th data-k="cliente">Cliente</th>
-          <th data-k="status">Estado</th>
+          <th data-k="status">Estado Ad</th>
+          <th data-k="estatus_listing">Estado Publicación</th>
           <th data-k="colonia">Colonia</th>
           <th data-k="gasto" class="sorted">Gasto</th>
           <th data-k="impresiones">Impr.</th>
           <th data-k="clics_enlace">Clics enl.</th>
           <th data-k="ctr">CTR %</th>
           <th data-k="costo_x_clic_enlace">$/clic</th>
+          <th data-k="leads_sem_antes">Leads/sem antes</th>
+          <th data-k="leads_sem_pauta">Leads/sem pauta</th>
         </tr>
       </thead>
       <tbody id="tbody"></tbody>
@@ -136,24 +211,72 @@
   <footer class="notas">
     Fuente: <code>Marketing API de Meta</code> (insights a nivel ad) cruzada con los registros locales del proyecto de pauta.
     Cada publicación = 1 ad carrusel; 1 campaña por cliente con presupuesto diario compartido (CBO). Objetivo <b>Tráfico</b> → ficha del inmueble en Propiedades.com.
-    <b>Actualización manual</b> (se regenera al correr el reporte). Los pausados aparecen en $0.
+    <b>Actualización automática cada 4h</b> vía GitHub Actions (Meta Marketing API). Los pausados aparecen en $0.
+    La tabla por período usa la serie diaria de Meta, bucketeada según la <b>Temporalidad</b> (día / semana Lun→Dom / ciclo Mié→Mar / mes); últimos 20 períodos.
   </footer>
 
   <script>
     // Colores categóricos validados (dataviz, modo oscuro): azul / aqua / amarillo
     const PALETTE = ['#3987e5', '#199e70', '#c98500'];
-    const state = { data: null, cliente: 'todos', estado: 'todos', sortKey: 'gasto', sortDir: 'desc' };
+    const state = { data: null, cliente: 'todos', estado: 'todos', gran: 'dia', sortKey: 'gasto', sortDir: 'desc' };
     let colorByClient = {};
     let chartClientes = null, chartTop = null;
+    let miniCharts = {};  // id de canvas -> instancia Chart (12 mini-gráficas)
+    let serieByAd = {};   // ad_id -> [{fecha, gasto, impresiones, clics_enlace}]
 
     const fmtUsd = v => '$' + (v || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
     const fmtInt = v => (v || 0).toLocaleString('es-MX');
+    const fmtUsd0 = v => '$' + Math.round(v || 0).toLocaleString('en-US');
+
+    // clasificación del estatus del listing de Propiedades.com
+    const DEAD = ['Eliminado', 'Eliminada', 'Vencido', 'Vendida', 'Rentada', 'Borrada', 'Borrado'];
+    function listingClass(e) {
+      if (e === 'Activo' || e === 'Destacado') return 'ok';
+      if (DEAD.includes(e)) return 'dead';
+      if (!e || e === 'Sin dato') return 'unknown';
+      return 'warn';   // Pausado, Suspendida, Pendiente, Borrador, etc.
+    }
+
+    // --- Bucketeo por período (client-side, igual criterio que marketing-loop) ---
+    const pad2 = x => String(x).padStart(2, '0');
+    const ymd = d => d.getFullYear() + '-' + pad2(d.getMonth() + 1) + '-' + pad2(d.getDate());
+    const pyWd = d => (d.getDay() + 6) % 7;   // Lun=0 … Dom=6
+    function periodBucket(d, tipo) {
+      if (tipo === 'mes') return d.getFullYear() + '-' + pad2(d.getMonth() + 1) + '-01';
+      if (tipo === 'semana') { const x = new Date(d); x.setDate(x.getDate() - pyWd(x)); return ymd(x); }          // lunes
+      if (tipo === 'ciclo')  { const x = new Date(d); x.setDate(x.getDate() - ((((pyWd(x) - 2) % 7) + 7) % 7)); return ymd(x); }  // miércoles
+      return ymd(d);
+    }
+    function lastPeriods(tipo, n) {
+      const out = [], now = new Date();
+      if (tipo === 'mes') { let y = now.getFullYear(), m = now.getMonth();
+        for (let i = 0; i < n; i++) { out.push(y + '-' + pad2(m + 1) + '-01'); if (--m < 0) { m = 11; y--; } } }
+      else { const cur = periodBucket(now, tipo), [Y, M, D] = cur.split('-').map(Number),
+        base = new Date(Y, M - 1, D), step = (tipo === 'dia') ? 1 : 7;
+        for (let i = 0; i < n; i++) { const t = new Date(base); t.setDate(t.getDate() - step * i); out.push(ymd(t)); } }
+      return out.reverse();   // ascendente, último = período en curso
+    }
+    const MES = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
+    function periodLabel(b, tipo) {
+      const [y, m, d] = b.split('-');
+      if (tipo === 'mes') return MES[+m - 1] + ' ' + y.slice(2);
+      if (tipo === 'dia') return +d + ' ' + MES[+m - 1];
+      return +d + ' ' + MES[+m - 1];   // semana/ciclo: fecha de inicio del período
+    }
 
     async function load() {
       const r = await fetch('data.json?t=' + Date.now(), { cache: 'no-store' });
       state.data = await r.json();
       // color por cliente (fijo, sigue a la entidad)
       state.data.clientes.forEach((c, i) => { colorByClient[c.cliente_id] = PALETTE[i % PALETTE.length]; });
+      // índice de la serie diaria por ad (para la tabla por período)
+      serieByAd = {};
+      (state.data.serie || []).forEach(s => { (serieByAd[s.ad_id] = serieByAd[s.ad_id] || []).push(s); });
+      // tasas de leads por semana (antes / con pauta) para tabla y ordenamiento
+      state.data.publicaciones.forEach(p => {
+        p.leads_sem_antes = p.dias_antes ? p.leads_antes / p.dias_antes * 7 : null;
+        p.leads_sem_pauta = p.dias_pauta ? p.leads_pauta / p.dias_pauta * 7 : null;
+      });
       applyFreshness();
       renderClienteChips();
       renderLegend();
@@ -171,6 +294,7 @@
 
     function renderClienteChips() {
       const g = document.getElementById('cliente-group');
+      g.querySelector('[data-cliente="todos"]').addEventListener('click', () => setCliente('todos'));
       state.data.clientes.forEach(c => {
         const b = document.createElement('button');
         b.className = 'chip'; b.dataset.cliente = c.cliente_id; b.textContent = c.nombre;
@@ -199,24 +323,175 @@
 
     function renderAll() {
       const rows = filtered();
+      renderAlarm(rows);
+      renderImpact(rows);
       renderKpis(rows);
+      renderPeriodTable(rows);
+      renderMiniCharts(rows);
       renderClientesChart();
       renderTopChart(rows);
       renderTable(rows);
     }
 
+    // eje diario = fechas presentes en la serie, EXCLUYE hoy (día parcial)
+    function dailyAxis() {
+      const today = ymd(new Date());
+      return [...new Set((state.data.serie || []).map(s => s.fecha))].filter(f => f < today).sort();
+    }
+    const dLabel = f => { const [, m, d] = f.split('-'); return +d + ' ' + MES[+m - 1]; };
+    // promedio móvil de 7 días (ventana móvil hacia atrás; ignora huecos)
+    function ma7(arr) {
+      return arr.map((_, i) => {
+        const w = arr.slice(Math.max(0, i - 6), i + 1).filter(v => v != null);
+        return w.length ? w.reduce((a, b) => a + b, 0) / w.length : null;
+      });
+    }
+
+    function renderMiniCharts(rows) {
+      const axis = dailyAxis();
+      const labels = axis.map(dLabel);
+      const idx = axis.reduce((o, d, i) => (o[d] = i, o), {});
+      const g = axis.map(() => 0), im = axis.map(() => 0), c = axis.map(() => 0);
+      rows.forEach(p => (serieByAd[p.ad_id] || []).forEach(s => {
+        const i = idx[s.fecha]; if (i === undefined) return;
+        g[i] += s.gasto; im[i] += s.impresiones; c[i] += s.clics_enlace;
+      }));
+      const ctr = axis.map((_, i) => im[i] > 0 ? c[i] / im[i] * 100 : null);
+      const cpc = axis.map((_, i) => c[i] > 0 ? g[i] / c[i] : null);
+      const cpm = axis.map((_, i) => im[i] > 0 ? g[i] / im[i] * 1000 : null);
+      const series = [
+        { key: 'gasto', label: 'Gasto', color: '#3987e5', data: g, fmt: fmtUsd0 },
+        { key: 'impr', label: 'Impresiones', color: '#199e70', data: im, fmt: fmtInt },
+        { key: 'clics', label: 'Clics al enlace', color: '#c98500', data: c, fmt: fmtInt },
+        { key: 'ctr', label: 'CTR %', color: '#a78bfa', data: ctr, fmt: v => v.toFixed(2) + '%' },
+        { key: 'cpm', label: 'CPM', color: '#22d3ee', data: cpm, fmt: fmtUsd },
+        { key: 'cpc', label: 'CPC', color: '#f472b6', data: cpc, fmt: fmtUsd },
+      ];
+      buildMiniRow('mini-abs', labels, series, 'abs');
+      buildMiniRow('mini-ma', labels, series.map(s => ({ ...s, data: ma7(s.data) })), 'ma');
+    }
+
+    function buildMiniRow(containerId, labels, series, suffix) {
+      document.getElementById(containerId).innerHTML = series.map(s =>
+        `<div class="mini-card"><div class="mini-label">${s.label}</div><div class="mini-wrap"><canvas id="mc-${s.key}-${suffix}"></canvas></div></div>`
+      ).join('');
+      series.forEach(s => {
+        const id = `mc-${s.key}-${suffix}`;
+        if (miniCharts[id]) miniCharts[id].destroy();
+        miniCharts[id] = new Chart(document.getElementById(id), {
+          type: 'line',
+          data: { labels, datasets: [{ data: s.data, borderColor: s.color, backgroundColor: s.color + '22', borderWidth: 2, pointRadius: 0, pointHoverRadius: 4, pointHoverBackgroundColor: s.color, tension: 0.3, fill: true, spanGaps: true }] },
+          options: chartOpts({
+            interaction: { mode: 'index', intersect: false },   // tooltip al pasar por cualquier punto del eje X
+            scales: {
+              x: { ticks: { color: '#64748b', font: { size: 9 }, maxRotation: 0, autoSkip: true, maxTicksLimit: 5 }, grid: { display: false } },
+              y: { ticks: { color: '#64748b', font: { size: 9 }, callback: v => s.fmt(v), maxTicksLimit: 4 }, grid: { color: '#26344966' } },
+            },
+            plugins: {
+              legend: { display: false },
+              tooltip: { intersect: false, callbacks: { title: items => items[0].label, label: ctx => s.fmt(ctx.parsed.y) } },
+            },
+          }),
+        });
+      });
+    }
+
+    function renderPeriodTable(rows) {
+      const tipo = state.gran;
+      const periods = lastPeriods(tipo, 20);
+      const idx = periods.reduce((o, b, i) => (o[b] = i, o), {});
+      // acumula la serie diaria de los ads visibles en su bucket de período
+      const G = periods.map(() => 0), I = periods.map(() => 0), C = periods.map(() => 0);
+      rows.forEach(p => {
+        (serieByAd[p.ad_id] || []).forEach(s => {
+          const b = periodBucket(new Date(s.fecha + 'T00:00:00'), tipo);
+          const i = idx[b];
+          if (i === undefined) return;
+          G[i] += s.gasto; I[i] += s.impresiones; C[i] += s.clics_enlace;
+        });
+      });
+      const last = periods.length - 1;
+      const cur = i => i === last ? ' class="cur"' : '';
+      const head = periods.map((b, i) => `<th${cur(i)}>${periodLabel(b, tipo)}${i === last ? ' *' : ''}</th>`).join('');
+      const cell = (v, i, f) => `<td${cur(i)}>${v ? f(v) : '<span class="muted">·</span>'}</td>`;
+      // celda de ratio: "·" si el período no tiene base (denominador 0)
+      const rcell = (ok, i, txt) => `<td${cur(i)}>${ok ? txt : '<span class="muted">·</span>'}</td>`;
+      const hcol = { dia: 'Día', semana: 'Semana (inicia Lun)', ciclo: 'Ciclo (inicia Mié)', mes: 'Mes' }[tipo];
+      document.getElementById('period-wrap').innerHTML = `
+        <table class="period-tbl">
+          <thead><tr><th>${hcol}</th>${head}</tr></thead>
+          <tbody>
+            <tr><td>Inversión</td>${G.map((v, i) => cell(v, i, fmtUsd0)).join('')}</tr>
+            <tr><td>Impresiones</td>${I.map((v, i) => cell(v, i, fmtInt)).join('')}</tr>
+            <tr><td>Clics al enlace</td>${C.map((v, i) => cell(v, i, fmtInt)).join('')}</tr>
+            <tr><td>CTR</td>${I.map((imp, i) => rcell(imp > 0, i, (C[i] / imp * 100).toFixed(2) + '%')).join('')}</tr>
+            <tr><td>CPM</td>${I.map((imp, i) => rcell(imp > 0, i, fmtUsd(G[i] / imp * 1000))).join('')}</tr>
+            <tr><td>CPC</td>${C.map((cl, i) => rcell(cl > 0, i, fmtUsd(G[i] / cl))).join('')}</tr>
+          </tbody>
+        </table>`;
+      document.getElementById('period-hint').textContent =
+        'Últimos 20 períodos según Temporalidad · ' + hcol + ' · * = período en curso (parcial) · sujeta a los filtros de Cliente y Estado';
+      const w = document.getElementById('period-wrap'); w.scrollLeft = w.scrollWidth;   // fijar al período más reciente
+    }
+
+    // Ventana de 14 días completos: [hoy-14 … ayer], excluye hoy (parcial)
+    function last14Window() {
+      const lo = new Date(); lo.setDate(lo.getDate() - 14);
+      const hi = new Date(); hi.setDate(hi.getDate() - 1);
+      return { lo: ymd(lo), hi: ymd(hi) };
+    }
+
+    function renderAlarm(rows) {
+      const counts = {};
+      rows.forEach(r => { const e = r.estatus_listing || 'Sin dato'; counts[e] = (counts[e] || 0) + 1; });
+      // orden: Activo primero, luego muertos, luego warn, luego sin dato
+      const rank = { ok: 0, dead: 1, warn: 2, unknown: 3 };
+      const entries = Object.entries(counts).sort((a, b) =>
+        (rank[listingClass(a[0])] - rank[listingClass(b[0])]) || (b[1] - a[1]));
+      const chips = entries.map(([e, n]) =>
+        `<span class="st ${listingClass(e)}"><span class="dot"></span><span class="n">${n}</span> ${e}</span>`).join('');
+      document.getElementById('alarm').innerHTML =
+        `<span class="alarm-label">Estado de publicaciones</span>${chips}`;
+    }
+
+    function renderImpact(rows) {
+      // solo publicaciones con listing Activo y que hayan estado en pauta
+      const act = rows.filter(r => r.estatus_listing === 'Activo' && r.dias_pauta > 0);
+      const la = act.reduce((s, r) => s + (r.leads_antes || 0), 0);
+      const da = act.reduce((s, r) => s + (r.dias_antes || 0), 0);
+      const lp = act.reduce((s, r) => s + (r.leads_pauta || 0), 0);
+      const dp = act.reduce((s, r) => s + (r.dias_pauta || 0), 0);
+      const rAntes = da ? la / da * 7 : null;
+      const rPauta = dp ? lp / dp * 7 : null;
+      const r2 = v => v == null ? '—' : v.toFixed(3);
+      let liftHtml = '<div class="im-value">—</div>';
+      if (rAntes != null && rPauta != null && rAntes > 0) {
+        const lift = (rPauta - rAntes) / rAntes * 100;
+        liftHtml = `<div class="im-value ${lift >= 0 ? 'pos' : 'neg'}">${lift >= 0 ? '+' : ''}${lift.toFixed(0)}%</div>`;
+      } else if (rPauta === 0) {
+        liftHtml = `<div class="im-value neg">sin leads aún</div>`;
+      }
+      document.getElementById('impact').innerHTML = `
+        <div class="im-card"><div class="im-label">Leads/sem · antes</div><div class="im-value">${r2(rAntes)}</div><div class="im-sub">${la} leads · ${da} pub-días</div></div>
+        <div class="im-card"><div class="im-label">Leads/sem · con pauta</div><div class="im-value">${r2(rPauta)}</div><div class="im-sub">${lp} leads · ${dp} pub-días</div></div>
+        <div class="im-card"><div class="im-label">Lift</div>${liftHtml}<div class="im-sub">${act.length} publicaciones activas</div></div>
+        <div class="im-card im-note">⚠️ Metodología pre/post (sin atribución orgánico/pago): compara leads/semana de cada publicación antes vs durante la pauta. La ventana de pauta aún es corta y los leads son eventos raros — este indicador gana señal con las semanas. No es prueba de causalidad.</div>`;
+    }
+
     function renderKpis(rows) {
-      const g = rows.reduce((s, r) => s + r.gasto, 0);
-      const imp = rows.reduce((s, r) => s + r.impresiones, 0);
-      const cl = rows.reduce((s, r) => s + r.clics_enlace, 0);
-      const activas = rows.filter(r => r.status === 'ACTIVE').length;
+      const { lo, hi } = last14Window();
+      let g = 0, imp = 0, cl = 0;
+      rows.forEach(p => (serieByAd[p.ad_id] || []).forEach(s => {
+        if (s.fecha >= lo && s.fecha <= hi) {
+          g += s.gasto; imp += s.impresiones; cl += s.clics_enlace;
+        }
+      }));
       document.getElementById('k-gasto').textContent = fmtUsd(g);
-      document.getElementById('k-gasto-sub').textContent = `${rows.filter(r => r.gasto > 0).length} con gasto`;
       document.getElementById('k-impr').textContent = fmtInt(imp);
       document.getElementById('k-clics').textContent = fmtInt(cl);
       document.getElementById('k-ctr').textContent = (imp ? (cl / imp * 100) : 0).toFixed(2) + '%';
+      document.getElementById('k-cpm').textContent = fmtUsd(imp ? g / imp * 1000 : 0);
       document.getElementById('k-cpc').textContent = fmtUsd(cl ? g / cl : 0);
-      document.getElementById('k-pubs').textContent = `${rows.length} pub · ${activas} activas`;
     }
 
     const chartOpts = (extra = {}) => ({
@@ -289,12 +564,15 @@
           <td><a href="${r.link}" target="_blank" rel="noopener">${r.id_aviso}</a></td>
           <td>${r.cliente || ''}</td>
           <td><span class="badge ${r.status === 'ACTIVE' ? 'active' : 'paused'}">${r.status === 'ACTIVE' ? 'Activo' : 'Pausado'}</span></td>
+          <td><span class="badge ${listingClass(r.estatus_listing)}">${r.estatus_listing || 'Sin dato'}</span></td>
           <td>${r.colonia || ''}</td>
           <td>${fmtUsd(r.gasto)}</td>
           <td>${fmtInt(r.impresiones)}</td>
           <td>${fmtInt(r.clics_enlace)}</td>
           <td>${(r.ctr || 0).toFixed(2)}</td>
           <td>${fmtUsd(r.costo_x_clic_enlace)}</td>
+          <td title="${r.leads_antes || 0} leads · ${r.dias_antes || 0} días">${r.leads_sem_antes == null ? '<span class="muted">·</span>' : r.leads_sem_antes.toFixed(2)}</td>
+          <td title="${r.leads_pauta || 0} leads · ${r.dias_pauta || 0} días">${r.leads_sem_pauta == null ? '<span class="muted">·</span>' : r.leads_sem_pauta.toFixed(2)}</td>
         </tr>`).join('');
     }
 
@@ -302,6 +580,11 @@
       state.estado = el.dataset.estado;
       document.querySelectorAll('[data-estado]').forEach(x => x.classList.toggle('active', x === el));
       renderAll();
+    }));
+    document.querySelectorAll('[data-gran]').forEach(el => el.addEventListener('click', () => {
+      state.gran = el.dataset.gran;
+      document.querySelectorAll('[data-gran]').forEach(x => x.classList.toggle('active', x === el));
+      renderPeriodTable(filtered());
     }));
     document.querySelectorAll('th[data-k]').forEach(th => th.addEventListener('click', () => {
       const k = th.dataset.k;

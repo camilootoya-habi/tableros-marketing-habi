@@ -38,6 +38,11 @@ SHEET_ID = "1UBv3Yrx__b4MGuPmGymqEN31uxE5uDjTAJfXdAvke8E"
 GVIZ = ("https://docs.google.com/spreadsheets/d/{sid}/gviz/tq"
         "?tqx=out:csv&sheet={sheet}")
 
+# Card pública de Metabase "Inventario FUNDADORES": estatus del listing por
+# propiedad (Activo / Eliminado / Vencido / …) para los 3 clientes fundadores.
+METABASE_CARD = "51604d7d-00ed-46af-8223-78a0a01b940d"
+METABASE_URL = f"https://metabase.propiedades.com/api/public/card/{METABASE_CARD}/query/json"
+
 INSIGHT_FIELDS = ("ad_id,spend,impressions,reach,clicks,inline_link_clicks,"
                   "ctr,cpc,cpm")
 
@@ -82,6 +87,74 @@ def fetch_status():
     return out
 
 
+def fetch_daily(ad_ids, date_preset="maximum"):
+    """Serie diaria por ad (time_increment=1) -> lista de filas.
+    Alimenta la tabla por período (día/semana/ciclo/mes) del tablero, que
+    bucketea del lado del cliente. Solo se conservan los ads del catálogo."""
+    url = f"{BASE}/{AD_ACCOUNT}/insights"
+    params = {"level": "ad", "fields": "ad_id,spend,impressions,inline_link_clicks",
+              "time_increment": 1, "date_preset": date_preset, "limit": 500,
+              "access_token": TOKEN}
+    serie = []
+    while url:
+        data = _check(requests.get(url, params=params, timeout=90))
+        for r in data.get("data", []):
+            if r["ad_id"] not in ad_ids:
+                continue
+            serie.append({
+                "ad_id": r["ad_id"],
+                "fecha": r["date_start"],
+                "gasto": round(_f(r.get("spend")), 2),
+                "impresiones": _i(r.get("impressions")),
+                "clics_enlace": _i(r.get("inline_link_clicks")),
+            })
+        url = data.get("paging", {}).get("next")
+        params = None
+    return serie
+
+
+# ---------- Metabase: estatus del listing + leads diarios ----------
+def fetch_metabase():
+    """Filas crudas de la card pública (property_id, Estatus, Fecha, Leads).
+    Falla suave: si Metabase no responde, devuelve []."""
+    try:
+        return requests.get(METABASE_URL, timeout=60).json()
+    except Exception as e:   # noqa: BLE001 — no romper el build por Metabase
+        print(f"  ⚠ Metabase no disponible ({e}); estatus/leads = sin dato")
+        return []
+
+
+def leads_prepost(mb_rows, ad_start, today):
+    """Por property_id: (leads_antes, dias_antes, leads_pauta, dias_pauta).
+    'antes' = [primer día con leads … inicio de pauta); 'pauta' = [inicio … ayer].
+    Excluye hoy (parcial). ad_start: dict property_id -> fecha ISO de 1er gasto."""
+    leads = {}          # pid -> {fecha: leads}
+    fechas = []
+    for r in mb_rows:
+        f = r.get("Fecha")
+        if not f:
+            continue
+        pid = str(r["Property_id"])
+        leads.setdefault(pid, {})[f] = leads.get(pid, {}).get(f, 0) + (r.get("Leads") or 0)
+        fechas.append(f)
+    if not fechas:
+        return {}
+    lm = datetime.date.fromisoformat(min(fechas))
+    yest = today - datetime.timedelta(days=1)
+    out = {}
+    for pid, st in ad_start.items():
+        st_d = datetime.date.fromisoformat(st)
+        la = lp = 0
+        for f, n in leads.get(pid, {}).items():
+            fd = datetime.date.fromisoformat(f)
+            if fd < st_d:
+                la += n
+            elif fd <= yest:
+                lp += n
+        out[pid] = (la, max((st_d - lm).days, 0), lp, max((yest - st_d).days + 1, 0))
+    return out
+
+
 # ---------- Google Sheet ----------
 def load_clientes():
     url = GVIZ.format(sid=SHEET_ID, sheet=urllib.parse.quote("Clientes"))
@@ -122,15 +195,33 @@ def build(date_preset="maximum"):
     clientes = load_clientes()
     ins = fetch_insights(date_preset)
     status_live = fetch_status()
+    serie = fetch_daily({p["ad_id"] for p in pubs}, date_preset)
+
+    mb_rows = fetch_metabase()
+    listing_status = {str(r["Property_id"]): (r.get("Estatus") or "Sin dato")
+                      for r in mb_rows if r.get("Property_id") is not None}
+    # inicio de pauta por propiedad = primer día con gasto > 0
+    adprop = {p["ad_id"]: str(p["id_aviso"]) for p in pubs}
+    ad_start = {}
+    for s in serie:
+        if s["gasto"] > 0:
+            pid = adprop.get(s["ad_id"])
+            if pid and (pid not in ad_start or s["fecha"] < ad_start[pid]):
+                ad_start[pid] = s["fecha"]
+    prepost = leads_prepost(mb_rows, ad_start, datetime.date.today())
 
     filas = []
     for p in pubs:
         m = ins.get(p["ad_id"], {})
         spend = _f(m.get("spend"))
         link_clicks = _i(m.get("inline_link_clicks"))
+        la, da, lp, dp = prepost.get(str(p["id_aviso"]), (0, 0, 0, 0))
         filas.append({
             **p,
             "status": status_live.get(p["ad_id"], p.get("status", "")),
+            "estatus_listing": listing_status.get(str(p["id_aviso"]), "Sin dato"),
+            "leads_antes": la, "dias_antes": da,
+            "leads_pauta": lp, "dias_pauta": dp,
             "cliente": clientes.get(p["cliente_id"], {}).get("nombre", p["cliente_id"]),
             "gasto": round(spend, 2),
             "impresiones": _i(m.get("impressions")),
@@ -181,6 +272,7 @@ def build(date_preset="maximum"):
         },
         "clientes": cli_rows,
         "publicaciones": filas,
+        "serie": serie,
     }
     with open(DATA_OUT, "w", encoding="utf-8") as f:
         json.dump(data, f, ensure_ascii=False, indent=2)
