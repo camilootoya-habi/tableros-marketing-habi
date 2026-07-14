@@ -23,7 +23,11 @@ def n10(v):
 # --- hojas ---
 SS_RESP = "1gQGgBQHW5cUxMMc_N4IR6ylBkCmb-klITKbfL44AEsQ"
 SS_ENV  = "1Jh7sIwv8Dkf-2VmW6wIfUSYexRmSu3iR_lZP7JUzD74"
-RESP_GID = {"MX":"1470880789","CO":"158300647"}
+RESP_GID = {"MX":["1470880789","1526041046"],"CO":["158300647"]}   # respuestas por LÍNEA: MX vieja + nueva
+def resp_rows(pais):
+    out=[]
+    for gid in RESP_GID[pais]: out += sheet(csv_url(SS_RESP, gid))
+    return out
 ENV_GID  = {"MX":"241433433","CO":"1571565293"}
 def csv_url(ss,gid): return f"https://docs.google.com/spreadsheets/d/{ss}/export?format=csv&gid={gid}"
 
@@ -56,7 +60,7 @@ def diario(pais, crea=None):
             d=norm_date(r.get("fecha_envio"))
             if d: env[d]=env.get(d,0)+1
     resp={}; inter={}; yv={}; pb={}
-    for r in sheet(csv_url(SS_RESP, RESP_GID[pais])):
+    for r in resp_rows(pais):
         d=None
         for k,v in r.items():
             if k and "Fecha" in k and v: d=norm_date(v); break
@@ -77,7 +81,7 @@ def diario(pais, crea=None):
              "creados":cre.get(d,0),"calificados":cal.get(d,0)} for d in dias]
 
 def respuestas(pais):
-    rows = sheet(csv_url(SS_RESP, RESP_GID[pais]))
+    rows = resp_rows(pais)
     hoy = datetime.date.today()
     ini = hoy - datetime.timedelta(days=14)   # ventana: últimos 14 días completos, sin incluir hoy: [hoy-14, hoy-1]
     def fdate(r):
@@ -127,7 +131,7 @@ def linea(pais, sender):
 META_TOKEN = os.environ.get("META_ACCESS_TOKEN")
 GRAPH  = "https://graph.facebook.com/v21.0"
 WABA   = {"MX":"1364183988959673","CO":"3861160544193112"}
-SENDER = {"MX":"5215590883423","CO":"573009110453"}
+SENDER = {"MX":"5215595483481","CO":"573009110453"}   # MX: línea NUEVA HIGH (la vieja 5215590883423 en reposo)
 def graph(path, params):
     if not META_TOKEN: return None
     args=["curl","-s","-G",f"{GRAPH}/{path}"]
@@ -162,16 +166,17 @@ def meta_analytics(pais, days=14):
     end   = datetime.datetime.utcnow().replace(hour=0,minute=0,second=0,microsecond=0)+datetime.timedelta(days=1)
     start = end - datetime.timedelta(days=days+2)
     s,e = calendar.timegm(start.timetuple()), calendar.timegm(end.timetuple())
-    d = graph(WABA[pais], {"fields":f"analytics.start({s}).end({e}).granularity(DAY).phone_numbers(['{SENDER[pais]}'])"})
+    phones = ",".join(f"'{p}'" for p in MART_LINES.get(pais, [SENDER[pais]]))   # AMBAS líneas MX (vieja+nueva)
+    d = graph(WABA[pais], {"fields":f"analytics.start({s}).end({e}).granularity(DAY).phone_numbers([{phones}])"})
     out={}
     for p in ((((d or {}).get("analytics") or {}).get("data_points")) or []):
         day=datetime.datetime.utcfromtimestamp(p["start"]).strftime("%Y-%m-%d")
         out[day]={"enviados":p.get("sent",0),"entregados":p.get("delivered",0)}
     return out
 
-def salida(pais, diario_rows, resp_win, days=14):
+def salida(pais, diario_rows, days=7):
     """Embudo de SALIDA real: encolados (Infobip 200) → enviados (Meta) → entregados (Meta) → respondieron.
-    'Encolados' NO es 'enviados': con línea LOW Meta throttlea la salida. Ventana últimos `days` días."""
+    Ventana: últimos `days` días COMPLETOS (excluye hoy, día parcial). Todo en el mismo rango."""
     an = meta_analytics(pais, days)
     hoy = datetime.date.today(); ini = hoy - datetime.timedelta(days=days)
     enc = {r["fecha"]: r.get("enviados",0) for r in diario_rows}   # 'enviados' del diario = lo que ENCOLAMOS
@@ -182,7 +187,17 @@ def salida(pais, diario_rows, resp_win, days=14):
         if dd<ini or dd>=hoy: continue
         e=enc.get(d,0); m=an.get(d,{}); s=m.get("enviados",0); de=m.get("entregados",0)
         serie.append({"fecha":d,"encolados":e,"enviados":s,"entregados":de}); tenc+=e; tsent+=s; tdel+=de
-    resp=resp_win.get("total_respuestas",0) if resp_win else 0
+    # respondieron en la MISMA ventana de 7d completos (excluye hoy)
+    resp=0
+    for r in resp_rows(pais):
+        for k,v in r.items():
+            if k and "Fecha" in k and v:
+                m=re.search(r"(\d{4})-(\d{2})-(\d{2})",v)
+                if m:
+                    try: dd=datetime.date(int(m.group(1)),int(m.group(2)),int(m.group(3)))
+                    except: dd=None
+                    if dd and ini<=dd<hoy: resp+=1
+                break
     return {"serie":serie, "ventana":f"{days}d",
             "totales":{"encolados":tenc,"enviados":tsent,"entregados":tdel,"respondieron":resp},
             "tasa_salida":  round(tsent/tenc,3) if tenc else None,   # Meta sacó / encolamos
@@ -208,18 +223,20 @@ def bucket(dstr, tipo):
     if tipo=="semana": return (dt-datetime.timedelta(days=dt.weekday())).isoformat()          # lunes
     if tipo=="ciclo":  return (dt-datetime.timedelta(days=(dt.weekday()-2)%7)).isoformat()     # miércoles
 def funnel_tables(pais, recre):
-    sends={}
+    sends={}; deliv=[]
     for r in fetch_private_csv(SENT_PATH[pais]):
         if "hatsapp" not in (r.get("canal") or "").lower(): continue
         d=norm_date(r.get("fecha_envio")); ph=r.get("telefono_10")
-        if d and ph: sends.setdefault(ph,[]).append(d)
+        if d and ph:
+            sends.setdefault(ph,[]).append(d)
+            if (r.get("estado_entrega") or "").strip().lower()=="entregado": deliv.append(d)   # entregados por fecha de envío
     for ph in sends: sends[ph].sort()
     def last_send(ph,before):
         L=sends.get(ph);  prev=[x for x in (L or []) if x<=before]
         return prev[-1] if prev else (L[0] if L else None)
     # respuestas: (telefono, nid_original, fecha, etapa)
     resp=[]
-    for r in sheet(csv_url(SS_RESP, RESP_GID[pais])):
+    for r in resp_rows(pais):
         d=None
         for k,v in r.items():
             if k and "Fecha" in k and v: d=norm_date(v); break
@@ -250,10 +267,12 @@ def funnel_tables(pais, recre):
         C={}; E={}
         def add(D,b,k):
             if not b: return
-            D.setdefault(b,{"enviados":0,"respondieron":0,"interesados":0,"creados":0,"calificados":0})[k]+=1
+            D.setdefault(b,{"enviados":0,"entregados":0,"respondieron":0,"interesados":0,"creados":0,"calificados":0})[k]+=1
         for ph,dates in sends.items():
             for d in dates:
                 b=bucket(d,tipo); add(E,b,"enviados"); add(C,b,"enviados")
+        for d in deliv:   # entregados (estado reconciliado) por fecha de envío, en ambas vistas
+            b=bucket(d,tipo); add(E,b,"entregados"); add(C,b,"entregados")
         # creados/calificados se anclan al INTERESADO (recreamos el 100%): creados = interesados recreados.
         # cosecha → cohorte del envío que originó la respuesta; evento → fecha real de recreación.
         for ph,nid,d,et in resp:
@@ -298,7 +317,7 @@ def cohorte_origen(pais):
     Solo cubre los envíos 'auto' (los que capturaron nid + fecha_creacion_original); une envíos↔respuestas por nid.
     Salida: [{bucket:'YYYY-QN', enviados, respondieron, interesados}] ordenado."""
     resp=set(); inter=set()
-    for r in sheet(csv_url(SS_RESP, RESP_GID[pais])):
+    for r in resp_rows(pais):
         nid=(r.get("NID") or "").strip()
         if not (nid and nid.isdigit()): continue
         resp.add(nid)
@@ -338,6 +357,60 @@ def completitud(pais, rows):
         series[t]=[agg[k] for k in sorted(agg)]
     return {"series":series,"na":na}
 
+def bq_sql(sql):
+    """Corre SQL inline en BigQuery y devuelve filas (JSON). [] si falla (ej. sin acceso al mart CO)."""
+    out = subprocess.run(["bq","query","--use_legacy_sql=false","--format=json","--max_rows=100000"],
+                         input=sql, capture_output=True, text=True, timeout=600)
+    try: return json.loads(out.stdout)
+    except Exception as e: print(f"  ⚠ bq_sql: {e}"); return []
+
+MART_LINES = {"MX":["5215590883423","5215595483481"], "CO":["573009110453"]}
+NEW_LINE   = {"MX":"5215595483481", "CO":"573009110453"}
+def mart_table(pais): return f"papyrus-master.infobib_gold_{pais.lower()}.mart_infobip_messages_daily_{pais.lower()}"
+SEEN = 'TRIM(seen_at) NOT IN ("","-") AND seen_at IS NOT NULL'
+SENDAT = 'SAFE.PARSE_DATETIME("%d/%m/%Y %H:%M:%S", TRIM(send_at_raw))'
+
+def read_stats(pais, days=14):
+    """Read rate (nivel línea) desde el mart: leídos (seen_at) / entregados, últimos `days` días.
+    CO sin acceso al mart → None (se muestra 'pendiente')."""
+    lines = ",".join(f'"{l}"' for l in MART_LINES.get(pais, []))
+    if not lines: return None
+    rows = bq_sql(f'''SELECT COUNTIF(LOWER(TRIM(status))="delivered") entregados,
+        COUNTIF(LOWER(TRIM(status))="delivered" AND {SEEN}) leidos
+      FROM `{mart_table(pais)}`
+      WHERE TRIM(from_number) IN ({lines}) AND DATE({SENDAT}) >= DATE_SUB(CURRENT_DATE(), INTERVAL {days} DAY)''')
+    if not rows: return None
+    e=int(rows[0].get("entregados") or 0); l=int(rows[0].get("leidos") or 0)
+    return {"entregados":e, "leidos":l, "read_rate": round(l/e,3) if e else None, "ventana":f"{days}d"}
+
+def por_hora(pais):
+    """READ RATE y RESPOND RATE por HORA de envío (hora real del mart de Infobip), sobre TODOS
+    nuestros envíos entregados. read = seen_at/entregados · respond = (entregados cuyo tel respondió)
+    /entregados. NO usamos delivery rate por hora (estaba contaminado por la línea quemada); read y
+    respond son comportamiento del destinatario, más limpios. CO sin acceso al mart → vacío."""
+    lines = ",".join(f'"{l}"' for l in MART_LINES.get(pais, []))
+    if pais != "MX" or not lines:
+        return {"serie":[], "nota":"pendiente acceso al mart de CO"}
+    rows = bq_sql(f'''SELECT EXTRACT(HOUR FROM {SENDAT}) hora,
+        RIGHT(REGEXP_REPLACE(to_number, r"[^0-9]", ""),10) tel10, IF({SEEN},1,0) seen
+      FROM `{mart_table(pais)}`
+      WHERE TRIM(from_number) IN ({lines}) AND LOWER(TRIM(status))="delivered"
+        AND DATE({SENDAT}) >= "2026-06-01"''')
+    responders = {n10(r.get("Telefono")) for r in resp_rows(pais)}; responders.discard(None)
+    agg={}
+    for r in rows:
+        h=r.get("hora")
+        if h in (None,""): continue
+        h=int(h); a=agg.setdefault(h,{"e":0,"l":0,"r":0})
+        a["e"]+=1
+        if str(r.get("seen"))=="1": a["l"]+=1
+        if r.get("tel10") in responders: a["r"]+=1
+    serie=[{"hora":h, "entregados":agg[h]["e"],
+            "read_rate":   round(agg[h]["l"]/agg[h]["e"],3) if agg[h]["e"] else None,
+            "respond_rate":round(agg[h]["r"]/agg[h]["e"],3) if agg[h]["e"] else None} for h in sorted(agg)]
+    return {"serie":serie, "desde":"2026-06-01",
+            "nota":"read/respond rate por hora de envío (hora del mart, TZ a calibrar); respond = entregados cuyo tel respondió"}
+
 CREA = q("query_creacion.sql")
 RECRE = q("query_recreados.sql")
 COMP = q("query_completitud.sql")
@@ -360,7 +433,9 @@ data = {
   "geo_health": fetch_private_json("backbone-mx-batch/geo_health.json"),
   "address_health": fetch_private_json("backbone-mx-batch/address_health.json"),
   "linea": {p: linea_meta(p) for p in ("MX","CO")},                       # calidad/estado/review/throughput DE META
-  "salida": {p: salida(p, DIARIO[p], RESP_D[p]) for p in ("MX","CO")},    # embudo real: encolado→enviado→entregado→respondió
+  "salida": {p: salida(p, DIARIO[p]) for p in ("MX","CO")},               # embudo real 7d completos: encolado→enviado→entregado→respondió
+  "read": {p: read_stats(p) for p in ("MX","CO")},                        # read rate (seen_at) nivel línea, 14d
+  "por_hora": {p: por_hora(p) for p in ("MX","CO")},                      # read/respond rate por hora de envío (mart)
 }
 open(os.path.join(HERE,"data.json"),"w").write(json.dumps(data, ensure_ascii=False, separators=(",",":")))
 print("data.json OK |",

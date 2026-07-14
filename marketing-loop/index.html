@@ -184,8 +184,8 @@
   <div id="geoAlarm"></div>
   <p class="note" id="lineaTip"></p>
 
-  <div class="tabletitle">Salida real · últimos 14 días
-    <span class="help" title="Metido ≠ enviado ≠ entregado. 'Encolados' = mensajes aceptados por Infobip (HTTP 200). 'Enviados/Entregados' = lo que Meta realmente procesó (WhatsApp Business Management API, en UTC). Con la línea en LOW, Meta throttlea la salida: encolar más NO significa llegar a más. El respond rate correcto se mide sobre ENTREGADOS.">?</span>
+  <div class="tabletitle">Salida real · últimos 7 días completos
+    <span class="help" title="Últimos 7 días COMPLETOS (hasta cierre de ayer; excluye hoy para no mezclar días parciales). Metido ≠ enviado ≠ entregado. 'Encolados' = aceptados por Infobip (HTTP 200). 'Enviados/Entregados' = lo que Meta realmente procesó. 'Leídos' = seen_at del mart. El respond rate se mide sobre ENTREGADOS.">?</span>
   </div>
   <div id="salidaAlarm"></div>
   <div id="salida"></div>
@@ -227,6 +227,16 @@
     <p>Enlace envíos↔respuestas por <code>nid</code> original. <b>Cobertura:</b> solo los envíos con <code>fecha_creacion_original</code> capturada (cohorte «auto»); los envíos semilla de junio no la tienen y quedan fuera. Sujeto al filtro de <b>País</b>.</p>
     <button class="close-btn" onclick="document.getElementById('helpCoh').close()">Cerrar</button>
   </dialog>
+
+  <div class="tabletitle">Mejor hora de envío · read & respond rate
+    <span class="help" title="Igual que la gráfica de arriba pero el eje X es la HORA de envío del mensaje (hora real del mart de Infobip), no el trimestre de creación del lead. Mide read rate y respond rate por hora del día en que salió el mensaje. NO mostramos delivery rate por hora (estaba contaminado por la línea quemada/plantilla disabled); read y respond son comportamiento del destinatario, más limpios. TZ del mart por calibrar cuando entre el goteo horario.">?</span>
+  </div>
+  <div class="grid">
+    <section class="panel" style="grid-column:1 / -1">
+      <div style="position:relative;height:300px"><canvas id="c_porhora"></canvas></div>
+      <p class="note" id="porhoraNote"></p>
+    </section>
+  </div>
 
   <div class="tabletitle">Evolución diaria <span class="help" title="Serie diaria. Fila 1 = valor absoluto por día (barras); fila 2 = promedio móvil de 7 días (línea). Pasa el mouse sobre cualquier punto para ver el dato (y el tamaño de muestra en las conversiones).">?</span></div>
   <div class="grid g5">
@@ -332,7 +342,7 @@
 </div>
 
 <script>
-let D=null, country='MX', cicloTipo='semana', funView='cosecha', respChart=null, cohorteChart=null, AUDIT=null, expC='CO';
+let D=null, country='MX', cicloTipo='semana', funView='cosecha', respChart=null, cohorteChart=null, porhoraChart=null, AUDIT=null, expC='CO';
 const CIP={MX:'mexico',CO:'colombia'};
 const fmt=v=>(v==null?'—':Number(v).toLocaleString('es-CO'));
 const pct=v=>(v==null?'—':Number(v).toFixed(1)+'%');
@@ -458,7 +468,7 @@ function renderExplorer(){
   }
   el.innerHTML=parts.join('');
 }
-function selectCountry(c){ country=c; renderStats(); renderSalida(); renderResp(); renderFunnel(); renderComparativa(); renderCiclo(); renderDiario(); renderFuntab(); renderAntifunnel(); renderCompletitud(); renderCohorteOrigen(); renderGeoAlarm(); }
+function selectCountry(c){ country=c; renderStats(); renderSalida(); renderResp(); renderFunnel(); renderComparativa(); renderCiclo(); renderDiario(); renderFuntab(); renderAntifunnel(); renderCompletitud(); renderCohorteOrigen(); renderPorHoraChart(); renderGeoAlarm(); }
 // Celdas "valor + %" con heatmap por fila (verde=conversión alta, rojo=baja), copiado del tablero de referencia.
 function heatCells(values, denoms){
   const pcts=values.map((v,i)=> denoms[i]>0 ? v/denoms[i]*100 : null);   // período sin base → null (celda vacía)
@@ -491,7 +501,8 @@ function renderFuntab(){
   const hcol={dia:'Día',ciclo:'Ciclo (inicia Mié)',semana:'Semana (inicia Lun)',mes:'Mes'}[cicloTipo]||'Periodo';
   el.innerHTML=`<table><thead><tr><th>${hcol}</th>${th}</tr></thead><tbody>
     ${base}
-    ${step(H('Respuestas recibidas ÷ enviados. El % es sobre el paso anterior (Enviados).')+'Respondieron','respondieron','enviados')}
+    ${step(H('Entregados (estado reconciliado del mart de Infobip) ÷ enviados. Este paso lo aprendimos esta sesión: enviar ≠ entregar.')+'Entregados','entregados','enviados')}
+    ${step(H('Respuestas recibidas ÷ ENTREGADOS (denominador correcto — antes se medía sobre enviados). El % es sobre el paso anterior (Entregados).')+'Respondieron','respondieron','entregados')}
     ${step(H('De los que respondieron, cuántos eligieron «Interesado» ÷ respondieron.')+'Interesados','interesados','respondieron')}
     ${step(H('Leads recreados ÷ interesados (recreamos el 100% de los interesados).')+'Creados','creados','interesados')}
     ${step(H('Calificado Market Maker (backbone estados 20/63) ÷ creados.')+'Calificados MM','calificados','creados')}
@@ -583,12 +594,12 @@ function renderStats(){
   const dias=(D.ciclo||[]).filter(r=>r.pais===CIP[country]&&r.tipo==='dia'&&r.bucket<_hoy).sort((a,b)=>a.bucket<b.bucket?-1:1).slice(-7);
   const avg7=dias.length?dias.reduce((s,r)=>s+(+r.asignados_reint||0),0)/dias.length:0;
   const META=30, cumpl=avg7/META*100, cumColor=cumpl>=100?'var(--ok)':cumpl>=60?'var(--warn)':'var(--bad)';
-  const FLUJO={MX:500,CO:500};
+  const FLUJO={MX:150,CO:150};
   const metaTip='Promedio de asignados reinteresados de los últimos 7 días COMPLETOS (excluye hoy, que aún es parcial). Meta 30/día = 2,5% de conversión sobre los 8.500 mensajes semanales (8.500 × 2,5% ÷ 7 ≈ 30).';
   const cards=[
     ['Leads creados hoy <span class="help" title="Negocios con UTM reinteresados creados hoy (hubspot.deals, la fuente que refresca más rápido, ~7 min). Hora local del país.">?</span>', fmt((D.hoy||{})[country]||0), 'hubspot.deals · hoy'],
     ['Prom. móvil 7d · asig. reinteresados <span class="help" title="'+metaTip+'">?</span>', avg7.toFixed(1), `<span style="color:${cumColor}">meta ${META}/día · ${cumpl.toFixed(0)}% cumplimiento</span>`, 'key'],
-    ['Flujo diario programado', fmt(FLUJO[country]), 'mensajes/día · L–V (cron)'],
+    ['Flujo diario programado', fmt(FLUJO[country]), 'mensajes/día · rampa · goteo horario 9–19 L–V'],
     ['Calidad de línea', `<span class="chip" style="background:${qc}">${l.quality||'—'}</span>`, tip+' · fuente: Meta'],
     ['Tier (24h)', (l.tier||'—').replace('LIMIT_',''), 'límite · '+(l.tier_source==='infobip'?'Infobip':'Meta')],
     ['Estado', `<span style="font-size:19px;font-weight:700">${l.status==='CONNECTED'?'Conectada':(l.status||'—')}</span>`, (l.sender||'')+(l.throughput?' · throughput '+l.throughput:'')],
@@ -687,6 +698,7 @@ function renderSalida(){
     ${box('Enviados (Meta)', t.enviados, shared?'TODA la línea (compartida)':'que Meta sí sacó', throttled?'var(--bad)':'')}
     ${arr(pct(s.tasa_entrega))}
     ${box('Entregados', t.entregados, 'llegaron al celular')}
+    ${(()=>{const rd=(D.read||{})[country]; return rd&&rd.read_rate!=null ? arr(pct(rd.read_rate))+box('Leídos', rd.leidos, 'seen · '+pct(rd.read_rate)+' de entregados (mart)') : '';})()}
     ${arr(shared?'n/d':pct(s.respond_rate))}
     ${box('Respondieron', t.respondieron, shared?'nuestras respuestas':'sobre entregados')}
   </div>
@@ -697,6 +709,36 @@ function renderSalida(){
     ? `<div style="margin:12px 0">${healthLine(false,'Throttling de salida ('+country+')',
         `Solo <b>${pct(s.tasa_salida)}</b> de lo encolado sale de Meta — la línea en <b>${((D.linea||{})[country]||{}).quality||'baja'}</b> está frenando la salida. Encolar más no llega a más: bajar volumen / priorizar tibios / rotar número.`, '', '')}</div>`
     : '';
+}
+
+function renderPorHoraChart(){
+  const el=document.getElementById('c_porhora'); if(!el||!window.Chart) return;
+  const ph=(D.por_hora||{})[country]||{};
+  const serie=ph.serie||[];
+  const note=document.getElementById('porhoraNote');
+  if(!serie.length){ if(porhoraChart){porhoraChart.destroy();porhoraChart=null;} el.getContext('2d').clearRect(0,0,el.width,el.height);
+    if(note) note.textContent='Aún sin datos — '+(ph.nota||'pendiente')+'.'; return; }
+  const light=document.body.classList.contains('light');
+  const labels=serie.map(r=>String(r.hora).padStart(2,'0')+':00');
+  const rd=serie.map(r=>r.read_rate==null?null:+(r.read_rate*100).toFixed(1));
+  const rp=serie.map(r=>r.respond_rate==null?null:+(r.respond_rate*100).toFixed(1));
+  const ent=serie.map(r=>+r.entregados);
+  if(porhoraChart) porhoraChart.destroy();
+  porhoraChart=new Chart(el,{data:{labels,datasets:[
+    {type:'line',label:'Read rate',data:rd,yAxisID:'y',order:1,borderColor:'#818cf8',backgroundColor:'#818cf8',tension:.3,pointRadius:3,borderWidth:2,spanGaps:true},
+    {type:'line',label:'Respond rate',data:rp,yAxisID:'y1',order:1,borderColor:'#34d399',backgroundColor:'#34d399',tension:.3,pointRadius:3,borderWidth:2,spanGaps:true},
+  ]},options:{responsive:true,maintainAspectRatio:false,interaction:{mode:'index',intersect:false},
+    plugins:{legend:{display:true,labels:{color:light?'#334155':'#e2e8f0',boxWidth:12,font:{size:11}}},
+      tooltip:{callbacks:{label:c=>{const i=c.dataIndex;
+        return c.dataset.yAxisID==='y'
+          ? `Read rate: ${rd[i]==null?'—':rd[i].toFixed(1)+'%'} (n entregados ${fmt(ent[i])})`
+          : `Respond rate: ${rp[i]==null?'—':rp[i].toFixed(1)+'%'}`;}}}},
+    scales:{x:{ticks:{color:light?'#64748b':'#94a3b8'},grid:{display:false}},
+      y:{position:'left',beginAtZero:true,title:{display:true,text:'Read rate %',color:'#818cf8'},
+        ticks:{color:light?'#64748b':'#94a3b8',callback:v=>v+'%'},grid:{color:light?'#e2e8f0':'#22304a'}},
+      y1:{position:'right',beginAtZero:true,title:{display:true,text:'Respond rate %',color:'#34d399'},
+        ticks:{color:light?'#64748b':'#94a3b8',callback:v=>v+'%'},grid:{display:false}}}}});
+  if(note) note.textContent=ph.nota||'';
 }
 
 function renderCohorteOrigen(){
