@@ -79,7 +79,7 @@
 
     .table-card { background: #1e293b; border: 1px solid #334155; border-radius: 12px; padding: 20px; overflow-x: auto; }
     .table-card h3 { font-size: 14px; font-weight: 600; margin-bottom: 12px; color: #cbd5e1; }
-    table { width: 100%; border-collapse: collapse; font-size: 13px; min-width: 1040px; }
+    table { width: 100%; border-collapse: collapse; font-size: 13px; min-width: 1120px; }
     th, td { text-align: right; padding: 8px 10px; border-bottom: 1px solid #263449; white-space: nowrap; }
     th:nth-child(-n+5), td:nth-child(-n+5) { text-align: left; }
     th { color: #94a3b8; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; cursor: pointer; user-select: none; position: sticky; top: 0; background: #1e293b; }
@@ -89,6 +89,8 @@
     tbody tr:hover { background: #223049; }
     td a { color: #93b4e8; text-decoration: none; }
     td a:hover { text-decoration: underline; }
+    a.btn-link { display: inline-block; padding: 4px 10px; border-radius: 6px; background: #818cf8; color: #0f172a; font-weight: 600; font-size: 12px; white-space: nowrap; }
+    a.btn-link:hover { background: #a5b4fc; text-decoration: none; }
     .badge { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 11px; font-weight: 600; }
     .badge.active { background: #14372a; color: #34d399; border: 1px solid #1baf7a55; }
     .badge.paused { background: #2b2f3a; color: #94a3b8; border: 1px solid #33415555; }
@@ -202,6 +204,7 @@
           <th data-k="costo_x_clic_enlace">$/clic</th>
           <th data-k="leads_sem_antes">Leads/sem antes</th>
           <th data-k="leads_sem_pauta">Leads/sem pauta</th>
+          <th>Ficha</th>
         </tr>
       </thead>
       <tbody id="tbody"></tbody>
@@ -573,6 +576,7 @@
           <td>${fmtUsd(r.costo_x_clic_enlace)}</td>
           <td title="${r.leads_antes || 0} leads · ${r.dias_antes || 0} días">${r.leads_sem_antes == null ? '<span class="muted">·</span>' : r.leads_sem_antes.toFixed(2)}</td>
           <td title="${r.leads_pauta || 0} leads · ${r.dias_pauta || 0} días">${r.leads_sem_pauta == null ? '<span class="muted">·</span>' : r.leads_sem_pauta.toFixed(2)}</td>
+          <td>${r.link ? `<a class="btn-link" href="${r.link}" target="_blank" rel="noopener">Ver ↗</a>` : '<span class="muted">·</span>'}</td>
         </tr>`).join('');
     }
 
