@@ -148,6 +148,9 @@
 
   <div class="alarm" id="alarm"></div>
 
+  <h2 class="section-title">Configuración de campaña <span style="font-weight:500;text-transform:none;letter-spacing:0;color:#64748b">(clientes.json · meta 20 ads activos por cliente, mín. $1/día)</span></h2>
+  <div class="table-card" style="margin-bottom:24px"><div id="config"></div></div>
+
   <h2 class="section-title">Impacto en leads · pre / post pauta <span style="font-weight:500;text-transform:none;letter-spacing:0;color:#64748b">(solo publicaciones con listing Activo)</span></h2>
   <div class="impact" id="impact"></div>
 
@@ -283,6 +286,7 @@
       applyFreshness();
       renderClienteChips();
       renderLegend();
+      renderConfig();
       renderAll();
     }
 
@@ -442,6 +446,28 @@
       const lo = new Date(); lo.setDate(lo.getDate() - 14);
       const hi = new Date(); hi.setDate(hi.getDate() - 1);
       return { lo: ymd(lo), hi: ymd(hi) };
+    }
+
+    function renderConfig() {
+      const cs = state.data.clientes.filter(c => c.activo !== false);
+      const rows = cs.map(c => {
+        const falta = Math.max((c.meta_activos || 0) - (c.activas || 0), 0);
+        const est = falta === 0
+          ? `<span class="badge ok">Completo</span>`
+          : `<span class="badge warn">Faltan ${falta}</span>`;
+        return `<tr>
+          <td><span class="dot" style="background:${colorByClient[c.cliente_id]};display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:8px"></span>${c.nombre}</td>
+          <td>${fmtUsd0(c.presupuesto_diario)}/día</td>
+          <td>${c.meta_activos}</td>
+          <td>${c.activas}</td>
+          <td>${est}</td>
+        </tr>`;
+      }).join('');
+      document.getElementById('config').innerHTML = `
+        <table style="min-width:520px">
+          <thead><tr><th>Cliente</th><th style="text-align:right">Presupuesto</th><th style="text-align:right">Meta activos</th><th style="text-align:right">Activos hoy</th><th style="text-align:right">Estado</th></tr></thead>
+          <tbody>${rows}</tbody>
+        </table>`;
     }
 
     function renderAlarm(rows) {

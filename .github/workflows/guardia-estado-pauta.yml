@@ -1,0 +1,28 @@
+name: Guardia de estado Pauta PCOM (solo pausa)
+
+on:
+  schedule:
+    - cron: '0 13 * * *'   # diario ~7am MX
+  workflow_dispatch:
+
+concurrency:
+  group: guardia-estado-pauta
+  cancel-in-progress: false
+
+jobs:
+  guardia:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Instalar dependencias
+        run: pip install requests
+      - name: Pausar ads sobre listings no activos
+        env:
+          META_PCOM_TOKEN:      ${{ secrets.META_PCOM_TOKEN }}
+          META_PCOM_AD_ACCOUNT: ${{ secrets.META_PCOM_AD_ACCOUNT }}
+        run: |
+          cd pauta-propiedades
+          python3 guardia_estado.py

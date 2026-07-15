@@ -1,0 +1,10 @@
+{
+  "actualizado": "2026-07-14",
+  "ads_activos_objetivo": 20,
+  "min_usd_por_ad": 1,
+  "clientes": [
+    { "cliente_id": "12917", "nombre": "MINT Inmobiliaria", "presupuesto_diario": 20, "activo": true },
+    { "cliente_id": "11", "nombre": "Cataño México", "presupuesto_diario": 20, "activo": true },
+    { "cliente_id": "11826", "nombre": "Cattori Inmobiliaria", "presupuesto_diario": 20, "activo": true }
+  ]
+}

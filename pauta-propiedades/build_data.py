@@ -15,28 +15,21 @@ Variables de entorno:
   META_PCOM_TOKEN        token de sistema con acceso a la cuenta de pauta
   META_PCOM_AD_ACCOUNT   act_XXXXXXXX de la cuenta de Propiedades.com
 """
-import csv
 import datetime
-import io
 import json
 import os
-import urllib.parse
-import urllib.request
 
 import requests
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 CATALOGO = os.path.join(HERE, "catalogo.json")
+CLIENTES = os.path.join(HERE, "clientes.json")
 DATA_OUT = os.path.join(HERE, "data.json")
 
 API_VERSION = "v21.0"
 BASE = f"https://graph.facebook.com/{API_VERSION}"
 TOKEN = os.environ.get("META_PCOM_TOKEN", "")
 AD_ACCOUNT = os.environ.get("META_PCOM_AD_ACCOUNT", "")
-
-SHEET_ID = "1UBv3Yrx__b4MGuPmGymqEN31uxE5uDjTAJfXdAvke8E"
-GVIZ = ("https://docs.google.com/spreadsheets/d/{sid}/gviz/tq"
-        "?tqx=out:csv&sheet={sheet}")
 
 # Card pública de Metabase "Inventario FUNDADORES": estatus del listing por
 # propiedad (Activo / Eliminado / Vencido / …) para los 3 clientes fundadores.
@@ -156,23 +149,15 @@ def leads_prepost(mb_rows, ad_start, today):
 
 
 # ---------- Google Sheet ----------
-def load_clientes():
-    url = GVIZ.format(sid=SHEET_ID, sheet=urllib.parse.quote("Clientes"))
-    with urllib.request.urlopen(url, timeout=30) as r:
-        text = r.read().decode("utf-8")
-    clientes = {}
-    for row in csv.DictReader(io.StringIO(text)):
-        row = {(k or "").strip(): (v or "").strip() for k, v in row.items()}
-        cid = row.get("Cliente ID", "")
-        if not cid:
-            continue
-        try:
-            budget = float(str(row.get("Presupuesto Diario", "0")).replace(",", "") or 0)
-        except ValueError:
-            budget = 0.0
-        clientes[cid] = {"nombre": row.get("Nombre", ""),
-                         "presupuesto_diario": budget}
-    return clientes
+def load_config():
+    """Config de campaña desde clientes.json (reemplaza el Google Sheet).
+    Devuelve (clientes, cfg) donde clientes: cid -> {nombre, presupuesto_diario, activo}."""
+    cfg = json.load(open(CLIENTES, encoding="utf-8"))
+    clientes = {c["cliente_id"]: {"nombre": c["nombre"],
+                                  "presupuesto_diario": float(c.get("presupuesto_diario", 0)),
+                                  "activo": bool(c.get("activo", True))}
+                for c in cfg.get("clientes", [])}
+    return clientes, cfg
 
 
 def _f(v, d=0.0):
@@ -192,7 +177,7 @@ def _i(v, d=0):
 def build(date_preset="maximum"):
     cat = json.load(open(CATALOGO, encoding="utf-8"))
     pubs = cat["publicaciones"]
-    clientes = load_clientes()
+    clientes, cfg = load_config()
     ins = fetch_insights(date_preset)
     status_live = fetch_status()
     serie = fetch_daily({p["ad_id"] for p in pubs}, date_preset)
@@ -241,15 +226,21 @@ def build(date_preset="maximum"):
                 sum(r["clics_enlace"] for r in rows))
 
     g, imp, cl = agg(filas)
+    objetivo = int(cfg.get("ads_activos_objetivo", 20))
+    min_usd = float(cfg.get("min_usd_por_ad", 1)) or 1
     cli_rows = []
     for cid, c in clientes.items():
         rs = [r for r in filas if r["cliente_id"] == cid]
         if not rs:
             continue
         cg, cimp, ccl = agg(rs)
+        # meta de ads activos: min(objetivo, presupuesto/$min) — respeta el $1/día
+        meta_activos = min(objetivo, int(c["presupuesto_diario"] // min_usd))
         cli_rows.append({
             "cliente_id": cid, "nombre": c["nombre"],
             "presupuesto_diario": c["presupuesto_diario"],
+            "activo": c.get("activo", True),
+            "meta_activos": meta_activos,
             "gasto": round(cg, 2), "impresiones": cimp, "clics_enlace": ccl,
             "ctr": round(ccl / cimp * 100, 2) if cimp else 0.0,
             "cpc": round(cg / ccl, 2) if ccl else 0.0,
@@ -269,6 +260,11 @@ def build(date_preset="maximum"):
             "publicaciones": len(filas),
             "activas": sum(1 for r in filas if r["status"] == "ACTIVE"),
             "con_gasto": sum(1 for r in filas if r["gasto"] > 0),
+        },
+        "config_campana": {
+            "actualizado": cfg.get("actualizado"),
+            "ads_activos_objetivo": objetivo,
+            "min_usd_por_ad": min_usd,
         },
         "clientes": cli_rows,
         "publicaciones": filas,
