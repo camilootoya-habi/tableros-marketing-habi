@@ -1,7 +1,18 @@
 {
-  "exported_at_iso": "2026-07-14T14:37:15.739881",
-  "n": 90,
+  "exported_at_iso": "2026-07-15T11:35:27.624049",
+  "n": 105,
   "publicaciones": [
+    {
+      "id_aviso": "31495561",
+      "cliente_id": "11",
+      "ad_id": "120250804726160706",
+      "status": "ACTIVE",
+      "tipo": "Casa",
+      "colonia": "Héroes de Padierna",
+      "ciudad": "La Magdalena Contreras",
+      "precio": "$ 25,800,000 MXN",
+      "link": "https://propiedades.com/inmuebles/casa-en-venta-guerrero-heroes-de-padierna-df-31495561"
+    },
     {
       "id_aviso": "31304189",
       "cliente_id": "11826",
@@ -39,7 +50,7 @@
       "id_aviso": "31351275",
       "cliente_id": "11",
       "ad_id": "120250597189440706",
-      "status": "ACTIVE",
+      "status": "PAUSED",
       "tipo": "Departamento",
       "colonia": "San José Insurgentes",
       "ciudad": "Benito Juárez",
@@ -50,7 +61,7 @@
       "id_aviso": "31351262",
       "cliente_id": "11",
       "ad_id": "120250597110170706",
-      "status": "ACTIVE",
+      "status": "PAUSED",
       "tipo": "Oficina",
       "colonia": "San Angel",
       "ciudad": "Álvaro Obregón",
@@ -61,7 +72,7 @@
       "id_aviso": "28149564",
       "cliente_id": "11826",
       "ad_id": "120250597969770706",
-      "status": "ACTIVE",
+      "status": "PAUSED",
       "tipo": "Casa",
       "colonia": "San Jerónimo Lídice",
       "ciudad": "La Magdalena Contreras",
@@ -94,7 +105,7 @@
       "id_aviso": "31351254",
       "cliente_id": "11",
       "ad_id": "120250596915850706",
-      "status": "ACTIVE",
+      "status": "PAUSED",
       "tipo": "Casa en condominio",
       "colonia": "Jardines del Pedregal de San Ángel",
       "ciudad": "Coyoacán",
@@ -160,7 +171,7 @@
       "id_aviso": "30829031",
       "cliente_id": "11",
       "ad_id": "120250596848620706",
-      "status": "ACTIVE",
+      "status": "PAUSED",
       "tipo": "Departamento",
       "colonia": "Torres de Potrero",
       "ciudad": "Álvaro Obregón",
@@ -204,7 +215,7 @@
       "id_aviso": "31351260",
       "cliente_id": "11",
       "ad_id": "120250597033400706",
-      "status": "ACTIVE",
+      "status": "PAUSED",
       "tipo": "Departamento",
       "colonia": "Ampliación Napoles",
       "ciudad": "Benito Juárez",
@@ -212,10 +223,21 @@
       "link": "https://propiedades.com/inmuebles/departamento-en-renta-augusto-rodin-ampliacion-napoles-df-31351260"
     },
     {
+      "id_aviso": "31548377",
+      "cliente_id": "11",
+      "ad_id": "120250804742370706",
+      "status": "ACTIVE",
+      "tipo": "Bodega comercial",
+      "colonia": "Bellavista",
+      "ciudad": "Álvaro Obregón",
+      "precio": "$ 19,900,000 MXN",
+      "link": "https://propiedades.com/inmuebles/bodega-en-venta-calle-4-bellavista-df-31548377"
+    },
+    {
       "id_aviso": "31351433",
       "cliente_id": "11",
       "ad_id": "120250597204350706",
-      "status": "ACTIVE",
+      "status": "PAUSED",
       "tipo": "Departamento",
       "colonia": "San José Insurgentes",
       "ciudad": "Benito Juárez",
@@ -226,7 +248,7 @@
       "id_aviso": "31351439",
       "cliente_id": "11",
       "ad_id": "120250597216140706",
-      "status": "ACTIVE",
+      "status": "PAUSED",
       "tipo": "Casa en condominio",
       "colonia": "Miguel Hidalgo 3A Sección",
       "ciudad": "Tlalpan",
@@ -278,10 +300,21 @@
       "link": "https://propiedades.com/inmuebles/terreno-habitacional-en-venta-av-de-los-poetas-san-mateo-tlaltenango-df-31351588"
     },
     {
+      "id_aviso": "31394063",
+      "cliente_id": "11",
+      "ad_id": "120250804755970706",
+      "status": "ACTIVE",
+      "tipo": "Casa en condominio",
+      "colonia": "Pueblo Nuevo Bajo",
+      "ciudad": "La Magdalena Contreras",
+      "precio": "$ 7,450,000 MXN",
+      "link": "https://propiedades.com/inmuebles/casa-en-condominio-en-venta-privada-san-francisco-pueblo-nuevo-bajo-df-31394063"
+    },
+    {
       "id_aviso": "31351252",
       "cliente_id": "11",
       "ad_id": "120250596904640706",
-      "status": "ACTIVE",
+      "status": "PAUSED",
       "tipo": "Casa en condominio",
       "colonia": "Héroes de Padierna",
       "ciudad": "Tlalpan",
@@ -298,6 +331,17 @@
       "ciudad": "Álvaro Obregón",
       "precio": "$ 61,000,000 MXN",
       "link": "https://propiedades.com/inmuebles/casa-en-venta-jardines-del-pedregal-df-31378232"
+    },
+    {
+      "id_aviso": "31394070",
+      "cliente_id": "11",
+      "ad_id": "120250804681720706",
+      "status": "ACTIVE",
+      "tipo": "Departamento",
+      "colonia": "Insurgentes San Borja",
+      "ciudad": "Benito Juárez",
+      "precio": "$ 5,950,000 MXN",
+      "link": "https://propiedades.com/inmuebles/departamento-en-venta-blvd-adolfo-lopez-mateos-insurgentes-san-borja-df-31394070"
     },
     {
       "id_aviso": "31278208",
@@ -325,7 +369,7 @@
       "id_aviso": "31351205",
       "cliente_id": "11",
       "ad_id": "120250596893660706",
-      "status": "ACTIVE",
+      "status": "PAUSED",
       "tipo": "Casa",
       "colonia": "Lomas Axomiatla",
       "ciudad": "Álvaro Obregón",
@@ -347,12 +391,23 @@
       "id_aviso": "31351257",
       "cliente_id": "11",
       "ad_id": "120250596938400706",
-      "status": "ACTIVE",
+      "status": "PAUSED",
       "tipo": "Casa",
       "colonia": "San Jerónimo Lídice",
       "ciudad": "La Magdalena Contreras",
       "precio": "$ 29,000 MXN",
       "link": "https://propiedades.com/inmuebles/casa-en-renta-magnolia-san-jeronimo-lidice-df-31351257"
+    },
+    {
+      "id_aviso": "31450828",
+      "cliente_id": "11",
+      "ad_id": "120250804794510706",
+      "status": "ACTIVE",
+      "tipo": "Oficina",
+      "colonia": "Santa Fe",
+      "ciudad": "Álvaro Obregón",
+      "precio": "$ 5,600,000 MXN",
+      "link": "https://propiedades.com/inmuebles/oficina-en-venta-prolongacion-paseo-de-la-reforma-santa-fe-df-31450828"
     },
     {
       "id_aviso": "31304145",
@@ -366,15 +421,37 @@
       "link": "https://propiedades.com/inmuebles/casa-en-venta-rocas-jardines-del-pedregal-df-31304145"
     },
     {
+      "id_aviso": "31394155",
+      "cliente_id": "11",
+      "ad_id": "120250804763280706",
+      "status": "ACTIVE",
+      "tipo": "Casa",
+      "colonia": "Jardines del Pedregal",
+      "ciudad": "Álvaro Obregón",
+      "precio": "$ 57,000,000 MXN",
+      "link": "https://propiedades.com/inmuebles/casa-en-venta-oceano-jardines-del-pedregal-df-31394155"
+    },
+    {
       "id_aviso": "31351256",
       "cliente_id": "11",
       "ad_id": "120250596923550706",
-      "status": "ACTIVE",
+      "status": "PAUSED",
       "tipo": "Casa en condominio",
       "colonia": "Jardines del Pedregal de San Ángel",
       "ciudad": "Coyoacán",
       "precio": "$ 85,000 MXN",
       "link": "https://propiedades.com/inmuebles/casa-en-condominio-en-renta-serrania-jardines-del-pedregal-de-san-angel-df-31351256"
+    },
+    {
+      "id_aviso": "31450827",
+      "cliente_id": "11",
+      "ad_id": "120250804789330706",
+      "status": "ACTIVE",
+      "tipo": "Local",
+      "colonia": "Santa Fe",
+      "ciudad": "Álvaro Obregón",
+      "precio": "$ 19,500,000 MXN",
+      "link": "https://propiedades.com/inmuebles/local-en-venta-prolongacion-paseo-de-la-reforma-santa-fe-df-31450827"
     },
     {
       "id_aviso": "31406689",
@@ -391,7 +468,7 @@
       "id_aviso": "31351261",
       "cliente_id": "11",
       "ad_id": "120250597072090706",
-      "status": "ACTIVE",
+      "status": "PAUSED",
       "tipo": "Casa en condominio",
       "colonia": "Olivar de los Padres",
       "ciudad": "Álvaro Obregón",
@@ -435,7 +512,7 @@
       "id_aviso": "31351271",
       "cliente_id": "11",
       "ad_id": "120250597166870706",
-      "status": "ACTIVE",
+      "status": "PAUSED",
       "tipo": "Departamento",
       "colonia": "San José Insurgentes",
       "ciudad": "Benito Juárez",
@@ -457,7 +534,7 @@
       "id_aviso": "31340382",
       "cliente_id": "11",
       "ad_id": "120250596871680706",
-      "status": "ACTIVE",
+      "status": "PAUSED",
       "tipo": "Casa",
       "colonia": "Jardines en la Montaña",
       "ciudad": "Tlalpan",
@@ -600,7 +677,7 @@
       "id_aviso": "29300950",
       "cliente_id": "11826",
       "ad_id": "120250598078930706",
-      "status": "ACTIVE",
+      "status": "PAUSED",
       "tipo": "Departamento",
       "colonia": "Parque del Pedregal",
       "ciudad": "Tlalpan",
@@ -644,7 +721,7 @@
       "id_aviso": "29861642",
       "cliente_id": "11826",
       "ad_id": "120250598141260706",
-      "status": "ACTIVE",
+      "status": "PAUSED",
       "tipo": "Departamento",
       "colonia": "Bosque de las Lomas",
       "ciudad": "Miguel Hidalgo",
@@ -663,6 +740,17 @@
       "link": "https://propiedades.com/inmuebles/departamento-en-renta-toltecas-carola-df-31361863"
     },
     {
+      "id_aviso": "31524553",
+      "cliente_id": "11",
+      "ad_id": "120250804736260706",
+      "status": "ACTIVE",
+      "tipo": "Departamento",
+      "colonia": "Santa Fe Cuajimalpa",
+      "ciudad": "Cuajimalpa de Morelos",
+      "precio": "$ 6,500,000 MXN",
+      "link": "https://propiedades.com/inmuebles/departamento-en-venta-av-santa-fe-santa-fe-cuajimalpa-df-31524553"
+    },
+    {
       "id_aviso": "31378089",
       "cliente_id": "12917",
       "ad_id": "120250595224730706",
@@ -677,7 +765,7 @@
       "id_aviso": "31351263",
       "cliente_id": "11",
       "ad_id": "120250597131100706",
-      "status": "ACTIVE",
+      "status": "PAUSED",
       "tipo": "Casa en condominio",
       "colonia": "Tetelpan",
       "ciudad": "Álvaro Obregón",
@@ -696,6 +784,17 @@
       "link": "https://propiedades.com/inmuebles/departamento-en-venta-av-revolucion-santa-maria-nonoalco-df-31351494"
     },
     {
+      "id_aviso": "31528009",
+      "cliente_id": "11",
+      "ad_id": "120250804719700706",
+      "status": "ACTIVE",
+      "tipo": "Casa",
+      "colonia": "Chimalistac",
+      "ciudad": "Álvaro Obregón",
+      "precio": "$ 25,900,000 MXN",
+      "link": "https://propiedades.com/inmuebles/casa-en-venta-del-secreto-chimalistac-df-31528009"
+    },
+    {
       "id_aviso": "31358230",
       "cliente_id": "11",
       "ad_id": "120250597285250706",
@@ -707,6 +806,17 @@
       "link": "https://propiedades.com/inmuebles/casa-en-venta-cerrada-de-diego-rivera-san-angel-inn-df-31358230"
     },
     {
+      "id_aviso": "31430488",
+      "cliente_id": "11",
+      "ad_id": "120250804777460706",
+      "status": "ACTIVE",
+      "tipo": "Departamento",
+      "colonia": "Altavista",
+      "ciudad": "Álvaro Obregón",
+      "precio": "$ 8,550,000 MXN",
+      "link": "https://propiedades.com/inmuebles/departamento-en-venta-san-jeronimo-altavista-df-31430488"
+    },
+    {
       "id_aviso": "31304110",
       "cliente_id": "11826",
       "ad_id": "120250598228610706",
@@ -716,6 +826,17 @@
       "ciudad": "Álvaro Obregón",
       "precio": "$ 12,428,000 MXN",
       "link": "https://propiedades.com/inmuebles/casa-en-venta-camelia-florida-df-31304110"
+    },
+    {
+      "id_aviso": "31440620",
+      "cliente_id": "11",
+      "ad_id": "120250804782680706",
+      "status": "ACTIVE",
+      "tipo": "Departamento",
+      "colonia": "Los Alpes",
+      "ciudad": "Álvaro Obregón",
+      "precio": "$ 18,989,999 MXN",
+      "link": "https://propiedades.com/inmuebles/departamento-en-venta-gutierrez-zamora-los-alpes-df-31440620"
     },
     {
       "id_aviso": "30603909",
@@ -817,6 +938,17 @@
       "link": "https://propiedades.com/inmuebles/departamento-en-venta-guaymas-roma-norte-df-31304083"
     },
     {
+      "id_aviso": "31503640",
+      "cliente_id": "11",
+      "ad_id": "120250804730770706",
+      "status": "ACTIVE",
+      "tipo": "Departamento",
+      "colonia": "El Olivo",
+      "ciudad": "Huixquilucan",
+      "precio": "$ 7,826,358 MXN",
+      "link": "https://propiedades.com/inmuebles/departamento-en-venta-antiguo-camino-a-tecamachalco-el-olivo-mexico-31503640"
+    },
+    {
       "id_aviso": "31304130",
       "cliente_id": "11826",
       "ad_id": "120250598202580706",
@@ -826,6 +958,17 @@
       "ciudad": "Álvaro Obregón",
       "precio": "$ 35,987,000 MXN",
       "link": "https://propiedades.com/inmuebles/casa-en-venta-meseta-jardines-del-pedregal-df-31304130"
+    },
+    {
+      "id_aviso": "31518535",
+      "cliente_id": "11",
+      "ad_id": "120250804704690706",
+      "status": "ACTIVE",
+      "tipo": "Casa en condominio",
+      "colonia": "Bosques de las Lomas",
+      "ciudad": "Cuajimalpa de Morelos",
+      "precio": "$ 37,800,000 MXN",
+      "link": "https://propiedades.com/inmuebles/casa-en-condominio-en-venta-prolongacion-bosques-de-reforma-bosques-de-las-lomas-df-31518535"
     },
     {
       "id_aviso": "31304104",
@@ -850,6 +993,28 @@
       "link": "https://propiedades.com/inmuebles/casa-en-venta-valle-de-encinos-mexico-31376389"
     },
     {
+      "id_aviso": "31430399",
+      "cliente_id": "11",
+      "ad_id": "120250804770430706",
+      "status": "ACTIVE",
+      "tipo": "Departamento",
+      "colonia": "Loreto",
+      "ciudad": "Álvaro Obregón",
+      "precio": "$ 12,900,000 MXN",
+      "link": "https://propiedades.com/inmuebles/departamento-en-venta-san-jeronimo-loreto-df-31430399"
+    },
+    {
+      "id_aviso": "31568870",
+      "cliente_id": "11",
+      "ad_id": "120250804748710706",
+      "status": "ACTIVE",
+      "tipo": "Departamento",
+      "colonia": "Atlamaya",
+      "ciudad": "Álvaro Obregón",
+      "precio": "$ 5,950,000 MXN",
+      "link": "https://propiedades.com/inmuebles/departamento-en-venta-blvd-adolfo-lopez-mateos-atlamaya-df-31568870"
+    },
+    {
       "id_aviso": "31378075",
       "cliente_id": "12917",
       "ad_id": "120250595214110706",
@@ -864,7 +1029,7 @@
       "id_aviso": "31351253",
       "cliente_id": "11",
       "ad_id": "120250596908710706",
-      "status": "ACTIVE",
+      "status": "PAUSED",
       "tipo": "Oficina",
       "colonia": "Merced Gómez",
       "ciudad": "Benito Juárez",
@@ -886,7 +1051,7 @@
       "id_aviso": "31304179",
       "cliente_id": "11826",
       "ad_id": "120250597943380706",
-      "status": "ACTIVE",
+      "status": "PAUSED",
       "tipo": "Casa",
       "colonia": "Santa Catarina",
       "ciudad": "Coyoacán",
@@ -908,7 +1073,7 @@
       "id_aviso": "31351258",
       "cliente_id": "11",
       "ad_id": "120250596955310706",
-      "status": "ACTIVE",
+      "status": "PAUSED",
       "tipo": "Casa",
       "colonia": "Héroes de Chapultepec",
       "ciudad": "Gustavo A. Madero",
@@ -963,7 +1128,7 @@
       "id_aviso": "31351259",
       "cliente_id": "11",
       "ad_id": "120250596985900706",
-      "status": "ACTIVE",
+      "status": "PAUSED",
       "tipo": "Casa",
       "colonia": "Jardines del Pedregal",
       "ciudad": "Álvaro Obregón",
