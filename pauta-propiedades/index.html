@@ -478,16 +478,19 @@
     }
 
     function renderAlarm(rows) {
+      // solo ads ACTIVE: cuántos están en cada estado de publicación
+      const act = rows.filter(r => r.status === 'ACTIVE');
       const counts = {};
-      rows.forEach(r => { const e = r.estatus_listing || 'Sin dato'; counts[e] = (counts[e] || 0) + 1; });
+      act.forEach(r => { const e = r.estatus_listing || 'Sin dato'; counts[e] = (counts[e] || 0) + 1; });
       // orden: Activo primero, luego muertos, luego warn, luego sin dato
       const rank = { ok: 0, dead: 1, warn: 2, unknown: 3 };
       const entries = Object.entries(counts).sort((a, b) =>
         (rank[listingClass(a[0])] - rank[listingClass(b[0])]) || (b[1] - a[1]));
-      const chips = entries.map(([e, n]) =>
-        `<span class="st ${listingClass(e)}"><span class="dot"></span><span class="n">${n}</span> ${e}</span>`).join('');
+      const chips = entries.length
+        ? entries.map(([e, n]) => `<span class="st ${listingClass(e)}"><span class="dot"></span><span class="n">${n}</span> ${e}</span>`).join('')
+        : '<span class="st unknown"><span class="dot"></span>Sin ads activos</span>';
       document.getElementById('alarm').innerHTML =
-        `<span class="alarm-label">Estado de publicaciones</span>${chips}`;
+        `<span class="alarm-label">Ads activos por estado de publicación</span>${chips}`;
     }
 
     function renderKpis(rows) {
@@ -577,7 +580,7 @@
       document.getElementById('tbody').innerHTML = sorted.map(r => `
         <tr>
           <td><a href="${r.link}" target="_blank" rel="noopener">${r.id_aviso}</a></td>
-          <td>${r.cliente || ''}</td>
+          <td><span class="dot" style="background:${colorByClient[r.cliente_id]};display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:8px"></span>${r.cliente || ''}</td>
           <td><span class="badge ${r.status === 'ACTIVE' ? 'active' : 'paused'}">${r.status === 'ACTIVE' ? 'Activo' : 'Pausado'}</span></td>
           <td><span class="badge ${listingClass(r.estatus_listing)}">${r.estatus_listing || 'Sin dato'}</span></td>
           <td>${r.colonia || ''}</td>
