@@ -181,6 +181,11 @@
 
   <div class="eyebrow">Indicadores de salud</div>
   <div class="stats" id="stats"></div>
+  <dialog id="helpCard" class="help-dialog">
+    <h3 id="helpCardT"></h3>
+    <div id="helpCardB"></div>
+    <button class="close-btn" onclick="document.getElementById('helpCard').close()">Cerrar</button>
+  </dialog>
   <p class="note" id="lineaTip"></p>
 
   <div class="tabletitle">Salida real · últimos 7 días
@@ -560,6 +565,20 @@ function mkChart(id,labels,data,o={}){
       scales:{x:{ticks:{color:light?'#64748b':'#94a3b8',maxTicksLimit:8},grid:{display:false}},
         y:{beginAtZero:!o.pct,ticks:{color:light?'#64748b':'#94a3b8',callback:o.pct?(v=>v+'%'):undefined},grid:{color:light?'#e2e8f0':'#22304a'}}}}}));
 }
+// --- estándar del "?": modal reutilizable (openHelp) ---
+const CARD_HELP={
+  flujo:{t:'Flujo diario programado',b:'<p>Cuántos mensajes de reactivación por día tiene <b>programado</b> enviar el loop (meta operativa), repartidos en un <b>goteo por horas hábiles</b> (9–19, L–V) y con rampa de arranque.</p><p>Es el <b>objetivo de volumen</b> del programa, no lo enviado real — eso vive en la tabla <b>Cosecha de envío</b>.</p>'},
+  quality:{t:'Calidad de línea',b:'<p>Calificación que <b>Meta</b> le da al número de WhatsApp según cómo reacciona quien recibe los mensajes (bloqueos, reportes, lecturas).</p><p><b>ALTA</b> = línea sana · <b>MEDIA</b> = cuidar el ritmo · <b>BAJA</b> = en riesgo de que Meta la limite o suspenda · <b>UNKNOWN</b> = sin histórico reciente suficiente.</p><p>Es la señal <b>más importante</b> para no quemar la línea. Fuente: Meta (WhatsApp Business Management API).</p>'},
+  tier:{t:'Tier de mensajería (24h)',b:'<p>Límite que Meta asigna al número: a cuántos usuarios <b>únicos nuevos</b> se les puede escribir en 24h (<b>1K / 10K / 100K / ilimitado</b>).</p><p>Sube automáticamente si la calidad se mantiene y se usa el volumen; baja si la calidad cae. Define el <b>techo</b> de cuánto podemos enviar por día. Fuente: Meta (respaldo Infobip).</p>'},
+  estado:{t:'Estado de la línea',b:'<p>Estado de conexión del número en Meta/WhatsApp. <b>Conectada</b> = operativa y habilitada para enviar.</p><p>Cualquier otro estado (desconectada, pendiente, restringida) significa que los envíos pueden fallar. Fuente: Meta.</p>'},
+  review:{t:'Revisión de la cuenta',b:'<p>Estado de revisión de la cuenta de WhatsApp Business ante Meta. <b>Aprobada</b> = pasó la verificación de Meta y puede operar con normalidad.</p><p>Si no está aprobada (en revisión / rechazada), Meta puede limitar o bloquear el envío. Fuente: Meta (account_review_status).</p>'},
+};
+function openHelp(k){const h=CARD_HELP[k]; if(!h) return;
+  document.getElementById('helpCardT').textContent=h.t;
+  document.getElementById('helpCardB').innerHTML=h.b;
+  document.getElementById('helpCard').showModal();}
+const _hb=k=>`<button type="button" class="help-btn" onclick="openHelp('${k}')" aria-label="Explicación">?</button>`;
+
 function renderStats(){
   const l=(D.linea||{})[country]||{};
   const qc={HIGH:'var(--ok)',MEDIUM:'var(--warn)',LOW:'var(--bad)',UNKNOWN:'var(--text-muted)'}[l.quality]||'var(--text-muted)';
@@ -570,11 +589,11 @@ function renderStats(){
   const FLUJO={MX:150,CO:150};
   const cards=[
     ['Leads creados hoy <span class="help" title="Negocios con UTM reinteresados creados hoy (hubspot.deals, la fuente que refresca más rápido, ~7 min). Hora local del país.">?</span>', fmt((D.hoy||{})[country]||0), 'hubspot.deals · hoy', 'key'],
-    ['Flujo diario programado', fmt(FLUJO[country]), 'mensajes/día · rampa · goteo horario 9–19 L–V'],
-    ['Calidad de línea', `<span class="chip" style="background:${qc}">${l.quality||'—'}</span>`, tip+' · fuente: Meta'],
-    ['Tier (24h)', (l.tier||'—').replace('LIMIT_',''), 'límite · '+(l.tier_source==='infobip'?'Infobip':'Meta')],
-    ['Estado', `<span style="font-size:19px;font-weight:700">${l.status==='CONNECTED'?'Conectada':(l.status||'—')}</span>`, (l.sender||'')+(l.throughput?' · throughput '+l.throughput:'')],
-    ['Revisión cuenta', `<span style="font-size:19px;font-weight:700">${l.review==='APPROVED'?'Aprobada':(l.review||'—')}</span>`, 'account_review · Meta'],
+    ['Flujo diario programado '+_hb('flujo'), fmt(FLUJO[country]), 'mensajes/día · rampa · goteo horario 9–19 L–V'],
+    ['Calidad de línea '+_hb('quality'), `<span class="chip" style="background:${qc}">${l.quality||'—'}</span>`, tip+' · fuente: Meta'],
+    ['Tier (24h) '+_hb('tier'), (l.tier||'—').replace('LIMIT_',''), 'límite · '+(l.tier_source==='infobip'?'Infobip':'Meta')],
+    ['Estado '+_hb('estado'), `<span style="font-size:19px;font-weight:700">${l.status==='CONNECTED'?'Conectada':(l.status||'—')}</span>`, (l.sender||'')+(l.throughput?' · throughput '+l.throughput:'')],
+    ['Revisión cuenta '+_hb('review'), `<span style="font-size:19px;font-weight:700">${l.review==='APPROVED'?'Aprobada':(l.review||'—')}</span>`, 'account_review · Meta'],
   ];
   document.getElementById('stats').innerHTML=cards.map(([lab,v,s,cls])=>
     `<div class="stat${cls?' '+cls:''}"><div class="l">${lab}</div><div class="v">${v}</div><div class="s">${s||''}</div></div>`).join('');
