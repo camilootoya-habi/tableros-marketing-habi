@@ -179,7 +179,7 @@
     </div>
   </div>
 
-  <div class="eyebrow">Indicadores de salud</div>
+  <div class="tabletitle">Indicadores de salud</div>
   <div class="stats" id="stats"></div>
   <dialog id="helpCard" class="help-dialog">
     <h3 id="helpCardT"></h3>
@@ -572,6 +572,15 @@ const CARD_HELP={
   tier:{t:'Tier de mensajería (24h)',b:'<p>Límite que Meta asigna al número: a cuántos usuarios <b>únicos nuevos</b> se les puede escribir en 24h (<b>1K / 10K / 100K / ilimitado</b>).</p><p>Sube automáticamente si la calidad se mantiene y se usa el volumen; baja si la calidad cae. Define el <b>techo</b> de cuánto podemos enviar por día. Fuente: Meta (respaldo Infobip).</p>'},
   estado:{t:'Estado de la línea',b:'<p>Estado de conexión del número en Meta/WhatsApp. <b>Conectada</b> = operativa y habilitada para enviar.</p><p>Cualquier otro estado (desconectada, pendiente, restringida) significa que los envíos pueden fallar. Fuente: Meta.</p>'},
   review:{t:'Revisión de la cuenta',b:'<p>Estado de revisión de la cuenta de WhatsApp Business ante Meta. <b>Aprobada</b> = pasó la verificación de Meta y puede operar con normalidad.</p><p>Si no está aprobada (en revisión / rechazada), Meta puede limitar o bloquear el envío. Fuente: Meta (account_review_status).</p>'},
+  hoy:{t:'Leads creados hoy',b:'<p>Negocios con la <b>UTM del marketing loop</b> (<code>%reinteresados%</code>) creados <b>hoy</b> en HubSpot. Es la fuente que más rápido refresca (~7 min), por eso va casi en vivo.</p><p>Hora local del país.</p>'},
+  intentos:{t:'Intentos',b:'<p>Mensajes que el loop <b>intentó</b> enviar en los últimos 7 días (llamadas al API de Infobip). Es el tope del embudo de salida.</p>'},
+  aceptados:{t:'Aceptados',b:'<p>Mensajes que <b>Infobip aceptó</b> para entrega (HTTP 200). <b>Tasa de envío</b> = aceptados ÷ intentos.</p><p>Casi siempre ~100%; si baja, hubo rechazos en el envío (número inválido, formato, etc.).</p>'},
+  entregados:{t:'Entregados',b:'<p>Mensajes que <b>llegaron al celular</b> del destinatario (DELIVERED). <b>Entrega</b> = entregados ÷ intentos.</p><p>Los que no llegan se van en <b>freq-cap</b> (límite de frecuencia de Meta) o <b>device-error</b> (ver «Errores de entrega»). Delivery en tiempo real (mart + Infobip /logs).</p>'},
+  leidos:{t:'Leídos',b:'<p><b>No disponible por esta vía.</b> WhatsApp no reporta el estado «leído» (SEEN) para esta línea/plantilla todavía.</p><p>La <b>entrega</b> sí es en tiempo real, pero la <b>lectura</b> no se puede medir — por eso sale «n/d».</p>'},
+  respondieron:{t:'Respondieron',b:'<p>Destinatarios que <b>respondieron</b>: tocaron un botón (Estoy interesado / Ya no vendo) o escribieron texto. <b>Respond rate</b> = respondieron ÷ entregados.</p>'},
+  interesados:{t:'Interesados',b:'<p>De los que respondieron, los que tocaron <b>«Estoy interesado»</b> (señal positiva). Es el <b>objetivo real</b> del loop.</p>'},
+  recreados:{t:'Recreados',b:'<p>Interesados que <b>volvimos a crear</b> como lead calificado en el backbone, para que comercial / GABI los gestione.</p>'},
+  calificados:{t:'Calificados',b:'<p>Recreados que el <b>backbone calificó</b> (estado 20/63 = listos para gestión comercial).</p>'},
 };
 function openHelp(k){const h=CARD_HELP[k]; if(!h) return;
   document.getElementById('helpCardT').textContent=h.t;
@@ -588,7 +597,7 @@ function renderStats(){
     : 'Sin histórico de calidad reciente.';
   const FLUJO={MX:150,CO:150};
   const cards=[
-    ['Leads creados hoy <span class="help" title="Negocios con UTM reinteresados creados hoy (hubspot.deals, la fuente que refresca más rápido, ~7 min). Hora local del país.">?</span>', fmt((D.hoy||{})[country]||0), 'hubspot.deals · hoy', 'key'],
+    ['Leads creados hoy '+_hb('hoy'), fmt((D.hoy||{})[country]||0), 'hubspot.deals · hoy', 'key'],
     ['Flujo diario programado '+_hb('flujo'), fmt(FLUJO[country]), 'mensajes/día · rampa · goteo horario 9–19 L–V'],
     ['Calidad de línea '+_hb('quality'), `<span class="chip" style="background:${qc}">${l.quality||'—'}</span>`, tip+' · fuente: Meta'],
     ['Tier (24h) '+_hb('tier'), (l.tier||'—').replace('LIMIT_',''), 'límite · '+(l.tier_source==='infobip'?'Infobip':'Meta')],
@@ -666,23 +675,23 @@ function renderSalida(){
   const box=(lab,v,sub,color)=>`<div class="stat" style="flex:1 1 108px"><div class="l">${lab}</div><div class="v"${color?` style="color:${color}"`:''}>${v}</div><div class="s">${sub||''}</div></div>`;
   const arr=(p)=>`<div style="align-self:center;text-align:center;padding:0 2px;font-size:11px;color:var(--text-muted);white-space:nowrap">→<div style="font-weight:700;font-size:13px">${p}</div></div>`;
   const stepPct=(num,den)=>den?pct(num/den):'—';
-  const leidosLab='Leídos'+H("WhatsApp no reporta “leído” por esta vía (sin webhooks de estado read para esta línea/plantilla todavía) — no se puede calcular un read rate real.");
+  const leidosLab='Leídos '+_hb('leidos');
   el.innerHTML=`<div style="display:flex;gap:6px;flex-wrap:wrap;align-items:stretch;margin-bottom:6px">
-    ${box('Intentos', fmt(t.intentos), 'mensajes intentados')}
+    ${box('Intentos '+_hb('intentos'), fmt(t.intentos), 'mensajes intentados')}
     ${arr(pct(ta.send_rate))}
-    ${box('Aceptados', fmt(t.aceptados), 'Infobip · HTTP 200')}
+    ${box('Aceptados '+_hb('aceptados'), fmt(t.aceptados), 'Infobip · HTTP 200')}
     ${arr(pct(ta.delivery_rate))}
-    ${box('Entregados', fmt(t.entregados), 'llegaron al celular')}
+    ${box('Entregados '+_hb('entregados'), fmt(t.entregados), 'llegaron al celular')}
     ${arr('n/d')}
     ${box(leidosLab, 'n/d', 'no disponible por esta vía')}
     ${arr(pct(ta.respond_rate))}
-    ${box('Respondieron', fmt(t.respondieron), 'sobre entregados')}
+    ${box('Respondieron '+_hb('respondieron'), fmt(t.respondieron), 'sobre entregados')}
     ${arr(stepPct(t.interesados,t.respondieron))}
-    ${box('Interesados', fmt(t.interesados), 'de los que respondieron')}
+    ${box('Interesados '+_hb('interesados'), fmt(t.interesados), 'de los que respondieron')}
     ${arr(stepPct(t.recreados,t.interesados))}
-    ${box('Recreados', fmt(t.recreados), 'vueltos a crear en el backbone')}
+    ${box('Recreados '+_hb('recreados'), fmt(t.recreados), 'vueltos a crear en el backbone')}
     ${arr(stepPct(t.calificados,t.recreados))}
-    ${box('Calificados', fmt(t.calificados), 'backbone 20/63')}
+    ${box('Calificados '+_hb('calificados'), fmt(t.calificados), 'backbone 20/63')}
   </div>
   <p class="note">Últimos 7 días (incluye hoy, parcial). <b>Tasa de envío</b> ${pct(ta.send_rate)} (aceptados ÷ intentos) · <b>entrega</b> ${pct(ta.delivery_rate)} · <b>respond rate</b> ${pct(ta.respond_rate)} (sobre entregados). Read rate no disponible por esta vía (ver «Leídos»).</p>`;
 }
