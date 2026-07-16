@@ -390,7 +390,7 @@ async function load(){
   try{ AUDIT=await (await fetch('audit.json?t='+Date.now())).json(); }catch(e){ AUDIT=null; }
   document.querySelectorAll('input[name=pais]').forEach(r=>r.onchange=()=>selectCountry(r.value));
   document.getElementById('granSel').onchange=e=>{cicloTipo=e.target.value;renderFuntab();renderAntifunnel();renderCompletitud();renderDedup();};
-  go('dash','CO');
+  go('dash','MX');
 }
 
 // ===== router multi-hoja (tabs) =====
