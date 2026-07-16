@@ -1,4 +1,4 @@
-from agg import bucket, parse_resp, embudo, err_bucket, errores_por_tipo, cohorte
+from agg import bucket, parse_resp, embudo, err_bucket, errores_por_tipo, cohorte, recreacion_serie, antifunnel_serie, contact_dist
 
 def test_bucket_dia():
     assert bucket("2026-07-15", "dia") == "2026-07-15"
@@ -66,3 +66,16 @@ def test_cohorte():
     q={"n1":"2024-Q1","n2":"2024-Q1"}
     r=cohorte(sl,mart,q)
     assert r[0]["bucket"]=="2024-Q1" and r[0]["enviados"]==2 and r[0]["device_error"]==1 and r[0]["entregados"]==1
+
+def test_recreacion():
+    rr=[{"created_at":"2026-07-14","state_at_creation":1},{"created_at":"2026-07-14","state_at_creation":20}]
+    r=recreacion_serie(rr,"dia")
+    assert r[0]=={"bucket":"2026-07-14","recreados":2,"duplicado":1,"calificado":1}
+
+def test_antifunnel_serie():
+    rr=[{"created_at":"2026-07-14","estado_actual":"activo"},{"created_at":"2026-07-14","estado_actual":"inactivo"},{"created_at":"2026-07-14","estado_actual":"activo"}]
+    r=antifunnel_serie(rr,"dia")
+    assert r[0]=={"bucket":"2026-07-14","estados":{"activo":2,"inactivo":1}}
+
+def test_contact_dist():
+    assert contact_dist([{"state":"enviado"},{"state":"baja"},{"state":"enviado"}])=={"enviado":2,"baja":1}
