@@ -56,3 +56,35 @@ def embudo(sendlog, mart_by_msgid, inbound_phones, interesado_phones,
         "delivery_rate":rate(tot["entregados"],tot["intentos"]),
         "read_rate":rate(tot["leidos"],tot["entregados"]),
         "respond_rate":rate(tot["respondieron"],tot["entregados"])}}
+
+def err_bucket(en):
+    en=(en or "").lower()
+    if "code 0" in en or "no error" in en: return "entregado"
+    if "7032" in en: return "freq_cap"
+    if "7020" in en: return "device_error"
+    if "351" in en: return "invalido"
+    if "7009" in en: return "template"
+    if "566" in en: return "bloqueado"
+    return "otro"
+
+def errores_por_tipo(sendlog, mart_by_msgid):
+    from collections import Counter
+    c=Counter()
+    for r in sendlog:
+        m=mart_by_msgid.get(r.get("message_id") or "")
+        c[err_bucket(m.get("error_name") if m else None)]+=1
+    d=dict(c); d["total"]=sum(c.values()); return d
+
+def cohorte(sendlog, mart_by_msgid, nid2quarter):
+    from collections import defaultdict
+    A=defaultdict(lambda: dict(enviados=0,entregados=0,freq_cap=0,device_error=0))
+    for r in sendlog:
+        q=nid2quarter.get(r.get("nid"))
+        if not q: continue
+        a=A[q]; a["enviados"]+=1
+        m=mart_by_msgid.get(r.get("message_id") or "")
+        b=err_bucket(m.get("error_name") if m else None)
+        if b=="entregado": a["entregados"]+=1
+        elif b=="freq_cap": a["freq_cap"]+=1
+        elif b=="device_error": a["device_error"]+=1
+    return [{"bucket":k, **A[k]} for k in sorted(A)]

@@ -1,4 +1,4 @@
-from agg import bucket, parse_resp, embudo
+from agg import bucket, parse_resp, embudo, err_bucket, errores_por_tipo, cohorte
 
 def test_bucket_dia():
     assert bucket("2026-07-15", "dia") == "2026-07-15"
@@ -54,3 +54,15 @@ def test_embudo_rellena_ceros_y_totales_acotados():
     assert len(r["serie"])==2                     # rellena el día sin actividad
     assert r["serie"][1]["fecha"]=="2026-07-11" and r["serie"][1]["intentos"]==0
     assert r["totales"]["intentos"]==1 and r["tasas"]["send_rate"]==1.0
+
+def test_err_bucket():
+    assert err_bucket("Frequency capping limit reached (code 7032)")=="freq_cap"
+    assert err_bucket("User device was not able to reproduce the content (code 7020)")=="device_error"
+    assert err_bucket("No Error (code 0)")=="entregado"
+
+def test_cohorte():
+    sl=[{"message_id":"a","nid":"n1"},{"message_id":"b","nid":"n2"}]
+    mart={"a":{"error_name":"No Error (code 0)"},"b":{"error_name":"...(code 7020)"}}
+    q={"n1":"2024-Q1","n2":"2024-Q1"}
+    r=cohorte(sl,mart,q)
+    assert r[0]["bucket"]=="2024-Q1" and r[0]["enviados"]==2 and r[0]["device_error"]==1 and r[0]["entregados"]==1
