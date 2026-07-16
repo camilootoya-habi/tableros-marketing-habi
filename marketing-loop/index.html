@@ -91,6 +91,12 @@
   .ftab tbody tr.row-loop td:first-child{background:rgba(52,211,153,.14);border-left:3px solid var(--ok)}
   .ftab tbody tr.resp-detail{display:none}
   .ftab tbody.resp-open tr.resp-detail{display:table-row}
+  .ftab tbody tr.row-blue td{background:rgba(56,189,248,.14);color:var(--sky);font-weight:700}
+  .ftab tbody tr.row-blue td:first-child{background:rgba(56,189,248,.14);border-left:3px solid var(--sky)}
+  .ftab tbody tr.row-orange td{background:rgba(251,191,36,.14);color:var(--warn);font-weight:700}
+  .ftab tbody tr.row-orange td:first-child{background:rgba(251,191,36,.14);border-left:3px solid var(--warn)}
+  .ftab tbody tr.row-red td{background:rgba(248,113,113,.13);color:var(--bad);font-weight:700}
+  .ftab tbody tr.row-red td:first-child{background:rgba(248,113,113,.13);border-left:3px solid var(--bad)}
   .help-btn{display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;border-radius:50%;background:var(--border);color:var(--text-muted);border:none;font-size:11px;font-weight:700;cursor:pointer;margin-left:6px;vertical-align:middle;padding:0;line-height:1}
   .help-btn:hover{background:var(--accent);color:var(--accent-on)}
   .ftab tbody tr.row-stage .n{font-weight:600;color:var(--text)}
@@ -640,7 +646,7 @@ function renderResp(){
     `<tr class="resp-detail"><td style="padding-left:30px;color:var(--text-muted);font-weight:400">${escx(t)}</td>${arr.map((r,i)=>`<td${cur(i)} style="text-align:right">${z(+(r.abiertas||{})[t]||0)}</td>`).join('')}</tr>`).join('');
   el.innerHTML=`<table><thead><tr><th>${hcol}</th>${th}</tr></thead><tbody id="respBody">
     ${row(_hb('resp_tot')+'Respondieron (total)','total','row-total')}
-    ${row(_hb('resp_int')+'Interesado','interesado')}
+    ${row(_hb('resp_int')+'Interesado','interesado','row-loop')}
     ${row(_hb('resp_baja')+'Ya no vendo','ya_vendio')}
     ${row(_hb('resp_bajatxt')+'Baja','baja_texto')}
     <tr class="row-total"><td><button type="button" id="respToggleBtn" class="help-btn" onclick="toggleAbiertas()" aria-label="Abrir/cerrar respuestas abiertas">▸</button> Respuestas Abiertas</td>${arr.map((r,i)=>`<td${cur(i)} style="text-align:right">${z(+r.abiertas_total)}</td>`).join('')}</tr>
@@ -741,7 +747,7 @@ function renderErrores(){
   const th=arr.map((r,i)=>`<th${cur(i)} style="text-align:right">${lbl(r.bucket)}</th>`).join('');
   const hcol={dia:'Día',semana:'Semana (inicia Lun)',mes:'Mes'}[cicloTipo]||'Período';
   const totalRow=`<tr class="row-total"><td>No entregados</td>${arr.map((r,i)=>`<td${cur(i)} style="text-align:right">${z(+r.no_entregados)}</td>`).join('')}</tr>`;
-  const absRow=([k,lab])=>`<tr class="row-stage"><td>${lab}</td>${arr.map((r,i)=>`<td${cur(i)} style="text-align:right">${z(+r[k])}</td>`).join('')}</tr>`;
+  const absRow=([k,lab])=>{const cls=k==='freq_cap'?'row-orange':'row-red';return `<tr class="${cls}"><td>${lab}</td>${arr.map((r,i)=>`<td${cur(i)} style="text-align:right">${z(+r[k])}</td>`).join('')}</tr>`;};
   const pctRow=([k,lab])=>`<tr class="row-stage"><td>% ${lab}</td>${arr.map((r,i)=>{const t=+r.no_entregados||0,v=+r[k]||0;return `<td${cur(i)} style="text-align:right">${t?(v/t*100).toFixed(1)+'%':'<span class="muted">·</span>'}</td>`;}).join('')}</tr>`;
   el.innerHTML=`<table><thead><tr><th>${hcol}</th>${th}</tr></thead><tbody>
     ${totalRow}
@@ -823,7 +829,7 @@ function renderCohorteOrigen(){
       return `<td${cur(i)} style="text-align:right;color:${clr}">${p>=10?p.toFixed(1):p.toFixed(2)}%</td>`;
     }).join('');
   };
-  const pctRow=(lab,numK,denK)=>`<tr class="row-stage"><td>${lab}</td>${pctCells(numK,denK)}</tr>`;
+  const pctRow=(lab,numK,denK,cls='row-stage')=>`<tr class="${cls}"><td>${lab}</td>${pctCells(numK,denK)}</tr>`;
   el.innerHTML=`<table><thead><tr><th>${hcol}</th>${th}</tr></thead><tbody>
     <tr class="row-total"><td>${_hb('cos_env')}Enviados</td>${arr.map((r,i)=>`<td${cur(i)} style="text-align:right">${z(+r.enviados)}</td>`).join('')}</tr>
     ${absRow(_hb('cos_entr')+'Entregados','entregados')}
@@ -833,7 +839,7 @@ function renderCohorteOrigen(){
     ${pctRow(_hb('cos_dr')+'% Delivery Rate','entregados','enviados')}
     ${pctRow(_hb('cos_rr')+'% Read Rate','leidos','entregados')}
     ${pctRow(_hb('cos_rsp')+'% Respond Rate','respondidos','entregados')}
-    ${pctRow(_hb('cos_ir')+'% Interesados Rate','interesados','entregados')}
+    ${pctRow(_hb('cos_ir')+'% Interesados Rate','interesados','entregados','row-blue')}
   </tbody></table>`;
   el.scrollLeft=el.scrollWidth;
 }
