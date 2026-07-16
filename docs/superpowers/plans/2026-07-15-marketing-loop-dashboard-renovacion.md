@@ -462,6 +462,94 @@ Definir helpers `_resp_tipos(parsed, mbm, win)` (cuenta INTERESADO/YAVENDIO/OTRO
 - [ ] **Step 3: Validar keys y cifras** — `python3 -c "import json;d=json.load(open('marketing-loop/data.json'));print(list(d));print('embudo tasas',d['embudo']['MX']['tasas']);print('errores',d['errores']['MX'])"` → `delivery_rate` ~0.44, freq_cap ~36% de intentos, device_error ~19% (cuadra con lo medido hoy).
 - [ ] **Step 4: Commit** — `git commit -am "feat(build_data): re-cableo a Neon+mart; elimina Sheets/ledgers/geo/address/comparativa/ciclo"`
 
+### Task 8.5: Delivery en tiempo real — complemento Infobip `/logs` (decidido 2026-07-16)
+
+**Motivo:** el mart BQ tiene lag ETL ~28h → `mbm=mart_by_msgid(30)` no ve envíos recientes, así que embudo/errores/cohorte/ab_templates muestran casi nada para campañas frescas (medido 16-jul: embudo intentos=10 de 656; v2 delivery=0% en tablero vs ~48% real por API). Fix: complementar `mbm` con la API `/whatsapp/2/logs` de Infobip (tiempo real, mismo patrón que `report/ab_report.py` del motor). Infobip pisa el mart en los message_id recientes; el mart cubre el histórico (los logs expiran en días).
+
+**Files:**
+- Create: `marketing-loop/sources_infobip.py`
+- Modify: `marketing-loop/build_data.py` (merge `mbm = {**mart, **infobip}`)
+- Test: `marketing-loop/tests/test_sources_infobip.py`
+
+**Interfaces:**
+- Produces: `map_log(record) -> {"status","error_name","seen"}` (puro; mapea un result de `/logs` al MISMO shape de `sources_mart.mart_by_msgid`). `delivery_by_msgid(msgids) -> {message_id: {...}}` (I/O, batches de 50).
+- Shape de compatibilidad: `status = groupName.lower()` (delivered/undeliverable/pending/rejected). `error_name` DEBE incluir el código para que `agg.err_bucket` lo clasifique: sin error → `"No Error (code 0)"`; con error → `f"{name} (code {id})"`. `seen=False` (los /logs no exponen SEEN de forma fiable; read rate ya se sabe no disponible).
+
+- [ ] **Step 1: Test puro que falla** — `marketing-loop/tests/test_sources_infobip.py`:
+```python
+from sources_infobip import map_log
+from agg import err_bucket
+
+def test_map_delivered():
+    r={"messageId":"m1","status":{"groupName":"DELIVERED"},"error":{"id":0,"name":"NO_ERROR"}}
+    assert map_log(r)=={"status":"delivered","error_name":"No Error (code 0)","seen":False}
+    assert err_bucket(map_log(r)["error_name"])=="entregado"
+
+def test_map_freqcap():
+    r={"messageId":"m2","status":{"groupName":"UNDELIVERABLE"},"error":{"id":7032,"name":"EC_FREQUENCY_CAPPING"}}
+    m=map_log(r)
+    assert m["status"]=="undeliverable"
+    assert "7032" in m["error_name"]
+    assert err_bucket(m["error_name"])=="freq_cap"
+
+def test_map_no_error_key():
+    r={"messageId":"m3","status":{"groupName":"PENDING"}}
+    assert map_log(r)["error_name"]=="No Error (code 0)"
+    assert map_log(r)["status"]=="pending"
+```
+
+- [ ] **Step 2: Verificar que falla** — `cd marketing-loop && python3 -m pytest tests/test_sources_infobip.py -v` → FAIL (módulo no existe).
+
+- [ ] **Step 3: Implementar `marketing-loop/sources_infobip.py`**:
+```python
+import os, requests
+
+def map_log(x):
+    st = (x.get("status") or {}).get("groupName","").lower()
+    e = x.get("error") or {}
+    eid = e.get("id")
+    ename = f"{e.get('name')} (code {eid})" if eid else "No Error (code 0)"
+    return {"status": st, "error_name": ename, "seen": False}
+
+def delivery_by_msgid(msgids, pais="MX"):
+    base = os.environ.get("INFOBIP_BASE_URL","https://xrwqpl.api.infobip.com")
+    key = os.environ.get(f"INFOBIP_{pais}_API_KEY")
+    if not key: 
+        print("WARN sources_infobip: falta INFOBIP_%s_API_KEY -> sin complemento tiempo real" % pais); return {}
+    H={"Authorization":f"App {key}","Accept":"application/json"}
+    ids=[m for m in dict.fromkeys(msgids) if m]
+    out={}
+    for i in range(0,len(ids),50):
+        params=[("messageId",m) for m in ids[i:i+50]]
+        try:
+            r=requests.get(f"{base}/whatsapp/2/logs", headers=H, params=params, timeout=90)
+            if r.status_code!=200:
+                print(f"WARN sources_infobip http {r.status_code}: {r.text[:200]}"); continue
+            for x in r.json().get("results",[]):
+                mid=x.get("messageId")
+                if mid: out[mid]=map_log(x)
+        except Exception as ex:
+            print("WARN sources_infobip batch:", ex)
+    return out
+```
+(Nota: WARN + continue en vez de raise, para que el cron no falle si Infobip está caído — el mart sigue dando el histórico. El motor `ab_report` sí hace raise porque es interactivo; aquí es un cron desatendido.)
+
+- [ ] **Step 4: Verificar que pasa** — `python3 -m pytest tests/test_sources_infobip.py -v` → 3 pass. Suite agg+sources completa sigue verde.
+
+- [ ] **Step 5: Merge en `build_data.py`** — tras `mbm = M.mart_by_msgid(30)` (~línea 198), agregar:
+```python
+import sources_infobip as I
+ibm = I.delivery_by_msgid([r.get("message_id") for r in sl if r.get("message_id")])
+mbm = {**mbm, **ibm}   # Infobip (tiempo real) pisa el mart en los recientes; el mart cubre el histórico
+```
+Ajustar el print de conteos para incluir `len(ibm)` (p.ej. `"| infobip", len(ibm)`).
+
+- [ ] **Step 6: Re-correr build con env real y validar tiempo real** — `NEON_DATABASE_URL=... INFOBIP_MX_API_KEY=... python3 build_data.py` → confirmar que `embudo.MX.totales.intentos` ahora refleja los envíos reales del período (no ~10) y que `ab_templates.MX` muestra v2 con delivery > 0 (cuadra con el ab_report del motor ~48%). Documentar cifras.
+
+- [ ] **Step 7: Commit** — `git commit -am "feat(build_data): complementa delivery con Infobip /logs (tiempo real) para vencer el lag del mart"`
+
+---
+
 ### Task 9: Eliminar queries y código muerto
 
 **Files:**
