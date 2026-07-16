@@ -771,7 +771,7 @@ function renderCohorteOrigen(){
     return pcts.map((p,i)=>{
       if(p==null) return `<td${cur(i)} style="text-align:right"><span class="muted">·</span></td>`;
       const ra=(p-min)/range, clr=`rgb(${Math.round(248-ra*196)},${Math.round(52+ra*159)},${Math.round(52+ra*101)})`;
-      return `<td${cur(i)} style="text-align:right;font-weight:700;color:${clr}">${p>=10?p.toFixed(1):p.toFixed(2)}%</td>`;
+      return `<td${cur(i)} style="text-align:right;color:${clr}">${p>=10?p.toFixed(1):p.toFixed(2)}%</td>`;
     }).join('');
   };
   const pctRow=(lab,numK,denK)=>`<tr class="row-stage"><td>${lab}</td>${pctCells(numK,denK)}</tr>`;
