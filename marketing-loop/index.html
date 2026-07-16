@@ -189,10 +189,19 @@
   <div id="salidaAlarm"></div>
   <div id="salida"></div>
 
-  <div class="tabletitle">Comportamiento · últimos 14 días <span class="help" title="Estas tarjetas se calculan sobre los leads/respuestas de los últimos 14 días: el funnel de reactivación (creados en 14 días) y el desglose de respuestas por tipo.">?</span></div>
+  <div class="tabletitle">Errores de entrega y plantillas · últimos 7 días
+    <span class="help" title="Por qué no llegan los mensajes (bucketeo del error_name del mart de Infobip) y comparativo A/B por plantilla, sobre la misma ventana que Salida real.">?</span>
+  </div>
+  <div class="grid">
+    <section class="panel"><h3>Motivos de no entrega <span class="help" title="Distribución de los envíos del período por bucket de error (entregado = sin error) sobre el total de intentos.">?</span></h3><div id="errores"></div></section>
+    <section class="panel"><h3>A/B de plantillas <span class="help" title="Comparativo por plantilla enviada: enviados, delivery rate, respondieron y respond rate.">?</span></h3><div id="ab"></div></section>
+  </div>
+
+  <div class="tabletitle">Comportamiento · últimos 14 días <span class="help" title="Estas tarjetas se calculan sobre los leads/respuestas de los últimos 14 días: el funnel de reactivación (creados en 14 días), el desglose de respuestas por tipo y el estado de contacto histórico.">?</span></div>
   <div class="grid">
     <section class="panel"><h3>Funnel de reactivación <span class="help" title="Base contactada → Respuestas → Interesados → Calificados (backbone 20/63) → Asignados (WBR mart) → Citas → Cierres. % = del paso previo.">?</span></h3><div id="funnel"></div></section>
     <section class="panel"><h3>Respuestas por tipo <span class="help" title="Distribución de las respuestas parseadas del mart en la ventana (Interesado / Ya vendió / Otro, texto libre) + respond rate sobre entregados.">?</span></h3><div id="resp"></div></section>
+    <section class="panel"><h3>Estado de contacto <span class="help" title="Distribución histórica (total acumulado) del estado de contacto de los leads en Neon: enviado (sin respuesta aún), ya vendió, respondió otro, reinteresado (interesado→recreado) y baja (pidió no ser contactado).">?</span></h3><div style="position:relative;width:100%;height:230px"><canvas id="c_contacto"></canvas></div></section>
   </div>
 
   <div class="tabletitle">Calidad por antigüedad del lead original
@@ -395,7 +404,7 @@ async function load(){
     : '';
   try{ AUDIT=await (await fetch('audit.json?t='+Date.now())).json(); }catch(e){ AUDIT=null; }
   document.querySelectorAll('input[name=pais]').forEach(r=>r.onchange=()=>selectCountry(r.value));
-  document.getElementById('granSel').onchange=e=>{cicloTipo=e.target.value;renderFuntab();renderAntifunnel();renderCompletitud();};
+  document.getElementById('granSel').onchange=e=>{cicloTipo=e.target.value;renderFuntab();renderAntifunnel();renderCompletitud();renderDedup();};
   go('dash','CO');
 }
 
@@ -449,7 +458,7 @@ function renderExplorer(){
   }
   el.innerHTML=parts.join('');
 }
-function selectCountry(c){ country=c; renderStats(); renderSalida(); renderResp(); renderFunnel(); renderDiario(); renderFuntab(); renderAntifunnel(); renderCompletitud(); renderCohorteOrigen(); renderPorHoraChart(); }
+function selectCountry(c){ country=c; renderStats(); renderSalida(); renderErrores(); renderAB(); renderResp(); renderContacto(); renderFunnel(); renderDiario(); renderFuntab(); renderAntifunnel(); renderDedup(); renderCompletitud(); renderCohorteOrigen(); renderPorHoraChart(); }
 // Celdas "valor + %" con heatmap por fila (verde=conversión alta, rojo=baja), copiado del tablero de referencia.
 function heatCells(values, denoms){
   const pcts=values.map((v,i)=> denoms[i]>0 ? v/denoms[i]*100 : null);   // período sin base → null (celda vacía)
@@ -503,6 +512,28 @@ function renderFuntab(){
     ${step(H('Calificado de inmediato al recrearse (state_at_creation=20, No gestionado) ÷ recreados.')+'Calificado','calificado')}
   </tbody></table>`;
   el.scrollLeft=el.scrollWidth;
+}
+
+// Resumen agregado del outcome de dedup (mismo universo/ventana que la tabla de arriba: últimos 20 períodos de cicloTipo).
+function renderDedup(){
+  const el=document.getElementById('dedup'); if(!el) return;
+  if(!(D.recreacion||{})[country]){ el.innerHTML=''; return; }
+  const src=((D.recreacion||{})[country]||{})[cicloTipo]||[];
+  const byB={}; src.forEach(r=>byB[r.bucket]=r);
+  const rows=lastPeriods(cicloTipo,20).map(b=>byB[b]||{bucket:b,recreados:0,duplicado:0,calificado:0});
+  const tot=rows.reduce((s,r)=>s+(+r.recreados||0),0);
+  const dup=rows.reduce((s,r)=>s+(+r.duplicado||0),0);
+  const cal=rows.reduce((s,r)=>s+(+r.calificado||0),0);
+  const otro=Math.max(0,tot-dup-cal);
+  if(!tot){ el.innerHTML='<p class="note">Sin recreados en la ventana mostrada.</p>'; return; }
+  const rowsUI=[['Duplicado',dup,'var(--bad)'],['Calificado',cal,'var(--ok)'],['Otro / en curso',otro,'var(--text-muted)']];
+  const body=rowsUI.map(([lab,v,color])=>{
+    const p=tot?(v/tot*100):0;
+    return `<div class="rowline"><div class="lab" style="width:120px">${lab}</div>
+      <div class="bar"><div style="width:${Math.max(0.5,p).toFixed(1)}%;background:${color}"></div></div>
+      <div class="val" style="width:90px"><b>${fmt(v)}</b> <span class="muted" style="font-size:11px">${p.toFixed(0)}%</span></div></div>`;
+  }).join('');
+  el.innerHTML=`${body}<p class="note">Outcome del dedup al momento de crear el lead (${fmt(tot)} recreados), agregado sobre los mismos períodos de la tabla de abajo.</p>`;
 }
 
 function renderAntifunnel(){
@@ -602,6 +633,24 @@ function renderResp(){
     <p class="note">Respond rate (sobre entregados, ventana ${r.ventana||'7d'}): <b style="color:var(--text-title)">${pct(r.respond_rate==null?null:r.respond_rate*100)}</b> · ${fmt(r.total_respuestas)} respuestas totales.</p>`;
 }
 
+const CONTACTO_LAB={enviado:['Enviado (sin resp.)','#94a3b8'],ya_vendio:['Ya vendió','#38bdf8'],respondio_otro:['Respondió otro','#818cf8'],reinteresado:['Reinteresado','#34d399'],baja:['Pidió baja','#f87171']};
+function renderContacto(){
+  const el=document.getElementById('c_contacto'); if(!el||!window.Chart) return;
+  const cs=(D.contact_status||{})[country];
+  if(!cs){ if(contactoChart){contactoChart.destroy();contactoChart=null;} el.getContext('2d').clearRect(0,0,el.width,el.height); return; }
+  const light=document.body.classList.contains('light');
+  const keys=Object.keys(CONTACTO_LAB).filter(k=>(+cs[k]||0)>0);
+  const labels=keys.map(k=>CONTACTO_LAB[k][0]);
+  const data=keys.map(k=>+cs[k]||0);
+  const colors=keys.map(k=>CONTACTO_LAB[k][1]);
+  if(contactoChart) contactoChart.destroy();
+  contactoChart=new Chart(el,{type:'doughnut',data:{labels,datasets:[{data,backgroundColor:colors,borderColor:light?'#fff':'#1e293b',borderWidth:2}]},
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:true,position:'right',labels:{color:light?'#334155':'#e2e8f0',boxWidth:10,font:{size:11}}},
+        tooltip:{callbacks:{label:c=>{const tot=data.reduce((a,b)=>a+b,0); const v=c.parsed;
+          return `${c.label}: ${fmt(v)} (${tot?(v/tot*100).toFixed(1):'0'}%)`;}}}}}});
+}
+
 function healthLine(ok,titulo,msg,detail,last){
   const bd=ok?'var(--ok)':'var(--bad)', bg=ok?'rgba(52,211,153,.12)':'rgba(248,113,113,.14)';
   return `<div style="padding:10px 14px;border:1px solid ${bd};background:${bg};border-radius:10px;font-size:13px;color:var(--text)">
@@ -659,6 +708,37 @@ function renderSalida(){
     ${box('Calificados', fmt(t.calificados), 'backbone 20/63')}
   </div>
   <p class="note">Últimos 7 días (incluye hoy, parcial). <b>Tasa de envío</b> ${pct(ta.send_rate)} (aceptados ÷ intentos) · <b>entrega</b> ${pct(ta.delivery_rate)} · <b>respond rate</b> ${pct(ta.respond_rate)} (sobre entregados). Read rate no disponible por esta vía (ver «Leídos»).</p>`;
+}
+
+const ERR_LAB={entregado:['Entregado','var(--ok)'],freq_cap:['Freq-cap (límite Meta)','var(--warn)'],device_error:['Error de dispositivo','var(--bad)'],template:['Plantilla / línea deshabilitada','var(--warn)'],bloqueado:['Bloqueado','var(--bad)'],invalido:['Número inválido','var(--text-muted)'],otro:['Otro','var(--text-muted)']};
+function renderErrores(){
+  const el=document.getElementById('errores'); if(!el) return;
+  const e=(D.errores||{})[country];
+  if(!e||!e.total){ el.innerHTML='<p class="note">Sin datos de errores para '+country+' (aún no disponible).</p>'; return; }
+  const tot=+e.total||0;
+  const keys=Object.keys(ERR_LAB).filter(k=>k!=='entregado').sort((a,b)=>(+e[b]||0)-(+e[a]||0));
+  const order=['entregado',...keys];
+  const body=order.map(k=>{
+    const [lab,color]=ERR_LAB[k], v=+e[k]||0, p=tot?(v/tot*100):0;
+    return `<div class="rowline"><div class="lab" style="width:170px">${lab}</div>
+      <div class="bar"><div style="width:${Math.max(0.5,p).toFixed(1)}%;background:${color}"></div></div>
+      <div class="val" style="width:90px"><b>${fmt(v)}</b> <span class="muted" style="font-size:11px">${p.toFixed(0)}%</span></div></div>`;
+  }).join('');
+  el.innerHTML=`${body}<p class="note">Sobre ${fmt(tot)} intentos de la ventana. «Entregado» = sin error (estado reconciliado del mart); el resto son buckets del <code>error_name</code> de Infobip.</p>`;
+}
+
+function renderAB(){
+  const el=document.getElementById('ab'); if(!el) return;
+  const arr=(D.ab_templates||{})[country];
+  if(!arr||!arr.length){ el.innerHTML='<p class="note">Sin datos de A/B para '+country+' (aún no disponible).</p>'; return; }
+  const th=arr.map(t=>`<th style="text-align:right">${escx(t.template)}</th>`).join('');
+  const row=(lab,fn)=>`<tr class="row-stage"><td>${lab}</td>${arr.map(t=>`<td style="text-align:right">${fn(t)}</td>`).join('')}</tr>`;
+  el.innerHTML=`<div class="tbl-wrap ftab"><table><thead><tr><th>Plantilla</th>${th}</tr></thead><tbody>
+    ${row('Enviados',t=>fmt(t.enviados))}
+    ${row('Entregados',t=>`${fmt(t.entregados)} <span class="muted" style="font-size:11px">(${pct(t.delivery_rate==null?null:t.delivery_rate*100)})</span>`)}
+    ${row('Respondieron',t=>`${fmt(t.respondieron)} <span class="muted" style="font-size:11px">(${pct(t.respond_rate==null?null:t.respond_rate*100)})</span>`)}
+  </tbody></table></div>
+  <p class="note">${arr.length<2?'Solo hay una plantilla activa — sin comparación A/B todavía.':'El A/B compara plantillas; v1=control, v2=oferta.'}</p>`;
 }
 
 function renderPorHoraChart(){
