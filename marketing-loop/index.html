@@ -189,6 +189,11 @@
   <div id="salidaAlarm"></div>
   <div id="salida"></div>
 
+  <div class="tabletitle">Impacto en asignados
+    <span class="help" title="Aporte de los leads del marketing loop (UTM %reinteresados%) sobre los asignados de marketing, por período (según Temporalidad). Fuente: WBR asignados mart × hubspot.deals.">?</span>
+  </div>
+  <div class="tbl-wrap" id="impacto"></div>
+
   <div class="tabletitle">Errores de entrega y plantillas · últimos 7 días
     <span class="help" title="Por qué no llegan los mensajes (bucketeo del error_name del mart de Infobip) y comparativo A/B por plantilla, sobre la misma ventana que Salida real.">?</span>
   </div>
@@ -389,7 +394,7 @@ async function load(){
     : '';
   try{ AUDIT=await (await fetch('audit.json?t='+Date.now())).json(); }catch(e){ AUDIT=null; }
   document.querySelectorAll('input[name=pais]').forEach(r=>r.onchange=()=>selectCountry(r.value));
-  document.getElementById('granSel').onchange=e=>{cicloTipo=e.target.value;renderFuntab();renderAntifunnel();renderCompletitud();renderDedup();};
+  document.getElementById('granSel').onchange=e=>{cicloTipo=e.target.value;renderFuntab();renderAntifunnel();renderCompletitud();renderDedup();renderImpacto();};
   go('dash','MX');
 }
 
@@ -443,7 +448,7 @@ function renderExplorer(){
   }
   el.innerHTML=parts.join('');
 }
-function selectCountry(c){ country=c; renderStats(); renderSalida(); renderErrores(); renderAB(); renderResp(); renderContacto(); renderFuntab(); renderAntifunnel(); renderDedup(); renderCompletitud(); renderCohorteOrigen(); renderPorHoraChart(); }
+function selectCountry(c){ country=c; renderStats(); renderSalida(); renderImpacto(); renderErrores(); renderAB(); renderResp(); renderContacto(); renderFuntab(); renderAntifunnel(); renderDedup(); renderCompletitud(); renderCohorteOrigen(); renderPorHoraChart(); }
 // Celdas "valor + %" con heatmap por fila (verde=conversión alta, rojo=baja), copiado del tablero de referencia.
 function heatCells(values, denoms){
   const pcts=values.map((v,i)=> denoms[i]>0 ? v/denoms[i]*100 : null);   // período sin base → null (celda vacía)
@@ -669,6 +674,29 @@ function renderSalida(){
 }
 
 const ERR_LAB={entregado:['Entregado','var(--ok)'],freq_cap:['Freq-cap (límite Meta)','var(--warn)'],device_error:['Error de dispositivo','var(--bad)'],template:['Plantilla / línea deshabilitada','var(--warn)'],bloqueado:['Bloqueado','var(--bad)'],invalido:['Número inválido','var(--text-muted)'],otro:['Otro','var(--text-muted)']};
+function renderImpacto(){
+  const el=document.getElementById('impacto'); if(!el) return;
+  let rows=(D.asignados||[]).filter(r=>r.pais===CIP[country] && r.tipo===cicloTipo).sort((a,b)=>a.bucket<b.bucket?-1:1);
+  rows=rows.slice(-20);
+  if(!rows.length){ el.innerHTML='<p class="muted">Sin datos de asignados para '+country+'.</p>'; return; }
+  const MES=['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+  const lbl=b=> cicloTipo==='mes' ? (MES[+b.slice(5,7)-1]+' '+b.slice(2,4)) : b.slice(5);
+  const last=rows.length-1;
+  const cur=i=> i===last?' class="cur"':'';
+  const th=rows.map((r,i)=>`<th${cur(i)} style="text-align:right">${lbl(r.bucket)}</th>`).join('');
+  const tr=(lab,f,cls='')=>`<tr class="${cls}"><td>${lab}</td>${rows.map((r,i)=>f(r,i)).join('')}</tr>`;
+  const ratio=(num,den,i)=>`<td${cur(i)} style="text-align:right;font-weight:800;color:${num>0?'var(--accent)':'var(--text-muted)'}">${den?(num/den*100).toFixed(1):'0.0'}%</td>`;
+  const hcol={dia:'Día',semana:'Semana (inicia Lun)',mes:'Mes'}[cicloTipo]||'Periodo';
+  el.innerHTML=`<table><thead><tr><th>${hcol}</th>${th}</tr></thead><tbody>
+    ${tr(H('Asignados de las 6 fuentes de marketing (fuente_id_tig) por período, desde la WBR mart.')+'Total Marketing',(r,i)=>`<td${cur(i)} style="text-align:right">${fmt(+r.total_asignados)}</td>`,'row-total')}
+    ${tr(H('Asignados solo de fuente WEB (fuente_id_tig=3).')+'WEB',(r,i)=>`<td${cur(i)} style="text-align:right">${fmt(+r.asignados_web)}</td>`)}
+    ${tr(H('Asignados con utm_campaign LIKE %reinteresados% (hubspot.deals) = leads del marketing loop. Son WEB.')+'Marketing loop (WEB)',(r,i)=>`<td${cur(i)} style="text-align:right">${fmt(+r.asignados_reint)}</td>`)}
+    ${tr(H('Marketing loop ÷ Total Marketing = participación del loop en todo el marketing asignado.')+'<b>Loop vs Total Marketing</b>',(r,i)=>ratio(+r.asignados_reint,+r.total_asignados,i))}
+    ${tr(H('Marketing loop ÷ WEB = participación del loop dentro de los asignados WEB.')+'<b>Loop vs WEB</b>',(r,i)=>ratio(+r.asignados_reint,+r.asignados_web,i))}
+    ${tr(H('Total Marketing − loop = asignados que habríamos tenido sin el programa.')+'Total Marketing sin loop',(r,i)=>`<td${cur(i)} style="text-align:right;color:var(--text-muted)">${fmt((+r.total_asignados)-(+r.asignados_reint))}</td>`)}
+  </tbody></table>`;
+  el.scrollLeft=el.scrollWidth;
+}
 function renderErrores(){
   const el=document.getElementById('errores'); if(!el) return;
   const e=(D.errores||{})[country];
