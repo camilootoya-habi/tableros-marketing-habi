@@ -212,7 +212,7 @@
   </div>
   <div class="tbl-wrap ftab" id="ab"></div>
 
-  <div class="tabletitle">Respuestas últimos 14 días
+  <div class="tabletitle">Respuestas por período
     <button type="button" class="help-btn" onclick="openHelp('resp')" aria-label="Explicación">?</button>
   </div>
   <div class="tbl-wrap ftab" id="resp"></div>
@@ -386,7 +386,7 @@ async function load(){
     : '';
   try{ AUDIT=await (await fetch('audit.json?t='+Date.now())).json(); }catch(e){ AUDIT=null; }
   document.querySelectorAll('input[name=pais]').forEach(r=>r.onchange=()=>selectCountry(r.value));
-  document.getElementById('granSel').onchange=e=>{cicloTipo=e.target.value;renderFuntab();renderAntifunnel();renderCompletitud();renderDedup();renderImpacto();renderCohorteOrigen();renderErrores();};
+  document.getElementById('granSel').onchange=e=>{cicloTipo=e.target.value;renderFuntab();renderAntifunnel();renderCompletitud();renderDedup();renderImpacto();renderCohorteOrigen();renderErrores();renderResp();};
   go('dash','MX');
 }
 
@@ -584,7 +584,7 @@ const CARD_HELP={
   cos_ir:{t:'% Interesados Rate',b:'<p><b>Interesados ÷ Entregados:</b> % de entregados que dijeron «Estoy interesado». Es el rate que <b>más importa</b> para el loop.</p>'},
   err:{t:'Errores de entrega',b:'<p>Por qué <b>NO</b> llegaron los mensajes, por período de envío (Temporalidad). Fila 1 = <b>total no entregados</b>; luego el <b>volumen absoluto</b> de cada tipo de error; luego el <b>% de cada error</b> sobre el total de no entregados.</p><p>Fuente: <code>error_name</code> del mart de Infobip + API /logs. Incluye el bug <b>7008</b> (plantilla sin imagen). Columnas = 20 períodos recientes.</p>'},
   ab:{t:'A/B de plantillas',b:'<p>Comparativo de las plantillas que se envían <b>en simultáneo</b> (asignación aleatoria del A/B). Una <b>fila por plantilla</b>; columnas = enviados, entregados, delivery / read / respond / interesado rate.</p><p>Excluye los envíos fallidos por bug de plantilla sin imagen (7008, culpa nuestra). ⚠ <b>Read rate</b> no disponible por esta vía (SEEN). v1 = control · v2 = oferta.</p>'},
-  resp:{t:'Respuestas últimos 14 días',b:'<p>Respuestas recibidas en la línea (<b>mart inbound</b> de Infobip) los últimos 14 días. Filas fijas: total, botón <b>Interesado</b>, botón <b>Ya no vendo</b>, y <b>Baja</b> (escribieron «baja» como texto).</p><p><b>Respuestas Abiertas</b> resume el resto del texto libre en una fila; ábrela con ▸ para ver cada respuesta con su conteo.</p>'},
+  resp:{t:'Respuestas por período',b:'<p>Respuestas recibidas en la línea (<b>mart inbound</b> de Infobip) bucketeadas por su <b>fecha de llegada</b> (Temporalidad: día / semana / mes). Filas fijas: total, botón <b>Interesado</b>, botón <b>Ya no vendo</b>, y <b>Baja</b> (escribieron «baja» como texto).</p><p><b>Respuestas Abiertas</b> resume el resto del texto libre; ábrela con ▸ para ver cada respuesta con su conteo por período. Columnas = 20 períodos recientes.</p>'},
   resp_tot:{t:'Respondieron (total)',b:'<p>Total de respuestas recibidas en los últimos 14 días (botones + texto libre).</p>'},
   resp_int:{t:'Interesado',b:'<p>Respondieron con el botón <b>«Estoy interesado»</b> (INTERESADO).</p>'},
   resp_baja:{t:'Ya no vendo',b:'<p>Respondieron con el botón <b>«Ya no vendo»</b> (YAVENDIÓ / baja).</p>'},
@@ -619,23 +619,29 @@ function renderStats(){
 
 function renderResp(){
   const el=document.getElementById('resp'); if(!el) return;
-  const r=(D.respuestas||{})[country];
-  if(!r){ el.innerHTML='<p class="note">Sin datos de respuestas para '+country+' (aún no disponible).</p>'; return; }
-  const tot=+r.total||0;
-  const pctOf=v=>tot?((v/tot*100).toFixed(1)+'%'):'—';
-  const row=(lab,v,cls='')=>`<tr class="${cls}"><td>${lab}</td><td style="text-align:right">${fmt(v)}</td><td style="text-align:right"><span class="muted">${pctOf(v)}</span></td></tr>`;
-  const detail=(lab,v)=>`<tr class="resp-detail"><td style="padding-left:30px;color:var(--text-muted);font-weight:400">${lab}</td><td style="text-align:right">${fmt(v)}</td><td style="text-align:right"><span class="muted">${pctOf(v)}</span></td></tr>`;
-  const abTot=+r.abiertas_total||0;
-  const abiertas=(r.abiertas||[]).map(a=>detail(escx(a.texto), +a.n)).join('');
-  el.innerHTML=`<table><thead><tr><th>Respuesta</th><th style="text-align:right">Cantidad</th><th style="text-align:right">% del total</th></tr></thead><tbody id="respBody">
-    ${row(_hb('resp_tot')+'Respondieron (total)', tot, 'row-total')}
-    ${row(_hb('resp_int')+'Interesado', +r.interesado||0)}
-    ${row(_hb('resp_baja')+'Ya no vendo', +r.ya_vendio||0)}
-    ${row(_hb('resp_bajatxt')+'Baja', +r.baja_texto||0)}
-    <tr class="row-total"><td><button type="button" id="respToggleBtn" class="help-btn" onclick="toggleAbiertas()" aria-label="Abrir/cerrar respuestas abiertas">▸</button> Respuestas Abiertas</td><td style="text-align:right">${fmt(abTot)}</td><td style="text-align:right"><span class="muted">${pctOf(abTot)}</span></td></tr>
-    ${abiertas}
+  const rawS=((D.respuestas||{})[country]||{})[cicloTipo]||[];
+  if(!rawS.length){ el.innerHTML='<p class="note">Sin datos de respuestas para '+country+' (aún no disponible).</p>'; return; }
+  const byB={}; rawS.forEach(r=>byB[r.bucket]=r);
+  const arr=lastPeriods(cicloTipo,20).map(b=>byB[b]||{bucket:b,total:0,interesado:0,ya_vendio:0,baja_texto:0,abiertas_total:0,abiertas:{}});
+  const MES=['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+  const lbl=b=> cicloTipo==='mes' ? (MES[+b.slice(5,7)-1]+' '+b.slice(2,4)) : b.slice(5);
+  const last=arr.length-1, cur=i=>i===last?' class="cur"':'';
+  const th=arr.map((r,i)=>`<th${cur(i)} style="text-align:right">${lbl(r.bucket)}</th>`).join('');
+  const hcol={dia:'Día',semana:'Semana (inicia Lun)',mes:'Mes'}[cicloTipo]||'Período';
+  const row=(lab,key,cls='row-stage')=>`<tr class="${cls}"><td>${lab}</td>${arr.map((r,i)=>`<td${cur(i)} style="text-align:right">${z(+r[key])}</td>`).join('')}</tr>`;
+  const texts={}; arr.forEach(r=>Object.entries(r.abiertas||{}).forEach(([t,n])=>texts[t]=(texts[t]||0)+n));
+  const detail=Object.keys(texts).sort((a,b)=>texts[b]-texts[a]).map(t=>
+    `<tr class="resp-detail"><td style="padding-left:30px;color:var(--text-muted);font-weight:400">${escx(t)}</td>${arr.map((r,i)=>`<td${cur(i)} style="text-align:right">${z(+(r.abiertas||{})[t]||0)}</td>`).join('')}</tr>`).join('');
+  el.innerHTML=`<table><thead><tr><th>${hcol}</th>${th}</tr></thead><tbody id="respBody">
+    ${row(_hb('resp_tot')+'Respondieron (total)','total','row-total')}
+    ${row(_hb('resp_int')+'Interesado','interesado')}
+    ${row(_hb('resp_baja')+'Ya no vendo','ya_vendio')}
+    ${row(_hb('resp_bajatxt')+'Baja','baja_texto')}
+    <tr class="row-total"><td><button type="button" id="respToggleBtn" class="help-btn" onclick="toggleAbiertas()" aria-label="Abrir/cerrar respuestas abiertas">▸</button> Respuestas Abiertas</td>${arr.map((r,i)=>`<td${cur(i)} style="text-align:right">${z(+r.abiertas_total)}</td>`).join('')}</tr>
+    ${detail}
   </tbody></table>
-  <p class="note" style="padding:8px 13px">Respuestas recibidas en la línea (mart inbound) los últimos ${r.ventana||'14d'}. «Respuestas Abiertas» agrupa el texto libre distinto de los botones — ábrela con ▸ para ver el detalle.</p>`;
+  <p class="note" style="padding:8px 13px">Respuestas recibidas en la línea (mart inbound) por período de llegada (según Temporalidad). «Respuestas Abiertas» agrupa el texto libre distinto de los botones — ábrela con ▸ para ver el detalle por período.</p>`;
+  el.scrollLeft=el.scrollWidth;
 }
 function toggleAbiertas(){
   const b=document.getElementById('respBody'); if(!b) return;

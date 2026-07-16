@@ -149,6 +149,30 @@ def errores_serie(sendlog, mart_by_msgid, tipo, n=20):
         out.append({"bucket":k, **d})
     return out
 
+def respuestas_serie(inbound_rows, tipo, n=20):
+    """Respuestas recibidas por período (fecha del inbound, granularidad `tipo`): total, INTERESADO,
+    YAVENDIO (botón), baja de texto libre, y el texto libre distinto (dict texto->conteo). `n` períodos recientes."""
+    from collections import defaultdict, Counter
+    def blank(): return {"total":0,"interesado":0,"ya_vendio":0,"baja_texto":0,"abiertas":Counter()}
+    A=defaultdict(blank)
+    for i in inbound_rows:
+        bkt=bucket((i.get("ts") or "")[:10], tipo)
+        if not bkt: continue
+        raw=(i.get("respuesta_cliente") or "").strip()
+        act=parse_resp(raw).get("action") or "OTRO"
+        a=A[bkt]; a["total"]+=1
+        if act=="INTERESADO": a["interesado"]+=1
+        elif act=="YAVENDIO": a["ya_vendio"]+=1
+        elif "baja" in raw.lower(): a["baja_texto"]+=1
+        else: a["abiertas"][raw[:160] or "(vacío)"]+=1
+    out=[]
+    for k in sorted(A)[-n:]:
+        a=A[k]
+        out.append({"bucket":k,"total":a["total"],"interesado":a["interesado"],"ya_vendio":a["ya_vendio"],
+                    "baja_texto":a["baja_texto"],"abiertas_total":sum(a["abiertas"].values()),
+                    "abiertas":dict(a["abiertas"])})
+    return out
+
 def contact_dist(contact_rows):
     from collections import Counter
     return dict(Counter(r.get("state") for r in contact_rows if r.get("state")))

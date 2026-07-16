@@ -148,28 +148,6 @@ def completitud(pais, rows):
     return {"series":series,"na":na}
 
 # --- helpers nuevos: respuestas parseadas del mart (INTERESADO/YAVENDIO/OTRO) y A/B por template ---
-def _respuestas_14d(inb, days=14):
-    """Respuestas recibidas en la línea (mart inbound) los últimos `days` días: total, INTERESADO,
-    YAVENDIO, y cada respuesta de TEXTO LIBRE distinta como fila propia (con su conteo)."""
-    from collections import Counter
-    hoy = datetime.date.today()
-    ini = (hoy - datetime.timedelta(days=days)).isoformat()
-    interesado = yavendio = baja_texto = total = 0
-    abiertas = Counter()
-    for i in inb:
-        ts = (i.get("ts") or "")[:10]
-        if ts < ini: continue
-        total += 1
-        raw = (i.get("respuesta_cliente") or "").strip()
-        act = agg.parse_resp(raw).get("action") or "OTRO"
-        if act == "INTERESADO": interesado += 1
-        elif act == "YAVENDIO": yavendio += 1
-        elif "baja" in raw.lower(): baja_texto += 1          # escribieron "baja" en vez de tocar el botón
-        else: abiertas[raw[:160] or "(vacío)"] += 1
-    return {"total": total, "interesado": interesado, "ya_vendio": yavendio, "baja_texto": baja_texto,
-            "abiertas": [{"texto": t, "n": n} for t, n in abiertas.most_common()],
-            "abiertas_total": sum(abiertas.values()), "ventana": f"{days}d"}
-
 def _ab(sl, mbm, inbound_phones, interesado_phones):
     """Comparativo A/B por `template`: enviados, entregados, delivery/read/respond/interesado rate.
     Excluye envíos fallidos por bug de plantilla sin imagen (7008)."""
@@ -210,6 +188,7 @@ mbm = M.mart_by_msgid(30)
 ibm = I.delivery_by_msgid([r.get("message_id") for r in sl7 if r.get("message_id")])
 mbm = {**mbm, **ibm}   # Infobip (tiempo real) pisa el mart en los recientes; el mart cubre el histórico
 inb = M.inbound_rows(30)
+inb_resp = M.inbound_rows(180)   # ventana más larga para la tabla de Respuestas por período (día/semana/mes)
 # respuestas parseadas del mart
 parsed=[(i["phone"], agg.parse_resp(i["respuesta_cliente"]), i["ts"]) for i in inb]
 inbound_phones={p for p,_,_ in parsed if p}
@@ -228,7 +207,7 @@ data={
   "linea": {"MX": linea_meta("MX"), "CO": None},
   "embudo": {"MX": agg.embudo(sl7,mbm,inbound_phones,interesado_phones,recreated_oldnids,qualified_oldnids,dias), "CO": None},
   "errores": {"MX": {t: agg.errores_serie(sl, mbm, t) for t in ("dia","semana","mes")}, "CO": None},
-  "respuestas": {"MX": _respuestas_14d(inb, 14), "CO": None},
+  "respuestas": {"MX": {t: agg.respuestas_serie(inb_resp, t) for t in ("dia","semana","mes")}, "CO": None},
   "cosecha": {"MX": {t: agg.cosecha_serie(sl, mbm, inbound_phones, interesado_phones, t) for t in ("dia","semana","mes")}, "CO": None},
   "ab_templates": {"MX": _ab(sl,mbm,inbound_phones,interesado_phones), "CO": None},
   "recreacion": {"MX": {t: agg.recreacion_serie(rec,t) for t in ("dia","semana","mes")}, "CO": None},
