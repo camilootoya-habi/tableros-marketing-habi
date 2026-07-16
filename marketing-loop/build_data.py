@@ -216,6 +216,7 @@ data={
   "por_hora": {"MX": por_hora("MX", inbound_phones), "CO": {"serie":[]}},
   "completitud": {p: completitud(p, COMP) for p in ("MX","CO")},
   "hoy": {r["pais"]: int(r.get("creados_hoy") or 0) for r in q("query_hoy.sql")},
+  "comparativa": q("query_comparativa.sql"),
   "asignados": q("query_asignados.sql"),
 }
 open(os.path.join(HERE,"data.json"),"w").write(json.dumps(data, ensure_ascii=False, separators=(",",":")))
