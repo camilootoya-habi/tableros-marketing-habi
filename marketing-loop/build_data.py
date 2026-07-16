@@ -219,7 +219,7 @@ data={
   "embudo": {"MX": agg.embudo(sl7,mbm,inbound_phones,interesado_phones,recreated_oldnids,qualified_oldnids,dias), "CO": None},
   "errores": {"MX": agg.errores_por_tipo(sl7,mbm), "CO": None},
   "respuestas": {"MX": _resp_tipos(parsed, mbm, WIN, sl7), "CO": None},
-  "cosecha": {"MX": {t: agg.cosecha_serie(sl, mbm, inbound_phones, t) for t in ("dia","semana","mes")}, "CO": None},
+  "cosecha": {"MX": {t: agg.cosecha_serie(sl, mbm, inbound_phones, interesado_phones, t) for t in ("dia","semana","mes")}, "CO": None},
   "ab_templates": {"MX": _ab(sl,mbm,inbound_phones), "CO": None},
   "recreacion": {"MX": {t: agg.recreacion_serie(rec,t) for t in ("dia","semana","mes")}, "CO": None},
   "antifunnel": {"MX": {t: agg.antifunnel_serie(rec,t) for t in ("dia","semana","mes")}, "CO": None},

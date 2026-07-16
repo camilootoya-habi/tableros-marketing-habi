@@ -775,6 +775,7 @@ function renderCohorteOrigen(){
     ${step(H('Entregados ÷ enviados de la cosecha. Verde = mejor.')+'Entregados','entregados','enviados')}
     ${step(H('Leídos ÷ entregados. ⚠ WhatsApp no reporta SEEN por esta vía en envíos recientes → suele salir 0.')+'Leídos','leidos','entregados')}
     ${step(H('Respondidos ÷ entregados (teléfono que respondió en la ventana del mart).')+'Respondidos','respondidos','entregados')}
+    ${step(H('Interesados ÷ entregados: respondieron con el botón "Estoy interesado" (INTERESADO).')+'Interesados','interesados','entregados')}
   </tbody></table>`;
   el.scrollLeft=el.scrollWidth;
 }
