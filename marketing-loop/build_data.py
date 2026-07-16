@@ -196,6 +196,9 @@ hoy_iso = hoy.isoformat()
 sl7 = [r for r in sl if hoy7 <= (r.get("attempted_at") or "")[:10] < hoy_iso]   # 7d completos, excluye hoy
 rec = N.recreation_rows(); cst = N.contact_status_rows()
 mbm = M.mart_by_msgid(30)
+import sources_infobip as I
+ibm = I.delivery_by_msgid([r.get("message_id") for r in sl if r.get("message_id")])
+mbm = {**mbm, **ibm}   # Infobip (tiempo real) pisa el mart en los recientes; el mart cubre el histórico
 inb = M.inbound_rows(30)
 # respuestas parseadas del mart
 parsed=[(i["phone"], agg.parse_resp(i["respuesta_cliente"]), i["ts"]) for i in inb]
@@ -230,7 +233,7 @@ open(os.path.join(HERE,"data.json"),"w").write(json.dumps(data, ensure_ascii=Fal
 print("data.json OK |",
       "send_log",len(sl), "(7d)",len(sl7),
       "| recreation",len(rec), "| contact_status",len(cst),
-      "| mart_msgids",len(mbm), "| inbound",len(inb),
+      "| mart_msgids",len(mbm), "| infobip",len(ibm), "| inbound",len(inb),
       "| linea MX",data["linea"]["MX"],
       "| embudo tasas",data["embudo"]["MX"]["tasas"],
       "| errores",data["errores"]["MX"],
