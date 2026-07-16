@@ -192,7 +192,14 @@
   <div class="tabletitle">Impacto en asignados
     <span class="help" title="Aporte de los leads del marketing loop (UTM %reinteresados%) sobre los asignados de marketing, por período (según Temporalidad). Fuente: WBR asignados mart × hubspot.deals.">?</span>
   </div>
-  <div class="tbl-wrap" id="impacto"></div>
+  <div class="grid">
+    <section class="panel" style="grid-column:1 / -1"><div class="tbl-wrap" id="impacto"></div></section>
+  </div>
+
+  <div class="tabletitle">Calidad por antigüedad del lead original
+    <button type="button" class="help-btn" onclick="document.getElementById('helpCoh').showModal()" aria-label="Explicación">?</button>
+  </div>
+  <div class="tbl-wrap ftab" id="cohorteTab"></div>
 
   <div class="tabletitle">Errores de entrega y plantillas · últimos 7 días
     <span class="help" title="Por qué no llegan los mensajes (bucketeo del error_name del mart de Infobip) y comparativo A/B por plantilla, sobre la misma ventana que Salida real.">?</span>
@@ -206,16 +213,6 @@
   <div class="grid">
     <section class="panel"><h3>Respuestas por tipo <span class="help" title="Distribución de las respuestas parseadas del mart en la ventana (Interesado / Ya vendió / Otro, texto libre) + respond rate sobre entregados.">?</span></h3><div id="resp"></div></section>
     <section class="panel"><h3>Estado de contacto <span class="help" title="Distribución histórica (total acumulado) del estado de contacto de los leads en Neon: enviado (sin respuesta aún), ya vendió, respondió otro, reinteresado (interesado→recreado) y baja (pidió no ser contactado).">?</span></h3><div style="position:relative;width:100%;height:230px"><canvas id="c_contacto"></canvas></div></section>
-  </div>
-
-  <div class="tabletitle">Calidad por antigüedad del lead original
-    <button type="button" class="help-btn" onclick="document.getElementById('helpCoh').showModal()" aria-label="Explicación">?</button>
-  </div>
-  <div class="grid">
-    <section class="panel" style="grid-column:1 / -1">
-      <div class="tbl-wrap ftab" id="cohorteTab"></div>
-      <p class="note">Cada columna = un <b>trimestre de creación del lead original</b> que contactamos. Responde: ¿a los leads más viejos les entrega peor la línea (más freq-cap / device-error)? Solo cohorte con <code>nid</code> original resuelto a trimestre.</p>
-    </section>
   </div>
   <dialog id="helpCoh" class="help-dialog">
     <h3>Calidad por antigüedad del lead original</h3>
