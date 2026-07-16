@@ -148,9 +148,10 @@ def completitud(pais, rows):
     return {"series":series,"na":na}
 
 # --- helpers nuevos: respuestas parseadas del mart (INTERESADO/YAVENDIO/OTRO) y A/B por template ---
-def _resp_tipos(parsed, mbm, win):
+def _resp_tipos(parsed, mbm, win, sl7):
     """Cuenta INTERESADO/YAVENDIO/OTRO entre los inbound parseados (mart) en la ventana de `win` días
-    completos (excluye hoy). respond_rate = respuestas (en la ventana) / entregados (mbm, ~30d)."""
+    completos (excluye hoy). respond_rate = respuestas (en la ventana) / entregados EN LA MISMA VENTANA
+    (`sl7`, envíos de los últimos `win` días), no sobre todo `mbm` (~30d) — evita subestimar la tasa."""
     hoy = datetime.date.today()
     ini = (hoy - datetime.timedelta(days=win)).isoformat()
     fin = hoy.isoformat()
@@ -160,7 +161,7 @@ def _resp_tipos(parsed, mbm, win):
         act = pr.get("action") or "OTRO"
         c[act] = c.get(act,0) + 1
     total = sum(c.values())
-    entregados = sum(1 for v in mbm.values() if v.get("status")=="delivered")
+    entregados = sum(1 for r in sl7 if (mbm.get(r.get("message_id") or "") or {}).get("status")=="delivered")
     return {"interesado":c["INTERESADO"], "ya_vendio":c["YAVENDIO"], "otro":c["OTRO"],
             "total_respuestas":total, "ventana":f"{win}d",
             "respond_rate": round(total/entregados,3) if entregados else None}
@@ -215,7 +216,7 @@ data={
   "linea": {"MX": linea_meta("MX"), "CO": None},
   "embudo": {"MX": agg.embudo(sl7,mbm,inbound_phones,interesado_phones,recreated_oldnids,qualified_oldnids,dias), "CO": None},
   "errores": {"MX": agg.errores_por_tipo(sl7,mbm), "CO": None},
-  "respuestas": {"MX": _resp_tipos(parsed, mbm, WIN), "CO": None},
+  "respuestas": {"MX": _resp_tipos(parsed, mbm, WIN, sl7), "CO": None},
   "cohorte": {"MX": agg.cohorte(sl,mbm,nidq), "CO": None},
   "ab_templates": {"MX": _ab(sl,mbm,inbound_phones), "CO": None},
   "recreacion": {"MX": {t: agg.recreacion_serie(rec,t) for t in ("dia","semana","mes")}, "CO": None},
