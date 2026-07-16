@@ -189,12 +189,12 @@
   <p class="note" id="lineaTip"></p>
 
   <div class="tabletitle">Impacto en asignados
-    <span class="help" title="Aporte de los leads del marketing loop (UTM %reinteresados%) sobre los asignados de marketing, por período (según Temporalidad). Fuente: WBR asignados mart × hubspot.deals.">?</span>
+    <button type="button" class="help-btn" onclick="openHelp('imp')" aria-label="Explicación">?</button>
   </div>
   <div class="tbl-wrap ftab" id="impacto"></div>
 
   <div class="tabletitle">Cosecha de envío · avance por período
-    <button type="button" class="help-btn" onclick="document.getElementById('helpCoh').showModal()" aria-label="Explicación">?</button>
+    <button type="button" class="help-btn" onclick="openHelp('cos')" aria-label="Explicación">?</button>
   </div>
   <div class="tbl-wrap ftab" id="cohorteTab"></div>
 
@@ -211,13 +211,6 @@
     <section class="panel"><h3>Respuestas por tipo <span class="help" title="Distribución de las respuestas parseadas del mart en la ventana (Interesado / Ya vendió / Otro, texto libre) + respond rate sobre entregados.">?</span></h3><div id="resp"></div></section>
     <section class="panel"><h3>Estado de contacto <span class="help" title="Distribución histórica (total acumulado) del estado de contacto de los leads en Neon: enviado (sin respuesta aún), ya vendió, respondió otro, reinteresado (interesado→recreado) y baja (pidió no ser contactado).">?</span></h3><div style="position:relative;width:100%;height:230px"><canvas id="c_contacto"></canvas></div></section>
   </div>
-  <dialog id="helpCoh" class="help-dialog">
-    <h3>Cosecha de envío · avance por período</h3>
-    <p>Agrupa los mensajes por su <b>período de envío</b> (fecha de envío, según la <b>Temporalidad</b>: día / semana / mes) y muestra el avance de cada cosecha: <b>Enviados</b> → <b>Entregados</b> (÷ enviados) → <b>Leídos</b> (÷ entregados) → <b>Respondidos</b> (÷ entregados). Columnas = los 20 períodos más recientes; <code>*</code> = período en curso.</p>
-    <p>Las filas de tasa se colorean verde=mejor / rojo=peor (heatmap sobre su denominador).</p>
-    <p>⚠ <b>Leídos</b>: WhatsApp no reporta SEEN por esta vía en envíos recientes (delivery es tiempo real vía Infobip /logs, pero sin lectura), así que esta fila suele salir en 0. Entregados/Respondidos sí son fiables. Sujeto al filtro de <b>País</b>.</p>
-    <button class="close-btn" onclick="document.getElementById('helpCoh').close()">Cerrar</button>
-  </dialog>
 
   <div class="tabletitle">Mejor hora de envío · read & respond rate
     <span class="help" title="Igual que la gráfica de arriba pero el eje X es la HORA de envío del mensaje (hora real del mart de Infobip), no el trimestre de creación del lead. Mide read rate y respond rate por hora del día en que salió el mensaje. NO mostramos delivery rate por hora (estaba contaminado por la línea quemada/plantilla disabled); read y respond son comportamiento del destinatario, más limpios. TZ del mart por calibrar cuando entre el goteo horario.">?</span>
@@ -567,6 +560,19 @@ const CARD_HELP={
   estado:{t:'Estado de la línea',b:'<p>Estado de conexión del número en Meta/WhatsApp. <b>Conectada</b> = operativa y habilitada para enviar.</p><p>Cualquier otro estado (desconectada, pendiente, restringida) significa que los envíos pueden fallar. Fuente: Meta.</p>'},
   review:{t:'Revisión de la cuenta',b:'<p>Estado de revisión de la cuenta de WhatsApp Business ante Meta. <b>Aprobada</b> = pasó la verificación de Meta y puede operar con normalidad.</p><p>Si no está aprobada (en revisión / rechazada), Meta puede limitar o bloquear el envío. Fuente: Meta (account_review_status).</p>'},
   hoy:{t:'Leads creados hoy',b:'<p>Negocios con la <b>UTM del marketing loop</b> (<code>%reinteresados%</code>) creados <b>hoy</b> en HubSpot. Es la fuente que más rápido refresca (~7 min), por eso va casi en vivo.</p><p>Hora local del país.</p>'},
+  imp:{t:'Impacto en asignados',b:'<p>Aporte de los leads del <b>marketing loop</b> (UTM <code>%reinteresados%</code>) a los <b>asignados de marketing</b>, por período (según Temporalidad). Cruza la <b>WBR de asignados</b> con <code>hubspot.deals</code>.</p><p>Columnas = los 20 períodos más recientes; <code>*</code> = período en curso.</p>'},
+  imp_total:{t:'Total Marketing',b:'<p>Asignados de marketing del período: leads que pasaron a <b>gestión comercial</b>, de las <b>6 fuentes de marketing</b> (fuente_id_tig). Fuente: WBR asignados mart.</p>'},
+  imp_web:{t:'WEB',b:'<p>De los asignados, solo los de <b>fuente WEB</b> (fuente_id_tig = 3).</p>'},
+  imp_loop:{t:'Marketing loop (WEB)',b:'<p>De los asignados, los que traen la <b>UTM del loop</b> (<code>%reinteresados%</code> en hubspot.deals). Son WEB. Es el <b>aporte directo</b> del loop.</p>'},
+  imp_loopvstotal:{t:'Loop vs Total Marketing',b:'<p>Loop ÷ Total Marketing: qué <b>porción de todo el marketing asignado</b> vino del loop.</p>'},
+  imp_loopvsweb:{t:'Loop vs WEB',b:'<p>Loop ÷ WEB: qué <b>porción de los asignados WEB</b> vino del loop.</p>'},
+  imp_sinloop:{t:'Total Marketing sin loop',b:'<p>Total Marketing − loop: los asignados que <b>habríamos tenido sin el programa</b> (contrafactual).</p>'},
+  cos:{t:'Cosecha de envío · avance por período',b:'<p>Agrupa los mensajes por su <b>período de envío</b> (según Temporalidad: día / semana / mes, hora CDMX) y muestra el avance de cada cosecha: <b>Enviados → Entregados → Leídos → Respondidos → Interesados</b>.</p><p>Columnas = los 20 períodos más recientes; <code>*</code> = período en curso.</p>'},
+  cos_env:{t:'Enviados',b:'<p>Mensajes de reactivación <b>enviados</b> en ese período (cosecha por fecha de envío, hora CDMX).</p>'},
+  cos_entr:{t:'Entregados',b:'<p><b>Entregados ÷ enviados</b> de la cosecha: llegaron al celular. Verde = mejor. Delivery en tiempo real (mart + Infobip /logs).</p>'},
+  cos_leidos:{t:'Leídos',b:'<p><b>Leídos ÷ entregados.</b> ⚠ WhatsApp no reporta SEEN por esta vía en envíos recientes → suele salir 0.</p>'},
+  cos_resp:{t:'Respondidos',b:'<p><b>Respondidos ÷ entregados:</b> tocaron un botón o escribieron (teléfono que respondió en la ventana del mart).</p>'},
+  cos_int:{t:'Interesados',b:'<p><b>Interesados ÷ entregados:</b> respondieron con «Estoy interesado» (INTERESADO). Es el <b>objetivo</b> del loop.</p>'},
 };
 function openHelp(k){const h=CARD_HELP[k]; if(!h) return;
   document.getElementById('helpCardT').textContent=h.t;
@@ -665,12 +671,12 @@ function renderImpacto(){
   const ratio=(num,den,i)=>`<td${cur(i)} style="text-align:right;font-weight:800;color:${num>0?'var(--accent)':'var(--text-muted)'}">${den?(num/den*100).toFixed(1):'0.0'}%</td>`;
   const hcol={dia:'Día',semana:'Semana (inicia Lun)',mes:'Mes'}[cicloTipo]||'Periodo';
   el.innerHTML=`<table><thead><tr><th>${hcol}</th>${th}</tr></thead><tbody>
-    ${tr(H('Asignados de las 6 fuentes de marketing (fuente_id_tig) por período, desde la WBR mart.')+'Total Marketing',(r,i)=>`<td${cur(i)} style="text-align:right">${fmt(+r.total_asignados)}</td>`,'row-total')}
-    ${tr(H('Asignados solo de fuente WEB (fuente_id_tig=3).')+'WEB',(r,i)=>`<td${cur(i)} style="text-align:right">${fmt(+r.asignados_web)}</td>`)}
-    ${tr(H('Asignados con utm_campaign LIKE %reinteresados% (hubspot.deals) = leads del marketing loop. Son WEB.')+'Marketing loop (WEB)',(r,i)=>`<td${cur(i)} style="text-align:right">${fmt(+r.asignados_reint)}</td>`)}
-    ${tr(H('Marketing loop ÷ Total Marketing = participación del loop en todo el marketing asignado.')+'<b>Loop vs Total Marketing</b>',(r,i)=>ratio(+r.asignados_reint,+r.total_asignados,i))}
-    ${tr(H('Marketing loop ÷ WEB = participación del loop dentro de los asignados WEB.')+'<b>Loop vs WEB</b>',(r,i)=>ratio(+r.asignados_reint,+r.asignados_web,i))}
-    ${tr(H('Total Marketing − loop = asignados que habríamos tenido sin el programa.')+'Total Marketing sin loop',(r,i)=>`<td${cur(i)} style="text-align:right;color:var(--text-muted)">${fmt((+r.total_asignados)-(+r.asignados_reint))}</td>`)}
+    ${tr(_hb('imp_total')+'Total Marketing',(r,i)=>`<td${cur(i)} style="text-align:right">${fmt(+r.total_asignados)}</td>`,'row-total')}
+    ${tr(_hb('imp_web')+'WEB',(r,i)=>`<td${cur(i)} style="text-align:right">${fmt(+r.asignados_web)}</td>`)}
+    ${tr(_hb('imp_loop')+'Marketing loop (WEB)',(r,i)=>`<td${cur(i)} style="text-align:right">${fmt(+r.asignados_reint)}</td>`)}
+    ${tr(_hb('imp_loopvstotal')+'<b>Loop vs Total Marketing</b>',(r,i)=>ratio(+r.asignados_reint,+r.total_asignados,i))}
+    ${tr(_hb('imp_loopvsweb')+'<b>Loop vs WEB</b>',(r,i)=>ratio(+r.asignados_reint,+r.asignados_web,i))}
+    ${tr(_hb('imp_sinloop')+'Total Marketing sin loop',(r,i)=>`<td${cur(i)} style="text-align:right;color:var(--text-muted)">${fmt((+r.total_asignados)-(+r.asignados_reint))}</td>`)}
   </tbody></table>`;
   el.scrollLeft=el.scrollWidth;
 }
@@ -750,14 +756,14 @@ function renderCohorteOrigen(){
   const col=k=>arr.map(r=>+r[k]||0);
   const th=arr.map((r,i)=>`<th${cur(i)} style="text-align:right">${lbl(r.bucket)}</th>`).join('');
   const hcol={dia:'Día',semana:'Semana (inicia Lun)',mes:'Mes'}[cicloTipo]||'Período';
-  const totalRow=`<tr class="row-total"><td>${H('Mensajes de reactivación enviados en ese período (cosecha por fecha de envío).')}Enviados</td>${arr.map((r,i)=>`<td${cur(i)} style="text-align:right">${z(+r.enviados)}</td>`).join('')}</tr>`;
+  const totalRow=`<tr class="row-total"><td>${_hb('cos_env')}Enviados</td>${arr.map((r,i)=>`<td${cur(i)} style="text-align:right">${z(+r.enviados)}</td>`).join('')}</tr>`;
   const step=(lab,key,den)=>`<tr class="row-stage"><td>${lab}</td>${heatCells(col(key),col(den))}</tr>`;
   el.innerHTML=`<table><thead><tr><th>${hcol}</th>${th}</tr></thead><tbody>
     ${totalRow}
-    ${step(H('Entregados ÷ enviados de la cosecha. Verde = mejor.')+'Entregados','entregados','enviados')}
-    ${step(H('Leídos ÷ entregados. ⚠ WhatsApp no reporta SEEN por esta vía en envíos recientes → suele salir 0.')+'Leídos','leidos','entregados')}
-    ${step(H('Respondidos ÷ entregados (teléfono que respondió en la ventana del mart).')+'Respondidos','respondidos','entregados')}
-    ${step(H('Interesados ÷ entregados: respondieron con el botón "Estoy interesado" (INTERESADO).')+'Interesados','interesados','entregados')}
+    ${step(_hb('cos_entr')+'Entregados','entregados','enviados')}
+    ${step(_hb('cos_leidos')+'Leídos','leidos','entregados')}
+    ${step(_hb('cos_resp')+'Respondidos','respondidos','entregados')}
+    ${step(_hb('cos_int')+'Interesados','interesados','entregados')}
   </tbody></table>`;
   el.scrollLeft=el.scrollWidth;
 }
