@@ -173,6 +173,41 @@ def respuestas_serie(inbound_rows, tipo, n=20):
                     "abiertas":dict(a["abiertas"])})
     return out
 
+def cohorte_origen_serie(sendlog, nid2quarter, inbound_phones, interesado_phones):
+    """Por TRIMESTRE de creación del lead original: enviados, respondieron, interesados (para respond-rate
+    y % interesados). Enlaza envío→trimestre por nid original; respuesta por teléfono."""
+    from collections import defaultdict
+    A=defaultdict(lambda: {"enviados":0,"respondieron":0,"interesados":0})
+    for r in sendlog:
+        q=nid2quarter.get(r.get("nid"))
+        if not q: continue
+        a=A[q]; a["enviados"]+=1
+        if r.get("phone") in inbound_phones: a["respondieron"]+=1
+        if r.get("phone") in interesado_phones: a["interesados"]+=1
+    return [{"bucket":k, **A[k]} for k in sorted(A)]
+
+def diario_serie(sendlog, inbound_rows, recreation_rows, days=60):
+    """Serie DIARIA (últimos `days` días con actividad) del embudo: enviados (send_log), respuestas/interesados
+    (inbound mart), creados/calificados (recreation Neon), por fecha."""
+    from collections import defaultdict
+    env=defaultdict(int); resp=defaultdict(int); inter=defaultdict(int); cre=defaultdict(int); cal=defaultdict(int)
+    for r in sendlog:
+        d=(r.get("attempted_at") or "")[:10]
+        if d: env[d]+=1
+    for i in inbound_rows:
+        d=(i.get("ts") or "")[:10]
+        if not d: continue
+        resp[d]+=1
+        if parse_resp(i.get("respuesta_cliente")).get("action")=="INTERESADO": inter[d]+=1
+    for r in recreation_rows:
+        d=(r.get("created_at") or "")[:10]
+        if not d: continue
+        if r.get("success"): cre[d]+=1
+        if r.get("state_at_creation") in (20,63): cal[d]+=1
+    dias=sorted(set(env)|set(resp)|set(cre))[-days:]
+    return [{"fecha":d,"enviados":env[d],"respuestas":resp[d],"interesados":inter[d],
+             "creados":cre[d],"calificados":cal[d]} for d in dias]
+
 def contact_dist(contact_rows):
     from collections import Counter
     return dict(Counter(r.get("state") for r in contact_rows if r.get("state")))

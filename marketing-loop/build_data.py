@@ -197,7 +197,8 @@ interesado_phones={p for p,pr,_ in parsed if p and pr["action"]=="INTERESADO"}
 recreated_oldnids={r["old_nid"] for r in rec if r.get("success")}
 qualified_oldnids={r["old_nid"] for r in rec if r.get("state_at_creation") in (20,63)}
 dias=[(hoy-datetime.timedelta(days=k)).isoformat() for k in range(WIN-1,-1,-1)]  # hoy-6..hoy (incl hoy)
-# cohorte necesita nid->trimestre
+# cohorte por antigüedad del lead original: nid->trimestre de creación
+nidq=M.nid2quarter(list({r["nid"] for r in sl if r.get("nid")}))
 # antifunnel: estado actual de recreados
 est=M.estado_actual_by_deal([r["new_deal_id"] for r in rec if r.get("new_deal_id")])
 for r in rec: r["estado_actual"]=est.get(str(r.get("new_deal_id")))
@@ -217,6 +218,8 @@ data={
   "completitud": {p: completitud(p, COMP) for p in ("MX","CO")},
   "hoy": {r["pais"]: int(r.get("creados_hoy") or 0) for r in q("query_hoy.sql")},
   "comparativa": q("query_comparativa.sql"),
+  "cohorte_origen": {"MX": agg.cohorte_origen_serie(sl, nidq, inbound_phones, interesado_phones), "CO": None},
+  "diario": {"MX": agg.diario_serie(sl, inb_resp, rec), "CO": None},
   "asignados": q("query_asignados.sql"),
 }
 open(os.path.join(HERE,"data.json"),"w").write(json.dumps(data, ensure_ascii=False, separators=(",",":")))

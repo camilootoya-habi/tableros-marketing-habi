@@ -228,6 +228,32 @@
   </div>
   <section class="panel"><div id="comparativa"></div></section>
 
+  <div class="tabletitle">Calidad por antigüedad del lead original
+    <button type="button" class="help-btn" onclick="openHelp('calidad')" aria-label="Explicación">?</button>
+  </div>
+  <div class="grid">
+    <section class="panel" style="grid-column:1 / -1">
+      <div style="position:relative;height:300px"><canvas id="c_cohorte"></canvas></div>
+      <p class="note">Cada punto/barra = un <b>trimestre de creación del lead original</b> que contactamos. ¿Los leads más viejos responden mejor o peor, y con qué calidad (% interesados)? Solo cohorte con <code>nid</code> resuelto a trimestre.</p>
+    </section>
+  </div>
+
+  <div class="tabletitle">Evolución diaria
+    <button type="button" class="help-btn" onclick="openHelp('diario')" aria-label="Explicación">?</button>
+  </div>
+  <div class="grid g5">
+    <section class="panel"><h3 class="sm">Base enviada (WhatsApp) <span class="help" title="Mensajes de reactivación enviados por WhatsApp por día (send_log, fecha de envío CDMX).">?</span></h3><div class="ch"><canvas id="c_env"></canvas></div></section>
+    <section class="panel"><h3 class="sm">Conversión a respuesta <span class="help" title="Respuestas recibidas ÷ mensajes enviados ese día (%). Aproximado: las respuestas llegan con rezago respecto al envío.">?</span></h3><div class="ch"><canvas id="c_cr"></canvas></div></section>
+    <section class="panel"><h3 class="sm">Conversión respuesta → interesado <span class="help" title="De los que respondieron ese día, % que eligió 'Interesado'. Tooltip muestra n de respuestas.">?</span></h3><div class="ch"><canvas id="c_ci"></canvas></div></section>
+    <section class="panel"><h3 class="sm">Conversión interesado → creado <span class="help" title="Leads recreados ÷ interesados (%). Recreados = negocios creados ese día en el backbone (Neon recreation).">?</span></h3><div class="ch"><canvas id="c_ic"></canvas></div></section>
+    <section class="panel"><h3 class="sm">Conversión creado → calificado MM <span class="help" title="Calificados MM (backbone 20/63) ÷ recreados ese día (%), por fecha de creación.">?</span></h3><div class="ch"><canvas id="c_cc"></canvas></div></section>
+    <section class="panel"><h3 class="sm">Base enviada · prom. móvil 7d <span class="help" title="Promedio móvil de 7 días de los mensajes enviados por día.">?</span></h3><div class="ch"><canvas id="c_env_ma"></canvas></div></section>
+    <section class="panel"><h3 class="sm">Conversión a respuesta · prom. móvil 7d <span class="help" title="Promedio móvil de 7 días de respuestas ÷ enviados.">?</span></h3><div class="ch"><canvas id="c_cr_ma"></canvas></div></section>
+    <section class="panel"><h3 class="sm">Conversión resp → interesado · prom. móvil 7d <span class="help" title="Promedio móvil de 7 días de interesados ÷ respuestas.">?</span></h3><div class="ch"><canvas id="c_ci_ma"></canvas></div></section>
+    <section class="panel"><h3 class="sm">Conversión interesado → creado · prom. móvil 7d <span class="help" title="Promedio móvil de 7 días de recreados ÷ interesados.">?</span></h3><div class="ch"><canvas id="c_ic_ma"></canvas></div></section>
+    <section class="panel"><h3 class="sm">Conversión creado → calificado MM · prom. móvil 7d <span class="help" title="Promedio móvil de 7 días de calificados MM ÷ recreados.">?</span></h3><div class="ch"><canvas id="c_cc_ma"></canvas></div></section>
+  </div>
+
   <div class="tabletitle">Mejor hora de envío · read & respond rate
     <span class="help" title="Igual que la gráfica de arriba pero el eje X es la HORA de envío del mensaje (hora real del mart de Infobip), no el trimestre de creación del lead. Mide read rate y respond rate por hora del día en que salió el mensaje. NO mostramos delivery rate por hora (estaba contaminado por la línea quemada/plantilla disabled); read y respond son comportamiento del destinatario, más limpios. TZ del mart por calibrar cuando entre el goteo horario.">?</span>
   </div>
@@ -326,7 +352,7 @@
 </div>
 
 <script>
-let D=null, country='MX', cicloTipo='dia', porhoraChart=null, AUDIT=null, expC='CO';
+let D=null, country='MX', cicloTipo='dia', porhoraChart=null, cohorteChart=null, AUDIT=null, expC='CO';
 const CIP={MX:'mexico',CO:'colombia'};
 const fmt=v=>(v==null?'—':Number(v).toLocaleString('es-CO'));
 const pct=v=>(v==null?'—':Number(v).toFixed(1)+'%');
@@ -451,7 +477,7 @@ function renderExplorer(){
   }
   el.innerHTML=parts.join('');
 }
-function selectCountry(c){ country=c; renderStats(); renderImpacto(); renderErrores(); renderAB(); renderResp(); renderComparativa(); renderFuntab(); renderAntifunnel(); renderDedup(); renderCompletitud(); renderCohorteOrigen(); renderPorHoraChart(); }
+function selectCountry(c){ country=c; renderStats(); renderImpacto(); renderErrores(); renderAB(); renderResp(); renderComparativa(); renderCalidad(); renderDiario(); renderFuntab(); renderAntifunnel(); renderDedup(); renderCompletitud(); renderCohorteOrigen(); renderPorHoraChart(); }
 // Celdas "valor + %" con heatmap por fila (verde=conversión alta, rojo=baja), copiado del tablero de referencia.
 function heatCells(values, denoms){
   const pcts=values.map((v,i)=> denoms[i]>0 ? v/denoms[i]*100 : null);   // período sin base → null (celda vacía)
@@ -601,6 +627,8 @@ const CARD_HELP={
   resp_baja:{t:'Ya no vendo',b:'<p>Respondieron con el botón <b>«Ya no vendo»</b> (YAVENDIÓ / baja).</p>'},
   resp_bajatxt:{t:'Baja',b:'<p>Respondieron con <b>texto libre</b> que dice «baja» (escribieron «baja / darme de baja» en vez de tocar el botón «Ya no vendo»).</p>'},
   comparativa:{t:'Funnel comparativo · reinteresados vs WEB nuevo',b:'<p>Dos funnels lado a lado: la cohorte <b>Reinteresados</b> (UTM del loop) vs <b>WEB nuevo</b> (fuente WEB sin esa UTM). Cada barra = % de conversión sobre la base de su cohorte: Calificado → Asignado → Cita → Cierre.</p><p>El recuadro resalta la conversión <b>asignado → cita</b> (citas ÷ asignados). Fuente: <code>hubspot.deals</code> + WBR asignados mart. Ventana: últimos 14 días.</p>'},
+  calidad:{t:'Calidad por antigüedad del lead original',b:'<p>Bucketea los envíos por el <b>trimestre en que se creó el lead original</b> (no la fecha de envío) y mide por trimestre: <b>Respond rate</b> (barras = respondieron ÷ enviados) y <b>% Interesados</b> (línea = de los que respondieron, cuántos eligieron «Interesado»).</p><p>Enlace envío→trimestre por <code>nid</code> (mart), respuesta por teléfono (inbound). Reconstruido en vivo desde Neon+mart.</p>'},
+  diario:{t:'Evolución diaria',b:'<p>Serie diaria del embudo: fila 1 = valor absoluto/tasa por día (barras); fila 2 = <b>promedio móvil de 7 días</b> (línea). Enviados → Conversión a respuesta → resp→interesado → interesado→creado → creado→calificado MM.</p><p>Fuente en vivo: <code>send_log</code> (Neon) · inbound (mart) · <code>recreation</code> (Neon). ⚠ Las recreaciones son por evento, así que creados/calificados pueden verse planos hasta que haya más volumen.</p>'},
 };
 function openHelp(k){const h=CARD_HELP[k]; if(!h) return;
   document.getElementById('helpCardT').textContent=h.t;
@@ -686,6 +714,52 @@ function renderComparativa(){
     <div style="font-size:20px;font-weight:800;color:var(--text-title)">🔁 Reinteresados <span style="color:var(--accent)">${pct(acR)}</span> &nbsp;·&nbsp; 🌐 WEB nuevo <span style="color:var(--text-muted)">${pct(acN)}</span></div>
   </div>
   <p class="note">Dos funnels lado a lado (cada barra = % de conversión sobre la base de su cohorte). Asignado→cita = citas ÷ asignados. WEB nuevo = fuente WEB sin UTM reinteresados. Ventana: últimos 14 días.</p>`;
+}
+function renderCalidad(){
+  const el=document.getElementById('c_cohorte'); if(!el||!window.Chart) return;
+  const arr=(D.cohorte_origen||{})[country]||[];
+  const light=document.body.classList.contains('light');
+  const labels=arr.map(r=>r.bucket);
+  const sent=arr.map(r=>+r.enviados), resp=arr.map(r=>+r.respondieron), intr=arr.map(r=>+r.interesados);
+  const rr=arr.map(r=>+r.enviados>0?(+r.respondieron/+r.enviados*100):null);
+  const ir=arr.map(r=>+r.respondieron>0?(+r.interesados/+r.respondieron*100):null);
+  if(cohorteChart) cohorteChart.destroy();
+  cohorteChart=new Chart(el,{data:{labels,datasets:[
+    {type:'bar',label:'Respond rate (resp ÷ enviados)',data:rr,yAxisID:'y',order:2,
+      backgroundColor:light?'#c7d2fe':'#3b3f7a',borderColor:'#818cf8',borderWidth:1,borderRadius:3},
+    {type:'line',label:'% Interesados (de respuestas)',data:ir,yAxisID:'y1',order:1,
+      borderColor:'#34d399',backgroundColor:'#34d399',tension:.3,pointRadius:3,borderWidth:2,spanGaps:true},
+  ]},options:{responsive:true,maintainAspectRatio:false,interaction:{mode:'index',intersect:false},
+    plugins:{legend:{display:true,labels:{color:light?'#334155':'#e2e8f0',boxWidth:12,font:{size:11}}},
+      tooltip:{callbacks:{label:c=>{const i=c.dataIndex;
+        return c.dataset.yAxisID==='y'
+          ? `Respond rate: ${rr[i]==null?'—':rr[i].toFixed(1)+'%'} (${fmt(resp[i])}/${fmt(sent[i])})`
+          : `% Interesados: ${ir[i]==null?'—':ir[i].toFixed(1)+'%'} (${fmt(intr[i])}/${fmt(resp[i])})`;}}}},
+    scales:{x:{ticks:{color:light?'#64748b':'#94a3b8'},grid:{display:false}},
+      y:{position:'left',beginAtZero:true,title:{display:true,text:'Respond rate %',color:'#818cf8'},
+        ticks:{color:light?'#64748b':'#94a3b8',callback:v=>v+'%'},grid:{color:light?'#e2e8f0':'#22304a'}},
+      y1:{position:'right',beginAtZero:true,max:100,title:{display:true,text:'% Interesados',color:'#34d399'},
+        ticks:{color:light?'#64748b':'#94a3b8',callback:v=>v+'%'},grid:{display:false}}}}});
+}
+function renderDiario(){
+  const arr=(D.diario||{})[country]||[];
+  const labels=arr.map(r=>r.fecha.slice(5));
+  const env=arr.map(r=>+r.enviados), resp=arr.map(r=>+r.respuestas), inter=arr.map(r=>+r.interesados),
+        crea=arr.map(r=>+r.creados), cal=arr.map(r=>+r.calificados);
+  const MIN_N=5;
+  const div=(a,b)=>a.map((_,i)=>b[i]>=MIN_N?(a[i]/b[i]*100):null);
+  const cr=div(resp,env), ci=div(inter,resp), ic=div(crea,inter), cc=div(cal,crea);
+  diaCharts.forEach(c=>c.destroy()); diaCharts=[];
+  mkChart('c_env',labels,env,{type:'bar'});
+  mkChart('c_cr',labels,cr,{type:'bar',pct:true,num:resp,den:env});
+  mkChart('c_ci',labels,ci,{type:'bar',pct:true,num:inter,den:resp});
+  mkChart('c_ic',labels,ic,{type:'bar',pct:true,num:crea,den:inter});
+  mkChart('c_cc',labels,cc,{type:'bar',pct:true,num:cal,den:crea});
+  mkChart('c_env_ma',labels,movavg(env,7));
+  mkChart('c_cr_ma',labels,movavg(cr,7),{pct:true});
+  mkChart('c_ci_ma',labels,movavg(ci,7),{pct:true});
+  mkChart('c_ic_ma',labels,movavg(ic,7),{pct:true});
+  mkChart('c_cc_ma',labels,movavg(cc,7),{pct:true});
 }
 
 
