@@ -200,13 +200,15 @@
   </div>
   <div class="tbl-wrap ftab" id="cohorteTab"></div>
 
-  <div class="tabletitle">Errores de entrega y plantillas · últimos 7 días
-    <span class="help" title="Por qué no llegan los mensajes (bucketeo del error_name del mart de Infobip) y comparativo A/B por plantilla, últimos 7 días.">?</span>
+  <div class="tabletitle">Errores de entrega
+    <button type="button" class="help-btn" onclick="openHelp('err')" aria-label="Explicación">?</button>
   </div>
-  <div class="grid">
-    <section class="panel"><h3>Motivos de no entrega <span class="help" title="Distribución de los envíos del período por bucket de error (entregado = sin error) sobre el total de intentos.">?</span></h3><div id="errores"></div></section>
-    <section class="panel"><h3>A/B de plantillas <span class="help" title="Comparativo por plantilla enviada: enviados, delivery rate, respondieron y respond rate.">?</span></h3><div id="ab"></div></section>
+  <div class="tbl-wrap ftab" id="errores"></div>
+
+  <div class="tabletitle">A/B de plantillas
+    <button type="button" class="help-btn" onclick="openHelp('ab')" aria-label="Explicación">?</button>
   </div>
+  <div class="tbl-wrap ftab" id="ab"></div>
 
   <div class="tabletitle">Comportamiento · últimos 14 días <span class="help" title="Estas tarjetas se calculan sobre los leads/respuestas de los últimos 14 días: el funnel de reactivación (creados en 14 días), el desglose de respuestas por tipo y el estado de contacto histórico.">?</span></div>
   <div class="grid">
@@ -383,7 +385,7 @@ async function load(){
     : '';
   try{ AUDIT=await (await fetch('audit.json?t='+Date.now())).json(); }catch(e){ AUDIT=null; }
   document.querySelectorAll('input[name=pais]').forEach(r=>r.onchange=()=>selectCountry(r.value));
-  document.getElementById('granSel').onchange=e=>{cicloTipo=e.target.value;renderFuntab();renderAntifunnel();renderCompletitud();renderDedup();renderImpacto();renderCohorteOrigen();};
+  document.getElementById('granSel').onchange=e=>{cicloTipo=e.target.value;renderFuntab();renderAntifunnel();renderCompletitud();renderDedup();renderImpacto();renderCohorteOrigen();renderErrores();};
   go('dash','MX');
 }
 
@@ -579,6 +581,8 @@ const CARD_HELP={
   cos_rr:{t:'% Read Rate',b:'<p><b>Leídos ÷ Entregados.</b> ⚠ WhatsApp no reporta SEEN por esta vía en envíos recientes → suele salir 0.</p>'},
   cos_rsp:{t:'% Respond Rate',b:'<p><b>Respondidos ÷ Entregados:</b> % de entregados que respondieron (botón o texto).</p>'},
   cos_ir:{t:'% Interesados Rate',b:'<p><b>Interesados ÷ Entregados:</b> % de entregados que dijeron «Estoy interesado». Es el rate que <b>más importa</b> para el loop.</p>'},
+  err:{t:'Errores de entrega',b:'<p>Por qué <b>NO</b> llegaron los mensajes, por período de envío (Temporalidad). Fila 1 = <b>total no entregados</b>; luego el <b>volumen absoluto</b> de cada tipo de error; luego el <b>% de cada error</b> sobre el total de no entregados.</p><p>Fuente: <code>error_name</code> del mart de Infobip + API /logs. Incluye el bug <b>7008</b> (plantilla sin imagen). Columnas = 20 períodos recientes.</p>'},
+  ab:{t:'A/B de plantillas',b:'<p>Comparativo de las plantillas que se envían <b>en simultáneo</b> (asignación aleatoria del A/B). Una <b>fila por plantilla</b>; columnas = enviados, entregados, delivery / read / respond / interesado rate.</p><p>Excluye los envíos fallidos por bug de plantilla sin imagen (7008, culpa nuestra). ⚠ <b>Read rate</b> no disponible por esta vía (SEEN). v1 = control · v2 = oferta.</p>'},
 };
 function openHelp(k){const h=CARD_HELP[k]; if(!h) return;
   document.getElementById('helpCardT').textContent=h.t;
@@ -662,7 +666,7 @@ function renderCompletitud(){
   el.scrollLeft=el.scrollWidth;
 }
 
-const ERR_LAB={entregado:['Entregado','var(--ok)'],freq_cap:['Freq-cap (límite Meta)','var(--warn)'],device_error:['Error de dispositivo','var(--bad)'],template:['Plantilla / línea deshabilitada','var(--warn)'],bloqueado:['Bloqueado','var(--bad)'],invalido:['Número inválido','var(--text-muted)'],otro:['Otro','var(--text-muted)']};
+const ERR_ROWS=[['freq_cap','Freq-cap (límite Meta)'],['device_error','Error de dispositivo'],['template','Plantilla sin imagen (7008)'],['bloqueado','Bloqueado por operador'],['invalido','Número inválido'],['otro','Otro']];
 function renderImpacto(){
   const el=document.getElementById('impacto'); if(!el) return;
   let rows=(D.asignados||[]).filter(r=>r.pais===CIP[country] && r.tipo===cicloTipo).sort((a,b)=>a.bucket<b.bucket?-1:1);
@@ -688,32 +692,39 @@ function renderImpacto(){
 }
 function renderErrores(){
   const el=document.getElementById('errores'); if(!el) return;
-  const e=(D.errores||{})[country];
-  if(!e||!e.total){ el.innerHTML='<p class="note">Sin datos de errores para '+country+' (aún no disponible).</p>'; return; }
-  const tot=+e.total||0;
-  const keys=Object.keys(ERR_LAB).filter(k=>k!=='entregado').sort((a,b)=>(+e[b]||0)-(+e[a]||0));
-  const order=['entregado',...keys];
-  const body=order.map(k=>{
-    const [lab,color]=ERR_LAB[k], v=+e[k]||0, p=tot?(v/tot*100):0;
-    return `<div class="rowline"><div class="lab" style="width:170px">${lab}</div>
-      <div class="bar"><div style="width:${Math.max(0.5,p).toFixed(1)}%;background:${color}"></div></div>
-      <div class="val" style="width:90px"><b>${fmt(v)}</b> <span class="muted" style="font-size:11px">${p.toFixed(0)}%</span></div></div>`;
-  }).join('');
-  el.innerHTML=`${body}<p class="note">Sobre ${fmt(tot)} intentos de la ventana. «Entregado» = sin error (estado reconciliado del mart); el resto son buckets del <code>error_name</code> de Infobip.</p>`;
+  const raw=((D.errores||{})[country]||{})[cicloTipo]||[];
+  if(!raw.length){ el.innerHTML='<p class="note">Sin datos de errores para '+country+' (aún no disponible).</p>'; return; }
+  const byB={}; raw.forEach(r=>byB[r.bucket]=r);
+  const zero={no_entregados:0}; ERR_ROWS.forEach(([k])=>zero[k]=0);
+  const arr=lastPeriods(cicloTipo,20).map(b=>byB[b]||{bucket:b,...zero});
+  const MES=['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+  const lbl=b=> cicloTipo==='mes' ? (MES[+b.slice(5,7)-1]+' '+b.slice(2,4)) : b.slice(5);
+  const last=arr.length-1, cur=i=>i===last?' class="cur"':'';
+  const th=arr.map((r,i)=>`<th${cur(i)} style="text-align:right">${lbl(r.bucket)}</th>`).join('');
+  const hcol={dia:'Día',semana:'Semana (inicia Lun)',mes:'Mes'}[cicloTipo]||'Período';
+  const totalRow=`<tr class="row-total"><td>No entregados</td>${arr.map((r,i)=>`<td${cur(i)} style="text-align:right">${z(+r.no_entregados)}</td>`).join('')}</tr>`;
+  const absRow=([k,lab])=>`<tr class="row-stage"><td>${lab}</td>${arr.map((r,i)=>`<td${cur(i)} style="text-align:right">${z(+r[k])}</td>`).join('')}</tr>`;
+  const pctRow=([k,lab])=>`<tr class="row-stage"><td>% ${lab}</td>${arr.map((r,i)=>{const t=+r.no_entregados||0,v=+r[k]||0;return `<td${cur(i)} style="text-align:right">${t?(v/t*100).toFixed(1)+'%':'<span class="muted">·</span>'}</td>`;}).join('')}</tr>`;
+  el.innerHTML=`<table><thead><tr><th>${hcol}</th>${th}</tr></thead><tbody>
+    ${totalRow}
+    ${ERR_ROWS.map(absRow).join('')}
+    ${ERR_ROWS.map(pctRow).join('')}
+  </tbody></table>`;
+  el.scrollLeft=el.scrollWidth;
 }
 
 function renderAB(){
   const el=document.getElementById('ab'); if(!el) return;
   const arr=(D.ab_templates||{})[country];
   if(!arr||!arr.length){ el.innerHTML='<p class="note">Sin datos de A/B para '+country+' (aún no disponible).</p>'; return; }
-  const th=arr.map(t=>`<th style="text-align:right">${escx(t.template)}</th>`).join('');
-  const row=(lab,fn)=>`<tr class="row-stage"><td>${lab}</td>${arr.map(t=>`<td style="text-align:right">${fn(t)}</td>`).join('')}</tr>`;
-  el.innerHTML=`<div class="tbl-wrap ftab"><table><thead><tr><th>Plantilla</th>${th}</tr></thead><tbody>
-    ${row('Enviados',t=>fmt(t.enviados))}
-    ${row('Entregados',t=>`${fmt(t.entregados)} <span class="muted" style="font-size:11px">(${pct(t.delivery_rate==null?null:t.delivery_rate*100)})</span>`)}
-    ${row('Respondieron',t=>`${fmt(t.respondieron)} <span class="muted" style="font-size:11px">(${pct(t.respond_rate==null?null:t.respond_rate*100)})</span>`)}
-  </tbody></table></div>
-  <p class="note">${arr.length<2?'Solo hay una plantilla activa — sin comparación A/B todavía.':'El A/B compara plantillas; v1=control, v2=oferta.'}</p>`;
+  const rate=v=>pct(v==null?null:v*100);
+  const cols=[['Enviados',t=>fmt(t.enviados)],['Entregados',t=>fmt(t.entregados)],
+    ['Delivery rate',t=>rate(t.delivery_rate)],['Read rate',t=>rate(t.read_rate)],
+    ['Respond rate',t=>rate(t.respond_rate)],['Interesado rate',t=>rate(t.interesado_rate)]];
+  const th=cols.map(c=>`<th style="text-align:right">${c[0]}</th>`).join('');
+  const rows=arr.map(t=>`<tr class="row-stage"><td>${escx(t.template)}</td>${cols.map(c=>`<td style="text-align:right">${c[1](t)}</td>`).join('')}</tr>`).join('');
+  el.innerHTML=`<table><thead><tr><th>Plantilla</th>${th}</tr></thead><tbody>${rows}</tbody></table>
+  <p class="note" style="padding:8px 13px">${arr.length<2?'Solo una plantilla activa — sin comparación A/B todavía.':'v1 = control · v2 = oferta. Excluye envíos fallidos por plantilla sin imagen (7008). Read rate no disponible por esta vía (SEEN).'}</p>`;
 }
 
 function renderPorHoraChart(){

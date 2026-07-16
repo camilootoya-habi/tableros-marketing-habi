@@ -166,25 +166,30 @@ def _resp_tipos(parsed, mbm, win, sl7):
             "total_respuestas":total, "ventana":f"{win}d",
             "respond_rate": round(total/entregados,3) if entregados else None}
 
-def _ab(sl, mbm, inbound_phones):
-    """Comparativo A/B por `template` de send_log: enviados, entregados (vía mbm), delivery_rate,
-    respondieron (teléfono en inbound_phones), respond_rate (sobre entregados, igual que agg.embudo)."""
+def _ab(sl, mbm, inbound_phones, interesado_phones):
+    """Comparativo A/B por `template`: enviados, entregados, delivery/read/respond/interesado rate.
+    Excluye envíos fallidos por bug de plantilla sin imagen (7008)."""
     from collections import defaultdict
-    A=defaultdict(lambda: dict(enviados=0,entregados=0,respondieron=0))
+    A=defaultdict(lambda: dict(enviados=0,entregados=0,leidos=0,respondieron=0,interesados=0))
     for r in sl:
         m = mbm.get(r.get("message_id") or "")
         if m and "7008" in (m.get("error_name") or ""): continue  # bug plantilla sin imagen (7008): fuera del A/B
         t = r.get("template") or "sin_template"
         a = A[t]; a["enviados"]+=1
-        if m and m.get("status")=="delivered": a["entregados"]+=1
+        if m and m.get("status")=="delivered":
+            a["entregados"]+=1
+            if m.get("seen"): a["leidos"]+=1
         if r.get("phone") in inbound_phones: a["respondieron"]+=1
+        if r.get("phone") in interesado_phones: a["interesados"]+=1
+    def rate(x,y): return round(x/y,3) if y else None
     out=[]
     for t in sorted(A):
         a=A[t]
         out.append({"template":t, "enviados":a["enviados"], "entregados":a["entregados"],
-            "delivery_rate": round(a["entregados"]/a["enviados"],3) if a["enviados"] else None,
-            "respondieron":a["respondieron"],
-            "respond_rate": round(a["respondieron"]/a["entregados"],3) if a["entregados"] else None})
+            "delivery_rate": rate(a["entregados"],a["enviados"]),
+            "leidos":a["leidos"], "read_rate": rate(a["leidos"],a["entregados"]),
+            "respondieron":a["respondieron"], "respond_rate": rate(a["respondieron"],a["entregados"]),
+            "interesados":a["interesados"], "interesado_rate": rate(a["interesados"],a["entregados"])})
     return out
 
 # --- ensamblado ---
@@ -218,10 +223,10 @@ data={
   "updated": os.environ.get("BUILD_TS") or datetime.datetime.utcnow().strftime("%Y-%m-%dT%H:%MZ"),
   "linea": {"MX": linea_meta("MX"), "CO": None},
   "embudo": {"MX": agg.embudo(sl7,mbm,inbound_phones,interesado_phones,recreated_oldnids,qualified_oldnids,dias), "CO": None},
-  "errores": {"MX": agg.errores_por_tipo(sl7,mbm), "CO": None},
+  "errores": {"MX": {t: agg.errores_serie(sl, mbm, t) for t in ("dia","semana","mes")}, "CO": None},
   "respuestas": {"MX": _resp_tipos(parsed, mbm, WIN, sl7), "CO": None},
   "cosecha": {"MX": {t: agg.cosecha_serie(sl, mbm, inbound_phones, interesado_phones, t) for t in ("dia","semana","mes")}, "CO": None},
-  "ab_templates": {"MX": _ab(sl,mbm,inbound_phones), "CO": None},
+  "ab_templates": {"MX": _ab(sl,mbm,inbound_phones,interesado_phones), "CO": None},
   "recreacion": {"MX": {t: agg.recreacion_serie(rec,t) for t in ("dia","semana","mes")}, "CO": None},
   "antifunnel": {"MX": {t: agg.antifunnel_serie(rec,t) for t in ("dia","semana","mes")}, "CO": None},
   "contact_status": {"MX": agg.contact_dist(cst), "CO": None},

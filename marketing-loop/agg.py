@@ -128,6 +128,27 @@ def cosecha_serie(sendlog, mart_by_msgid, inbound_phones, interesado_phones, tip
         if r.get("phone") in interesado_phones: a["interesados"]+=1
     return [{"bucket":k, **A[k]} for k in sorted(A)[-n:]]
 
+ERR_TYPES=("freq_cap","device_error","template","bloqueado","invalido","otro")
+def errores_serie(sendlog, mart_by_msgid, tipo, n=20):
+    """No entregados por período de ENVÍO (attempted_at, granularidad `tipo`), desglosado por tipo de error.
+    Solo cuenta envíos con estado conocido y NO entregado (entregado/pending no son error). `n` períodos recientes."""
+    from collections import defaultdict
+    A=defaultdict(lambda: {b:0 for b in ERR_TYPES})
+    for r in sendlog:
+        bkt=bucket((r.get("attempted_at") or "")[:10], tipo)
+        if not bkt: continue
+        m=mart_by_msgid.get(r.get("message_id") or "")
+        if not m: continue                 # sin info de estado -> no lo contamos
+        eb=err_bucket(m.get("error_name"))
+        if eb=="entregado": continue        # entregado (o pending "code 0") no es error
+        if eb not in ERR_TYPES: eb="otro"
+        A[bkt][eb]+=1
+    out=[]
+    for k in sorted(A)[-n:]:
+        d=dict(A[k]); d["no_entregados"]=sum(A[k][b] for b in ERR_TYPES)
+        out.append({"bucket":k, **d})
+    return out
+
 def contact_dist(contact_rows):
     from collections import Counter
     return dict(Counter(r.get("state") for r in contact_rows if r.get("state")))
