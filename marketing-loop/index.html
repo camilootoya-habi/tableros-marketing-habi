@@ -573,6 +573,10 @@ const CARD_HELP={
   cos_leidos:{t:'Leídos',b:'<p><b>Leídos ÷ entregados.</b> ⚠ WhatsApp no reporta SEEN por esta vía en envíos recientes → suele salir 0.</p>'},
   cos_resp:{t:'Respondidos',b:'<p><b>Respondidos ÷ entregados:</b> tocaron un botón o escribieron (teléfono que respondió en la ventana del mart).</p>'},
   cos_int:{t:'Interesados',b:'<p><b>Interesados ÷ entregados:</b> respondieron con «Estoy interesado» (INTERESADO). Es el <b>objetivo</b> del loop.</p>'},
+  cos_dr:{t:'% Delivery Rate',b:'<p><b>Entregados ÷ Enviados</b> del período: % de mensajes que llegaron al celular. Verde = mejor entrega.</p>'},
+  cos_rr:{t:'% Read Rate',b:'<p><b>Leídos ÷ Entregados.</b> ⚠ WhatsApp no reporta SEEN por esta vía en envíos recientes → suele salir 0.</p>'},
+  cos_rsp:{t:'% Respond Rate',b:'<p><b>Respondidos ÷ Entregados:</b> % de entregados que respondieron (botón o texto).</p>'},
+  cos_ir:{t:'% Interesados Rate',b:'<p><b>Interesados ÷ Entregados:</b> % de entregados que dijeron «Estoy interesado». Es el rate que <b>más importa</b> para el loop.</p>'},
 };
 function openHelp(k){const h=CARD_HELP[k]; if(!h) return;
   document.getElementById('helpCardT').textContent=h.t;
@@ -672,11 +676,11 @@ function renderImpacto(){
   const hcol={dia:'Día',semana:'Semana (inicia Lun)',mes:'Mes'}[cicloTipo]||'Periodo';
   el.innerHTML=`<table><thead><tr><th>${hcol}</th>${th}</tr></thead><tbody>
     ${tr(_hb('imp_total')+'Total Marketing',(r,i)=>`<td${cur(i)} style="text-align:right">${fmt(+r.total_asignados)}</td>`,'row-total')}
+    ${tr(_hb('imp_sinloop')+'Total Marketing sin loop',(r,i)=>`<td${cur(i)} style="text-align:right;color:var(--text-muted)">${fmt((+r.total_asignados)-(+r.asignados_reint))}</td>`)}
     ${tr(_hb('imp_web')+'WEB',(r,i)=>`<td${cur(i)} style="text-align:right">${fmt(+r.asignados_web)}</td>`)}
     ${tr(_hb('imp_loop')+'Marketing loop (WEB)',(r,i)=>`<td${cur(i)} style="text-align:right">${fmt(+r.asignados_reint)}</td>`)}
     ${tr(_hb('imp_loopvstotal')+'<b>Loop vs Total Marketing</b>',(r,i)=>ratio(+r.asignados_reint,+r.total_asignados,i))}
     ${tr(_hb('imp_loopvsweb')+'<b>Loop vs WEB</b>',(r,i)=>ratio(+r.asignados_reint,+r.asignados_web,i))}
-    ${tr(_hb('imp_sinloop')+'Total Marketing sin loop',(r,i)=>`<td${cur(i)} style="text-align:right;color:var(--text-muted)">${fmt((+r.total_asignados)-(+r.asignados_reint))}</td>`)}
   </tbody></table>`;
   el.scrollLeft=el.scrollWidth;
 }
@@ -749,21 +753,36 @@ function renderCohorteOrigen(){
   const raw=((D.cosecha||{})[country]||{})[cicloTipo]||[];
   if(!raw.length){ el.innerHTML='<p class="note">Sin datos de cosecha para '+country+' (aún no disponible).</p>'; return; }
   const byB={}; raw.forEach(r=>byB[r.bucket]=r);
-  const arr=lastPeriods(cicloTipo,20).map(b=>byB[b]||{bucket:b,enviados:0,entregados:0,leidos:0,respondidos:0});  // 20 períodos más recientes (rellena vacíos)
+  const arr=lastPeriods(cicloTipo,20).map(b=>byB[b]||{bucket:b,enviados:0,entregados:0,leidos:0,respondidos:0,interesados:0});  // 20 períodos más recientes (rellena vacíos)
   const MES=['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
   const lbl=b=> cicloTipo==='mes' ? (MES[+b.slice(5,7)-1]+' '+b.slice(2,4)) : b.slice(5);
   const last=arr.length-1, cur=i=>i===last?' class="cur"':'';
   const col=k=>arr.map(r=>+r[k]||0);
   const th=arr.map((r,i)=>`<th${cur(i)} style="text-align:right">${lbl(r.bucket)}</th>`).join('');
   const hcol={dia:'Día',semana:'Semana (inicia Lun)',mes:'Mes'}[cicloTipo]||'Período';
-  const totalRow=`<tr class="row-total"><td>${_hb('cos_env')}Enviados</td>${arr.map((r,i)=>`<td${cur(i)} style="text-align:right">${z(+r.enviados)}</td>`).join('')}</tr>`;
-  const step=(lab,key,den)=>`<tr class="row-stage"><td>${lab}</td>${heatCells(col(key),col(den))}</tr>`;
+  const absRow=(lab,key)=>`<tr class="row-stage"><td>${lab}</td>${arr.map((r,i)=>`<td${cur(i)} style="text-align:right">${z(+r[key])}</td>`).join('')}</tr>`;
+  const pctCells=(numK,denK)=>{
+    const ns=col(numK), ds=col(denK);
+    const pcts=ns.map((v,i)=> ds[i]>0 ? v/ds[i]*100 : null);
+    const valid=pcts.filter(p=>p!=null);
+    const min=valid.length?Math.min(...valid):0, max=valid.length?Math.max(...valid):0, range=(max-min)||1;
+    return pcts.map((p,i)=>{
+      if(p==null) return `<td${cur(i)} style="text-align:right"><span class="muted">·</span></td>`;
+      const ra=(p-min)/range, clr=`rgb(${Math.round(248-ra*196)},${Math.round(52+ra*159)},${Math.round(52+ra*101)})`;
+      return `<td${cur(i)} style="text-align:right;font-weight:700;color:${clr}">${p>=10?p.toFixed(1):p.toFixed(2)}%</td>`;
+    }).join('');
+  };
+  const pctRow=(lab,numK,denK)=>`<tr class="row-stage"><td>${lab}</td>${pctCells(numK,denK)}</tr>`;
   el.innerHTML=`<table><thead><tr><th>${hcol}</th>${th}</tr></thead><tbody>
-    ${totalRow}
-    ${step(_hb('cos_entr')+'Entregados','entregados','enviados')}
-    ${step(_hb('cos_leidos')+'Leídos','leidos','entregados')}
-    ${step(_hb('cos_resp')+'Respondidos','respondidos','entregados')}
-    ${step(_hb('cos_int')+'Interesados','interesados','entregados')}
+    <tr class="row-total"><td>${_hb('cos_env')}Enviados</td>${arr.map((r,i)=>`<td${cur(i)} style="text-align:right">${z(+r.enviados)}</td>`).join('')}</tr>
+    ${absRow(_hb('cos_entr')+'Entregados','entregados')}
+    ${absRow(_hb('cos_leidos')+'Leídos','leidos')}
+    ${absRow(_hb('cos_resp')+'Respondidos','respondidos')}
+    ${absRow(_hb('cos_int')+'Interesados','interesados')}
+    ${pctRow(_hb('cos_dr')+'% Delivery Rate','entregados','enviados')}
+    ${pctRow(_hb('cos_rr')+'% Read Rate','leidos','entregados')}
+    ${pctRow(_hb('cos_rsp')+'% Respond Rate','respondidos','entregados')}
+    ${pctRow(_hb('cos_ir')+'% Interesados Rate','interesados','entregados')}
   </tbody></table>`;
   el.scrollLeft=el.scrollWidth;
 }
