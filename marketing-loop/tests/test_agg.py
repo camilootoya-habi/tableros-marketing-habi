@@ -45,3 +45,12 @@ def test_embudo_tasas():
     assert t["intentos"]==3 and t["aceptados"]==2 and t["entregados"]==1 and t["leidos"]==1
     assert t["respondieron"]==1 and t["interesados"]==1 and t["recreados"]==1 and t["calificados"]==1
     assert round(r["tasas"]["delivery_rate"],2)==0.33 and round(r["tasas"]["respond_rate"],2)==1.0
+
+def test_embudo_rellena_ceros_y_totales_acotados():
+    sl=[{"message_id":"a","accepted":True,"phone":"1","attempted_at":"2026-07-10","nid":"n1"}]
+    mart={"a":{"status":"delivered","error_name":"No Error (code 0)","seen":True}}
+    r=embudo(sl, mart, inbound_phones=set(), interesado_phones=set(),
+             recreated_oldnids=set(), qualified_oldnids=set(), dias=["2026-07-10","2026-07-11"])
+    assert len(r["serie"])==2                     # rellena el día sin actividad
+    assert r["serie"][1]["fecha"]=="2026-07-11" and r["serie"][1]["intentos"]==0
+    assert r["totales"]["intentos"]==1 and r["tasas"]["send_rate"]==1.0

@@ -45,9 +45,11 @@ def embudo(sendlog, mart_by_msgid, inbound_phones, interesado_phones,
         if r.get("phone") in interesado_phones: s["interesados"]+=1
         if r.get("nid") in recreated_oldnids: s["recreados"]+=1
         if r.get("nid") in qualified_oldnids: s["calificados"]+=1
-    serie=[{"fecha":d, **S[d]} for d in dias if d in S]
-    tot={k:sum(S[d][k] for d in S) for k in
-         ("intentos","aceptados","entregados","leidos","respondieron","interesados","recreados","calificados")}
+    ZERO = dict(intentos=0,aceptados=0,entregados=0,leidos=0,respondieron=0,
+                interesados=0,recreados=0,calificados=0)
+    serie = [{"fecha": d, **S.get(d, dict(ZERO))} for d in dias]   # rellena ceros en días sin actividad
+    keys = ("intentos","aceptados","entregados","leidos","respondieron","interesados","recreados","calificados")
+    tot = {k: sum(row[k] for row in serie) for k in keys}          # totales == Σ serie (acotado a dias)
     def rate(a,b): return round(a/b,3) if b else None
     return {"serie":serie,"totales":tot,"tasas":{
         "send_rate":rate(tot["aceptados"],tot["intentos"]),
