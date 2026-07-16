@@ -209,7 +209,6 @@ recreated_oldnids={r["old_nid"] for r in rec if r.get("success")}
 qualified_oldnids={r["old_nid"] for r in rec if r.get("state_at_creation") in (20,63)}
 dias=[(hoy-datetime.timedelta(days=k)).isoformat() for k in range(WIN-1,-1,-1)]  # hoy-6..hoy (incl hoy)
 # cohorte necesita nid->trimestre
-nidq=M.nid2quarter(list({r["nid"] for r in sl if r.get("nid")}))
 # antifunnel: estado actual de recreados
 est=M.estado_actual_by_deal([r["new_deal_id"] for r in rec if r.get("new_deal_id")])
 for r in rec: r["estado_actual"]=est.get(str(r.get("new_deal_id")))
@@ -220,7 +219,7 @@ data={
   "embudo": {"MX": agg.embudo(sl7,mbm,inbound_phones,interesado_phones,recreated_oldnids,qualified_oldnids,dias), "CO": None},
   "errores": {"MX": agg.errores_por_tipo(sl7,mbm), "CO": None},
   "respuestas": {"MX": _resp_tipos(parsed, mbm, WIN, sl7), "CO": None},
-  "cohorte": {"MX": agg.cohorte(sl,mbm,nidq), "CO": None},
+  "cosecha": {"MX": {t: agg.cosecha_serie(sl, mbm, inbound_phones, t) for t in ("dia","semana","mes")}, "CO": None},
   "ab_templates": {"MX": _ab(sl,mbm,inbound_phones), "CO": None},
   "recreacion": {"MX": {t: agg.recreacion_serie(rec,t) for t in ("dia","semana","mes")}, "CO": None},
   "antifunnel": {"MX": {t: agg.antifunnel_serie(rec,t) for t in ("dia","semana","mes")}, "CO": None},

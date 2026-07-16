@@ -192,11 +192,9 @@
   <div class="tabletitle">Impacto en asignados
     <span class="help" title="Aporte de los leads del marketing loop (UTM %reinteresados%) sobre los asignados de marketing, por período (según Temporalidad). Fuente: WBR asignados mart × hubspot.deals.">?</span>
   </div>
-  <div class="grid">
-    <section class="panel" style="grid-column:1 / -1"><div class="tbl-wrap" id="impacto"></div></section>
-  </div>
+  <div class="tbl-wrap ftab" id="impacto"></div>
 
-  <div class="tabletitle">Calidad por antigüedad del lead original
+  <div class="tabletitle">Cosecha de envío · avance por período
     <button type="button" class="help-btn" onclick="document.getElementById('helpCoh').showModal()" aria-label="Explicación">?</button>
   </div>
   <div class="tbl-wrap ftab" id="cohorteTab"></div>
@@ -215,10 +213,10 @@
     <section class="panel"><h3>Estado de contacto <span class="help" title="Distribución histórica (total acumulado) del estado de contacto de los leads en Neon: enviado (sin respuesta aún), ya vendió, respondió otro, reinteresado (interesado→recreado) y baja (pidió no ser contactado).">?</span></h3><div style="position:relative;width:100%;height:230px"><canvas id="c_contacto"></canvas></div></section>
   </div>
   <dialog id="helpCoh" class="help-dialog">
-    <h3>Calidad por antigüedad del lead original</h3>
-    <p>Bucketea los envíos por el <b>trimestre en que se creó el lead original</b> (no la fecha de envío) y mide, sobre los enviados de ese trimestre: <b>Delivery %</b> (entregados ÷ enviados) · <b>Freq-cap %</b> (bloqueo por límite de frecuencia de Meta ÷ enviados) · <b>Device-error %</b> (error de dispositivo del destinatario ÷ enviados).</p>
-    <p>Delivery se colorea verde=mejor / rojo=peor (heatmap normal); Freq-cap y Device-error se colorean <b>invertido</b> — rojo=peor (más error), verde=mejor — porque son tasas de falla, no de éxito.</p>
-    <p>Enlace envíos↔trimestre por <code>nid</code> original (<code>tabla_inmuebles_general.fecha_creacion</code>). Sujeto al filtro de <b>País</b>.</p>
+    <h3>Cosecha de envío · avance por período</h3>
+    <p>Agrupa los mensajes por su <b>período de envío</b> (fecha de envío, según la <b>Temporalidad</b>: día / semana / mes) y muestra el avance de cada cosecha: <b>Enviados</b> → <b>Entregados</b> (÷ enviados) → <b>Leídos</b> (÷ entregados) → <b>Respondidos</b> (÷ entregados). Columnas = los 20 períodos más recientes; <code>*</code> = período en curso.</p>
+    <p>Las filas de tasa se colorean verde=mejor / rojo=peor (heatmap sobre su denominador).</p>
+    <p>⚠ <b>Leídos</b>: WhatsApp no reporta SEEN por esta vía en envíos recientes (delivery es tiempo real vía Infobip /logs, pero sin lectura), así que esta fila suele salir en 0. Entregados/Respondidos sí son fiables. Sujeto al filtro de <b>País</b>.</p>
     <button class="close-btn" onclick="document.getElementById('helpCoh').close()">Cerrar</button>
   </dialog>
 
@@ -391,7 +389,7 @@ async function load(){
     : '';
   try{ AUDIT=await (await fetch('audit.json?t='+Date.now())).json(); }catch(e){ AUDIT=null; }
   document.querySelectorAll('input[name=pais]').forEach(r=>r.onchange=()=>selectCountry(r.value));
-  document.getElementById('granSel').onchange=e=>{cicloTipo=e.target.value;renderFuntab();renderAntifunnel();renderCompletitud();renderDedup();renderImpacto();};
+  document.getElementById('granSel').onchange=e=>{cicloTipo=e.target.value;renderFuntab();renderAntifunnel();renderCompletitud();renderDedup();renderImpacto();renderCohorteOrigen();};
   go('dash','MX');
 }
 
@@ -760,19 +758,23 @@ function renderPorHoraChart(){
 
 function renderCohorteOrigen(){
   const el=document.getElementById('cohorteTab'); if(!el) return;
-  const arr=(D.cohorte||{})[country];
-  if(!arr||!arr.length){ el.innerHTML='<p class="note">Sin datos de cohorte para '+country+' (aún no disponible).</p>'; return; }
+  const raw=((D.cosecha||{})[country]||{})[cicloTipo]||[];
+  if(!raw.length){ el.innerHTML='<p class="note">Sin datos de cosecha para '+country+' (aún no disponible).</p>'; return; }
+  const byB={}; raw.forEach(r=>byB[r.bucket]=r);
+  const arr=lastPeriods(cicloTipo,20).map(b=>byB[b]||{bucket:b,enviados:0,entregados:0,leidos:0,respondidos:0});  // 20 períodos más recientes (rellena vacíos)
+  const MES=['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+  const lbl=b=> cicloTipo==='mes' ? (MES[+b.slice(5,7)-1]+' '+b.slice(2,4)) : b.slice(5);
   const last=arr.length-1, cur=i=>i===last?' class="cur"':'';
   const col=k=>arr.map(r=>+r[k]||0);
-  const th=arr.map((r,i)=>`<th${cur(i)} style="text-align:right">${r.bucket}</th>`).join('');
-  const totalRow=`<tr class="row-total"><td>${H('Mensajes de reactivación enviados a leads originados en ese trimestre.')}Enviados</td>${arr.map((r,i)=>`<td${cur(i)} style="text-align:right">${z(+r.enviados)}</td>`).join('')}</tr>`;
-  const step=(lab,key)=>`<tr class="row-stage"><td>${lab}</td>${heatCells(col(key),col('enviados'))}</tr>`;
-  const stepInv=(lab,key)=>`<tr class="row-stage"><td>${lab}</td>${heatCellsInv(col(key),col('enviados'))}</tr>`;
-  el.innerHTML=`<table><thead><tr><th>Trimestre de creación</th>${th}</tr></thead><tbody>
+  const th=arr.map((r,i)=>`<th${cur(i)} style="text-align:right">${lbl(r.bucket)}</th>`).join('');
+  const hcol={dia:'Día',semana:'Semana (inicia Lun)',mes:'Mes'}[cicloTipo]||'Período';
+  const totalRow=`<tr class="row-total"><td>${H('Mensajes de reactivación enviados en ese período (cosecha por fecha de envío).')}Enviados</td>${arr.map((r,i)=>`<td${cur(i)} style="text-align:right">${z(+r.enviados)}</td>`).join('')}</tr>`;
+  const step=(lab,key,den)=>`<tr class="row-stage"><td>${lab}</td>${heatCells(col(key),col(den))}</tr>`;
+  el.innerHTML=`<table><thead><tr><th>${hcol}</th>${th}</tr></thead><tbody>
     ${totalRow}
-    ${step(H('Entregados ÷ enviados, por trimestre en que se creó el lead original. Verde = mejor.')+'Delivery','entregados')}
-    ${stepInv(H('Freq-cap (límite de frecuencia de Meta) ÷ enviados. Rojo = peor (más bloqueo).')+'Freq-cap','freq_cap')}
-    ${stepInv(H('Error de dispositivo del destinatario ÷ enviados. Rojo = peor (más error).')+'Device error','device_error')}
+    ${step(H('Entregados ÷ enviados de la cosecha. Verde = mejor.')+'Entregados','entregados','enviados')}
+    ${step(H('Leídos ÷ entregados. ⚠ WhatsApp no reporta SEEN por esta vía en envíos recientes → suele salir 0.')+'Leídos','leidos','entregados')}
+    ${step(H('Respondidos ÷ entregados (teléfono que respondió en la ventana del mart).')+'Respondidos','respondidos','entregados')}
   </tbody></table>`;
   el.scrollLeft=el.scrollWidth;
 }
