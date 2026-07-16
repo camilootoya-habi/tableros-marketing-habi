@@ -175,13 +175,12 @@
     </div>
     <div class="control-card">
       <div class="control-label">Temporalidad</div>
-      <select class="sel" id="granSel"><option value="dia">Diario</option><option value="ciclo">Ciclo comercial (Mié→Mar)</option><option value="semana" selected>Semana (Lun→Dom)</option><option value="mes">Mes</option></select>
+      <select class="sel" id="granSel"><option value="dia" selected>Diario</option><option value="semana">Semana (Lun→Dom)</option><option value="mes">Mes</option></select>
     </div>
   </div>
 
   <div class="eyebrow">Indicadores de salud</div>
   <div class="stats" id="stats"></div>
-  <div id="geoAlarm"></div>
   <p class="note" id="lineaTip"></p>
 
   <div class="tabletitle">Salida real · últimos 7 días completos
@@ -190,25 +189,10 @@
   <div id="salidaAlarm"></div>
   <div id="salida"></div>
 
-  <div class="tabletitle">Impacto en asignados <button type="button" class="help-btn" onclick="document.getElementById('helpImpacto').showModal()" aria-label="Explicación">?</button></div>
-  <div class="tbl-wrap ftab" id="ciclo"></div>
-  <dialog id="helpImpacto" class="help-dialog">
-    <h3>Impacto en asignados — cómo se calcula</h3>
-    <p>Fuente: <b>WBR mart oficial</b> (<code>papyrus-master.sellers_data_mart.sellers_leads_asignados_marketing_wbr_mart</code>), contando <code>nid</code> únicos por período.</p>
-    <p><b>Total Marketing</b>: asignados de las 6 fuentes de marketing filtradas por <code>fuente_id_tig</code> — MX: 3, 7, 35, 39, 46, 47 · CO: 3, 7, 20, 35, 39, 47.</p>
-    <p><b>WEB</b>: subconjunto con <code>fuente_id_tig = 3</code>.</p>
-    <p><b>Reinteresados (WEB)</b>: los <code>nid</code> con <code>utm_campaign LIKE '%reinteresados%'</code> (<code>hubspot.deals</code>).</p>
-    <p><b>Reinteresados vs Total Marketing</b> y <b>vs WEB</b>: ratios de participación (reint ÷ total, reint ÷ web).</p>
-    <p><b>Total Marketing sin reinteresados</b>: total − reinteresados = asignados que habríamos tenido sin el programa.</p>
-    <p><b>Período</b>: bucketeo por día / ciclo comercial (Mié–Mar) / semana (Lun–Dom) / mes según el filtro de <b>Temporalidad</b>; se muestran los últimos 20. El <code>*</code> marca el período en curso (datos parciales).</p>
-    <button class="close-btn" onclick="document.getElementById('helpImpacto').close()">Cerrar</button>
-  </dialog>
-
-  <div class="tabletitle">Comportamiento · últimos 14 días <span class="help" title="Estas tres tarjetas se calculan sobre los leads/respuestas de los últimos 14 días: el funnel de reactivación (creados en 14 días), el desglose de respuestas por tipo y la comparación de calidad reinteresados vs WEB nuevo.">?</span></div>
+  <div class="tabletitle">Comportamiento · últimos 14 días <span class="help" title="Estas tarjetas se calculan sobre los leads/respuestas de los últimos 14 días: el funnel de reactivación (creados en 14 días) y el desglose de respuestas por tipo.">?</span></div>
   <div class="grid">
     <section class="panel"><h3>Funnel de reactivación <span class="help" title="Base contactada → Respuestas → Interesados → Calificados (backbone 20/63) → Asignados (WBR mart) → Citas → Cierres. % = del paso previo.">?</span></h3><div id="funnel"></div></section>
     <section class="panel"><h3>Respuestas por tipo <span class="help" title="Área 100% apilada: % que representa cada tipo de respuesta (Interesado / Ya vendió / Pide baja) sobre el total de respuestas de cada uno de los últimos 14 días.">?</span></h3><div style="position:relative;width:100%;height:230px"><canvas id="c_resp"></canvas></div></section>
-    <section class="panel"><h3>Funnel comparativo · reinteresados vs WEB nuevo <span class="help" title="Dos funnels lado a lado: conversión por etapa de cada cohorte (% de su base). WEB nuevo = fuente WEB sin UTM reinteresados, desde 15-jun.">?</span></h3><div id="comparativa"></div></section>
   </div>
 
   <div class="tabletitle">Calidad por antigüedad del lead original
@@ -342,7 +326,7 @@
 </div>
 
 <script>
-let D=null, country='MX', cicloTipo='semana', funView='cosecha', respChart=null, cohorteChart=null, porhoraChart=null, AUDIT=null, expC='CO';
+let D=null, country='MX', cicloTipo='dia', funView='cosecha', respChart=null, cohorteChart=null, porhoraChart=null, AUDIT=null, expC='CO';
 const CIP={MX:'mexico',CO:'colombia'};
 const fmt=v=>(v==null?'—':Number(v).toLocaleString('es-CO'));
 const pct=v=>(v==null?'—':Number(v).toFixed(1)+'%');
@@ -413,7 +397,7 @@ async function load(){
     : '';
   try{ AUDIT=await (await fetch('audit.json?t='+Date.now())).json(); }catch(e){ AUDIT=null; }
   document.querySelectorAll('input[name=pais]').forEach(r=>r.onchange=()=>selectCountry(r.value));
-  document.getElementById('granSel').onchange=e=>{cicloTipo=e.target.value;renderCiclo();renderFuntab();renderAntifunnel();renderCompletitud();};
+  document.getElementById('granSel').onchange=e=>{cicloTipo=e.target.value;renderFuntab();renderAntifunnel();renderCompletitud();};
   document.getElementById('funView').onchange=e=>{funView=e.target.value;renderFuntab();};
   go('dash','CO');
 }
@@ -468,7 +452,7 @@ function renderExplorer(){
   }
   el.innerHTML=parts.join('');
 }
-function selectCountry(c){ country=c; renderStats(); renderSalida(); renderResp(); renderFunnel(); renderComparativa(); renderCiclo(); renderDiario(); renderFuntab(); renderAntifunnel(); renderCompletitud(); renderCohorteOrigen(); renderPorHoraChart(); renderGeoAlarm(); }
+function selectCountry(c){ country=c; renderStats(); renderSalida(); renderResp(); renderFunnel(); renderDiario(); renderFuntab(); renderAntifunnel(); renderCompletitud(); renderCohorteOrigen(); renderPorHoraChart(); }
 // Celdas "valor + %" con heatmap por fila (verde=conversión alta, rojo=baja), copiado del tablero de referencia.
 function heatCells(values, denoms){
   const pcts=values.map((v,i)=> denoms[i]>0 ? v/denoms[i]*100 : null);   // período sin base → null (celda vacía)
@@ -590,15 +574,9 @@ function renderStats(){
     : l.quality==='MEDIUM'?'Calidad media: cuidar el ritmo y priorizar a quien más probablemente responda para que suba.'
     : l.quality==='HIGH'?'Calidad alta: la línea está sana.'
     : 'Sin histórico de calidad reciente.';
-  const _hoy=ymd(new Date());   // excluir hoy (día parcial que subestima el promedio)
-  const dias=(D.ciclo||[]).filter(r=>r.pais===CIP[country]&&r.tipo==='dia'&&r.bucket<_hoy).sort((a,b)=>a.bucket<b.bucket?-1:1).slice(-7);
-  const avg7=dias.length?dias.reduce((s,r)=>s+(+r.asignados_reint||0),0)/dias.length:0;
-  const META=30, cumpl=avg7/META*100, cumColor=cumpl>=100?'var(--ok)':cumpl>=60?'var(--warn)':'var(--bad)';
   const FLUJO={MX:150,CO:150};
-  const metaTip='Promedio de asignados reinteresados de los últimos 7 días COMPLETOS (excluye hoy, que aún es parcial). Meta 30/día = 2,5% de conversión sobre los 8.500 mensajes semanales (8.500 × 2,5% ÷ 7 ≈ 30).';
   const cards=[
-    ['Leads creados hoy <span class="help" title="Negocios con UTM reinteresados creados hoy (hubspot.deals, la fuente que refresca más rápido, ~7 min). Hora local del país.">?</span>', fmt((D.hoy||{})[country]||0), 'hubspot.deals · hoy'],
-    ['Prom. móvil 7d · asig. reinteresados <span class="help" title="'+metaTip+'">?</span>', avg7.toFixed(1), `<span style="color:${cumColor}">meta ${META}/día · ${cumpl.toFixed(0)}% cumplimiento</span>`, 'key'],
+    ['Leads creados hoy <span class="help" title="Negocios con UTM reinteresados creados hoy (hubspot.deals, la fuente que refresca más rápido, ~7 min). Hora local del país.">?</span>', fmt((D.hoy||{})[country]||0), 'hubspot.deals · hoy', 'key'],
     ['Flujo diario programado', fmt(FLUJO[country]), 'mensajes/día · rampa · goteo horario 9–19 L–V'],
     ['Calidad de línea', `<span class="chip" style="background:${qc}">${l.quality||'—'}</span>`, tip+' · fuente: Meta'],
     ['Tier (24h)', (l.tier||'—').replace('LIMIT_',''), 'límite · '+(l.tier_source==='infobip'?'Infobip':'Meta')],
@@ -655,30 +633,6 @@ function renderCompletitud(){
   ).join('');
   el.innerHTML=`<table><thead><tr><th>Campo</th>${th}</tr></thead><tbody>${totalRow}${body}</tbody></table>`;
   el.scrollLeft=el.scrollWidth;
-}
-
-function renderGeoAlarm(){
-  const el=document.getElementById('geoAlarm'); if(!el) return;
-  const lines=[];
-  // GEO señuelo — solo MX (CO no usa receta señuelo)
-  if(country==='MX'){
-    const g=(D.geo_health||{}).MX;
-    if(g){
-      const w=+g.wrong||0, ok=w===0, ctx=[];
-      if(+g.in_flight) ctx.push(`${fmt(+g.in_flight)} recién corregido(s)`);
-      if(+g.pending_fix_replication) ctx.push(`${fmt(+g.pending_fix_replication)} esperando replicación`);
-      if(+g.pending_bq) ctx.push(`${fmt(+g.pending_bq)} sin replicar en BQ`);
-      lines.push(healthLine(ok,'Salud geo (recreación MX)', ok?'0 leads con geo señuelo sin corregir.':`<b>${fmt(w)} recreados con geo señuelo SIN corregir (&gt;24h)</b> — revisar barrido.`, ctx.join(' · '), g.last_check));
-    }
-  }
-  // SIN DIRECCIÓN — ambos países
-  const a=(D.address_health||{})[country];
-  if(a){
-    const m=+a.missing||0, ok=m===0, ctx=[];
-    if(+a.backfilled) ctx.push(`${fmt(+a.backfilled)} backfilleado(s)`);
-    lines.push(healthLine(ok,`Sin dirección (recreación ${country})`, ok?'0 recreados sin dirección.':`<b>${fmt(m)} recreados sin dirección</b> — comercial no puede gestionarlos.`, ctx.join(' · '), a.last_check));
-  }
-  el.innerHTML = lines.length ? `<div style="margin:12px 0;display:flex;flex-direction:column;gap:6px">${lines.join('')}</div>` : '';
 }
 
 function renderSalida(){
@@ -796,57 +750,6 @@ function renderFunnel(){
     <p class="note">Últimos 14 días (por fecha de creación). Cada etapa: % de la <b>base contactada</b> y % del <b>paso previo</b>. La base contactada es el total del programa (los envíos aún no están fechados en el hub).</p>`;
 }
 
-function renderComparativa(){
-  const rows=(D.comparativa||[]).filter(x=>x.pais===country);
-  const el=document.getElementById('comparativa');
-  if(!rows.length){ el.innerHTML='<p class="muted">Sin datos.</p>'; return; }
-  const R=rows.find(x=>x.cohorte==='Reinteresados')||{}, N=rows.find(x=>x.cohorte==='WEB nuevo')||{};
-  const mets=[['Calificado','calif_pct'],['Asignado','asignado_pct'],['Cita','cita_pct'],['Cierre','cierre_pct']];
-  const miniFunnel=(titulo,C,color,leads)=>`
-    <div style="flex:1;min-width:185px">
-      <div style="font-size:13px;font-weight:700;color:var(--text-title);margin-bottom:2px">${titulo}</div>
-      <div class="muted" style="font-size:12px;margin-bottom:12px">${fmt(leads)} leads · % de su base</div>
-      ${mets.map(([n,k])=>{const v=+C[k]||0; return `<div class="rowline">
-        <div class="lab" style="width:82px">${n}</div>
-        <div class="bar"><div style="width:${Math.max(0.5,v).toFixed(1)}%;background:${color}"></div></div>
-        <div class="val" style="width:56px"><b>${pct(v)}</b></div></div>`;}).join('')}
-    </div>`;
-  const acR=(+R.asignado_pct>0)?(+R.cita_pct/+R.asignado_pct*100):0;
-  const acN=(+N.asignado_pct>0)?(+N.cita_pct/+N.asignado_pct*100):0;
-  el.innerHTML=`<div style="display:flex;gap:16px;flex-wrap:wrap">
-    ${miniFunnel('🔁 Reinteresados', R, 'var(--accent)', R.leads)}
-    ${miniFunnel('🌐 WEB nuevo', N, 'var(--text-muted)', N.leads)}
-  </div>
-  <div style="margin-top:16px;background:rgba(251,191,36,.14);border:1px solid var(--warn);border-radius:10px;padding:14px 16px">
-    <div style="font-size:11.5px;text-transform:uppercase;letter-spacing:.5px;color:var(--warn);font-weight:800;margin-bottom:8px">Conversión asignado → cita agendada</div>
-    <div style="font-size:20px;font-weight:800;color:var(--text-title)">🔁 Reinteresados <span style="color:var(--accent)">${pct(acR)}</span> &nbsp;·&nbsp; 🌐 WEB nuevo <span style="color:var(--text-muted)">${pct(acN)}</span></div>
-  </div>
-  <p class="note">Dos funnels lado a lado (cada barra = % de conversión sobre la base de su cohorte). Asignado→cita = citas ÷ asignados. WEB nuevo = fuente WEB sin UTM reinteresados, desde 15-jun.</p>`;
-}
-
-function renderCiclo(){
-  const el=document.getElementById('ciclo');
-  let rows=(D.ciclo||[]).filter(r=>r.pais===CIP[country] && r.tipo===cicloTipo).sort((a,b)=>a.bucket<b.bucket?-1:1);
-  rows=rows.slice(-20);   // últimos 20 periodos
-  if(!rows.length){ el.innerHTML='<p class="muted">Sin datos.</p>'; return; }
-  const MES=['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
-  const lbl=b=> cicloTipo==='mes' ? (MES[+b.slice(5,7)-1]+' '+b.slice(2,4)) : b.slice(5);
-  const last=rows.length-1;
-  const cur=i=> i===last?' class="cur"':'';
-  const th=rows.map((r,i)=>`<th${cur(i)} style="text-align:right">${lbl(r.bucket)}</th>`).join('');
-  const tr=(lab,f,cls='')=>`<tr class="${cls}"><td>${lab}</td>${rows.map((r,i)=>f(r,i)).join('')}</tr>`;
-  const ratio=(num,den,i)=>`<td${cur(i)} style="text-align:right;font-weight:800;color:${num>0?'var(--accent)':'var(--text-muted)'}">${den?(num/den*100).toFixed(1):'0.0'}%</td>`;
-  const hcol={dia:'Día',ciclo:'Ciclo (inicia Mié)',semana:'Semana (inicia Lun)',mes:'Mes'}[cicloTipo]||'Periodo';
-  el.innerHTML=`<table><thead><tr><th>${hcol}</th>${th}</tr></thead><tbody>
-    ${tr(H('Asignados de las 6 fuentes de marketing (fuente_id_tig) por período, desde la WBR mart.')+'Total Marketing',(r,i)=>`<td${cur(i)} style="text-align:right">${fmt(+r.total_asignados)}</td>`,'row-total')}
-    ${tr(H('Asignados solo de fuente WEB (fuente_id_tig=3).')+'WEB',(r,i)=>`<td${cur(i)} style="text-align:right">${fmt(+r.asignados_web)}</td>`)}
-    ${tr(H('Asignados con utm_campaign LIKE %reinteresados% (hubspot.deals). Son WEB.')+'Reinteresados (WEB)',(r,i)=>`<td${cur(i)} style="text-align:right">${fmt(+r.asignados_reint)}</td>`)}
-    ${tr(H('Reinteresados ÷ Total Marketing = participación de reinteresados en todo el marketing asignado.')+'<b>Reinteresados vs Total Marketing</b>',(r,i)=>ratio(+r.asignados_reint,+r.total_asignados,i))}
-    ${tr(H('Reinteresados ÷ WEB = participación de reinteresados dentro de los asignados WEB.')+'<b>Reinteresados vs WEB</b>',(r,i)=>ratio(+r.asignados_reint,+r.asignados_web,i))}
-    ${tr(H('Total Marketing − Reinteresados = asignados que habríamos tenido sin el programa de reinterés.')+'Total Marketing sin reinteresados',(r,i)=>`<td${cur(i)} style="text-align:right;color:var(--text-muted)">${fmt((+r.total_asignados)-(+r.asignados_reint))}</td>`)}
-  </tbody></table>`;
-  el.scrollLeft=el.scrollWidth;   // fijar a la derecha (periodo más reciente siempre visible)
-}
 function applyTheme(t){const light=t==='light';document.body.classList.toggle('light',light);
   document.getElementById('themeBtn').textContent=light?'🌙 Oscuro':'☀️ Claro';
   if(window.Chart&&diaCharts.length){ renderDiario(); renderResp(); renderCohorteOrigen(); }}
