@@ -199,7 +199,6 @@
 
   <div class="tabletitle">Comportamiento · últimos 14 días <span class="help" title="Estas tarjetas se calculan sobre los leads/respuestas de los últimos 14 días: el funnel de reactivación (creados en 14 días), el desglose de respuestas por tipo y el estado de contacto histórico.">?</span></div>
   <div class="grid">
-    <section class="panel"><h3>Funnel de reactivación <span class="help" title="Base contactada → Respuestas → Interesados → Calificados (backbone 20/63) → Asignados (WBR mart) → Citas → Cierres. % = del paso previo.">?</span></h3><div id="funnel"></div></section>
     <section class="panel"><h3>Respuestas por tipo <span class="help" title="Distribución de las respuestas parseadas del mart en la ventana (Interesado / Ya vendió / Otro, texto libre) + respond rate sobre entregados.">?</span></h3><div id="resp"></div></section>
     <section class="panel"><h3>Estado de contacto <span class="help" title="Distribución histórica (total acumulado) del estado de contacto de los leads en Neon: enviado (sin respuesta aún), ya vendió, respondió otro, reinteresado (interesado→recreado) y baja (pidió no ser contactado).">?</span></h3><div style="position:relative;width:100%;height:230px"><canvas id="c_contacto"></canvas></div></section>
   </div>
@@ -229,20 +228,6 @@
       <div style="position:relative;height:300px"><canvas id="c_porhora"></canvas></div>
       <p class="note" id="porhoraNote"></p>
     </section>
-  </div>
-
-  <div class="tabletitle">Evolución diaria <span class="help" title="Serie diaria. Fila 1 = valor absoluto por día (barras); fila 2 = promedio móvil de 7 días (línea). Pasa el mouse sobre cualquier punto para ver el dato (y el tamaño de muestra en las conversiones).">?</span></div>
-  <div class="grid g5">
-    <section class="panel"><h3 class="sm">Base enviada (WhatsApp) <span class="help" title="Mensajes de reactivación enviados por WhatsApp por día (fuente: repo del programa, fecha de envío).">?</span></h3><div class="ch"><canvas id="c_env"></canvas></div></section>
-    <section class="panel"><h3 class="sm">Conversión a respuesta <span class="help" title="Respuestas recibidas ÷ mensajes enviados ese día (%). Aproximado: las respuestas llegan con rezago respecto al envío.">?</span></h3><div class="ch"><canvas id="c_cr"></canvas></div></section>
-    <section class="panel"><h3 class="sm">Conversión respuesta → interesado <span class="help" title="De los que respondieron ese día, % que eligió 'Interesado' (vs Ya vendió / Pide baja). Tooltip muestra n de respuestas.">?</span></h3><div class="ch"><canvas id="c_ci"></canvas></div></section>
-    <section class="panel"><h3 class="sm">Conversión interesado → creado <span class="help" title="Leads recreados ÷ interesados (%). Recreados = negocios con UTM reinteresados creados ese día (hubspot.deals). Puede pasar de 100% porque incluye positivos de llamada.">?</span></h3><div class="ch"><canvas id="c_ic"></canvas></div></section>
-    <section class="panel"><h3 class="sm">Conversión creado → calificado MM <span class="help" title="Calificados de Market Maker (backbone estados 20/63: No gestionado / Sin pricing inicial) ÷ recreados ese día (%). Por fecha de creación.">?</span></h3><div class="ch"><canvas id="c_cc"></canvas></div></section>
-    <section class="panel"><h3 class="sm">Base enviada · prom. móvil 7d <span class="help" title="Promedio móvil de 7 días de los mensajes enviados por día.">?</span></h3><div class="ch"><canvas id="c_env_ma"></canvas></div></section>
-    <section class="panel"><h3 class="sm">Conversión a respuesta · prom. móvil 7d <span class="help" title="Promedio móvil de 7 días de respuestas ÷ enviados.">?</span></h3><div class="ch"><canvas id="c_cr_ma"></canvas></div></section>
-    <section class="panel"><h3 class="sm">Conversión resp → interesado · prom. móvil 7d <span class="help" title="Promedio móvil de 7 días de interesados ÷ respuestas.">?</span></h3><div class="ch"><canvas id="c_ci_ma"></canvas></div></section>
-    <section class="panel"><h3 class="sm">Conversión interesado → creado · prom. móvil 7d <span class="help" title="Promedio móvil de 7 días de recreados ÷ interesados.">?</span></h3><div class="ch"><canvas id="c_ic_ma"></canvas></div></section>
-    <section class="panel"><h3 class="sm">Conversión creado → calificado MM · prom. móvil 7d <span class="help" title="Promedio móvil de 7 días de calificados de Market Maker ÷ recreados.">?</span></h3><div class="ch"><canvas id="c_cc_ma"></canvas></div></section>
   </div>
 
   <div class="tabletitle">Recreación · outcome del dedup al crear el lead
@@ -458,7 +443,7 @@ function renderExplorer(){
   }
   el.innerHTML=parts.join('');
 }
-function selectCountry(c){ country=c; renderStats(); renderSalida(); renderErrores(); renderAB(); renderResp(); renderContacto(); renderFunnel(); renderDiario(); renderFuntab(); renderAntifunnel(); renderDedup(); renderCompletitud(); renderCohorteOrigen(); renderPorHoraChart(); }
+function selectCountry(c){ country=c; renderStats(); renderSalida(); renderErrores(); renderAB(); renderResp(); renderContacto(); renderFuntab(); renderAntifunnel(); renderDedup(); renderCompletitud(); renderCohorteOrigen(); renderPorHoraChart(); }
 // Celdas "valor + %" con heatmap por fila (verde=conversión alta, rojo=baja), copiado del tablero de referencia.
 function heatCells(values, denoms){
   const pcts=values.map((v,i)=> denoms[i]>0 ? v/denoms[i]*100 : null);   // período sin base → null (celda vacía)
@@ -575,27 +560,6 @@ function mkChart(id,labels,data,o={}){
       scales:{x:{ticks:{color:light?'#64748b':'#94a3b8',maxTicksLimit:8},grid:{display:false}},
         y:{beginAtZero:!o.pct,ticks:{color:light?'#64748b':'#94a3b8',callback:o.pct?(v=>v+'%'):undefined},grid:{color:light?'#e2e8f0':'#22304a'}}}}}));
 }
-function renderDiario(){
-  const arr=(D.diario||{})[country]||[];
-  const labels=arr.map(r=>r.fecha.slice(5));
-  const env=arr.map(r=>+r.enviados), resp=arr.map(r=>+r.respuestas), inter=arr.map(r=>+r.interesados),
-        crea=arr.map(r=>+r.creados), cal=arr.map(r=>+r.calificados);
-  const MIN_N=5;   // ignora días con denominador <5 (muestra muy chica → % ruidoso que dispara el eje)
-  const div=(a,b)=>a.map((_,i)=>b[i]>=MIN_N?(a[i]/b[i]*100):null);
-  const cr=div(resp,env), ci=div(inter,resp), ic=div(crea,inter), cc=div(cal,crea);
-  diaCharts.forEach(c=>c.destroy()); diaCharts=[];
-  mkChart('c_env',labels,env,{type:'bar'});
-  mkChart('c_cr',labels,cr,{type:'bar',pct:true,num:resp,den:env});
-  mkChart('c_ci',labels,ci,{type:'bar',pct:true,num:inter,den:resp});
-  mkChart('c_ic',labels,ic,{type:'bar',pct:true,num:crea,den:inter});
-  mkChart('c_cc',labels,cc,{type:'bar',pct:true,num:cal,den:crea});
-  mkChart('c_env_ma',labels,movavg(env,7));
-  mkChart('c_cr_ma',labels,movavg(cr,7),{pct:true});
-  mkChart('c_ci_ma',labels,movavg(ci,7),{pct:true});
-  mkChart('c_ic_ma',labels,movavg(ic,7),{pct:true});
-  mkChart('c_cc_ma',labels,movavg(cc,7),{pct:true});
-}
-
 function renderStats(){
   const l=(D.linea||{})[country]||{};
   const qc={HIGH:'var(--ok)',MEDIUM:'var(--warn)',LOW:'var(--bad)',UNKNOWN:'var(--text-muted)'}[l.quality]||'var(--text-muted)';
@@ -651,12 +615,6 @@ function renderContacto(){
           return `${c.label}: ${fmt(v)} (${tot?(v/tot*100).toFixed(1):'0'}%)`;}}}}}});
 }
 
-function healthLine(ok,titulo,msg,detail,last){
-  const bd=ok?'var(--ok)':'var(--bad)', bg=ok?'rgba(52,211,153,.12)':'rgba(248,113,113,.14)';
-  return `<div style="padding:10px 14px;border:1px solid ${bd};background:${bg};border-radius:10px;font-size:13px;color:var(--text)">
-    <span style="color:${bd};font-weight:800">${ok?'✓':'⚠'} ${titulo}</span> · ${msg}
-    ${(detail||last)?`<div class="muted" style="font-size:11px;margin-top:3px">${detail?detail+' · ':''}${last?'últ. chequeo '+last:''}</div>`:''}</div>`;
-}
 const COMP_LABELS={direccion:'Dirección',telefono:'Teléfono',email:'Email',nombre:'Nombre',geo:'Geo (lat/lon)',zona:'Zona mediana',tipo:'Tipo de inmueble',area:'Área',banos:'Baños',medios_banos:'Medios baños',habitaciones:'Habitaciones',garaje:'Garaje',ascensor:'Ascensor',piso:'Piso',antiguedad:'Antigüedad',precio:'Precio',estrato:'Estrato'};
 const COMP_ORDER=['direccion','telefono','email','nombre','geo','zona','tipo','area','banos','medios_banos','habitaciones','garaje','ascensor','piso','antiguedad','precio','estrato'];
 function renderCompletitud(){
@@ -794,33 +752,9 @@ function renderCohorteOrigen(){
   el.scrollLeft=el.scrollWidth;
 }
 
-function renderFunnel(){
-  const f=(D.funnel||[]).find(x=>x.pais===country)||{};
-  const r=(D.respuestas||{})[country]||{}, base=(D.base_enviada||{})[country]||0;
-  const el=document.getElementById('funnel');
-  const steps=[
-    ['Respuestas', +r.total_respuestas||0],
-    ['Interesados', +r.interesado||0],
-    ['Calificados', +f.calificados||0],
-    ['Asignados', +f.asignados||0],
-    ['Citas', +f.citas||0],
-    ['Cierres', +f.cierres||0],
-  ];
-  const max=steps[0][1]||1;
-  const rows=steps.map(([n,v],i)=>{
-    const prev=i?steps[i-1][1]:v, vb=base?(v/base*100):0, vp=prev?(v/prev*100):0;
-    return `<div class="rowline"><div class="lab" style="width:84px">${n}</div>
-      <div class="bar"><div style="width:${Math.max(0.5,v/max*100).toFixed(1)}%;background:var(--accent)"></div></div>
-      <div class="val" style="width:158px"><b>${fmt(v)}</b>
-        <div class="muted" style="font-size:11px">${vb.toFixed(vb<10?2:1)}% base · ${i?vp.toFixed(0)+'% prev':'—'}</div></div></div>`;
-  }).join('');
-  el.innerHTML=`<div style="font-size:12px;color:var(--text-muted);margin-bottom:10px">Base contactada (total programa): <b style="color:var(--text-title)">${fmt(base)}</b></div>${rows}
-    <p class="note">Últimos 14 días (por fecha de creación). Cada etapa: % de la <b>base contactada</b> y % del <b>paso previo</b>. La base contactada es el total del programa (los envíos aún no están fechados en el hub).</p>`;
-}
-
 function applyTheme(t){const light=t==='light';document.body.classList.toggle('light',light);
   document.getElementById('themeBtn').textContent=light?'🌙 Oscuro':'☀️ Claro';
-  if(window.Chart&&diaCharts.length){ renderDiario(); renderResp(); renderCohorteOrigen(); }}
+  if(window.Chart&&diaCharts.length){ renderResp(); renderCohorteOrigen(); }}
 document.getElementById('themeBtn').onclick=()=>{const n=document.body.classList.contains('light')?'dark':'light';try{localStorage.setItem('ml-theme',n);}catch(e){}applyTheme(n);};
 applyTheme((()=>{try{return localStorage.getItem('ml-theme')||'dark';}catch(e){return 'dark';}})());
 load();
