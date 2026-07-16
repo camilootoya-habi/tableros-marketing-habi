@@ -87,6 +87,8 @@
   .ftab tbody tr:hover td:first-child{background:var(--card-hover)}
   .ftab tbody tr.row-total td{font-weight:700;color:var(--text-title);font-size:14px;background:var(--row-total)}
   .ftab tbody tr.row-total td:first-child{background:var(--row-total)}
+  .ftab tbody tr.row-loop td{background:rgba(52,211,153,.14);color:var(--ok);font-weight:700}
+  .ftab tbody tr.row-loop td:first-child{background:rgba(52,211,153,.14);border-left:3px solid var(--ok)}
   .help-btn{display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;border-radius:50%;background:var(--border);color:var(--text-muted);border:none;font-size:11px;font-weight:700;cursor:pointer;margin-left:6px;vertical-align:middle;padding:0;line-height:1}
   .help-btn:hover{background:var(--accent);color:var(--accent-on)}
   .ftab tbody tr.row-stage .n{font-weight:600;color:var(--text)}
@@ -677,8 +679,8 @@ function renderImpacto(){
   el.innerHTML=`<table><thead><tr><th>${hcol}</th>${th}</tr></thead><tbody>
     ${tr(_hb('imp_total')+'Total Marketing',(r,i)=>`<td${cur(i)} style="text-align:right">${fmt(+r.total_asignados)}</td>`,'row-total')}
     ${tr(_hb('imp_sinloop')+'Total Marketing sin loop',(r,i)=>`<td${cur(i)} style="text-align:right;color:var(--text-muted)">${fmt((+r.total_asignados)-(+r.asignados_reint))}</td>`)}
+    ${tr(_hb('imp_loop')+'Marketing loop (WEB)',(r,i)=>`<td${cur(i)} style="text-align:right">${fmt(+r.asignados_reint)}</td>`,'row-loop')}
     ${tr(_hb('imp_web')+'WEB',(r,i)=>`<td${cur(i)} style="text-align:right">${fmt(+r.asignados_web)}</td>`)}
-    ${tr(_hb('imp_loop')+'Marketing loop (WEB)',(r,i)=>`<td${cur(i)} style="text-align:right">${fmt(+r.asignados_reint)}</td>`)}
     ${tr(_hb('imp_loopvstotal')+'<b>Loop vs Total Marketing</b>',(r,i)=>ratio(+r.asignados_reint,+r.total_asignados,i))}
     ${tr(_hb('imp_loopvsweb')+'<b>Loop vs WEB</b>',(r,i)=>ratio(+r.asignados_reint,+r.asignados_web,i))}
   </tbody></table>`;
