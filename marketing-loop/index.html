@@ -210,11 +210,10 @@
   </div>
   <div class="tbl-wrap ftab" id="ab"></div>
 
-  <div class="tabletitle">Comportamiento · últimos 14 días <span class="help" title="Estas tarjetas se calculan sobre los leads/respuestas de los últimos 14 días: el funnel de reactivación (creados en 14 días), el desglose de respuestas por tipo y el estado de contacto histórico.">?</span></div>
-  <div class="grid">
-    <section class="panel"><h3>Respuestas por tipo <span class="help" title="Distribución de las respuestas parseadas del mart en la ventana (Interesado / Ya vendió / Otro, texto libre) + respond rate sobre entregados.">?</span></h3><div id="resp"></div></section>
-    <section class="panel"><h3>Estado de contacto <span class="help" title="Distribución histórica (total acumulado) del estado de contacto de los leads en Neon: enviado (sin respuesta aún), ya vendió, respondió otro, reinteresado (interesado→recreado) y baja (pidió no ser contactado).">?</span></h3><div style="position:relative;width:100%;height:230px"><canvas id="c_contacto"></canvas></div></section>
+  <div class="tabletitle">Respuestas últimos 14 días
+    <button type="button" class="help-btn" onclick="openHelp('resp')" aria-label="Explicación">?</button>
   </div>
+  <div class="tbl-wrap ftab" id="resp"></div>
 
   <div class="tabletitle">Mejor hora de envío · read & respond rate
     <span class="help" title="Igual que la gráfica de arriba pero el eje X es la HORA de envío del mensaje (hora real del mart de Infobip), no el trimestre de creación del lead. Mide read rate y respond rate por hora del día en que salió el mensaje. NO mostramos delivery rate por hora (estaba contaminado por la línea quemada/plantilla disabled); read y respond son comportamiento del destinatario, más limpios. TZ del mart por calibrar cuando entre el goteo horario.">?</span>
@@ -314,7 +313,7 @@
 </div>
 
 <script>
-let D=null, country='MX', cicloTipo='dia', porhoraChart=null, contactoChart=null, AUDIT=null, expC='CO';
+let D=null, country='MX', cicloTipo='dia', porhoraChart=null, AUDIT=null, expC='CO';
 const CIP={MX:'mexico',CO:'colombia'};
 const fmt=v=>(v==null?'—':Number(v).toLocaleString('es-CO'));
 const pct=v=>(v==null?'—':Number(v).toFixed(1)+'%');
@@ -439,7 +438,7 @@ function renderExplorer(){
   }
   el.innerHTML=parts.join('');
 }
-function selectCountry(c){ country=c; renderStats(); renderImpacto(); renderErrores(); renderAB(); renderResp(); renderContacto(); renderFuntab(); renderAntifunnel(); renderDedup(); renderCompletitud(); renderCohorteOrigen(); renderPorHoraChart(); }
+function selectCountry(c){ country=c; renderStats(); renderImpacto(); renderErrores(); renderAB(); renderResp(); renderFuntab(); renderAntifunnel(); renderDedup(); renderCompletitud(); renderCohorteOrigen(); renderPorHoraChart(); }
 // Celdas "valor + %" con heatmap por fila (verde=conversión alta, rojo=baja), copiado del tablero de referencia.
 function heatCells(values, denoms){
   const pcts=values.map((v,i)=> denoms[i]>0 ? v/denoms[i]*100 : null);   // período sin base → null (celda vacía)
@@ -583,6 +582,10 @@ const CARD_HELP={
   cos_ir:{t:'% Interesados Rate',b:'<p><b>Interesados ÷ Entregados:</b> % de entregados que dijeron «Estoy interesado». Es el rate que <b>más importa</b> para el loop.</p>'},
   err:{t:'Errores de entrega',b:'<p>Por qué <b>NO</b> llegaron los mensajes, por período de envío (Temporalidad). Fila 1 = <b>total no entregados</b>; luego el <b>volumen absoluto</b> de cada tipo de error; luego el <b>% de cada error</b> sobre el total de no entregados.</p><p>Fuente: <code>error_name</code> del mart de Infobip + API /logs. Incluye el bug <b>7008</b> (plantilla sin imagen). Columnas = 20 períodos recientes.</p>'},
   ab:{t:'A/B de plantillas',b:'<p>Comparativo de las plantillas que se envían <b>en simultáneo</b> (asignación aleatoria del A/B). Una <b>fila por plantilla</b>; columnas = enviados, entregados, delivery / read / respond / interesado rate.</p><p>Excluye los envíos fallidos por bug de plantilla sin imagen (7008, culpa nuestra). ⚠ <b>Read rate</b> no disponible por esta vía (SEEN). v1 = control · v2 = oferta.</p>'},
+  resp:{t:'Respuestas últimos 14 días',b:'<p>Respuestas recibidas en la línea (<b>mart inbound</b> de Infobip) los últimos 14 días. Fila 1 = total; luego los botones <b>Interesado</b> y <b>Ya no vendo</b>; y cada <b>respuesta de texto libre</b> distinta en su propia fila, con su conteo.</p>'},
+  resp_tot:{t:'Respondieron (total)',b:'<p>Total de respuestas recibidas en los últimos 14 días (botones + texto libre).</p>'},
+  resp_int:{t:'Interesado',b:'<p>Respondieron con el botón <b>«Estoy interesado»</b> (INTERESADO).</p>'},
+  resp_baja:{t:'Ya no vendo',b:'<p>Respondieron con el botón <b>«Ya no vendo»</b> (YAVENDIÓ / baja).</p>'},
 };
 function openHelp(k){const h=CARD_HELP[k]; if(!h) return;
   document.getElementById('helpCardT').textContent=h.t;
@@ -615,35 +618,19 @@ function renderResp(){
   const el=document.getElementById('resp'); if(!el) return;
   const r=(D.respuestas||{})[country];
   if(!r){ el.innerHTML='<p class="note">Sin datos de respuestas para '+country+' (aún no disponible).</p>'; return; }
-  const tot=(+r.interesado||0)+(+r.ya_vendio||0)+(+r.otro||0);
-  const rows=[['Interesado',+r.interesado||0,'var(--ok)'],['Ya vendió',+r.ya_vendio||0,'var(--sky)'],['Otro (texto libre)',+r.otro||0,'var(--text-muted)']];
-  const body=rows.map(([lab,v,color])=>{
-    const p=tot?(v/tot*100):0;
-    return `<div class="rowline"><div class="lab" style="width:110px">${lab}</div>
-      <div class="bar"><div style="width:${Math.max(0.5,p).toFixed(1)}%;background:${color}"></div></div>
-      <div class="val" style="width:90px"><b>${fmt(v)}</b> <span class="muted" style="font-size:11px">${p.toFixed(0)}%</span></div></div>`;
-  }).join('');
-  el.innerHTML=`${body}
-    <p class="note">Respond rate (sobre entregados, ventana ${r.ventana||'7d'}): <b style="color:var(--text-title)">${pct(r.respond_rate==null?null:r.respond_rate*100)}</b> · ${fmt(r.total_respuestas)} respuestas totales.</p>`;
+  const tot=+r.total||0;
+  const pctOf=v=>tot?((v/tot*100).toFixed(1)+'%'):'—';
+  const row=(lab,v,cls='')=>`<tr class="${cls}"><td>${lab}</td><td style="text-align:right">${fmt(v)}</td><td style="text-align:right"><span class="muted">${pctOf(v)}</span></td></tr>`;
+  const abiertas=(r.abiertas||[]).map(a=>row(escx(a.texto), +a.n)).join('');
+  el.innerHTML=`<table><thead><tr><th>Respuesta</th><th style="text-align:right">Cantidad</th><th style="text-align:right">% del total</th></tr></thead><tbody>
+    ${row(_hb('resp_tot')+'Respondieron (total)', tot, 'row-total')}
+    ${row(_hb('resp_int')+'Interesado', +r.interesado||0)}
+    ${row(_hb('resp_baja')+'Ya no vendo', +r.ya_vendio||0)}
+    ${abiertas}
+  </tbody></table>
+  <p class="note" style="padding:8px 13px">Respuestas recibidas en la línea (mart inbound) los últimos ${r.ventana||'14d'}. Las filas de abajo son cada respuesta de <b>texto libre</b> distinta (fuera de los botones).</p>`;
 }
 
-const CONTACTO_LAB={enviado:['Enviado (sin resp.)','#94a3b8'],ya_vendio:['Ya vendió','#38bdf8'],respondio_otro:['Respondió otro','#818cf8'],reinteresado:['Reinteresado','#34d399'],baja:['Pidió baja','#f87171']};
-function renderContacto(){
-  const el=document.getElementById('c_contacto'); if(!el||!window.Chart) return;
-  const cs=(D.contact_status||{})[country];
-  if(!cs){ if(contactoChart){contactoChart.destroy();contactoChart=null;} el.getContext('2d').clearRect(0,0,el.width,el.height); return; }
-  const light=document.body.classList.contains('light');
-  const keys=Object.keys(CONTACTO_LAB).filter(k=>(+cs[k]||0)>0);
-  const labels=keys.map(k=>CONTACTO_LAB[k][0]);
-  const data=keys.map(k=>+cs[k]||0);
-  const colors=keys.map(k=>CONTACTO_LAB[k][1]);
-  if(contactoChart) contactoChart.destroy();
-  contactoChart=new Chart(el,{type:'doughnut',data:{labels,datasets:[{data,backgroundColor:colors,borderColor:light?'#fff':'#1e293b',borderWidth:2}]},
-    options:{responsive:true,maintainAspectRatio:false,
-      plugins:{legend:{display:true,position:'right',labels:{color:light?'#334155':'#e2e8f0',boxWidth:10,font:{size:11}}},
-        tooltip:{callbacks:{label:c=>{const tot=data.reduce((a,b)=>a+b,0); const v=c.parsed;
-          return `${c.label}: ${fmt(v)} (${tot?(v/tot*100).toFixed(1):'0'}%)`;}}}}}});
-}
 
 const COMP_LABELS={direccion:'Dirección',telefono:'Teléfono',email:'Email',nombre:'Nombre',geo:'Geo (lat/lon)',zona:'Zona mediana',tipo:'Tipo de inmueble',area:'Área',banos:'Baños',medios_banos:'Medios baños',habitaciones:'Habitaciones',garaje:'Garaje',ascensor:'Ascensor',piso:'Piso',antiguedad:'Antigüedad',precio:'Precio',estrato:'Estrato'};
 const COMP_ORDER=['direccion','telefono','email','nombre','geo','zona','tipo','area','banos','medios_banos','habitaciones','garaje','ascensor','piso','antiguedad','precio','estrato'];

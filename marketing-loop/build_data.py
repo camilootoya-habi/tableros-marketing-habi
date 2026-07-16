@@ -148,23 +148,26 @@ def completitud(pais, rows):
     return {"series":series,"na":na}
 
 # --- helpers nuevos: respuestas parseadas del mart (INTERESADO/YAVENDIO/OTRO) y A/B por template ---
-def _resp_tipos(parsed, mbm, win, sl7):
-    """Cuenta INTERESADO/YAVENDIO/OTRO entre los inbound parseados (mart) en la ventana de `win` días
-    completos (excluye hoy). respond_rate = respuestas (en la ventana) / entregados EN LA MISMA VENTANA
-    (`sl7`, envíos de los últimos `win` días), no sobre todo `mbm` (~30d) — evita subestimar la tasa."""
+def _respuestas_14d(inb, days=14):
+    """Respuestas recibidas en la línea (mart inbound) los últimos `days` días: total, INTERESADO,
+    YAVENDIO, y cada respuesta de TEXTO LIBRE distinta como fila propia (con su conteo)."""
+    from collections import Counter
     hoy = datetime.date.today()
-    ini = (hoy - datetime.timedelta(days=win)).isoformat()
-    fin = hoy.isoformat()
-    c = {"INTERESADO":0, "YAVENDIO":0, "OTRO":0}
-    for _phone, pr, ts in parsed:
-        if not (ini <= (ts or "") < fin): continue
-        act = pr.get("action") or "OTRO"
-        c[act] = c.get(act,0) + 1
-    total = sum(c.values())
-    entregados = sum(1 for r in sl7 if (mbm.get(r.get("message_id") or "") or {}).get("status")=="delivered")
-    return {"interesado":c["INTERESADO"], "ya_vendio":c["YAVENDIO"], "otro":c["OTRO"],
-            "total_respuestas":total, "ventana":f"{win}d",
-            "respond_rate": round(total/entregados,3) if entregados else None}
+    ini = (hoy - datetime.timedelta(days=days)).isoformat()
+    interesado = yavendio = total = 0
+    abiertas = Counter()
+    for i in inb:
+        ts = (i.get("ts") or "")[:10]
+        if ts < ini: continue
+        total += 1
+        act = agg.parse_resp(i.get("respuesta_cliente")).get("action") or "OTRO"
+        if act == "INTERESADO": interesado += 1
+        elif act == "YAVENDIO": yavendio += 1
+        else:
+            txt = (i.get("respuesta_cliente") or "").strip()[:160] or "(vacío)"
+            abiertas[txt] += 1
+    return {"total": total, "interesado": interesado, "ya_vendio": yavendio,
+            "abiertas": [{"texto": t, "n": n} for t, n in abiertas.most_common()], "ventana": f"{days}d"}
 
 def _ab(sl, mbm, inbound_phones, interesado_phones):
     """Comparativo A/B por `template`: enviados, entregados, delivery/read/respond/interesado rate.
@@ -224,7 +227,7 @@ data={
   "linea": {"MX": linea_meta("MX"), "CO": None},
   "embudo": {"MX": agg.embudo(sl7,mbm,inbound_phones,interesado_phones,recreated_oldnids,qualified_oldnids,dias), "CO": None},
   "errores": {"MX": {t: agg.errores_serie(sl, mbm, t) for t in ("dia","semana","mes")}, "CO": None},
-  "respuestas": {"MX": _resp_tipos(parsed, mbm, WIN, sl7), "CO": None},
+  "respuestas": {"MX": _respuestas_14d(inb, 14), "CO": None},
   "cosecha": {"MX": {t: agg.cosecha_serie(sl, mbm, inbound_phones, interesado_phones, t) for t in ("dia","semana","mes")}, "CO": None},
   "ab_templates": {"MX": _ab(sl,mbm,inbound_phones,interesado_phones), "CO": None},
   "recreacion": {"MX": {t: agg.recreacion_serie(rec,t) for t in ("dia","semana","mes")}, "CO": None},
