@@ -1,4 +1,4 @@
-from agg import bucket, parse_resp
+from agg import bucket, parse_resp, embudo
 
 def test_bucket_dia():
     assert bucket("2026-07-15", "dia") == "2026-07-15"
@@ -32,3 +32,16 @@ def test_parse_yavendio_sin_acento():
 def test_parse_case_insensitive():
     r = parse_resp("payload: activacion_newleads_interesado_123")
     assert r == {"action": "INTERESADO", "nid": "123"}
+
+def test_embudo_tasas():
+    sl=[{"message_id":"a","accepted":True,"phone":"1","attempted_at":"2026-07-10","nid":"n1"},
+        {"message_id":"b","accepted":True,"phone":"2","attempted_at":"2026-07-10","nid":"n2"},
+        {"message_id":None,"accepted":False,"phone":"3","attempted_at":"2026-07-10","nid":"n3"}]
+    mart={"a":{"status":"delivered","error_name":"No Error (code 0)","seen":True},
+          "b":{"status":"undeliverable","error_name":"Frequency capping limit reached (code 7032)","seen":False}}
+    r=embudo(sl, mart, inbound_phones={"1"}, interesado_phones={"1"},
+             recreated_oldnids={"n1"}, qualified_oldnids={"n1"}, dias=["2026-07-10"])
+    t=r["totales"]
+    assert t["intentos"]==3 and t["aceptados"]==2 and t["entregados"]==1 and t["leidos"]==1
+    assert t["respondieron"]==1 and t["interesados"]==1 and t["recreados"]==1 and t["calificados"]==1
+    assert round(r["tasas"]["delivery_rate"],2)==0.33 and round(r["tasas"]["respond_rate"],2)==1.0
