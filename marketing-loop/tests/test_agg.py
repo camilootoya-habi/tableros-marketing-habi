@@ -19,3 +19,16 @@ def test_parse_baja():
 
 def test_parse_libre():
     assert parse_resp("Hola quiero info") == {"action": "OTRO", "nid": None}
+
+def test_bucket_ciclo():
+    # ciclo = miércoles de la semana comercial (Mié→Mar). 2026-07-16 es jueves → miércoles 2026-07-15
+    assert bucket("2026-07-16", "ciclo") == "2026-07-15"
+    assert bucket("2026-07-14", "ciclo") == "2026-07-08"  # martes → miércoles previo
+
+def test_parse_yavendio_sin_acento():
+    r = parse_resp("BUTTON - Text: Ya no vendo, Payload: activacion_NewLeads_YAVENDIO_777")
+    assert r == {"action": "YAVENDIO", "nid": "777"}
+
+def test_parse_case_insensitive():
+    r = parse_resp("payload: activacion_newleads_interesado_123")
+    assert r == {"action": "INTERESADO", "nid": "123"}
