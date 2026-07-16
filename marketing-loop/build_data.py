@@ -172,9 +172,10 @@ def _ab(sl, mbm, inbound_phones):
     from collections import defaultdict
     A=defaultdict(lambda: dict(enviados=0,entregados=0,respondieron=0))
     for r in sl:
+        m = mbm.get(r.get("message_id") or "")
+        if m and "7008" in (m.get("error_name") or ""): continue  # bug plantilla sin imagen (7008): fuera del A/B
         t = r.get("template") or "sin_template"
         a = A[t]; a["enviados"]+=1
-        m = mbm.get(r.get("message_id") or "")
         if m and m.get("status")=="delivered": a["entregados"]+=1
         if r.get("phone") in inbound_phones: a["respondieron"]+=1
     out=[]
