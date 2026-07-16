@@ -154,20 +154,21 @@ def _respuestas_14d(inb, days=14):
     from collections import Counter
     hoy = datetime.date.today()
     ini = (hoy - datetime.timedelta(days=days)).isoformat()
-    interesado = yavendio = total = 0
+    interesado = yavendio = baja_texto = total = 0
     abiertas = Counter()
     for i in inb:
         ts = (i.get("ts") or "")[:10]
         if ts < ini: continue
         total += 1
-        act = agg.parse_resp(i.get("respuesta_cliente")).get("action") or "OTRO"
+        raw = (i.get("respuesta_cliente") or "").strip()
+        act = agg.parse_resp(raw).get("action") or "OTRO"
         if act == "INTERESADO": interesado += 1
         elif act == "YAVENDIO": yavendio += 1
-        else:
-            txt = (i.get("respuesta_cliente") or "").strip()[:160] or "(vacío)"
-            abiertas[txt] += 1
-    return {"total": total, "interesado": interesado, "ya_vendio": yavendio,
-            "abiertas": [{"texto": t, "n": n} for t, n in abiertas.most_common()], "ventana": f"{days}d"}
+        elif "baja" in raw.lower(): baja_texto += 1          # escribieron "baja" en vez de tocar el botón
+        else: abiertas[raw[:160] or "(vacío)"] += 1
+    return {"total": total, "interesado": interesado, "ya_vendio": yavendio, "baja_texto": baja_texto,
+            "abiertas": [{"texto": t, "n": n} for t, n in abiertas.most_common()],
+            "abiertas_total": sum(abiertas.values()), "ventana": f"{days}d"}
 
 def _ab(sl, mbm, inbound_phones, interesado_phones):
     """Comparativo A/B por `template`: enviados, entregados, delivery/read/respond/interesado rate.

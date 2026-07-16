@@ -89,6 +89,8 @@
   .ftab tbody tr.row-total td:first-child{background:var(--row-total)}
   .ftab tbody tr.row-loop td{background:rgba(52,211,153,.14);color:var(--ok);font-weight:700}
   .ftab tbody tr.row-loop td:first-child{background:rgba(52,211,153,.14);border-left:3px solid var(--ok)}
+  .ftab tbody tr.resp-detail{display:none}
+  .ftab tbody.resp-open tr.resp-detail{display:table-row}
   .help-btn{display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;border-radius:50%;background:var(--border);color:var(--text-muted);border:none;font-size:11px;font-weight:700;cursor:pointer;margin-left:6px;vertical-align:middle;padding:0;line-height:1}
   .help-btn:hover{background:var(--accent);color:var(--accent-on)}
   .ftab tbody tr.row-stage .n{font-weight:600;color:var(--text)}
@@ -582,10 +584,11 @@ const CARD_HELP={
   cos_ir:{t:'% Interesados Rate',b:'<p><b>Interesados ÷ Entregados:</b> % de entregados que dijeron «Estoy interesado». Es el rate que <b>más importa</b> para el loop.</p>'},
   err:{t:'Errores de entrega',b:'<p>Por qué <b>NO</b> llegaron los mensajes, por período de envío (Temporalidad). Fila 1 = <b>total no entregados</b>; luego el <b>volumen absoluto</b> de cada tipo de error; luego el <b>% de cada error</b> sobre el total de no entregados.</p><p>Fuente: <code>error_name</code> del mart de Infobip + API /logs. Incluye el bug <b>7008</b> (plantilla sin imagen). Columnas = 20 períodos recientes.</p>'},
   ab:{t:'A/B de plantillas',b:'<p>Comparativo de las plantillas que se envían <b>en simultáneo</b> (asignación aleatoria del A/B). Una <b>fila por plantilla</b>; columnas = enviados, entregados, delivery / read / respond / interesado rate.</p><p>Excluye los envíos fallidos por bug de plantilla sin imagen (7008, culpa nuestra). ⚠ <b>Read rate</b> no disponible por esta vía (SEEN). v1 = control · v2 = oferta.</p>'},
-  resp:{t:'Respuestas últimos 14 días',b:'<p>Respuestas recibidas en la línea (<b>mart inbound</b> de Infobip) los últimos 14 días. Fila 1 = total; luego los botones <b>Interesado</b> y <b>Ya no vendo</b>; y cada <b>respuesta de texto libre</b> distinta en su propia fila, con su conteo.</p>'},
+  resp:{t:'Respuestas últimos 14 días',b:'<p>Respuestas recibidas en la línea (<b>mart inbound</b> de Infobip) los últimos 14 días. Filas fijas: total, botón <b>Interesado</b>, botón <b>Ya no vendo</b>, y <b>Baja</b> (escribieron «baja» como texto).</p><p><b>Respuestas Abiertas</b> resume el resto del texto libre en una fila; ábrela con ▸ para ver cada respuesta con su conteo.</p>'},
   resp_tot:{t:'Respondieron (total)',b:'<p>Total de respuestas recibidas en los últimos 14 días (botones + texto libre).</p>'},
   resp_int:{t:'Interesado',b:'<p>Respondieron con el botón <b>«Estoy interesado»</b> (INTERESADO).</p>'},
   resp_baja:{t:'Ya no vendo',b:'<p>Respondieron con el botón <b>«Ya no vendo»</b> (YAVENDIÓ / baja).</p>'},
+  resp_bajatxt:{t:'Baja',b:'<p>Respondieron con <b>texto libre</b> que dice «baja» (escribieron «baja / darme de baja» en vez de tocar el botón «Ya no vendo»).</p>'},
 };
 function openHelp(k){const h=CARD_HELP[k]; if(!h) return;
   document.getElementById('helpCardT').textContent=h.t;
@@ -621,14 +624,23 @@ function renderResp(){
   const tot=+r.total||0;
   const pctOf=v=>tot?((v/tot*100).toFixed(1)+'%'):'—';
   const row=(lab,v,cls='')=>`<tr class="${cls}"><td>${lab}</td><td style="text-align:right">${fmt(v)}</td><td style="text-align:right"><span class="muted">${pctOf(v)}</span></td></tr>`;
-  const abiertas=(r.abiertas||[]).map(a=>row(escx(a.texto), +a.n)).join('');
-  el.innerHTML=`<table><thead><tr><th>Respuesta</th><th style="text-align:right">Cantidad</th><th style="text-align:right">% del total</th></tr></thead><tbody>
+  const detail=(lab,v)=>`<tr class="resp-detail"><td style="padding-left:30px;color:var(--text-muted);font-weight:400">${lab}</td><td style="text-align:right">${fmt(v)}</td><td style="text-align:right"><span class="muted">${pctOf(v)}</span></td></tr>`;
+  const abTot=+r.abiertas_total||0;
+  const abiertas=(r.abiertas||[]).map(a=>detail(escx(a.texto), +a.n)).join('');
+  el.innerHTML=`<table><thead><tr><th>Respuesta</th><th style="text-align:right">Cantidad</th><th style="text-align:right">% del total</th></tr></thead><tbody id="respBody">
     ${row(_hb('resp_tot')+'Respondieron (total)', tot, 'row-total')}
     ${row(_hb('resp_int')+'Interesado', +r.interesado||0)}
     ${row(_hb('resp_baja')+'Ya no vendo', +r.ya_vendio||0)}
+    ${row(_hb('resp_bajatxt')+'Baja', +r.baja_texto||0)}
+    <tr class="row-total"><td><button type="button" id="respToggleBtn" class="help-btn" onclick="toggleAbiertas()" aria-label="Abrir/cerrar respuestas abiertas">▸</button> Respuestas Abiertas</td><td style="text-align:right">${fmt(abTot)}</td><td style="text-align:right"><span class="muted">${pctOf(abTot)}</span></td></tr>
     ${abiertas}
   </tbody></table>
-  <p class="note" style="padding:8px 13px">Respuestas recibidas en la línea (mart inbound) los últimos ${r.ventana||'14d'}. Las filas de abajo son cada respuesta de <b>texto libre</b> distinta (fuera de los botones).</p>`;
+  <p class="note" style="padding:8px 13px">Respuestas recibidas en la línea (mart inbound) los últimos ${r.ventana||'14d'}. «Respuestas Abiertas» agrupa el texto libre distinto de los botones — ábrela con ▸ para ver el detalle.</p>`;
+}
+function toggleAbiertas(){
+  const b=document.getElementById('respBody'); if(!b) return;
+  const open=b.classList.toggle('resp-open');
+  const btn=document.getElementById('respToggleBtn'); if(btn) btn.textContent=open?'▾':'▸';
 }
 
 
