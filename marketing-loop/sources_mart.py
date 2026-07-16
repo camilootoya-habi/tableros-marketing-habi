@@ -31,7 +31,7 @@ def nid2quarter(nids):
     rows=_bq(f"SELECT CAST(nid AS STRING) nid, EXTRACT(YEAR FROM fecha_creacion) y, EXTRACT(QUARTER FROM fecha_creacion) q FROM `{TIG}` WHERE CAST(nid AS STRING) IN ({inl})")
     return {r["nid"]:f"{r['y']}-Q{r['q']}" for r in rows if r.get("y")}
 def estado_actual_by_deal(deal_ids):
-    ids=[str(d) for d in deal_ids if d]
+    ids=[str(d) for d in deal_ids if str(d).isdigit()]
     if not ids: return {}
     inl=",".join(f"'{d}'" for d in ids)
     rows=_bq(f"SELECT CAST(id_negocio AS STRING) deal, id_last_state st FROM `{TIG}` WHERE CAST(id_negocio AS STRING) IN ({inl})")
