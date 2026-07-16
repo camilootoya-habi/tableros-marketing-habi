@@ -6,7 +6,7 @@ con fallback a Infobip Senders API) + BigQuery (completitud, creados hoy).
 Uso: python3 build_data.py   (corre desde la carpeta del tablero; requiere NEON_DATABASE_URL,
 bq autenticado y opcionalmente META_ACCESS_TOKEN / INFOBIP_*_API_KEY como respaldo)."""
 import json, os, subprocess, datetime, re
-import agg, sources_neon as N, sources_mart as M
+import agg, sources_neon as N, sources_mart as M, sources_infobip as I
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 
@@ -191,13 +191,13 @@ COMP = q("query_completitud.sql")
 WIN = 7
 sl = N.send_log_rows()                        # todos (para cohorte histórica)
 hoy = datetime.date.today()
-hoy7 = (hoy - datetime.timedelta(days=WIN)).isoformat()
+win_start = (hoy - datetime.timedelta(days=WIN-1)).isoformat()   # últimos 7d INCLUYENDO hoy
 hoy_iso = hoy.isoformat()
-sl7 = [r for r in sl if hoy7 <= (r.get("attempted_at") or "")[:10] < hoy_iso]   # 7d completos, excluye hoy
+sl7 = [r for r in sl if win_start <= (r.get("attempted_at") or "")[:10] <= hoy_iso]  # 7d incl hoy (delivery ya es tiempo real vía /logs)
 rec = N.recreation_rows(); cst = N.contact_status_rows()
 mbm = M.mart_by_msgid(30)
-import sources_infobip as I
-ibm = I.delivery_by_msgid([r.get("message_id") for r in sl if r.get("message_id")])
+# complemento tiempo real (Infobip /logs) SOLO para la ventana reciente; los viejos ya no viven en /logs y el mart los cubre
+ibm = I.delivery_by_msgid([r.get("message_id") for r in sl7 if r.get("message_id")])
 mbm = {**mbm, **ibm}   # Infobip (tiempo real) pisa el mart en los recientes; el mart cubre el histórico
 inb = M.inbound_rows(30)
 # respuestas parseadas del mart
@@ -207,7 +207,7 @@ interesado_phones={p for p,pr,_ in parsed if p and pr["action"]=="INTERESADO"}
 # recreados/calificados por old_nid
 recreated_oldnids={r["old_nid"] for r in rec if r.get("success")}
 qualified_oldnids={r["old_nid"] for r in rec if r.get("state_at_creation") in (20,63)}
-dias=[(hoy-datetime.timedelta(days=k)).isoformat() for k in range(WIN,0,-1)]
+dias=[(hoy-datetime.timedelta(days=k)).isoformat() for k in range(WIN-1,-1,-1)]  # hoy-6..hoy (incl hoy)
 # cohorte necesita nid->trimestre
 nidq=M.nid2quarter(list({r["nid"] for r in sl if r.get("nid")}))
 # antifunnel: estado actual de recreados

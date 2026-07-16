@@ -63,7 +63,7 @@ def err_bucket(en):
     if "7032" in en: return "freq_cap"
     if "7020" in en: return "device_error"
     if "351" in en: return "invalido"
-    if "7009" in en: return "template"
+    if "7009" in en or "7008" in en: return "template"
     if "566" in en: return "bloqueado"
     return "otro"
 
