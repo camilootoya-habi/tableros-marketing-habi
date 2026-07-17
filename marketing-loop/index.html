@@ -87,6 +87,16 @@
   .ftab tbody tr:hover td:first-child{background:var(--card-hover)}
   .ftab tbody tr.row-total td{font-weight:700;color:var(--text-title);font-size:14px;background:var(--row-total)}
   .ftab tbody tr.row-total td:first-child{background:var(--row-total)}
+  .ftab tbody tr.row-loop td{background:rgba(52,211,153,.14);color:var(--ok);font-weight:700}
+  .ftab tbody tr.row-loop td:first-child{background:rgba(52,211,153,.14);border-left:3px solid var(--ok)}
+  .ftab tbody tr.resp-detail{display:none}
+  .ftab tbody.resp-open tr.resp-detail{display:table-row}
+  .ftab tbody tr.row-blue td{background:rgba(56,189,248,.14);color:var(--sky);font-weight:700}
+  .ftab tbody tr.row-blue td:first-child{background:rgba(56,189,248,.14);border-left:3px solid var(--sky)}
+  .ftab tbody tr.row-orange td{background:rgba(251,191,36,.14);color:var(--warn);font-weight:700}
+  .ftab tbody tr.row-orange td:first-child{background:rgba(251,191,36,.14);border-left:3px solid var(--warn)}
+  .ftab tbody tr.row-red td{background:rgba(248,113,113,.13);color:var(--bad);font-weight:700}
+  .ftab tbody tr.row-red td:first-child{background:rgba(248,113,113,.13);border-left:3px solid var(--bad)}
   .help-btn{display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;border-radius:50%;background:var(--border);color:var(--text-muted);border:none;font-size:11px;font-weight:700;cursor:pointer;margin-left:6px;vertical-align:middle;padding:0;line-height:1}
   .help-btn:hover{background:var(--accent);color:var(--accent-on)}
   .ftab tbody tr.row-stage .n{font-weight:600;color:var(--text)}
@@ -175,58 +185,74 @@
     </div>
     <div class="control-card">
       <div class="control-label">Temporalidad</div>
-      <select class="sel" id="granSel"><option value="dia">Diario</option><option value="ciclo">Ciclo comercial (Mié→Mar)</option><option value="semana" selected>Semana (Lun→Dom)</option><option value="mes">Mes</option></select>
+      <select class="sel" id="granSel"><option value="dia" selected>Diario</option><option value="semana">Semana (Lun→Dom)</option><option value="mes">Mes</option></select>
     </div>
   </div>
 
-  <div class="eyebrow">Indicadores de salud</div>
+  <div class="tabletitle">Indicadores de salud</div>
   <div class="stats" id="stats"></div>
-  <div id="geoAlarm"></div>
+  <dialog id="helpCard" class="help-dialog">
+    <h3 id="helpCardT"></h3>
+    <div id="helpCardB"></div>
+    <button class="close-btn" onclick="document.getElementById('helpCard').close()">Cerrar</button>
+  </dialog>
   <p class="note" id="lineaTip"></p>
 
-  <div class="tabletitle">Salida real · últimos 7 días completos
-    <span class="help" title="Últimos 7 días COMPLETOS (hasta cierre de ayer; excluye hoy para no mezclar días parciales). Metido ≠ enviado ≠ entregado. 'Encolados' = aceptados por Infobip (HTTP 200). 'Enviados/Entregados' = lo que Meta realmente procesó. 'Leídos' = seen_at del mart. El respond rate se mide sobre ENTREGADOS.">?</span>
+  <div class="tabletitle">Impacto en asignados
+    <button type="button" class="help-btn" onclick="openHelp('imp')" aria-label="Explicación">?</button>
   </div>
-  <div id="salidaAlarm"></div>
-  <div id="salida"></div>
+  <div class="tbl-wrap ftab" id="impacto"></div>
 
-  <div class="tabletitle">Impacto en asignados <button type="button" class="help-btn" onclick="document.getElementById('helpImpacto').showModal()" aria-label="Explicación">?</button></div>
-  <div class="tbl-wrap ftab" id="ciclo"></div>
-  <dialog id="helpImpacto" class="help-dialog">
-    <h3>Impacto en asignados — cómo se calcula</h3>
-    <p>Fuente: <b>WBR mart oficial</b> (<code>papyrus-master.sellers_data_mart.sellers_leads_asignados_marketing_wbr_mart</code>), contando <code>nid</code> únicos por período.</p>
-    <p><b>Total Marketing</b>: asignados de las 6 fuentes de marketing filtradas por <code>fuente_id_tig</code> — MX: 3, 7, 35, 39, 46, 47 · CO: 3, 7, 20, 35, 39, 47.</p>
-    <p><b>WEB</b>: subconjunto con <code>fuente_id_tig = 3</code>.</p>
-    <p><b>Reinteresados (WEB)</b>: los <code>nid</code> con <code>utm_campaign LIKE '%reinteresados%'</code> (<code>hubspot.deals</code>).</p>
-    <p><b>Reinteresados vs Total Marketing</b> y <b>vs WEB</b>: ratios de participación (reint ÷ total, reint ÷ web).</p>
-    <p><b>Total Marketing sin reinteresados</b>: total − reinteresados = asignados que habríamos tenido sin el programa.</p>
-    <p><b>Período</b>: bucketeo por día / ciclo comercial (Mié–Mar) / semana (Lun–Dom) / mes según el filtro de <b>Temporalidad</b>; se muestran los últimos 20. El <code>*</code> marca el período en curso (datos parciales).</p>
-    <button class="close-btn" onclick="document.getElementById('helpImpacto').close()">Cerrar</button>
-  </dialog>
-
-  <div class="tabletitle">Comportamiento · últimos 14 días <span class="help" title="Estas tres tarjetas se calculan sobre los leads/respuestas de los últimos 14 días: el funnel de reactivación (creados en 14 días), el desglose de respuestas por tipo y la comparación de calidad reinteresados vs WEB nuevo.">?</span></div>
-  <div class="grid">
-    <section class="panel"><h3>Funnel de reactivación <span class="help" title="Base contactada → Respuestas → Interesados → Calificados (backbone 20/63) → Asignados (WBR mart) → Citas → Cierres. % = del paso previo.">?</span></h3><div id="funnel"></div></section>
-    <section class="panel"><h3>Respuestas por tipo <span class="help" title="Área 100% apilada: % que representa cada tipo de respuesta (Interesado / Ya vendió / Pide baja) sobre el total de respuestas de cada uno de los últimos 14 días.">?</span></h3><div style="position:relative;width:100%;height:230px"><canvas id="c_resp"></canvas></div></section>
-    <section class="panel"><h3>Funnel comparativo · reinteresados vs WEB nuevo <span class="help" title="Dos funnels lado a lado: conversión por etapa de cada cohorte (% de su base). WEB nuevo = fuente WEB sin UTM reinteresados, desde 15-jun.">?</span></h3><div id="comparativa"></div></section>
+  <div class="tabletitle">Cosecha de envío · avance por período
+    <button type="button" class="help-btn" onclick="openHelp('cos')" aria-label="Explicación">?</button>
   </div>
+  <div class="tbl-wrap ftab" id="cohorteTab"></div>
+
+  <div class="tabletitle">Errores de entrega
+    <button type="button" class="help-btn" onclick="openHelp('err')" aria-label="Explicación">?</button>
+  </div>
+  <div class="tbl-wrap ftab" id="errores"></div>
+
+  <div class="tabletitle">A/B de plantillas
+    <button type="button" class="help-btn" onclick="openHelp('ab')" aria-label="Explicación">?</button>
+  </div>
+  <div class="tbl-wrap ftab" id="ab"></div>
+
+  <div class="tabletitle">Respuestas por período
+    <button type="button" class="help-btn" onclick="openHelp('resp')" aria-label="Explicación">?</button>
+  </div>
+  <div class="tbl-wrap ftab" id="resp"></div>
+
+  <div class="tabletitle">Funnel comparativo · reinteresados vs WEB nuevo
+    <button type="button" class="help-btn" onclick="openHelp('comparativa')" aria-label="Explicación">?</button>
+  </div>
+  <section class="panel"><div id="comparativa"></div></section>
 
   <div class="tabletitle">Calidad por antigüedad del lead original
-    <button type="button" class="help-btn" onclick="document.getElementById('helpCoh').showModal()" aria-label="Explicación">?</button>
+    <button type="button" class="help-btn" onclick="openHelp('calidad')" aria-label="Explicación">?</button>
   </div>
   <div class="grid">
     <section class="panel" style="grid-column:1 / -1">
       <div style="position:relative;height:300px"><canvas id="c_cohorte"></canvas></div>
-      <p class="note">Cada punto/barra = un <b>trimestre de creación del lead original</b> que contactamos. Responde: ¿los leads más viejos responden mejor o peor, y con qué calidad (proporción de interesados)? Solo cohorte automatizada (envíos que capturaron la fecha de origen); trimestres con pocos envíos son ruidosos (ver n en el tooltip).</p>
+      <p class="note">Cada punto/barra = un <b>trimestre de creación del lead original</b> que contactamos. ¿Los leads más viejos responden mejor o peor, y con qué calidad (% interesados)? Solo cohorte con <code>nid</code> resuelto a trimestre.</p>
     </section>
   </div>
-  <dialog id="helpCoh" class="help-dialog">
-    <h3>Calidad por antigüedad del lead original</h3>
-    <p>Bucketea los leads originales que contactamos por el <b>trimestre en que se creó el lead original</b> (no la fecha de envío) y mide dos cosas por bucket:</p>
-    <p><b>Respond rate</b> (barras) = respondieron ÷ enviados. <b>% Interesados</b> (línea) = de los que respondieron, cuántos eligieron «Interesado».</p>
-    <p>Enlace envíos↔respuestas por <code>nid</code> original. <b>Cobertura:</b> solo los envíos con <code>fecha_creacion_original</code> capturada (cohorte «auto»); los envíos semilla de junio no la tienen y quedan fuera. Sujeto al filtro de <b>País</b>.</p>
-    <button class="close-btn" onclick="document.getElementById('helpCoh').close()">Cerrar</button>
-  </dialog>
+
+  <div class="tabletitle">Evolución diaria
+    <button type="button" class="help-btn" onclick="openHelp('diario')" aria-label="Explicación">?</button>
+  </div>
+  <div class="grid g5">
+    <section class="panel"><h3 class="sm">Base enviada (WhatsApp) <span class="help" title="Mensajes de reactivación enviados por WhatsApp por día (send_log, fecha de envío CDMX).">?</span></h3><div class="ch"><canvas id="c_env"></canvas></div></section>
+    <section class="panel"><h3 class="sm">Conversión a respuesta <span class="help" title="Respuestas recibidas ÷ mensajes enviados ese día (%). Aproximado: las respuestas llegan con rezago respecto al envío.">?</span></h3><div class="ch"><canvas id="c_cr"></canvas></div></section>
+    <section class="panel"><h3 class="sm">Conversión respuesta → interesado <span class="help" title="De los que respondieron ese día, % que eligió 'Interesado'. Tooltip muestra n de respuestas.">?</span></h3><div class="ch"><canvas id="c_ci"></canvas></div></section>
+    <section class="panel"><h3 class="sm">Conversión interesado → creado <span class="help" title="Leads recreados ÷ interesados (%). Recreados = negocios creados ese día en el backbone (Neon recreation).">?</span></h3><div class="ch"><canvas id="c_ic"></canvas></div></section>
+    <section class="panel"><h3 class="sm">Conversión creado → calificado MM <span class="help" title="Calificados MM (backbone 20/63) ÷ recreados ese día (%), por fecha de creación.">?</span></h3><div class="ch"><canvas id="c_cc"></canvas></div></section>
+    <section class="panel"><h3 class="sm">Base enviada · prom. móvil 7d <span class="help" title="Promedio móvil de 7 días de los mensajes enviados por día.">?</span></h3><div class="ch"><canvas id="c_env_ma"></canvas></div></section>
+    <section class="panel"><h3 class="sm">Conversión a respuesta · prom. móvil 7d <span class="help" title="Promedio móvil de 7 días de respuestas ÷ enviados.">?</span></h3><div class="ch"><canvas id="c_cr_ma"></canvas></div></section>
+    <section class="panel"><h3 class="sm">Conversión resp → interesado · prom. móvil 7d <span class="help" title="Promedio móvil de 7 días de interesados ÷ respuestas.">?</span></h3><div class="ch"><canvas id="c_ci_ma"></canvas></div></section>
+    <section class="panel"><h3 class="sm">Conversión interesado → creado · prom. móvil 7d <span class="help" title="Promedio móvil de 7 días de recreados ÷ interesados.">?</span></h3><div class="ch"><canvas id="c_ic_ma"></canvas></div></section>
+    <section class="panel"><h3 class="sm">Conversión creado → calificado MM · prom. móvil 7d <span class="help" title="Promedio móvil de 7 días de calificados MM ÷ recreados.">?</span></h3><div class="ch"><canvas id="c_cc_ma"></canvas></div></section>
+  </div>
 
   <div class="tabletitle">Mejor hora de envío · read & respond rate
     <span class="help" title="Igual que la gráfica de arriba pero el eje X es la HORA de envío del mensaje (hora real del mart de Infobip), no el trimestre de creación del lead. Mide read rate y respond rate por hora del día en que salió el mensaje. NO mostramos delivery rate por hora (estaba contaminado por la línea quemada/plantilla disabled); read y respond son comportamiento del destinatario, más limpios. TZ del mart por calibrar cuando entre el goteo horario.">?</span>
@@ -238,31 +264,16 @@
     </section>
   </div>
 
-  <div class="tabletitle">Evolución diaria <span class="help" title="Serie diaria. Fila 1 = valor absoluto por día (barras); fila 2 = promedio móvil de 7 días (línea). Pasa el mouse sobre cualquier punto para ver el dato (y el tamaño de muestra en las conversiones).">?</span></div>
-  <div class="grid g5">
-    <section class="panel"><h3 class="sm">Base enviada (WhatsApp) <span class="help" title="Mensajes de reactivación enviados por WhatsApp por día (fuente: repo del programa, fecha de envío).">?</span></h3><div class="ch"><canvas id="c_env"></canvas></div></section>
-    <section class="panel"><h3 class="sm">Conversión a respuesta <span class="help" title="Respuestas recibidas ÷ mensajes enviados ese día (%). Aproximado: las respuestas llegan con rezago respecto al envío.">?</span></h3><div class="ch"><canvas id="c_cr"></canvas></div></section>
-    <section class="panel"><h3 class="sm">Conversión respuesta → interesado <span class="help" title="De los que respondieron ese día, % que eligió 'Interesado' (vs Ya vendió / Pide baja). Tooltip muestra n de respuestas.">?</span></h3><div class="ch"><canvas id="c_ci"></canvas></div></section>
-    <section class="panel"><h3 class="sm">Conversión interesado → creado <span class="help" title="Leads recreados ÷ interesados (%). Recreados = negocios con UTM reinteresados creados ese día (hubspot.deals). Puede pasar de 100% porque incluye positivos de llamada.">?</span></h3><div class="ch"><canvas id="c_ic"></canvas></div></section>
-    <section class="panel"><h3 class="sm">Conversión creado → calificado MM <span class="help" title="Calificados de Market Maker (backbone estados 20/63: No gestionado / Sin pricing inicial) ÷ recreados ese día (%). Por fecha de creación.">?</span></h3><div class="ch"><canvas id="c_cc"></canvas></div></section>
-    <section class="panel"><h3 class="sm">Base enviada · prom. móvil 7d <span class="help" title="Promedio móvil de 7 días de los mensajes enviados por día.">?</span></h3><div class="ch"><canvas id="c_env_ma"></canvas></div></section>
-    <section class="panel"><h3 class="sm">Conversión a respuesta · prom. móvil 7d <span class="help" title="Promedio móvil de 7 días de respuestas ÷ enviados.">?</span></h3><div class="ch"><canvas id="c_cr_ma"></canvas></div></section>
-    <section class="panel"><h3 class="sm">Conversión resp → interesado · prom. móvil 7d <span class="help" title="Promedio móvil de 7 días de interesados ÷ respuestas.">?</span></h3><div class="ch"><canvas id="c_ci_ma"></canvas></div></section>
-    <section class="panel"><h3 class="sm">Conversión interesado → creado · prom. móvil 7d <span class="help" title="Promedio móvil de 7 días de recreados ÷ interesados.">?</span></h3><div class="ch"><canvas id="c_ic_ma"></canvas></div></section>
-    <section class="panel"><h3 class="sm">Conversión creado → calificado MM · prom. móvil 7d <span class="help" title="Promedio móvil de 7 días de calificados de Market Maker ÷ recreados.">?</span></h3><div class="ch"><canvas id="c_cc_ma"></canvas></div></section>
-  </div>
-
-  <div class="tabletitle">Funnel del programa
+  <div class="tabletitle">Recreación · outcome del dedup al crear el lead
     <button type="button" class="help-btn" onclick="document.getElementById('helpFun').showModal()" aria-label="Explicación">?</button>
-    <select class="sel" id="funView" style="margin-left:14px;font-weight:400"><option value="cosecha">Por cosecha (fecha de envío)</option><option value="evento">Por fecha de evento</option></select>
   </div>
+  <div id="dedup"></div>
   <div class="tbl-wrap ftab" id="funtab"></div>
   <dialog id="helpFun" class="help-dialog">
-    <h3>Funnel del programa — cosecha vs fecha de evento</h3>
-    <p><b>Por cosecha:</b> todo se atribuye a la <b>fecha en que se envió el mensaje</b> al lead original. De los mensajes enviados en el período X, cuántos respondieron, se interesaron, se crearon y calificaron — sin importar cuándo ocurrió cada evento. Es la <b>conversión real</b> del envío. Atribución: al último envío antes del evento.</p>
-    <p><b>Por fecha de evento:</b> cada fila se cuenta por la fecha de su propio evento — enviados por fecha de envío, respuestas por fecha de respuesta, creados/calificados por fecha de creación. Útil para monitoreo operativo, pero mezcla cohortes.</p>
-    <p><b>Conversión (%):</b> a la derecha de cada valor absoluto va el % respecto a la etapa anterior — Respondieron/Enviados, Interesados/Respondieron, Creados/Interesados, Calificados/Creados. El color es un <b>heatmap por fila</b>: verde = conversión más alta entre los períodos mostrados, rojo = más baja. <b>Creados/Interesados = 100%</b> porque recreamos el 100% de los interesados; Calificados MM usa el estado real del backbone (20/63).</p>
-    <p>Enlace por teléfono/NID/deal_id entre: envíos (<code>infobip_sent_history</code>) · respuestas (hoja) · recreación (<code>ledger</code>, enlazado por <code>new_nid</code> o <code>deal_id</code> para los decoy) · <code>tabla_inmuebles_general</code>. Sujeta al filtro de País y Temporalidad de arriba; últimos 20 períodos.</p>
+    <h3>Recreación — outcome del dedup al crear el lead</h3>
+    <p>Por período (fecha de <b>creación</b> del lead recreado, UTM reinteresados): <b>Recreados</b> = total de leads WEB recreados. <b>Duplicado</b> = el backbone lo marcó duplicado de inmediato al crearlo (<code>state_at_creation=1</code>) ÷ recreados. <b>Calificado</b> = quedó calificado de inmediato (<code>state_at_creation=20</code>, No gestionado) ÷ recreados.</p>
+    <p>Es el resultado <b>instantáneo</b> del dedup en el momento de la recreación — no confundir con el <b>Antifunnel</b> de abajo, que mide el estado <b>actual</b> (hoy) de esos mismos leads.</p>
+    <p>El color es un <b>heatmap por fila</b>: verde = % más alto entre los períodos mostrados, rojo = más bajo. Sujeto al filtro de País y Temporalidad de arriba; últimos 20 períodos.</p>
     <button class="close-btn" onclick="document.getElementById('helpFun').close()">Cerrar</button>
   </dialog>
 
@@ -272,10 +283,9 @@
   <div class="tbl-wrap ftab" id="antifunnel"></div>
   <dialog id="helpAnti" class="help-dialog">
     <h3>Antifunnel — estado actual de los leads recreados</h3>
-    <p>Distribución por <b>estado actual del backbone</b> de los leads que recreamos (UTM reinteresados), bucketeados por su <b>fecha de creación</b> según la <b>Temporalidad</b> seleccionada. Cada columna = un período; cada celda = cuántos leads creados en ese período están hoy en ese estado (y su % del total creado del período).</p>
-    <p>Estado actual = <code>id_ultimo_estado</code> (MX) / <code>last_estado_id</code> (CO) de <code>tabla_inmuebles_general</code>, con label del catálogo (<code>mx_rds_staging.habi_db_state</code> / <code>co_rds_staging.habi_db_tabla_estados</code>).</p>
-    <p>Los estados marcados con <b style="color:var(--ok)">●</b> son <b>calificado MM</b> (20 No gestionado / 63 Sin pricing inicial) — el resto de filas <b>es el antifunnel</b>: dónde se están quedando atascados (Duplicado, Fuera de zona, Revisar dirección, No hay datos, descartes de precio, etc.). La fila <b>Total creados</b> = todos los leads WEB recreados del período (universo más amplio que «Creados» del Funnel, que se ancla solo a los que respondieron Interesado).</p>
-    <p>Se <b>excluye Web Scraping</b> (<code>fuente_id=4</code>): recreaciones legacy del compañero en fuente equivocada, ajenas al programa vigente. Solo cuenta fuente WEB/LeadForms.</p>
+    <p>Distribución por <b>estado actual del backbone</b> (<code>id_last_state</code> de <code>tabla_inmuebles_general</code>, hoy) de los leads que recreamos (UTM reinteresados), bucketeados por su <b>fecha de creación</b> según la <b>Temporalidad</b> seleccionada. Cada columna = un período; cada celda = cuántos leads creados en ese período están hoy en ese estado (y su % del total creado del período).</p>
+    <p><b>«Sin estado»</b> = el deal recreado aún no se encontró en <code>tabla_inmuebles_general</code> (recién creado / pendiente de replicación). Los demás estados aparecen aún como su <b>código numérico</b> (<code>id_last_state</code>) — la traducción al catálogo de labels (No gestionado, Duplicado, Fuera de zona, etc.) queda pendiente para una siguiente vuelta.</p>
+    <p>La fila <b>Total creados</b> = todos los leads WEB recreados del período. Se <b>excluye Web Scraping</b> (<code>fuente_id=4</code>): recreaciones legacy del compañero en fuente equivocada, ajenas al programa vigente. Solo cuenta fuente WEB/LeadForms.</p>
     <p>Sujeta al filtro de <b>País</b> y <b>Temporalidad</b> de arriba; últimos 20 períodos. El <code>*</code> marca el período en curso.</p>
     <button class="close-btn" onclick="document.getElementById('helpAnti').close()">Cerrar</button>
   </dialog>
@@ -342,7 +352,7 @@
 </div>
 
 <script>
-let D=null, country='MX', cicloTipo='semana', funView='cosecha', respChart=null, cohorteChart=null, porhoraChart=null, AUDIT=null, expC='CO';
+let D=null, country='MX', cicloTipo='dia', porhoraChart=null, cohorteChart=null, AUDIT=null, expC='CO';
 const CIP={MX:'mexico',CO:'colombia'};
 const fmt=v=>(v==null?'—':Number(v).toLocaleString('es-CO'));
 const pct=v=>(v==null?'—':Number(v).toFixed(1)+'%');
@@ -413,9 +423,8 @@ async function load(){
     : '';
   try{ AUDIT=await (await fetch('audit.json?t='+Date.now())).json(); }catch(e){ AUDIT=null; }
   document.querySelectorAll('input[name=pais]').forEach(r=>r.onchange=()=>selectCountry(r.value));
-  document.getElementById('granSel').onchange=e=>{cicloTipo=e.target.value;renderCiclo();renderFuntab();renderAntifunnel();renderCompletitud();};
-  document.getElementById('funView').onchange=e=>{funView=e.target.value;renderFuntab();};
-  go('dash','CO');
+  document.getElementById('granSel').onchange=e=>{cicloTipo=e.target.value;renderFuntab();renderAntifunnel();renderCompletitud();renderDedup();renderImpacto();renderCohorteOrigen();renderErrores();renderResp();};
+  go('dash','MX');
 }
 
 // ===== router multi-hoja (tabs) =====
@@ -468,7 +477,7 @@ function renderExplorer(){
   }
   el.innerHTML=parts.join('');
 }
-function selectCountry(c){ country=c; renderStats(); renderSalida(); renderResp(); renderFunnel(); renderComparativa(); renderCiclo(); renderDiario(); renderFuntab(); renderAntifunnel(); renderCompletitud(); renderCohorteOrigen(); renderPorHoraChart(); renderGeoAlarm(); }
+function selectCountry(c){ country=c; renderStats(); renderImpacto(); renderErrores(); renderAB(); renderResp(); renderComparativa(); renderCalidad(); renderDiario(); renderFuntab(); renderAntifunnel(); renderDedup(); renderCompletitud(); renderCohorteOrigen(); renderPorHoraChart(); }
 // Celdas "valor + %" con heatmap por fila (verde=conversión alta, rojo=baja), copiado del tablero de referencia.
 function heatCells(values, denoms){
   const pcts=values.map((v,i)=> denoms[i]>0 ? v/denoms[i]*100 : null);   // período sin base → null (celda vacía)
@@ -485,63 +494,86 @@ function heatCells(values, denoms){
     return `<td${i===last?' class="cur"':''} style="text-align:right"><span class="n">${fmt(v)}</span><span class="p" style="color:${clr}">${ps}%</span></td>`;
   }).join('');
 }
+// Igual que heatCells pero con la escala de color invertida (alto %=rojo, bajo %=verde) — para tasas de FALLA (freq-cap, device-error).
+function heatCellsInv(values, denoms){
+  const pcts=values.map((v,i)=> denoms[i]>0 ? v/denoms[i]*100 : null);
+  const valid=pcts.filter(p=>p!=null);
+  const min=valid.length?Math.min(...valid):0, max=valid.length?Math.max(...valid):0, realRange=max-min, range=realRange||1;
+  const last=values.length-1;
+  return values.map((v,i)=>{
+    if(pcts[i]==null) return `<td${i===last?' class="cur"':''} style="text-align:right"><span class="muted">·</span></td>`;
+    let clr;
+    if(realRange<0.05){ clr='var(--text-muted)'; }
+    else{ const ratio=1-(pcts[i]-min)/range;   // invertido
+      clr=`rgb(${Math.round(248-ratio*196)},${Math.round(52+ratio*159)},${Math.round(52+ratio*101)})`; }
+    const ps=pcts[i]>=10?pcts[i].toFixed(1):pcts[i].toFixed(2);
+    return `<td${i===last?' class="cur"':''} style="text-align:right"><span class="n">${fmt(v)}</span><span class="p" style="color:${clr}">${ps}%</span></td>`;
+  }).join('');
+}
 function renderFuntab(){
   const el=document.getElementById('funtab'); if(!el) return;
-  const src=(((D.funnel_tabla||{})[country]||{})[funView]||{})[cicloTipo]||[];
+  const src=((D.recreacion||{})[country]||{})[cicloTipo]||[];
+  if(!(D.recreacion||{})[country]){ el.innerHTML='<p class="note">Sin datos de recreación para '+country+' (aún no disponible).</p>'; return; }
   const byB={}; src.forEach(r=>byB[r.bucket]=r);
-  const rows=lastPeriods(cicloTipo,20).map(b=>byB[b]||{bucket:b,enviados:0,respondieron:0,interesados:0,creados:0,calificados:0}); // últimos 20 períodos, rellena vacíos
+  const rows=lastPeriods(cicloTipo,20).map(b=>byB[b]||{bucket:b,recreados:0,duplicado:0,calificado:0}); // últimos 20 períodos, rellena vacíos
   const MES=['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
   const lbl=b=> cicloTipo==='mes' ? (MES[+b.slice(5,7)-1]+' '+b.slice(2,4)) : b.slice(5);
   const last=rows.length-1, cur=i=> i===last?' class="cur"':'';
   const col=k=>rows.map(r=>+r[k]||0);
   const th=rows.map((r,i)=>`<th${cur(i)} style="text-align:right">${lbl(r.bucket)}</th>`).join('');
-  // fila base: solo absoluto. filas de conversión: absoluto + % del paso anterior, con heatmap por fila.
-  const base=`<tr class="row-total"><td>${H('Mensajes de reactivación enviados por WhatsApp en el período (por fecha de envío).')}Enviados</td>${rows.map((r,i)=>`<td${cur(i)} style="text-align:right">${z(+r.enviados)}</td>`).join('')}</tr>`;
-  const step=(lab,key,denKey)=>`<tr class="row-stage"><td>${lab}</td>${heatCells(col(key),col(denKey))}</tr>`;
-  const hcol={dia:'Día',ciclo:'Ciclo (inicia Mié)',semana:'Semana (inicia Lun)',mes:'Mes'}[cicloTipo]||'Periodo';
+  // fila base: solo absoluto. filas de outcome: absoluto + % de recreados, con heatmap por fila.
+  const base=`<tr class="row-total"><td>${H('Leads WEB recreados (UTM reinteresados) en el período, por fecha de creación.')}Recreados</td>${rows.map((r,i)=>`<td${cur(i)} style="text-align:right">${z(+r.recreados)}</td>`).join('')}</tr>`;
+  const step=(lab,key)=>`<tr class="row-stage"><td>${lab}</td>${heatCells(col(key),col('recreados'))}</tr>`;
+  const hcol={dia:'Día',semana:'Semana (inicia Lun)',mes:'Mes'}[cicloTipo]||'Periodo';
   el.innerHTML=`<table><thead><tr><th>${hcol}</th>${th}</tr></thead><tbody>
     ${base}
-    ${step(H('Entregados (estado reconciliado del mart de Infobip) ÷ enviados. Este paso lo aprendimos esta sesión: enviar ≠ entregar.')+'Entregados','entregados','enviados')}
-    ${step(H('Respuestas recibidas ÷ ENTREGADOS (denominador correcto — antes se medía sobre enviados). El % es sobre el paso anterior (Entregados).')+'Respondieron','respondieron','entregados')}
-    ${step(H('De los que respondieron, cuántos eligieron «Interesado» ÷ respondieron.')+'Interesados','interesados','respondieron')}
-    ${step(H('Leads recreados ÷ interesados (recreamos el 100% de los interesados).')+'Creados','creados','interesados')}
-    ${step(H('Calificado Market Maker (backbone estados 20/63) ÷ creados.')+'Calificados MM','calificados','creados')}
+    ${step(H('Marcado duplicado por el backbone al momento de crearse (state_at_creation=1) ÷ recreados.')+'Duplicado','duplicado')}
+    ${step(H('Calificado de inmediato al recrearse (state_at_creation=20, No gestionado) ÷ recreados.')+'Calificado','calificado')}
   </tbody></table>`;
   el.scrollLeft=el.scrollWidth;
 }
 
+// Resumen agregado del outcome de dedup (mismo universo/ventana que la tabla de arriba: últimos 20 períodos de cicloTipo).
+function renderDedup(){
+  const el=document.getElementById('dedup'); if(!el) return;
+  if(!(D.recreacion||{})[country]){ el.innerHTML=''; return; }
+  const src=((D.recreacion||{})[country]||{})[cicloTipo]||[];
+  const byB={}; src.forEach(r=>byB[r.bucket]=r);
+  const rows=lastPeriods(cicloTipo,20).map(b=>byB[b]||{bucket:b,recreados:0,duplicado:0,calificado:0});
+  const tot=rows.reduce((s,r)=>s+(+r.recreados||0),0);
+  const dup=rows.reduce((s,r)=>s+(+r.duplicado||0),0);
+  const cal=rows.reduce((s,r)=>s+(+r.calificado||0),0);
+  const otro=Math.max(0,tot-dup-cal);
+  if(!tot){ el.innerHTML='<p class="note">Sin recreados en la ventana mostrada.</p>'; return; }
+  const rowsUI=[['Duplicado',dup,'var(--bad)'],['Calificado',cal,'var(--ok)'],['Otro / en curso',otro,'var(--text-muted)']];
+  const body=rowsUI.map(([lab,v,color])=>{
+    const p=tot?(v/tot*100):0;
+    return `<div class="rowline"><div class="lab" style="width:120px">${lab}</div>
+      <div class="bar"><div style="width:${Math.max(0.5,p).toFixed(1)}%;background:${color}"></div></div>
+      <div class="val" style="width:90px"><b>${fmt(v)}</b> <span class="muted" style="font-size:11px">${p.toFixed(0)}%</span></div></div>`;
+  }).join('');
+  el.innerHTML=`${body}<p class="note">Outcome del dedup al momento de crear el lead (${fmt(tot)} recreados), agregado sobre los mismos períodos de la tabla de abajo.</p>`;
+}
+
 function renderAntifunnel(){
   const el=document.getElementById('antifunnel'); if(!el) return;
-  const af=(D.antifunnel||{})[country]||{};
-  const byB={}; ((af.series||{})[cicloTipo]||[]).forEach(r=>byB[r.bucket]=r);
+  if(!(D.antifunnel||{})[country]){ el.innerHTML='<p class="note">Sin datos de antifunnel para '+country+' (aún no disponible).</p>'; return; }
+  const src=((D.antifunnel||{})[country]||{})[cicloTipo]||[];
+  const byB={}; src.forEach(r=>byB[r.bucket]=r);
   const rows=lastPeriods(cicloTipo,20).map(b=>byB[b]||{bucket:b,estados:{}}); // últimos 20 períodos, rellena vacíos
-  const meta=af.meta||{};
   const MES=['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
   const lbl=b=> cicloTipo==='mes' ? (MES[+b.slice(5,7)-1]+' '+b.slice(2,4)) : b.slice(5);
   const last=rows.length-1, cur=i=> i===last?' class="cur"':'';
   // totales por estado (sobre los períodos mostrados) y por período (denominador)
   const totals={}; rows.forEach(r=>{ for(const k in (r.estados||{})) totals[k]=(totals[k]||0)+r.estados[k]; });
   const colTot=rows.map(r=>Object.values(r.estados||{}).reduce((s,n)=>s+n,0));
-  const isCalif=lab=> meta[lab]&&meta[lab].calif;
-  // "No gestionado" fijo de 2ª fila (verde); luego resto (otros calificados primero, después por volumen desc)
-  const NG='No gestionado';
-  let estados=Object.keys(totals).filter(s=>s!==NG).sort((a,b)=>{
-    const ca=isCalif(a)?1:0, cb=isCalif(b)?1:0;
-    if(ca!==cb) return cb-ca;
-    return totals[b]-totals[a];
-  });
-  if(NG in totals) estados=[NG,...estados];
+  const estados=Object.keys(totals).sort((a,b)=>totals[b]-totals[a]);   // por volumen desc (sin mapeo calificado/label todavía)
   const th=rows.map((r,i)=>`<th${cur(i)} style="text-align:right">${lbl(r.bucket)}</th>`).join('');
   const totalRow=`<tr class="row-total"><td>${H('Total de leads WEB recreados en el período (fuente 3/47, excluye Web Scraping). Es el denominador de los % de cada estado.')}Total creados</td>${rows.map((r,i)=>`<td${cur(i)} style="text-align:right">${z(colTot[i])}</td>`).join('')}</tr>`;
-  const GBG='rgba(52,211,153,.14)';
-  const body=estados.map(lab=>{
-    const green=lab===NG;
-    const dot=(isCalif(lab)&&!green)?'<span style="color:var(--ok)">●</span> ':'';
-    const trStyle=green?` style="background:${GBG}"`:'';
-    const tdStyle=green?` style="background:${GBG};color:var(--ok);font-weight:700"`:'';
-    // % con formato condicional por fila (heatmap), igual que el Funnel del programa
-    return `<tr class="row-stage"${trStyle}><td${tdStyle}>${H(stateHelp(lab))}${dot}${lab}</td>${heatCells(rows.map(r=>(r.estados||{})[lab]||0),colTot)}</tr>`;
-  }).join('');
+  const dispLab=lab=> lab==='sin estado' ? 'Sin estado (aún no vinculado en TIG)' : ('Estado '+lab);
+  const body=estados.map(lab=>
+    `<tr class="row-stage"><td>${H(stateHelp(lab))}${dispLab(lab)}</td>${heatCells(rows.map(r=>(r.estados||{})[lab]||0),colTot)}</tr>`
+  ).join('');
   el.innerHTML=`<table><thead><tr><th>Estado</th>${th}</tr></thead><tbody>${totalRow}${body}</tbody></table>`;
   el.scrollLeft=el.scrollWidth;
 }
@@ -562,12 +594,159 @@ function mkChart(id,labels,data,o={}){
       scales:{x:{ticks:{color:light?'#64748b':'#94a3b8',maxTicksLimit:8},grid:{display:false}},
         y:{beginAtZero:!o.pct,ticks:{color:light?'#64748b':'#94a3b8',callback:o.pct?(v=>v+'%'):undefined},grid:{color:light?'#e2e8f0':'#22304a'}}}}}));
 }
+// --- estándar del "?": modal reutilizable (openHelp) ---
+const CARD_HELP={
+  flujo:{t:'Flujo diario programado',b:'<p>Cuántos mensajes de reactivación por día tiene <b>programado</b> enviar el loop (meta operativa), repartidos en un <b>goteo por horas hábiles</b> (9–19, L–V) y con rampa de arranque.</p><p>Es el <b>objetivo de volumen</b> del programa, no lo enviado real — eso vive en la tabla <b>Cosecha de envío</b>.</p>'},
+  quality:{t:'Calidad de línea',b:'<p>Calificación que <b>Meta</b> le da al número de WhatsApp según cómo reacciona quien recibe los mensajes (bloqueos, reportes, lecturas).</p><p><b>ALTA</b> = línea sana · <b>MEDIA</b> = cuidar el ritmo · <b>BAJA</b> = en riesgo de que Meta la limite o suspenda · <b>UNKNOWN</b> = sin histórico reciente suficiente.</p><p>Es la señal <b>más importante</b> para no quemar la línea. Fuente: Meta (WhatsApp Business Management API).</p>'},
+  tier:{t:'Tier de mensajería (24h)',b:'<p>Límite que Meta asigna al número: a cuántos usuarios <b>únicos nuevos</b> se les puede escribir en 24h (<b>1K / 10K / 100K / ilimitado</b>).</p><p>Sube automáticamente si la calidad se mantiene y se usa el volumen; baja si la calidad cae. Define el <b>techo</b> de cuánto podemos enviar por día. Fuente: Meta (respaldo Infobip).</p>'},
+  estado:{t:'Estado de la línea',b:'<p>Estado de conexión del número en Meta/WhatsApp. <b>Conectada</b> = operativa y habilitada para enviar.</p><p>Cualquier otro estado (desconectada, pendiente, restringida) significa que los envíos pueden fallar. Fuente: Meta.</p>'},
+  review:{t:'Revisión de la cuenta',b:'<p>Estado de revisión de la cuenta de WhatsApp Business ante Meta. <b>Aprobada</b> = pasó la verificación de Meta y puede operar con normalidad.</p><p>Si no está aprobada (en revisión / rechazada), Meta puede limitar o bloquear el envío. Fuente: Meta (account_review_status).</p>'},
+  hoy:{t:'Leads creados hoy',b:'<p>Negocios con la <b>UTM del marketing loop</b> (<code>%reinteresados%</code>) creados <b>hoy</b> en HubSpot. Es la fuente que más rápido refresca (~7 min), por eso va casi en vivo.</p><p>Hora local del país.</p>'},
+  imp:{t:'Impacto en asignados',b:'<p>Aporte de los leads del <b>marketing loop</b> (UTM <code>%reinteresados%</code>) a los <b>asignados de marketing</b>, por período (según Temporalidad). Cruza la <b>WBR de asignados</b> con <code>hubspot.deals</code>.</p><p>Columnas = los 20 períodos más recientes; <code>*</code> = período en curso.</p>'},
+  imp_total:{t:'Total Marketing',b:'<p>Asignados de marketing del período: leads que pasaron a <b>gestión comercial</b>, de las <b>6 fuentes de marketing</b> (fuente_id_tig). Fuente: WBR asignados mart.</p>'},
+  imp_web:{t:'WEB',b:'<p>De los asignados, solo los de <b>fuente WEB</b> (fuente_id_tig = 3).</p>'},
+  imp_loop:{t:'Marketing loop (WEB)',b:'<p>De los asignados, los que traen la <b>UTM del loop</b> (<code>%reinteresados%</code> en hubspot.deals). Son WEB. Es el <b>aporte directo</b> del loop.</p>'},
+  imp_loopvstotal:{t:'Loop vs Total Marketing',b:'<p>Loop ÷ Total Marketing: qué <b>porción de todo el marketing asignado</b> vino del loop.</p>'},
+  imp_loopvsweb:{t:'Loop vs WEB',b:'<p>Loop ÷ WEB: qué <b>porción de los asignados WEB</b> vino del loop.</p>'},
+  imp_sinloop:{t:'Total Marketing sin loop',b:'<p>Total Marketing − loop: los asignados que <b>habríamos tenido sin el programa</b> (contrafactual).</p>'},
+  cos:{t:'Cosecha de envío · avance por período',b:'<p>Agrupa los mensajes por su <b>período de envío</b> (Temporalidad: día / semana / mes, hora CDMX). Primero 5 filas de <b>valores absolutos</b> (Enviados → Entregados → Leídos → Respondidos → Interesados) y al final las <b>tasas de conversión (%)</b> entre etapas.</p><p>Columnas = los 20 períodos más recientes; <code>*</code> = período en curso.</p>'},
+  cos_env:{t:'Enviados (valor absoluto)',b:'<p><b>Cuántos</b> mensajes de reactivación se enviaron en el período. Cosecha por <b>fecha de envío</b> (hora CDMX).</p><p>Fuente: tabla <code>send_log</code> (Neon) — un registro por intento de envío.</p>'},
+  cos_entr:{t:'Entregados (valor absoluto)',b:'<p><b>Cuántos</b> de esos envíos llegaron al celular (estado DELIVERED).</p><p>Se cruza el <code>message_id</code> de cada envío contra el estado de entrega del <b>mart de Infobip</b> (<code>mart_infobip_messages_daily_mx</code>, BigQuery) unido con la <b>API /logs de Infobip</b> (tiempo real, para vencer el lag ~28h del mart).</p>'},
+  cos_leidos:{t:'Leídos (valor absoluto)',b:'<p><b>Cuántos</b> de los entregados fueron leídos (marca <code>seen_at</code> del mart de Infobip).</p><p>⚠ WhatsApp no reporta SEEN por esta vía en envíos recientes, así que casi siempre sale <b>0</b>. La entrega sí es fiable; la lectura no.</p>'},
+  cos_resp:{t:'Respondidos (valor absoluto)',b:'<p><b>Cuántos</b> destinatarios del período respondieron (botón o texto).</p><p>Se marca si el <b>teléfono</b> del envío aparece entre los que respondieron en el <b>mart de Infobip</b> (servicio <code>WhatsApp Inbound</code>).</p>'},
+  cos_int:{t:'Interesados (valor absoluto)',b:'<p><b>Cuántos</b> respondieron con el botón <b>«Estoy interesado»</b> (payload INTERESADO).</p><p>Sale del mismo <b>mart inbound</b>, parseando el campo <code>respuesta_cliente</code> del botón. Es el objetivo del loop.</p>'},
+  cos_dr:{t:'% Delivery Rate',b:'<p><b>Entregados ÷ Enviados</b> del período: % de mensajes que llegaron al celular. Verde = mejor entrega.</p>'},
+  cos_rr:{t:'% Read Rate',b:'<p><b>Leídos ÷ Entregados.</b> ⚠ WhatsApp no reporta SEEN por esta vía en envíos recientes → suele salir 0.</p>'},
+  cos_rsp:{t:'% Respond Rate',b:'<p><b>Respondidos ÷ Entregados:</b> % de entregados que respondieron (botón o texto).</p>'},
+  cos_ir:{t:'% Interesados Rate',b:'<p><b>Interesados ÷ Entregados:</b> % de entregados que dijeron «Estoy interesado». Es el rate que <b>más importa</b> para el loop.</p>'},
+  err:{t:'Errores de entrega',b:'<p>Por qué <b>NO</b> llegaron los mensajes, por período de envío (Temporalidad). Fila 1 = <b>total no entregados</b>; luego el <b>volumen absoluto</b> de cada tipo de error; luego el <b>% de cada error</b> sobre el total de no entregados.</p><p>Fuente: <code>error_name</code> del mart de Infobip + API /logs. Incluye el bug <b>7008</b> (plantilla sin imagen). Columnas = 20 períodos recientes.</p>'},
+  ab:{t:'A/B de plantillas',b:'<p>Comparativo de las plantillas que se envían <b>en simultáneo</b> (asignación aleatoria del A/B). Una <b>fila por plantilla</b>; columnas = enviados, entregados, delivery / read / respond / interesado rate.</p><p>Excluye los envíos fallidos por bug de plantilla sin imagen (7008, culpa nuestra). ⚠ <b>Read rate</b> no disponible por esta vía (SEEN). v1 = control · v2 = oferta.</p>'},
+  resp:{t:'Respuestas por período',b:'<p>Respuestas recibidas en la línea (<b>mart inbound</b> de Infobip) bucketeadas por su <b>fecha de llegada</b> (Temporalidad: día / semana / mes). Filas fijas: total, botón <b>Interesado</b>, botón <b>Ya no vendo</b>, y <b>Baja</b> (escribieron «baja» como texto).</p><p><b>Respuestas Abiertas</b> resume el resto del texto libre; ábrela con ▸ para ver cada respuesta con su conteo por período. Columnas = 20 períodos recientes.</p>'},
+  resp_tot:{t:'Respondieron (total)',b:'<p>Total de respuestas recibidas en los últimos 14 días (botones + texto libre).</p>'},
+  resp_int:{t:'Interesado',b:'<p>Respondieron con el botón <b>«Estoy interesado»</b> (INTERESADO).</p>'},
+  resp_baja:{t:'Ya no vendo',b:'<p>Respondieron con el botón <b>«Ya no vendo»</b> (YAVENDIÓ / baja).</p>'},
+  resp_bajatxt:{t:'Baja',b:'<p>Respondieron con <b>texto libre</b> que dice «baja» (escribieron «baja / darme de baja» en vez de tocar el botón «Ya no vendo»).</p>'},
+  comparativa:{t:'Funnel comparativo · reinteresados vs WEB nuevo',b:'<p>Dos funnels lado a lado: la cohorte <b>Reinteresados</b> (UTM del loop) vs <b>WEB nuevo</b> (fuente WEB sin esa UTM). Cada barra = % de conversión sobre la base de su cohorte: Calificado → Asignado → Cita → Cierre.</p><p>El recuadro resalta la conversión <b>asignado → cita</b> (citas ÷ asignados). Fuente: <code>hubspot.deals</code> + WBR asignados mart. Ventana: últimos 14 días.</p>'},
+  calidad:{t:'Calidad por antigüedad del lead original',b:'<p>Bucketea los envíos por el <b>trimestre en que se creó el lead original</b> (no la fecha de envío) y mide por trimestre: <b>Respond rate</b> (barras = respondieron ÷ enviados) y <b>% Interesados</b> (línea = de los que respondieron, cuántos eligieron «Interesado»).</p><p>Enlace envío→trimestre por <code>nid</code> (mart), respuesta por teléfono (inbound). Reconstruido en vivo desde Neon+mart.</p>'},
+  diario:{t:'Evolución diaria',b:'<p>Serie diaria del embudo: fila 1 = valor absoluto/tasa por día (barras); fila 2 = <b>promedio móvil de 7 días</b> (línea). Enviados → Conversión a respuesta → resp→interesado → interesado→creado → creado→calificado MM.</p><p>Fuente en vivo: <code>send_log</code> (Neon) · inbound (mart) · <code>recreation</code> (Neon). ⚠ Las recreaciones son por evento, así que creados/calificados pueden verse planos hasta que haya más volumen.</p>'},
+};
+function openHelp(k){const h=CARD_HELP[k]; if(!h) return;
+  document.getElementById('helpCardT').textContent=h.t;
+  document.getElementById('helpCardB').innerHTML=h.b;
+  document.getElementById('helpCard').showModal();}
+const _hb=k=>`<button type="button" class="help-btn" onclick="openHelp('${k}')" aria-label="Explicación">?</button>`;
+
+function renderStats(){
+  const l=(D.linea||{})[country]||{};
+  const qc={HIGH:'var(--ok)',MEDIUM:'var(--warn)',LOW:'var(--bad)',UNKNOWN:'var(--text-muted)'}[l.quality]||'var(--text-muted)';
+  const tip = l.quality==='LOW'?'⚠ Calidad baja: reducir volumen, targetear solo leads tibios y revisar contenido; considerar rotar de línea.'
+    : l.quality==='MEDIUM'?'Calidad media: cuidar el ritmo y priorizar a quien más probablemente responda para que suba.'
+    : l.quality==='HIGH'?'Calidad alta: la línea está sana.'
+    : 'Sin histórico de calidad reciente.';
+  const FLUJO={MX:150,CO:150};
+  const cards=[
+    ['Leads creados hoy '+_hb('hoy'), fmt((D.hoy||{})[country]||0), 'hubspot.deals · hoy', 'key'],
+    ['Flujo diario programado '+_hb('flujo'), fmt(FLUJO[country]), 'mensajes/día · rampa · goteo horario 9–19 L–V'],
+    ['Calidad de línea '+_hb('quality'), `<span class="chip" style="background:${qc}">${l.quality||'—'}</span>`, tip+' · fuente: Meta'],
+    ['Tier (24h) '+_hb('tier'), (l.tier||'—').replace('LIMIT_',''), 'límite · '+(l.tier_source==='infobip'?'Infobip':'Meta')],
+    ['Estado '+_hb('estado'), `<span style="font-size:19px;font-weight:700">${l.status==='CONNECTED'?'Conectada':(l.status||'—')}</span>`, (l.sender||'')+(l.throughput?' · throughput '+l.throughput:'')],
+    ['Revisión cuenta '+_hb('review'), `<span style="font-size:19px;font-weight:700">${l.review==='APPROVED'?'Aprobada':(l.review||'—')}</span>`, 'account_review · Meta'],
+  ];
+  document.getElementById('stats').innerHTML=cards.map(([lab,v,s,cls])=>
+    `<div class="stat${cls?' '+cls:''}"><div class="l">${lab}</div><div class="v">${v}</div><div class="s">${s||''}</div></div>`).join('');
+  document.getElementById('lineaTip').textContent='';
+}
+
+function renderResp(){
+  const el=document.getElementById('resp'); if(!el) return;
+  const rawS=((D.respuestas||{})[country]||{})[cicloTipo]||[];
+  if(!rawS.length){ el.innerHTML='<p class="note">Sin datos de respuestas para '+country+' (aún no disponible).</p>'; return; }
+  const byB={}; rawS.forEach(r=>byB[r.bucket]=r);
+  const arr=lastPeriods(cicloTipo,20).map(b=>byB[b]||{bucket:b,total:0,interesado:0,ya_vendio:0,baja_texto:0,abiertas_total:0,abiertas:{}});
+  const MES=['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+  const lbl=b=> cicloTipo==='mes' ? (MES[+b.slice(5,7)-1]+' '+b.slice(2,4)) : b.slice(5);
+  const last=arr.length-1, cur=i=>i===last?' class="cur"':'';
+  const th=arr.map((r,i)=>`<th${cur(i)} style="text-align:right">${lbl(r.bucket)}</th>`).join('');
+  const hcol={dia:'Día',semana:'Semana (inicia Lun)',mes:'Mes'}[cicloTipo]||'Período';
+  const row=(lab,key,cls='row-stage')=>`<tr class="${cls}"><td>${lab}</td>${arr.map((r,i)=>`<td${cur(i)} style="text-align:right">${z(+r[key])}</td>`).join('')}</tr>`;
+  const texts={}; arr.forEach(r=>Object.entries(r.abiertas||{}).forEach(([t,n])=>texts[t]=(texts[t]||0)+n));
+  const detail=Object.keys(texts).sort((a,b)=>texts[b]-texts[a]).map(t=>
+    `<tr class="resp-detail"><td style="padding-left:30px;color:var(--text-muted);font-weight:400">${escx(t)}</td>${arr.map((r,i)=>`<td${cur(i)} style="text-align:right">${z(+(r.abiertas||{})[t]||0)}</td>`).join('')}</tr>`).join('');
+  el.innerHTML=`<table><thead><tr><th>${hcol}</th>${th}</tr></thead><tbody id="respBody">
+    ${row(_hb('resp_tot')+'Respondieron (total)','total','row-total')}
+    ${row(_hb('resp_int')+'Interesado','interesado','row-loop')}
+    ${row(_hb('resp_baja')+'Ya no vendo','ya_vendio')}
+    ${row(_hb('resp_bajatxt')+'Baja','baja_texto')}
+    <tr class="row-total"><td><button type="button" id="respToggleBtn" class="help-btn" onclick="toggleAbiertas()" aria-label="Abrir/cerrar respuestas abiertas">▸</button> Respuestas Abiertas</td>${arr.map((r,i)=>`<td${cur(i)} style="text-align:right">${z(+r.abiertas_total)}</td>`).join('')}</tr>
+    ${detail}
+  </tbody></table>
+  <p class="note" style="padding:8px 13px">Respuestas recibidas en la línea (mart inbound) por período de llegada (según Temporalidad). «Respuestas Abiertas» agrupa el texto libre distinto de los botones — ábrela con ▸ para ver el detalle por período.</p>`;
+  el.scrollLeft=el.scrollWidth;
+}
+function toggleAbiertas(){
+  const b=document.getElementById('respBody'); if(!b) return;
+  const open=b.classList.toggle('resp-open');
+  const btn=document.getElementById('respToggleBtn'); if(btn) btn.textContent=open?'▾':'▸';
+}
+function renderComparativa(){
+  const rows=(D.comparativa||[]).filter(x=>x.pais===country);
+  const el=document.getElementById('comparativa'); if(!el) return;
+  if(!rows.length){ el.innerHTML='<p class="muted">Sin datos.</p>'; return; }
+  const R=rows.find(x=>x.cohorte==='Reinteresados')||{}, N=rows.find(x=>x.cohorte==='WEB nuevo')||{};
+  const mets=[['Calificado','calif_pct'],['Asignado','asignado_pct'],['Cita','cita_pct'],['Cierre','cierre_pct']];
+  const miniFunnel=(titulo,C,color,leads)=>`
+    <div style="flex:1;min-width:185px">
+      <div style="font-size:13px;font-weight:700;color:var(--text-title);margin-bottom:2px">${titulo}</div>
+      <div class="muted" style="font-size:12px;margin-bottom:12px">${fmt(leads)} leads · % de su base</div>
+      ${mets.map(([n,k])=>{const v=+C[k]||0; return `<div class="rowline">
+        <div class="lab" style="width:82px">${n}</div>
+        <div class="bar"><div style="width:${Math.max(0.5,v).toFixed(1)}%;background:${color}"></div></div>
+        <div class="val" style="width:56px"><b>${pct(v)}</b></div></div>`;}).join('')}
+    </div>`;
+  const acR=(+R.asignado_pct>0)?(+R.cita_pct/+R.asignado_pct*100):0;
+  const acN=(+N.asignado_pct>0)?(+N.cita_pct/+N.asignado_pct*100):0;
+  el.innerHTML=`<div style="display:flex;gap:16px;flex-wrap:wrap">
+    ${miniFunnel('🔁 Reinteresados', R, 'var(--accent)', R.leads)}
+    ${miniFunnel('🌐 WEB nuevo', N, 'var(--text-muted)', N.leads)}
+  </div>
+  <div style="margin-top:16px;background:rgba(251,191,36,.14);border:1px solid var(--warn);border-radius:10px;padding:14px 16px">
+    <div style="font-size:11.5px;text-transform:uppercase;letter-spacing:.5px;color:var(--warn);font-weight:800;margin-bottom:8px">Conversión asignado → cita agendada</div>
+    <div style="font-size:20px;font-weight:800;color:var(--text-title)">🔁 Reinteresados <span style="color:var(--accent)">${pct(acR)}</span> &nbsp;·&nbsp; 🌐 WEB nuevo <span style="color:var(--text-muted)">${pct(acN)}</span></div>
+  </div>
+  <p class="note">Dos funnels lado a lado (cada barra = % de conversión sobre la base de su cohorte). Asignado→cita = citas ÷ asignados. WEB nuevo = fuente WEB sin UTM reinteresados. Ventana: últimos 14 días.</p>`;
+}
+function renderCalidad(){
+  const el=document.getElementById('c_cohorte'); if(!el||!window.Chart) return;
+  const arr=(D.cohorte_origen||{})[country]||[];
+  const light=document.body.classList.contains('light');
+  const labels=arr.map(r=>r.bucket);
+  const sent=arr.map(r=>+r.enviados), resp=arr.map(r=>+r.respondieron), intr=arr.map(r=>+r.interesados);
+  const rr=arr.map(r=>+r.enviados>0?(+r.respondieron/+r.enviados*100):null);
+  const ir=arr.map(r=>+r.respondieron>0?(+r.interesados/+r.respondieron*100):null);
+  if(cohorteChart) cohorteChart.destroy();
+  cohorteChart=new Chart(el,{data:{labels,datasets:[
+    {type:'bar',label:'Respond rate (resp ÷ enviados)',data:rr,yAxisID:'y',order:2,
+      backgroundColor:light?'#c7d2fe':'#3b3f7a',borderColor:'#818cf8',borderWidth:1,borderRadius:3},
+    {type:'line',label:'% Interesados (de respuestas)',data:ir,yAxisID:'y1',order:1,
+      borderColor:'#34d399',backgroundColor:'#34d399',tension:.3,pointRadius:3,borderWidth:2,spanGaps:true},
+  ]},options:{responsive:true,maintainAspectRatio:false,interaction:{mode:'index',intersect:false},
+    plugins:{legend:{display:true,labels:{color:light?'#334155':'#e2e8f0',boxWidth:12,font:{size:11}}},
+      tooltip:{callbacks:{label:c=>{const i=c.dataIndex;
+        return c.dataset.yAxisID==='y'
+          ? `Respond rate: ${rr[i]==null?'—':rr[i].toFixed(1)+'%'} (${fmt(resp[i])}/${fmt(sent[i])})`
+          : `% Interesados: ${ir[i]==null?'—':ir[i].toFixed(1)+'%'} (${fmt(intr[i])}/${fmt(resp[i])})`;}}}},
+    scales:{x:{ticks:{color:light?'#64748b':'#94a3b8'},grid:{display:false}},
+      y:{position:'left',beginAtZero:true,title:{display:true,text:'Respond rate %',color:'#818cf8'},
+        ticks:{color:light?'#64748b':'#94a3b8',callback:v=>v+'%'},grid:{color:light?'#e2e8f0':'#22304a'}},
+      y1:{position:'right',beginAtZero:true,max:100,title:{display:true,text:'% Interesados',color:'#34d399'},
+        ticks:{color:light?'#64748b':'#94a3b8',callback:v=>v+'%'},grid:{display:false}}}}});
+}
 function renderDiario(){
   const arr=(D.diario||{})[country]||[];
   const labels=arr.map(r=>r.fecha.slice(5));
   const env=arr.map(r=>+r.enviados), resp=arr.map(r=>+r.respuestas), inter=arr.map(r=>+r.interesados),
         crea=arr.map(r=>+r.creados), cal=arr.map(r=>+r.calificados);
-  const MIN_N=5;   // ignora días con denominador <5 (muestra muy chica → % ruidoso que dispara el eje)
+  const MIN_N=5;
   const div=(a,b)=>a.map((_,i)=>b[i]>=MIN_N?(a[i]/b[i]*100):null);
   const cr=div(resp,env), ci=div(inter,resp), ic=div(crea,inter), cc=div(cal,crea);
   diaCharts.forEach(c=>c.destroy()); diaCharts=[];
@@ -583,59 +762,7 @@ function renderDiario(){
   mkChart('c_cc_ma',labels,movavg(cc,7),{pct:true});
 }
 
-function renderStats(){
-  const l=(D.linea||{})[country]||{};
-  const qc={HIGH:'var(--ok)',MEDIUM:'var(--warn)',LOW:'var(--bad)',UNKNOWN:'var(--text-muted)'}[l.quality]||'var(--text-muted)';
-  const tip = l.quality==='LOW'?'⚠ Calidad baja: reducir volumen, targetear solo leads tibios y revisar contenido; considerar rotar de línea.'
-    : l.quality==='MEDIUM'?'Calidad media: cuidar el ritmo y priorizar a quien más probablemente responda para que suba.'
-    : l.quality==='HIGH'?'Calidad alta: la línea está sana.'
-    : 'Sin histórico de calidad reciente.';
-  const _hoy=ymd(new Date());   // excluir hoy (día parcial que subestima el promedio)
-  const dias=(D.ciclo||[]).filter(r=>r.pais===CIP[country]&&r.tipo==='dia'&&r.bucket<_hoy).sort((a,b)=>a.bucket<b.bucket?-1:1).slice(-7);
-  const avg7=dias.length?dias.reduce((s,r)=>s+(+r.asignados_reint||0),0)/dias.length:0;
-  const META=30, cumpl=avg7/META*100, cumColor=cumpl>=100?'var(--ok)':cumpl>=60?'var(--warn)':'var(--bad)';
-  const FLUJO={MX:150,CO:150};
-  const metaTip='Promedio de asignados reinteresados de los últimos 7 días COMPLETOS (excluye hoy, que aún es parcial). Meta 30/día = 2,5% de conversión sobre los 8.500 mensajes semanales (8.500 × 2,5% ÷ 7 ≈ 30).';
-  const cards=[
-    ['Leads creados hoy <span class="help" title="Negocios con UTM reinteresados creados hoy (hubspot.deals, la fuente que refresca más rápido, ~7 min). Hora local del país.">?</span>', fmt((D.hoy||{})[country]||0), 'hubspot.deals · hoy'],
-    ['Prom. móvil 7d · asig. reinteresados <span class="help" title="'+metaTip+'">?</span>', avg7.toFixed(1), `<span style="color:${cumColor}">meta ${META}/día · ${cumpl.toFixed(0)}% cumplimiento</span>`, 'key'],
-    ['Flujo diario programado', fmt(FLUJO[country]), 'mensajes/día · rampa · goteo horario 9–19 L–V'],
-    ['Calidad de línea', `<span class="chip" style="background:${qc}">${l.quality||'—'}</span>`, tip+' · fuente: Meta'],
-    ['Tier (24h)', (l.tier||'—').replace('LIMIT_',''), 'límite · '+(l.tier_source==='infobip'?'Infobip':'Meta')],
-    ['Estado', `<span style="font-size:19px;font-weight:700">${l.status==='CONNECTED'?'Conectada':(l.status||'—')}</span>`, (l.sender||'')+(l.throughput?' · throughput '+l.throughput:'')],
-    ['Revisión cuenta', `<span style="font-size:19px;font-weight:700">${l.review==='APPROVED'?'Aprobada':(l.review||'—')}</span>`, 'account_review · Meta'],
-  ];
-  document.getElementById('stats').innerHTML=cards.map(([lab,v,s,cls])=>
-    `<div class="stat${cls?' '+cls:''}"><div class="l">${lab}</div><div class="v">${v}</div><div class="s">${s||''}</div></div>`).join('');
-  document.getElementById('lineaTip').textContent='';
-}
 
-function renderResp(){
-  const arr=((D.diario||{})[country]||[]).slice(-14);
-  const el=document.getElementById('c_resp'); if(!el||!window.Chart) return;
-  const light=document.body.classList.contains('light');
-  const labels=arr.map(r=>r.fecha.slice(5));
-  const tot=arr.map(r=>(+r.interesados)+(+r.ya_vendio)+(+r.pide_baja));
-  const P=k=>arr.map((r,i)=>tot[i]>0?(+r[k]/tot[i]*100):0);
-  const ds=(lab,k,c)=>({label:lab,data:P(k),backgroundColor:c+'cc',borderColor:c,fill:true,tension:.3,pointRadius:0,borderWidth:1});
-  if(respChart) respChart.destroy();
-  respChart=new Chart(el,{type:'line',data:{labels,datasets:[
-    ds('Interesado','interesados','#34d399'),
-    ds('Ya vendió','ya_vendio','#38bdf8'),
-    ds('Pide baja','pide_baja','#f87171'),
-  ]},options:{responsive:true,maintainAspectRatio:false,interaction:{mode:'index',intersect:false},
-    plugins:{legend:{display:true,labels:{color:light?'#334155':'#e2e8f0',boxWidth:10,font:{size:11}}},
-      tooltip:{callbacks:{label:c=>c.dataset.label+': '+c.parsed.y.toFixed(0)+'%'}}},
-    scales:{x:{stacked:true,ticks:{color:light?'#64748b':'#94a3b8',maxTicksLimit:8},grid:{display:false}},
-      y:{stacked:true,min:0,max:100,ticks:{color:light?'#64748b':'#94a3b8',callback:v=>v+'%'},grid:{color:light?'#e2e8f0':'#22304a'}}}}});
-}
-
-function healthLine(ok,titulo,msg,detail,last){
-  const bd=ok?'var(--ok)':'var(--bad)', bg=ok?'rgba(52,211,153,.12)':'rgba(248,113,113,.14)';
-  return `<div style="padding:10px 14px;border:1px solid ${bd};background:${bg};border-radius:10px;font-size:13px;color:var(--text)">
-    <span style="color:${bd};font-weight:800">${ok?'✓':'⚠'} ${titulo}</span> · ${msg}
-    ${(detail||last)?`<div class="muted" style="font-size:11px;margin-top:3px">${detail?detail+' · ':''}${last?'últ. chequeo '+last:''}</div>`:''}</div>`;
-}
 const COMP_LABELS={direccion:'Dirección',telefono:'Teléfono',email:'Email',nombre:'Nombre',geo:'Geo (lat/lon)',zona:'Zona mediana',tipo:'Tipo de inmueble',area:'Área',banos:'Baños',medios_banos:'Medios baños',habitaciones:'Habitaciones',garaje:'Garaje',ascensor:'Ascensor',piso:'Piso',antiguedad:'Antigüedad',precio:'Precio',estrato:'Estrato'};
 const COMP_ORDER=['direccion','telefono','email','nombre','geo','zona','tipo','area','banos','medios_banos','habitaciones','garaje','ascensor','piso','antiguedad','precio','estrato'];
 function renderCompletitud(){
@@ -657,58 +784,65 @@ function renderCompletitud(){
   el.scrollLeft=el.scrollWidth;
 }
 
-function renderGeoAlarm(){
-  const el=document.getElementById('geoAlarm'); if(!el) return;
-  const lines=[];
-  // GEO señuelo — solo MX (CO no usa receta señuelo)
-  if(country==='MX'){
-    const g=(D.geo_health||{}).MX;
-    if(g){
-      const w=+g.wrong||0, ok=w===0, ctx=[];
-      if(+g.in_flight) ctx.push(`${fmt(+g.in_flight)} recién corregido(s)`);
-      if(+g.pending_fix_replication) ctx.push(`${fmt(+g.pending_fix_replication)} esperando replicación`);
-      if(+g.pending_bq) ctx.push(`${fmt(+g.pending_bq)} sin replicar en BQ`);
-      lines.push(healthLine(ok,'Salud geo (recreación MX)', ok?'0 leads con geo señuelo sin corregir.':`<b>${fmt(w)} recreados con geo señuelo SIN corregir (&gt;24h)</b> — revisar barrido.`, ctx.join(' · '), g.last_check));
-    }
-  }
-  // SIN DIRECCIÓN — ambos países
-  const a=(D.address_health||{})[country];
-  if(a){
-    const m=+a.missing||0, ok=m===0, ctx=[];
-    if(+a.backfilled) ctx.push(`${fmt(+a.backfilled)} backfilleado(s)`);
-    lines.push(healthLine(ok,`Sin dirección (recreación ${country})`, ok?'0 recreados sin dirección.':`<b>${fmt(m)} recreados sin dirección</b> — comercial no puede gestionarlos.`, ctx.join(' · '), a.last_check));
-  }
-  el.innerHTML = lines.length ? `<div style="margin:12px 0;display:flex;flex-direction:column;gap:6px">${lines.join('')}</div>` : '';
+const ERR_ROWS=[['freq_cap','Freq-cap (límite Meta)'],['device_error','Error de dispositivo'],['template','Plantilla sin imagen (7008)'],['bloqueado','Bloqueado por operador'],['invalido','Número inválido'],['otro','Otro']];
+function renderImpacto(){
+  const el=document.getElementById('impacto'); if(!el) return;
+  let rows=(D.asignados||[]).filter(r=>r.pais===CIP[country] && r.tipo===cicloTipo).sort((a,b)=>a.bucket<b.bucket?-1:1);
+  rows=rows.slice(-20);
+  if(!rows.length){ el.innerHTML='<p class="muted">Sin datos de asignados para '+country+'.</p>'; return; }
+  const MES=['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+  const lbl=b=> cicloTipo==='mes' ? (MES[+b.slice(5,7)-1]+' '+b.slice(2,4)) : b.slice(5);
+  const last=rows.length-1;
+  const cur=i=> i===last?' class="cur"':'';
+  const th=rows.map((r,i)=>`<th${cur(i)} style="text-align:right">${lbl(r.bucket)}</th>`).join('');
+  const tr=(lab,f,cls='')=>`<tr class="${cls}"><td>${lab}</td>${rows.map((r,i)=>f(r,i)).join('')}</tr>`;
+  const ratio=(num,den,i)=>`<td${cur(i)} style="text-align:right;font-weight:800;color:${num>0?'var(--accent)':'var(--text-muted)'}">${den?(num/den*100).toFixed(1):'0.0'}%</td>`;
+  const hcol={dia:'Día',semana:'Semana (inicia Lun)',mes:'Mes'}[cicloTipo]||'Periodo';
+  el.innerHTML=`<table><thead><tr><th>${hcol}</th>${th}</tr></thead><tbody>
+    ${tr(_hb('imp_total')+'Total Marketing',(r,i)=>`<td${cur(i)} style="text-align:right">${fmt(+r.total_asignados)}</td>`,'row-total')}
+    ${tr(_hb('imp_sinloop')+'Total Marketing sin loop',(r,i)=>`<td${cur(i)} style="text-align:right;color:var(--text-muted)">${fmt((+r.total_asignados)-(+r.asignados_reint))}</td>`)}
+    ${tr(_hb('imp_loop')+'Marketing loop (WEB)',(r,i)=>`<td${cur(i)} style="text-align:right">${fmt(+r.asignados_reint)}</td>`,'row-loop')}
+    ${tr(_hb('imp_web')+'WEB',(r,i)=>`<td${cur(i)} style="text-align:right">${fmt(+r.asignados_web)}</td>`)}
+    ${tr(_hb('imp_loopvstotal')+'<b>Loop vs Total Marketing</b>',(r,i)=>ratio(+r.asignados_reint,+r.total_asignados,i))}
+    ${tr(_hb('imp_loopvsweb')+'<b>Loop vs WEB</b>',(r,i)=>ratio(+r.asignados_reint,+r.asignados_web,i))}
+  </tbody></table>`;
+  el.scrollLeft=el.scrollWidth;
+}
+function renderErrores(){
+  const el=document.getElementById('errores'); if(!el) return;
+  const raw=((D.errores||{})[country]||{})[cicloTipo]||[];
+  if(!raw.length){ el.innerHTML='<p class="note">Sin datos de errores para '+country+' (aún no disponible).</p>'; return; }
+  const byB={}; raw.forEach(r=>byB[r.bucket]=r);
+  const zero={no_entregados:0}; ERR_ROWS.forEach(([k])=>zero[k]=0);
+  const arr=lastPeriods(cicloTipo,20).map(b=>byB[b]||{bucket:b,...zero});
+  const MES=['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+  const lbl=b=> cicloTipo==='mes' ? (MES[+b.slice(5,7)-1]+' '+b.slice(2,4)) : b.slice(5);
+  const last=arr.length-1, cur=i=>i===last?' class="cur"':'';
+  const th=arr.map((r,i)=>`<th${cur(i)} style="text-align:right">${lbl(r.bucket)}</th>`).join('');
+  const hcol={dia:'Día',semana:'Semana (inicia Lun)',mes:'Mes'}[cicloTipo]||'Período';
+  const totalRow=`<tr class="row-total"><td>No entregados</td>${arr.map((r,i)=>`<td${cur(i)} style="text-align:right">${z(+r.no_entregados)}</td>`).join('')}</tr>`;
+  const absRow=([k,lab])=>{const cls=k==='freq_cap'?'row-orange':'row-red';return `<tr class="${cls}"><td>${lab}</td>${arr.map((r,i)=>`<td${cur(i)} style="text-align:right">${z(+r[k])}</td>`).join('')}</tr>`;};
+  const pctRow=([k,lab])=>`<tr class="row-stage"><td>% ${lab}</td>${arr.map((r,i)=>{const t=+r.no_entregados||0,v=+r[k]||0;return `<td${cur(i)} style="text-align:right">${t?(v/t*100).toFixed(1)+'%':'<span class="muted">·</span>'}</td>`;}).join('')}</tr>`;
+  el.innerHTML=`<table><thead><tr><th>${hcol}</th>${th}</tr></thead><tbody>
+    ${totalRow}
+    ${ERR_ROWS.map(absRow).join('')}
+    ${ERR_ROWS.map(pctRow).join('')}
+  </tbody></table>`;
+  el.scrollLeft=el.scrollWidth;
 }
 
-function renderSalida(){
-  const s=(D.salida||{})[country];
-  const el=document.getElementById('salida'), al=document.getElementById('salidaAlarm');
-  if(!el) return;
-  if(!s||!s.totales){ el.innerHTML='<p class="note">Sin datos de salida real (Meta analytics no disponible en esta corrida).</p>'; if(al)al.innerHTML=''; return; }
-  const t=s.totales;
-  const pct=x=>x==null?'—':(x*100).toFixed(x<0.1?1:0)+'%';
-  const shared   = s.tasa_salida!=null && s.tasa_salida>1.1;    // Meta cuenta más que lo encolado → línea compartida con otro flujo
-  const throttled= s.tasa_salida!=null && s.tasa_salida<0.7 && !shared;
-  const box=(lab,v,sub,color)=>`<div class="stat" style="flex:1 1 130px"><div class="l">${lab}</div><div class="v"${color?` style="color:${color}"`:''}>${fmt(v)}</div><div class="s">${sub||''}</div></div>`;
-  const arr=(p,warn)=>`<div style="align-self:center;text-align:center;padding:0 2px;font-size:11px;color:${warn?'var(--bad)':'var(--text-muted)'};white-space:nowrap">→<div style="font-weight:700;font-size:13px">${p}</div></div>`;
-  el.innerHTML=`<div style="display:flex;gap:6px;flex-wrap:wrap;align-items:stretch;margin-bottom:6px">
-    ${box('Encolados', t.encolados, 'a Infobip · HTTP 200')}
-    ${arr(shared?'n/d':pct(s.tasa_salida), throttled)}
-    ${box('Enviados (Meta)', t.enviados, shared?'TODA la línea (compartida)':'que Meta sí sacó', throttled?'var(--bad)':'')}
-    ${arr(pct(s.tasa_entrega))}
-    ${box('Entregados', t.entregados, 'llegaron al celular')}
-    ${(()=>{const rd=(D.read||{})[country]; return rd&&rd.read_rate!=null ? arr(pct(rd.read_rate))+box('Leídos', rd.leidos, 'seen · '+pct(rd.read_rate)+' de entregados (mart)') : '';})()}
-    ${arr(shared?'n/d':pct(s.respond_rate))}
-    ${box('Respondieron', t.respondieron, shared?'nuestras respuestas':'sobre entregados')}
-  </div>
-  <p class="note">Ventana ${s.ventana}. ${shared
-    ? '<b>⚠ Línea compartida:</b> Meta reporta más envíos que los que encolamos nosotros → este número también lo usa otro flujo, así que no se puede aislar la salida de reactivación. Para medirla/protegerla haría falta una línea dedicada.'
-    : `<b>Tasa de salida</b> ${pct(s.tasa_salida)} (Meta ÷ encolado) · <b>entrega</b> ${pct(s.tasa_entrega)} · <b>respond rate real</b> ${pct(s.respond_rate)} (sobre entregados).`} Meta cuenta en UTC → ±1 día de desfase vs nuestro conteo.</p>`;
-  if(al) al.innerHTML = throttled
-    ? `<div style="margin:12px 0">${healthLine(false,'Throttling de salida ('+country+')',
-        `Solo <b>${pct(s.tasa_salida)}</b> de lo encolado sale de Meta — la línea en <b>${((D.linea||{})[country]||{}).quality||'baja'}</b> está frenando la salida. Encolar más no llega a más: bajar volumen / priorizar tibios / rotar número.`, '', '')}</div>`
-    : '';
+function renderAB(){
+  const el=document.getElementById('ab'); if(!el) return;
+  const arr=(D.ab_templates||{})[country];
+  if(!arr||!arr.length){ el.innerHTML='<p class="note">Sin datos de A/B para '+country+' (aún no disponible).</p>'; return; }
+  const rate=v=>pct(v==null?null:v*100);
+  const cols=[['Enviados',t=>fmt(t.enviados)],['Entregados',t=>fmt(t.entregados)],
+    ['Delivery rate',t=>rate(t.delivery_rate)],['Read rate',t=>rate(t.read_rate)],
+    ['Respond rate',t=>rate(t.respond_rate)],['Interesado rate',t=>rate(t.interesado_rate)]];
+  const th=cols.map(c=>`<th style="text-align:right">${c[0]}</th>`).join('');
+  const rows=arr.map(t=>`<tr class="row-stage"><td>${escx(t.template)}</td>${cols.map(c=>`<td style="text-align:right">${c[1](t)}</td>`).join('')}</tr>`).join('');
+  el.innerHTML=`<table><thead><tr><th>Plantilla</th>${th}</tr></thead><tbody>${rows}</tbody></table>
+  <p class="note" style="padding:8px 13px">${arr.length<2?'Solo una plantilla activa — sin comparación A/B todavía.':'v1 = control · v2 = oferta. Excluye envíos fallidos por plantilla sin imagen (7008). Read rate no disponible por esta vía (SEEN).'}</p>`;
 }
 
 function renderPorHoraChart(){
@@ -746,110 +880,47 @@ function renderPorHoraChart(){
 }
 
 function renderCohorteOrigen(){
-  const el=document.getElementById('c_cohorte'); if(!el||!window.Chart) return;
-  const arr=(D.cohorte_origen||{})[country]||[];
-  const light=document.body.classList.contains('light');
-  const labels=arr.map(r=>r.bucket);
-  const sent=arr.map(r=>+r.enviados), resp=arr.map(r=>+r.respondieron), intr=arr.map(r=>+r.interesados);
-  const rr=arr.map(r=>+r.enviados>0?(+r.respondieron/+r.enviados*100):null);
-  const ir=arr.map(r=>+r.respondieron>0?(+r.interesados/+r.respondieron*100):null);
-  if(cohorteChart) cohorteChart.destroy();
-  cohorteChart=new Chart(el,{data:{labels,datasets:[
-    {type:'bar',label:'Respond rate (resp ÷ enviados)',data:rr,yAxisID:'y',order:2,
-      backgroundColor:light?'#c7d2fe':'#3b3f7a',borderColor:'#818cf8',borderWidth:1,borderRadius:3},
-    {type:'line',label:'% Interesados (de respuestas)',data:ir,yAxisID:'y1',order:1,
-      borderColor:'#34d399',backgroundColor:'#34d399',tension:.3,pointRadius:3,borderWidth:2,spanGaps:true},
-  ]},options:{responsive:true,maintainAspectRatio:false,interaction:{mode:'index',intersect:false},
-    plugins:{legend:{display:true,labels:{color:light?'#334155':'#e2e8f0',boxWidth:12,font:{size:11}}},
-      tooltip:{callbacks:{label:c=>{const i=c.dataIndex;
-        return c.dataset.yAxisID==='y'
-          ? `Respond rate: ${rr[i]==null?'—':rr[i].toFixed(1)+'%'} (${fmt(resp[i])}/${fmt(sent[i])})`
-          : `% Interesados: ${ir[i]==null?'—':ir[i].toFixed(1)+'%'} (${fmt(intr[i])}/${fmt(resp[i])})`;}}}},
-    scales:{x:{ticks:{color:light?'#64748b':'#94a3b8'},grid:{display:false}},
-      y:{position:'left',beginAtZero:true,title:{display:true,text:'Respond rate %',color:'#818cf8'},
-        ticks:{color:light?'#64748b':'#94a3b8',callback:v=>v+'%'},grid:{color:light?'#e2e8f0':'#22304a'}},
-      y1:{position:'right',beginAtZero:true,max:100,title:{display:true,text:'% Interesados',color:'#34d399'},
-        ticks:{color:light?'#64748b':'#94a3b8',callback:v=>v+'%'},grid:{display:false}}}}});
-}
-
-function renderFunnel(){
-  const f=(D.funnel||[]).find(x=>x.pais===country)||{};
-  const r=(D.respuestas||{})[country]||{}, base=(D.base_enviada||{})[country]||0;
-  const el=document.getElementById('funnel');
-  const steps=[
-    ['Respuestas', +r.total_respuestas||0],
-    ['Interesados', +r.interesado||0],
-    ['Calificados', +f.calificados||0],
-    ['Asignados', +f.asignados||0],
-    ['Citas', +f.citas||0],
-    ['Cierres', +f.cierres||0],
-  ];
-  const max=steps[0][1]||1;
-  const rows=steps.map(([n,v],i)=>{
-    const prev=i?steps[i-1][1]:v, vb=base?(v/base*100):0, vp=prev?(v/prev*100):0;
-    return `<div class="rowline"><div class="lab" style="width:84px">${n}</div>
-      <div class="bar"><div style="width:${Math.max(0.5,v/max*100).toFixed(1)}%;background:var(--accent)"></div></div>
-      <div class="val" style="width:158px"><b>${fmt(v)}</b>
-        <div class="muted" style="font-size:11px">${vb.toFixed(vb<10?2:1)}% base · ${i?vp.toFixed(0)+'% prev':'—'}</div></div></div>`;
-  }).join('');
-  el.innerHTML=`<div style="font-size:12px;color:var(--text-muted);margin-bottom:10px">Base contactada (total programa): <b style="color:var(--text-title)">${fmt(base)}</b></div>${rows}
-    <p class="note">Últimos 14 días (por fecha de creación). Cada etapa: % de la <b>base contactada</b> y % del <b>paso previo</b>. La base contactada es el total del programa (los envíos aún no están fechados en el hub).</p>`;
-}
-
-function renderComparativa(){
-  const rows=(D.comparativa||[]).filter(x=>x.pais===country);
-  const el=document.getElementById('comparativa');
-  if(!rows.length){ el.innerHTML='<p class="muted">Sin datos.</p>'; return; }
-  const R=rows.find(x=>x.cohorte==='Reinteresados')||{}, N=rows.find(x=>x.cohorte==='WEB nuevo')||{};
-  const mets=[['Calificado','calif_pct'],['Asignado','asignado_pct'],['Cita','cita_pct'],['Cierre','cierre_pct']];
-  const miniFunnel=(titulo,C,color,leads)=>`
-    <div style="flex:1;min-width:185px">
-      <div style="font-size:13px;font-weight:700;color:var(--text-title);margin-bottom:2px">${titulo}</div>
-      <div class="muted" style="font-size:12px;margin-bottom:12px">${fmt(leads)} leads · % de su base</div>
-      ${mets.map(([n,k])=>{const v=+C[k]||0; return `<div class="rowline">
-        <div class="lab" style="width:82px">${n}</div>
-        <div class="bar"><div style="width:${Math.max(0.5,v).toFixed(1)}%;background:${color}"></div></div>
-        <div class="val" style="width:56px"><b>${pct(v)}</b></div></div>`;}).join('')}
-    </div>`;
-  const acR=(+R.asignado_pct>0)?(+R.cita_pct/+R.asignado_pct*100):0;
-  const acN=(+N.asignado_pct>0)?(+N.cita_pct/+N.asignado_pct*100):0;
-  el.innerHTML=`<div style="display:flex;gap:16px;flex-wrap:wrap">
-    ${miniFunnel('🔁 Reinteresados', R, 'var(--accent)', R.leads)}
-    ${miniFunnel('🌐 WEB nuevo', N, 'var(--text-muted)', N.leads)}
-  </div>
-  <div style="margin-top:16px;background:rgba(251,191,36,.14);border:1px solid var(--warn);border-radius:10px;padding:14px 16px">
-    <div style="font-size:11.5px;text-transform:uppercase;letter-spacing:.5px;color:var(--warn);font-weight:800;margin-bottom:8px">Conversión asignado → cita agendada</div>
-    <div style="font-size:20px;font-weight:800;color:var(--text-title)">🔁 Reinteresados <span style="color:var(--accent)">${pct(acR)}</span> &nbsp;·&nbsp; 🌐 WEB nuevo <span style="color:var(--text-muted)">${pct(acN)}</span></div>
-  </div>
-  <p class="note">Dos funnels lado a lado (cada barra = % de conversión sobre la base de su cohorte). Asignado→cita = citas ÷ asignados. WEB nuevo = fuente WEB sin UTM reinteresados, desde 15-jun.</p>`;
-}
-
-function renderCiclo(){
-  const el=document.getElementById('ciclo');
-  let rows=(D.ciclo||[]).filter(r=>r.pais===CIP[country] && r.tipo===cicloTipo).sort((a,b)=>a.bucket<b.bucket?-1:1);
-  rows=rows.slice(-20);   // últimos 20 periodos
-  if(!rows.length){ el.innerHTML='<p class="muted">Sin datos.</p>'; return; }
+  const el=document.getElementById('cohorteTab'); if(!el) return;
+  const raw=((D.cosecha||{})[country]||{})[cicloTipo]||[];
+  if(!raw.length){ el.innerHTML='<p class="note">Sin datos de cosecha para '+country+' (aún no disponible).</p>'; return; }
+  const byB={}; raw.forEach(r=>byB[r.bucket]=r);
+  const arr=lastPeriods(cicloTipo,20).map(b=>byB[b]||{bucket:b,enviados:0,entregados:0,leidos:0,respondidos:0,interesados:0});  // 20 períodos más recientes (rellena vacíos)
   const MES=['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
   const lbl=b=> cicloTipo==='mes' ? (MES[+b.slice(5,7)-1]+' '+b.slice(2,4)) : b.slice(5);
-  const last=rows.length-1;
-  const cur=i=> i===last?' class="cur"':'';
-  const th=rows.map((r,i)=>`<th${cur(i)} style="text-align:right">${lbl(r.bucket)}</th>`).join('');
-  const tr=(lab,f,cls='')=>`<tr class="${cls}"><td>${lab}</td>${rows.map((r,i)=>f(r,i)).join('')}</tr>`;
-  const ratio=(num,den,i)=>`<td${cur(i)} style="text-align:right;font-weight:800;color:${num>0?'var(--accent)':'var(--text-muted)'}">${den?(num/den*100).toFixed(1):'0.0'}%</td>`;
-  const hcol={dia:'Día',ciclo:'Ciclo (inicia Mié)',semana:'Semana (inicia Lun)',mes:'Mes'}[cicloTipo]||'Periodo';
+  const last=arr.length-1, cur=i=>i===last?' class="cur"':'';
+  const col=k=>arr.map(r=>+r[k]||0);
+  const th=arr.map((r,i)=>`<th${cur(i)} style="text-align:right">${lbl(r.bucket)}</th>`).join('');
+  const hcol={dia:'Día',semana:'Semana (inicia Lun)',mes:'Mes'}[cicloTipo]||'Período';
+  const absRow=(lab,key,cls='row-stage')=>`<tr class="${cls}"><td>${lab}</td>${arr.map((r,i)=>`<td${cur(i)} style="text-align:right">${z(+r[key])}</td>`).join('')}</tr>`;
+  const pctCells=(numK,denK)=>{
+    const ns=col(numK), ds=col(denK);
+    const pcts=ns.map((v,i)=> ds[i]>0 ? v/ds[i]*100 : null);
+    const valid=pcts.filter(p=>p!=null);
+    const min=valid.length?Math.min(...valid):0, max=valid.length?Math.max(...valid):0, range=(max-min)||1;
+    return pcts.map((p,i)=>{
+      if(p==null) return `<td${cur(i)} style="text-align:right"><span class="muted">·</span></td>`;
+      const ra=(p-min)/range, clr=`rgb(${Math.round(248-ra*196)},${Math.round(52+ra*159)},${Math.round(52+ra*101)})`;
+      return `<td${cur(i)} style="text-align:right;color:${clr}">${p>=10?p.toFixed(1):p.toFixed(2)}%</td>`;
+    }).join('');
+  };
+  const pctRow=(lab,numK,denK,cls='row-stage')=>`<tr class="${cls}"><td>${lab}</td>${pctCells(numK,denK)}</tr>`;
   el.innerHTML=`<table><thead><tr><th>${hcol}</th>${th}</tr></thead><tbody>
-    ${tr(H('Asignados de las 6 fuentes de marketing (fuente_id_tig) por período, desde la WBR mart.')+'Total Marketing',(r,i)=>`<td${cur(i)} style="text-align:right">${fmt(+r.total_asignados)}</td>`,'row-total')}
-    ${tr(H('Asignados solo de fuente WEB (fuente_id_tig=3).')+'WEB',(r,i)=>`<td${cur(i)} style="text-align:right">${fmt(+r.asignados_web)}</td>`)}
-    ${tr(H('Asignados con utm_campaign LIKE %reinteresados% (hubspot.deals). Son WEB.')+'Reinteresados (WEB)',(r,i)=>`<td${cur(i)} style="text-align:right">${fmt(+r.asignados_reint)}</td>`)}
-    ${tr(H('Reinteresados ÷ Total Marketing = participación de reinteresados en todo el marketing asignado.')+'<b>Reinteresados vs Total Marketing</b>',(r,i)=>ratio(+r.asignados_reint,+r.total_asignados,i))}
-    ${tr(H('Reinteresados ÷ WEB = participación de reinteresados dentro de los asignados WEB.')+'<b>Reinteresados vs WEB</b>',(r,i)=>ratio(+r.asignados_reint,+r.asignados_web,i))}
-    ${tr(H('Total Marketing − Reinteresados = asignados que habríamos tenido sin el programa de reinterés.')+'Total Marketing sin reinteresados',(r,i)=>`<td${cur(i)} style="text-align:right;color:var(--text-muted)">${fmt((+r.total_asignados)-(+r.asignados_reint))}</td>`)}
+    <tr class="row-total"><td>${_hb('cos_env')}Enviados</td>${arr.map((r,i)=>`<td${cur(i)} style="text-align:right">${z(+r.enviados)}</td>`).join('')}</tr>
+    ${absRow(_hb('cos_entr')+'Entregados','entregados')}
+    ${absRow(_hb('cos_leidos')+'Leídos','leidos')}
+    ${absRow(_hb('cos_resp')+'Respondidos','respondidos')}
+    ${absRow(_hb('cos_int')+'Interesados','interesados','row-loop')}
+    ${pctRow(_hb('cos_dr')+'% Delivery Rate','entregados','enviados')}
+    ${pctRow(_hb('cos_rr')+'% Read Rate','leidos','entregados')}
+    ${pctRow(_hb('cos_rsp')+'% Respond Rate','respondidos','entregados')}
+    ${pctRow(_hb('cos_ir')+'% Interesados Rate','interesados','entregados','row-blue')}
   </tbody></table>`;
-  el.scrollLeft=el.scrollWidth;   // fijar a la derecha (periodo más reciente siempre visible)
+  el.scrollLeft=el.scrollWidth;
 }
+
 function applyTheme(t){const light=t==='light';document.body.classList.toggle('light',light);
   document.getElementById('themeBtn').textContent=light?'🌙 Oscuro':'☀️ Claro';
-  if(window.Chart&&diaCharts.length){ renderDiario(); renderResp(); renderCohorteOrigen(); }}
+  if(window.Chart&&diaCharts.length){ renderResp(); renderCohorteOrigen(); }}
 document.getElementById('themeBtn').onclick=()=>{const n=document.body.classList.contains('light')?'dark':'light';try{localStorage.setItem('ml-theme',n);}catch(e){}applyTheme(n);};
 applyTheme((()=>{try{return localStorage.getItem('ml-theme')||'dark';}catch(e){return 'dark';}})());
 load();
