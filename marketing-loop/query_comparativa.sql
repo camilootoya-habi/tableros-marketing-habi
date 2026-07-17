@@ -1,5 +1,5 @@
 -- Comparación de CALIDAD: reinteresados vs leads WEB nuevos (baseline = fuente WEB sin UTM reinteresados). MX + CO.
--- Cohorte por createdate desde el arranque del programa. Métricas: calificado, asignado (WBR mart), cita, cierre.
+-- Cohorte por createdate de los ÚLTIMOS 14 DÍAS (leads creados en ese lapso). Métricas: calificado, asignado (WBR mart), cita, cierre.
 WITH mart AS (
   SELECT DISTINCT nid, pais FROM `papyrus-master.sellers_data_mart.sellers_leads_asignados_marketing_wbr_mart`
   WHERE pais IN ('mexico','colombia')

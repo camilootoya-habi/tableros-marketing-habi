@@ -173,13 +173,14 @@ def respuestas_serie(inbound_rows, tipo, n=20):
                     "abiertas":dict(a["abiertas"])})
     return out
 
-def cohorte_origen_serie(sendlog, nid2quarter, inbound_phones, interesado_phones):
+def cohorte_origen_serie(sendlog, inbound_phones, interesado_phones):
     """Por TRIMESTRE de creación del lead original: enviados, respondieron, interesados (para respond-rate
-    y % interesados). Enlaza envío→trimestre por nid original; respuesta por teléfono."""
+    y % interesados). Cada envío trae su `quarter` pre-adjunto (nuevos por nid, viejos del repo por teléfono
+    contra TIG); respuesta por teléfono."""
     from collections import defaultdict
     A=defaultdict(lambda: {"enviados":0,"respondieron":0,"interesados":0})
     for r in sendlog:
-        q=nid2quarter.get(r.get("nid"))
+        q=r.get("quarter")
         if not q: continue
         a=A[q]; a["enviados"]+=1
         if r.get("phone") in inbound_phones: a["respondieron"]+=1

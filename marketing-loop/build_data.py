@@ -109,7 +109,11 @@ def por_hora(pais, inbound_phones=None):
         RIGHT(REGEXP_REPLACE(to_number, r"[^0-9]", ""),10) tel10,
         LOWER(TRIM(status)) status, IF({SEEN},1,0) seen
       FROM `{mart_table(pais)}`
-      WHERE TRIM(from_number) IN ({lines}) AND DATE({SENDAT}) >= "2026-06-01"''')
+      WHERE TRIM(from_number) IN ({lines}) AND DATE({SENDAT}) >= "2026-06-01"
+        -- SOLO envíos de CAMPAÑA (con plantilla). Excluye mensajes de sesión/conversación (template NULL):
+        -- esos son respuestas del bot dentro de conversaciones activas -> van a quien ya respondió, inflando
+        -- el respond rate a ~100% en horas de bajo volumen (00-09). No son el blast de reactivación.
+        AND NULLIF(TRIM(template), "") IS NOT NULL''')
     responders = inbound_phones if inbound_phones is not None else {i["phone"] for i in M.inbound_rows(30) if i.get("phone")}
     agg_h={}
     for r in rows:
@@ -125,7 +129,7 @@ def por_hora(pais, inbound_phones=None):
             "read_rate":   round(agg_h[h]["l"]/agg_h[h]["e"],3) if agg_h[h]["e"] else None,
             "respond_rate":round(agg_h[h]["r"]/agg_h[h]["e"],3) if agg_h[h]["e"] else None} for h in sorted(agg_h)]
     return {"serie":serie, "desde":"2026-06-01",
-            "nota":"read/respond rate por hora de envío (hora del mart, TZ a calibrar); respond = entregados cuyo tel respondió"}
+            "nota":"read/respond rate por hora de envío de CAMPAÑA (con plantilla; excluye mensajes de sesión); hora del mart, TZ a calibrar; respond = entregados cuyo tel respondió"}
 
 COMP_FIELDS=["direccion","telefono","email","nombre","geo","zona","tipo","area","banos",
              "medios_banos","habitaciones","garaje","ascensor","piso","antiguedad","precio","estrato"]
@@ -148,15 +152,15 @@ def completitud(pais, rows):
     return {"series":series,"na":na}
 
 # --- helpers nuevos: respuestas parseadas del mart (INTERESADO/YAVENDIO/OTRO) y A/B por template ---
-def _ab(sl, mbm, inbound_phones, interesado_phones):
-    """Comparativo A/B por `template`: enviados, entregados, delivery/read/respond/interesado rate.
-    Excluye envíos fallidos por bug de plantilla sin imagen (7008)."""
+def _ab(sl, mbm, inbound_phones, interesado_phones, keyfield="template"):
+    """Comparativo por `keyfield` (template o fuente): enviados, entregados, delivery/read/respond/interesado rate.
+    delivery = entregados/enviados; read/respond/interesado = x/entregados. Excluye fallidos por bug 7008."""
     from collections import defaultdict
     A=defaultdict(lambda: dict(enviados=0,entregados=0,leidos=0,respondieron=0,interesados=0))
     for r in sl:
         m = mbm.get(r.get("message_id") or "")
-        if m and "7008" in (m.get("error_name") or ""): continue  # bug plantilla sin imagen (7008): fuera del A/B
-        t = r.get("template") or "sin_template"
+        if m and "7008" in (m.get("error_name") or ""): continue  # bug plantilla sin imagen (7008): fuera de la comparación
+        t = r.get(keyfield) or "(sin dato)"
         a = A[t]; a["enviados"]+=1
         if m and m.get("status")=="delivered":
             a["entregados"]+=1
@@ -167,7 +171,7 @@ def _ab(sl, mbm, inbound_phones, interesado_phones):
     out=[]
     for t in sorted(A):
         a=A[t]
-        out.append({"template":t, "enviados":a["enviados"], "entregados":a["entregados"],
+        out.append({keyfield:t, "enviados":a["enviados"], "entregados":a["entregados"],
             "delivery_rate": rate(a["entregados"],a["enviados"]),
             "leidos":a["leidos"], "read_rate": rate(a["leidos"],a["entregados"]),
             "respondieron":a["respondieron"], "respond_rate": rate(a["respondieron"],a["entregados"]),
@@ -202,28 +206,41 @@ def build_country(pais):
     parsed=[(i["phone"], agg.parse_resp(i["respuesta_cliente"]), i["ts"]) for i in inb]
     inbound_phones={p for p,_,_ in parsed if p}
     interesado_phones={p for p,pr,_ in parsed if p and pr["action"]=="INTERESADO"}
+    # --- REPO VIEJO: envíos de la plantilla vieja (jun–jul) que solo viven en el mart, para la Cosecha ---
+    old_sl, old_mbm = M.old_repo_sends(pais)
+    for mid, v in old_mbm.items(): mbm.setdefault(mid, v)   # completa delivery/seen de los viejos (no pisa los recientes/​/logs)
+    sl_cosecha = old_sl + sl                                # Cosecha = histórico completo (viejo mart + nuevo Neon)
+    # respuestas atribuibles a envíos viejos: ventana amplia (180d) parseada
+    parsed_wide=[(i["phone"], agg.parse_resp(i["respuesta_cliente"]), i["ts"]) for i in inb_resp]
+    inbound_phones_wide={p for p,_,_ in parsed_wide if p}
+    interesado_phones_wide={p for p,pr,_ in parsed_wide if p and pr["action"]=="INTERESADO"}
     # recreados/calificados por old_nid
     recreated_oldnids={r["old_nid"] for r in rec if r.get("success")}
     qualified_oldnids={r["old_nid"] for r in rec if r.get("state_at_creation") in (20,63)}
     dias=[(hoy-datetime.timedelta(days=k)).isoformat() for k in range(WIN-1,-1,-1)]  # hoy-6..hoy (incl hoy)
-    # cohorte por antigüedad del lead original: nid->trimestre de creación
+    # cohorte por antigüedad del lead original: nid->trimestre de creación (envíos NUEVOS con nid en send_log)
     nidq=M.nid2quarter(list({r["nid"] for r in sl if r.get("nid")}), country=pais)
+    for r in sl: r["quarter"]=nidq.get(r.get("nid"))   # trimestre del lead original por nid — SOLO mensajes nuevos (log de Neon)
+    # nid->fuente del lead original (para la tabla "Comparación por fuente", análoga al A/B)
+    nidf=M.nid2fuente(list({r["nid"] for r in sl if r.get("nid")}), country=pais)
+    for r in sl: r["fuente_lead"]=nidf.get(r.get("nid"), "(sin fuente)")
     # antifunnel: estado actual de recreados
     est=M.estado_actual_by_deal([r["new_deal_id"] for r in rec if r.get("new_deal_id")], country=pais)
     for r in rec: r["estado_actual"]=est.get(str(r.get("new_deal_id")))
     return {
         "linea": linea_meta(pais),
         "embudo": agg.embudo(sl7,mbm,inbound_phones,interesado_phones,recreated_oldnids,qualified_oldnids,dias),
-        "errores": {t: agg.errores_serie(sl, mbm, t) for t in ("dia","semana","mes")},
+        "errores": {t: agg.errores_serie(sl_cosecha, mbm, t, n=40) for t in ("dia","semana","mes")},
         "respuestas": {t: agg.respuestas_serie(inb_resp, t) for t in ("dia","semana","mes")},
-        "cosecha": {t: agg.cosecha_serie(sl, mbm, inbound_phones, interesado_phones, t) for t in ("dia","semana","mes")},
+        "cosecha": {t: agg.cosecha_serie(sl_cosecha, mbm, inbound_phones_wide, interesado_phones_wide, t, n=40) for t in ("dia","semana","mes")},
         "ab_templates": _ab(sl,mbm,inbound_phones,interesado_phones),
+        "ab_fuentes": _ab(sl,mbm,inbound_phones,interesado_phones,keyfield="fuente_lead"),
         "recreacion": {t: agg.recreacion_serie(rec,t) for t in ("dia","semana","mes")},
         "antifunnel": {t: agg.antifunnel_serie(rec,t) for t in ("dia","semana","mes")},
         "contact_status": agg.contact_dist(cst),
         "por_hora": por_hora(pais, inbound_phones),
-        "cohorte_origen": agg.cohorte_origen_serie(sl, nidq, inbound_phones, interesado_phones),
-        "diario": agg.diario_serie(sl, inb_resp, rec),
+        "cohorte_origen": agg.cohorte_origen_serie(sl, inbound_phones, interesado_phones),
+        "diario": agg.diario_serie(sl_cosecha, inb_resp, rec),
         "_debug": {"send_log":len(sl), "sl7":len(sl7), "recreation":len(rec), "contact_status":len(cst),
                    "mart_msgids":len(mbm), "infobip":len(ibm), "inbound":len(inb)},
     }
@@ -240,6 +257,7 @@ data={
   "respuestas": {"MX": mx["respuestas"], "CO": co["respuestas"]},
   "cosecha": {"MX": mx["cosecha"], "CO": co["cosecha"]},
   "ab_templates": {"MX": mx["ab_templates"], "CO": co["ab_templates"]},
+  "ab_fuentes": {"MX": mx["ab_fuentes"], "CO": co["ab_fuentes"]},
   "recreacion": {"MX": mx["recreacion"], "CO": co["recreacion"]},
   "antifunnel": {"MX": mx["antifunnel"], "CO": co["antifunnel"]},
   "contact_status": {"MX": mx["contact_status"], "CO": co["contact_status"]},
