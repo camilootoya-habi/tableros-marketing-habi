@@ -175,59 +175,88 @@ def _ab(sl, mbm, inbound_phones, interesado_phones):
     return out
 
 # --- ensamblado ---
-COMP = q("query_completitud.sql")
 WIN = 7
-sl = N.send_log_rows()                        # todos (para cohorte histórica)
-hoy = datetime.date.today()
-win_start = (hoy - datetime.timedelta(days=WIN-1)).isoformat()   # últimos 7d INCLUYENDO hoy
-hoy_iso = hoy.isoformat()
-sl7 = [r for r in sl if win_start <= (r.get("attempted_at") or "")[:10] <= hoy_iso]  # 7d incl hoy (delivery ya es tiempo real vía /logs)
-rec = N.recreation_rows(); cst = N.contact_status_rows()
-mbm = M.mart_by_msgid(30)
-# complemento tiempo real (Infobip /logs) SOLO para la ventana reciente; los viejos ya no viven en /logs y el mart los cubre
-ibm = I.delivery_by_msgid([r.get("message_id") for r in sl7 if r.get("message_id")])
-mbm = {**mbm, **ibm}   # Infobip (tiempo real) pisa el mart en los recientes; el mart cubre el histórico
-inb = M.inbound_rows(30)
-inb_resp = M.inbound_rows(180)   # ventana más larga para la tabla de Respuestas por período (día/semana/mes)
-# respuestas parseadas del mart
-parsed=[(i["phone"], agg.parse_resp(i["respuesta_cliente"]), i["ts"]) for i in inb]
-inbound_phones={p for p,_,_ in parsed if p}
-interesado_phones={p for p,pr,_ in parsed if p and pr["action"]=="INTERESADO"}
-# recreados/calificados por old_nid
-recreated_oldnids={r["old_nid"] for r in rec if r.get("success")}
-qualified_oldnids={r["old_nid"] for r in rec if r.get("state_at_creation") in (20,63)}
-dias=[(hoy-datetime.timedelta(days=k)).isoformat() for k in range(WIN-1,-1,-1)]  # hoy-6..hoy (incl hoy)
-# cohorte por antigüedad del lead original: nid->trimestre de creación
-nidq=M.nid2quarter(list({r["nid"] for r in sl if r.get("nid")}))
-# antifunnel: estado actual de recreados
-est=M.estado_actual_by_deal([r["new_deal_id"] for r in rec if r.get("new_deal_id")])
-for r in rec: r["estado_actual"]=est.get(str(r.get("new_deal_id")))
+
+def build_country(pais):
+    """Calcula TODOS los valores country-specific para `pais` (MX o CO): send_log/recreation/contact_status
+    de Neon filtrados por país (tz local del país), delivery = mart del país ∪ Infobip /logs del país,
+    inbound del país, y las series derivadas (embudo/errores/respuestas/cosecha/ab/recreacion/antifunnel/
+    contact_status/cohorte_origen/diario/por_hora/linea). Devuelve un dict con esas claves."""
+    sl = N.send_log_rows(country=pais)                 # todos (para cohorte histórica)
+    hoy = datetime.date.today()
+    win_start = (hoy - datetime.timedelta(days=WIN-1)).isoformat()   # últimos 7d INCLUYENDO hoy
+    hoy_iso = hoy.isoformat()
+    sl7 = [r for r in sl if win_start <= (r.get("attempted_at") or "")[:10] <= hoy_iso]  # 7d incl hoy (delivery ya es tiempo real vía /logs)
+    rec = N.recreation_rows(country=pais); cst = N.contact_status_rows(country=pais)
+    mbm = M.mart_by_msgid(30, country=pais)
+    # complemento tiempo real (Infobip /logs) SOLO para la ventana reciente; los viejos ya no viven en /logs y el mart los cubre
+    ibm = I.delivery_by_msgid([r.get("message_id") for r in sl7 if r.get("message_id")], pais=pais)
+    mbm = {**mbm, **ibm}   # Infobip (tiempo real) pisa el mart en los recientes; el mart cubre el histórico
+    inb = M.inbound_rows(30, country=pais)
+    inb_resp = M.inbound_rows(180, country=pais)   # ventana más larga para la tabla de Respuestas por período (día/semana/mes)
+    # respuestas parseadas del mart
+    parsed=[(i["phone"], agg.parse_resp(i["respuesta_cliente"]), i["ts"]) for i in inb]
+    inbound_phones={p for p,_,_ in parsed if p}
+    interesado_phones={p for p,pr,_ in parsed if p and pr["action"]=="INTERESADO"}
+    # recreados/calificados por old_nid
+    recreated_oldnids={r["old_nid"] for r in rec if r.get("success")}
+    qualified_oldnids={r["old_nid"] for r in rec if r.get("state_at_creation") in (20,63)}
+    dias=[(hoy-datetime.timedelta(days=k)).isoformat() for k in range(WIN-1,-1,-1)]  # hoy-6..hoy (incl hoy)
+    # cohorte por antigüedad del lead original: nid->trimestre de creación
+    nidq=M.nid2quarter(list({r["nid"] for r in sl if r.get("nid")}), country=pais)
+    # antifunnel: estado actual de recreados
+    est=M.estado_actual_by_deal([r["new_deal_id"] for r in rec if r.get("new_deal_id")], country=pais)
+    for r in rec: r["estado_actual"]=est.get(str(r.get("new_deal_id")))
+    return {
+        "linea": linea_meta(pais),
+        "embudo": agg.embudo(sl7,mbm,inbound_phones,interesado_phones,recreated_oldnids,qualified_oldnids,dias),
+        "errores": {t: agg.errores_serie(sl, mbm, t) for t in ("dia","semana","mes")},
+        "respuestas": {t: agg.respuestas_serie(inb_resp, t) for t in ("dia","semana","mes")},
+        "cosecha": {t: agg.cosecha_serie(sl, mbm, inbound_phones, interesado_phones, t) for t in ("dia","semana","mes")},
+        "ab_templates": _ab(sl,mbm,inbound_phones,interesado_phones),
+        "recreacion": {t: agg.recreacion_serie(rec,t) for t in ("dia","semana","mes")},
+        "antifunnel": {t: agg.antifunnel_serie(rec,t) for t in ("dia","semana","mes")},
+        "contact_status": agg.contact_dist(cst),
+        "por_hora": por_hora(pais, inbound_phones),
+        "cohorte_origen": agg.cohorte_origen_serie(sl, nidq, inbound_phones, interesado_phones),
+        "diario": agg.diario_serie(sl, inb_resp, rec),
+        "_debug": {"send_log":len(sl), "sl7":len(sl7), "recreation":len(rec), "contact_status":len(cst),
+                   "mart_msgids":len(mbm), "infobip":len(ibm), "inbound":len(inb)},
+    }
+
+COMP = q("query_completitud.sql")
+mx = build_country("MX")
+co = build_country("CO")
 
 data={
   "updated": os.environ.get("BUILD_TS") or datetime.datetime.utcnow().strftime("%Y-%m-%dT%H:%MZ"),
-  "linea": {"MX": linea_meta("MX"), "CO": None},
-  "embudo": {"MX": agg.embudo(sl7,mbm,inbound_phones,interesado_phones,recreated_oldnids,qualified_oldnids,dias), "CO": None},
-  "errores": {"MX": {t: agg.errores_serie(sl, mbm, t) for t in ("dia","semana","mes")}, "CO": None},
-  "respuestas": {"MX": {t: agg.respuestas_serie(inb_resp, t) for t in ("dia","semana","mes")}, "CO": None},
-  "cosecha": {"MX": {t: agg.cosecha_serie(sl, mbm, inbound_phones, interesado_phones, t) for t in ("dia","semana","mes")}, "CO": None},
-  "ab_templates": {"MX": _ab(sl,mbm,inbound_phones,interesado_phones), "CO": None},
-  "recreacion": {"MX": {t: agg.recreacion_serie(rec,t) for t in ("dia","semana","mes")}, "CO": None},
-  "antifunnel": {"MX": {t: agg.antifunnel_serie(rec,t) for t in ("dia","semana","mes")}, "CO": None},
-  "contact_status": {"MX": agg.contact_dist(cst), "CO": None},
-  "por_hora": {"MX": por_hora("MX", inbound_phones), "CO": {"serie":[]}},
+  "linea": {"MX": mx["linea"], "CO": co["linea"]},
+  "embudo": {"MX": mx["embudo"], "CO": co["embudo"]},
+  "errores": {"MX": mx["errores"], "CO": co["errores"]},
+  "respuestas": {"MX": mx["respuestas"], "CO": co["respuestas"]},
+  "cosecha": {"MX": mx["cosecha"], "CO": co["cosecha"]},
+  "ab_templates": {"MX": mx["ab_templates"], "CO": co["ab_templates"]},
+  "recreacion": {"MX": mx["recreacion"], "CO": co["recreacion"]},
+  "antifunnel": {"MX": mx["antifunnel"], "CO": co["antifunnel"]},
+  "contact_status": {"MX": mx["contact_status"], "CO": co["contact_status"]},
+  "por_hora": {"MX": mx["por_hora"], "CO": co["por_hora"]},
   "completitud": {p: completitud(p, COMP) for p in ("MX","CO")},
   "hoy": {r["pais"]: int(r.get("creados_hoy") or 0) for r in q("query_hoy.sql")},
   "comparativa": q("query_comparativa.sql"),
-  "cohorte_origen": {"MX": agg.cohorte_origen_serie(sl, nidq, inbound_phones, interesado_phones), "CO": None},
-  "diario": {"MX": agg.diario_serie(sl, inb_resp, rec), "CO": None},
+  "cohorte_origen": {"MX": mx["cohorte_origen"], "CO": co["cohorte_origen"]},
+  "diario": {"MX": mx["diario"], "CO": co["diario"]},
   "asignados": q("query_asignados.sql"),
 }
 open(os.path.join(HERE,"data.json"),"w").write(json.dumps(data, ensure_ascii=False, separators=(",",":")))
 print("data.json OK |",
-      "send_log",len(sl), "(7d)",len(sl7),
-      "| recreation",len(rec), "| contact_status",len(cst),
-      "| mart_msgids",len(mbm), "| infobip",len(ibm), "| inbound",len(inb),
-      "| linea MX",data["linea"]["MX"],
-      "| embudo tasas",data["embudo"]["MX"]["tasas"],
-      "| errores",data["errores"]["MX"],
-      "| respuestas",data["respuestas"]["MX"])
+      "MX send_log",mx["_debug"]["send_log"], "(7d)",mx["_debug"]["sl7"],
+      "| recreation",mx["_debug"]["recreation"], "| contact_status",mx["_debug"]["contact_status"],
+      "| mart_msgids",mx["_debug"]["mart_msgids"], "| infobip",mx["_debug"]["infobip"], "| inbound",mx["_debug"]["inbound"])
+print("data.json OK |",
+      "CO send_log",co["_debug"]["send_log"], "(7d)",co["_debug"]["sl7"],
+      "| recreation",co["_debug"]["recreation"], "| contact_status",co["_debug"]["contact_status"],
+      "| mart_msgids",co["_debug"]["mart_msgids"], "| infobip",co["_debug"]["infobip"], "| inbound",co["_debug"]["inbound"])
+print("| linea MX",data["linea"]["MX"], "| linea CO",data["linea"]["CO"])
+print("| embudo tasas MX",data["embudo"]["MX"]["tasas"], "| embudo tasas CO",data["embudo"]["CO"]["tasas"])
+print("| errores MX",data["errores"]["MX"], "| errores CO",data["errores"]["CO"])
+print("| respuestas MX",data["respuestas"]["MX"], "| respuestas CO",data["respuestas"]["CO"])
