@@ -191,7 +191,11 @@ def build_country(pais):
     mbm = M.mart_by_msgid(30, country=pais)
     # complemento tiempo real (Infobip /logs) SOLO para la ventana reciente; los viejos ya no viven en /logs y el mart los cubre
     ibm = I.delivery_by_msgid([r.get("message_id") for r in sl7 if r.get("message_id")], pais=pais)
-    mbm = {**mbm, **ibm}   # Infobip (tiempo real) pisa el mart en los recientes; el mart cubre el histórico
+    # Infobip (tiempo real) pisa el mart en delivery/error de los recientes; PERO conserva el `seen`
+    # del mart (Infobip /logs NO reporta SEEN -> pone seen=False; si lo dejáramos pisar, borraría lecturas reales).
+    for mid, v in ibm.items():
+        prev = mbm.get(mid)
+        mbm[mid] = {**v, "seen": bool((prev or {}).get("seen")) or bool(v.get("seen"))}
     inb = M.inbound_rows(30, country=pais)
     inb_resp = M.inbound_rows(180, country=pais)   # ventana más larga para la tabla de Respuestas por período (día/semana/mes)
     # respuestas parseadas del mart
