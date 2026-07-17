@@ -97,6 +97,9 @@
   .ftab tbody tr.row-orange td:first-child{background:rgba(251,191,36,.14);border-left:3px solid var(--warn)}
   .ftab tbody tr.row-red td{background:rgba(248,113,113,.13);color:var(--bad);font-weight:700}
   .ftab tbody tr.row-red td:first-child{background:rgba(248,113,113,.13);border-left:3px solid var(--bad)}
+  /* Columna clave (Interesado rate) del A/B: resaltada en amarillo */
+  th.ab-key{background:rgba(251,191,36,.20);color:var(--warn)}
+  td.ab-key{background:rgba(251,191,36,.14);font-weight:700;color:var(--warn)}
   .help-btn{display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;border-radius:50%;background:var(--border);color:var(--text-muted);border:none;font-size:11px;font-weight:700;cursor:pointer;margin-left:6px;vertical-align:middle;padding:0;line-height:1}
   .help-btn:hover{background:var(--accent);color:var(--accent-on)}
   .ftab tbody tr.row-stage .n{font-weight:600;color:var(--text)}
@@ -198,6 +201,11 @@
   </dialog>
   <p class="note" id="lineaTip"></p>
 
+  <div class="tabletitle">Funnel comparativo · reinteresados vs WEB nuevo · últimos 14 días (leads creados en ese lapso)
+    <button type="button" class="help-btn" onclick="openHelp('comparativa')" aria-label="Explicación">?</button>
+  </div>
+  <section class="panel"><div id="comparativa"></div></section>
+
   <div class="tabletitle">Impacto en asignados
     <button type="button" class="help-btn" onclick="openHelp('imp')" aria-label="Explicación">?</button>
   </div>
@@ -218,15 +226,15 @@
   </div>
   <div class="tbl-wrap ftab" id="ab"></div>
 
+  <div class="tabletitle">Comparación por fuente
+    <button type="button" class="help-btn" onclick="openHelp('abf')" aria-label="Explicación">?</button>
+  </div>
+  <div class="tbl-wrap ftab" id="ab_fuente"></div>
+
   <div class="tabletitle">Respuestas por período
     <button type="button" class="help-btn" onclick="openHelp('resp')" aria-label="Explicación">?</button>
   </div>
   <div class="tbl-wrap ftab" id="resp"></div>
-
-  <div class="tabletitle">Funnel comparativo · reinteresados vs WEB nuevo
-    <button type="button" class="help-btn" onclick="openHelp('comparativa')" aria-label="Explicación">?</button>
-  </div>
-  <section class="panel"><div id="comparativa"></div></section>
 
   <div class="tabletitle">Calidad por antigüedad del lead original
     <button type="button" class="help-btn" onclick="openHelp('calidad')" aria-label="Explicación">?</button>
@@ -235,6 +243,16 @@
     <section class="panel" style="grid-column:1 / -1">
       <div style="position:relative;height:300px"><canvas id="c_cohorte"></canvas></div>
       <p class="note">Cada punto/barra = un <b>trimestre de creación del lead original</b> que contactamos. ¿Los leads más viejos responden mejor o peor, y con qué calidad (% interesados)? Solo cohorte con <code>nid</code> resuelto a trimestre.</p>
+    </section>
+  </div>
+
+  <div class="tabletitle">Mejor hora de envío · read & respond rate
+    <span class="help" title="Igual que la gráfica de arriba pero el eje X es la HORA de envío del mensaje (hora real del mart de Infobip), no el trimestre de creación del lead. Mide read rate y respond rate por hora del día en que salió el mensaje. Solo envíos de CAMPAÑA (con plantilla); excluye mensajes de sesión/conversación (template NULL) que inflaban el respond rate a ~100% en horas de bajo volumen. NO mostramos delivery rate por hora (estaba contaminado por la línea quemada/plantilla disabled); read y respond son comportamiento del destinatario, más limpios. TZ del mart por calibrar cuando entre el goteo horario.">?</span>
+  </div>
+  <div class="grid">
+    <section class="panel" style="grid-column:1 / -1">
+      <div style="position:relative;height:300px"><canvas id="c_porhora"></canvas></div>
+      <p class="note" id="porhoraNote"></p>
     </section>
   </div>
 
@@ -252,16 +270,6 @@
     <section class="panel"><h3 class="sm">Conversión resp → interesado · prom. móvil 7d <span class="help" title="Promedio móvil de 7 días de interesados ÷ respuestas.">?</span></h3><div class="ch"><canvas id="c_ci_ma"></canvas></div></section>
     <section class="panel"><h3 class="sm">Conversión interesado → creado · prom. móvil 7d <span class="help" title="Promedio móvil de 7 días de recreados ÷ interesados.">?</span></h3><div class="ch"><canvas id="c_ic_ma"></canvas></div></section>
     <section class="panel"><h3 class="sm">Conversión creado → calificado MM · prom. móvil 7d <span class="help" title="Promedio móvil de 7 días de calificados MM ÷ recreados.">?</span></h3><div class="ch"><canvas id="c_cc_ma"></canvas></div></section>
-  </div>
-
-  <div class="tabletitle">Mejor hora de envío · read & respond rate
-    <span class="help" title="Igual que la gráfica de arriba pero el eje X es la HORA de envío del mensaje (hora real del mart de Infobip), no el trimestre de creación del lead. Mide read rate y respond rate por hora del día en que salió el mensaje. NO mostramos delivery rate por hora (estaba contaminado por la línea quemada/plantilla disabled); read y respond son comportamiento del destinatario, más limpios. TZ del mart por calibrar cuando entre el goteo horario.">?</span>
-  </div>
-  <div class="grid">
-    <section class="panel" style="grid-column:1 / -1">
-      <div style="position:relative;height:300px"><canvas id="c_porhora"></canvas></div>
-      <p class="note" id="porhoraNote"></p>
-    </section>
   </div>
 
   <div class="tabletitle">Recreación · outcome del dedup al crear el lead
@@ -477,7 +485,7 @@ function renderExplorer(){
   }
   el.innerHTML=parts.join('');
 }
-function selectCountry(c){ country=c; renderStats(); renderImpacto(); renderErrores(); renderAB(); renderResp(); renderComparativa(); renderCalidad(); renderDiario(); renderFuntab(); renderAntifunnel(); renderDedup(); renderCompletitud(); renderCohorteOrigen(); renderPorHoraChart(); }
+function selectCountry(c){ country=c; renderStats(); renderImpacto(); renderErrores(); renderAB(); renderABFuente(); renderResp(); renderComparativa(); renderCalidad(); renderDiario(); renderFuntab(); renderAntifunnel(); renderDedup(); renderCompletitud(); renderCohorteOrigen(); renderPorHoraChart(); }
 // Celdas "valor + %" con heatmap por fila (verde=conversión alta, rojo=baja), copiado del tablero de referencia.
 function heatCells(values, denoms){
   const pcts=values.map((v,i)=> denoms[i]>0 ? v/denoms[i]*100 : null);   // período sin base → null (celda vacía)
@@ -621,13 +629,23 @@ const CARD_HELP={
   cos_ir:{t:'% Interesados Rate',b:'<p><b>Interesados ÷ Entregados:</b> % de entregados que dijeron «Estoy interesado». Es el rate que <b>más importa</b> para el loop.</p>'},
   err:{t:'Errores de entrega',b:'<p>Por qué <b>NO</b> llegaron los mensajes, por período de envío (Temporalidad). Fila 1 = <b>total no entregados</b>; luego el <b>volumen absoluto</b> de cada tipo de error; luego el <b>% de cada error</b> sobre el total de no entregados.</p><p>Fuente: <code>error_name</code> del mart de Infobip + API /logs. Incluye el bug <b>7008</b> (plantilla sin imagen). Columnas = 20 períodos recientes.</p>'},
   ab:{t:'A/B de plantillas',b:'<p>Comparativo de las plantillas que se envían <b>en simultáneo</b> (asignación aleatoria del A/B). Una <b>fila por plantilla</b>; columnas = enviados, entregados, delivery / read / respond / interesado rate.</p><p>Excluye los envíos fallidos por bug de plantilla sin imagen (7008, culpa nuestra). ⚠ <b>Read rate</b> no disponible por esta vía (SEEN). v1 = control · v2 = oferta.</p>'},
+  ab_env:{t:'Enviados',b:'<p><b>Cuántos</b> mensajes de esta plantilla se enviaron (aceptados por Infobip).</p><p>Excluye los fallidos por el bug de plantilla sin imagen (<b>7008</b>, culpa nuestra) para no ensuciar la comparación.</p>'},
+  ab_entr:{t:'Entregados',b:'<p>De los enviados, <b>cuántos llegaron al celular</b> (estado DELIVERED del mart de Infobip + API /logs).</p>'},
+  ab_leidos:{t:'Leídos',b:'<p><b>Cuántos</b> de los entregados fueron leídos (marca SEEN del mart). ⚠ WhatsApp no siempre reporta SEEN → puede salir 0.</p>'},
+  ab_resp:{t:'Respondidos',b:'<p><b>Cuántos</b> destinatarios respondieron (cualquier botón o texto), cruzando el teléfono contra el <b>mart inbound</b>.</p>'},
+  ab_int:{t:'Interesados',b:'<p><b>Cuántos</b> tocaron el botón <b>«Estoy interesado»</b> (payload INTERESADO). Es el objetivo del loop.</p>'},
+  ab_dr:{t:'% Delivery Rate',b:'<p><b>Entregados ÷ Enviados.</b> Es el <b>único</b> rate calculado sobre el <b>total de envíos</b> — mide qué tan bien entrega la línea/plantilla.</p>'},
+  ab_rr:{t:'% Read Rate',b:'<p><b>Leídos ÷ Entregados.</b> % de los <b>entregados</b> que el usuario abrió (marca SEEN del mart). ⚠ WhatsApp no siempre reporta SEEN → puede salir 0.</p>'},
+  ab_rp:{t:'% Respond Rate',b:'<p><b>Respondieron ÷ Entregados.</b> % de los <b>entregados</b> que respondieron (cualquier botón o texto).</p>'},
+  ab_ir:{t:'% Interesado Rate',b:'<p><b>Interesados ÷ Entregados.</b> % de los <b>entregados</b> que tocaron el botón «Estoy interesado».</p><p>Es el <b>indicador MÁS clave</b> del loop y por eso va resaltado en amarillo: define qué plantilla/fuente gana.</p>'},
+  abf:{t:'Comparación por fuente',b:'<p>Igual que el <b>A/B de plantillas</b> pero agrupando por la <b>fuente del lead original</b> (WEB, Estudio Inmueble/Habímetro, CRM, Lead Forms…) en vez de por plantilla. Una fila por fuente; mismas columnas y denominadores (delivery sobre enviados; read/respond/interesado sobre entregados).</p><p>Enlace envío→fuente por <code>nid</code> contra TIG. Sirve para decidir <b>qué fuentes vale la pena reactivar</b> (las que convierten a «interesado»). Read rate no disponible por esta vía (SEEN).</p>'},
   resp:{t:'Respuestas por período',b:'<p>Respuestas recibidas en la línea (<b>mart inbound</b> de Infobip) bucketeadas por su <b>fecha de llegada</b> (Temporalidad: día / semana / mes). Filas fijas: total, botón <b>Interesado</b>, botón <b>Ya no vendo</b>, y <b>Baja</b> (escribieron «baja» como texto).</p><p><b>Respuestas Abiertas</b> resume el resto del texto libre; ábrela con ▸ para ver cada respuesta con su conteo por período. Columnas = 20 períodos recientes.</p>'},
   resp_tot:{t:'Respondieron (total)',b:'<p>Total de respuestas recibidas en los últimos 14 días (botones + texto libre).</p>'},
   resp_int:{t:'Interesado',b:'<p>Respondieron con el botón <b>«Estoy interesado»</b> (INTERESADO).</p>'},
   resp_baja:{t:'Ya no vendo',b:'<p>Respondieron con el botón <b>«Ya no vendo»</b> (YAVENDIÓ / baja).</p>'},
   resp_bajatxt:{t:'Baja',b:'<p>Respondieron con <b>texto libre</b> que dice «baja» (escribieron «baja / darme de baja» en vez de tocar el botón «Ya no vendo»).</p>'},
-  comparativa:{t:'Funnel comparativo · reinteresados vs WEB nuevo',b:'<p>Dos funnels lado a lado: la cohorte <b>Reinteresados</b> (UTM del loop) vs <b>WEB nuevo</b> (fuente WEB sin esa UTM). Cada barra = % de conversión sobre la base de su cohorte: Calificado → Asignado → Cita → Cierre.</p><p>El recuadro resalta la conversión <b>asignado → cita</b> (citas ÷ asignados). Fuente: <code>hubspot.deals</code> + WBR asignados mart. Ventana: últimos 14 días.</p>'},
-  calidad:{t:'Calidad por antigüedad del lead original',b:'<p>Bucketea los envíos por el <b>trimestre en que se creó el lead original</b> (no la fecha de envío) y mide por trimestre: <b>Respond rate</b> (barras = respondieron ÷ enviados) y <b>% Interesados</b> (línea = de los que respondieron, cuántos eligieron «Interesado»).</p><p>Enlace envío→trimestre por <code>nid</code> (mart), respuesta por teléfono (inbound). Reconstruido en vivo desde Neon+mart.</p>'},
+  comparativa:{t:'Funnel comparativo · reinteresados vs WEB nuevo',b:'<p>Dos funnels lado a lado: la cohorte <b>Reinteresados</b> (UTM del loop) vs <b>WEB nuevo</b> (fuente WEB sin esa UTM). Cada barra = % de conversión sobre la base de su cohorte: Calificado → Asignado → Cita → Cierre.</p><p>El recuadro resalta la conversión <b>asignado → cita</b> (citas ÷ asignados). Fuente: <code>hubspot.deals</code> + WBR asignados mart. <b>Ventana: leads creados en los últimos 14 días</b> (por <code>createdate</code>).</p>'},
+  calidad:{t:'Calidad por antigüedad del lead original',b:'<p>Bucketea los envíos por el <b>trimestre en que se creó el lead original</b> (no la fecha de envío) y mide por trimestre: <b>Respond rate</b> (barras = respondieron ÷ enviados) y <b>% Interesados</b> (línea = de los que respondieron, cuántos eligieron «Interesado»).</p><p><b>Solo mensajes nuevos del log de Neon</b> (motor actual): enlace envío→trimestre por <code>nid</code> (directo y confiable), respuesta por teléfono (inbound del mart). NO incluye los envíos del repo viejo (esos no traen nid y unirlos por teléfono no daba confianza). La tabla se irá poblando a medida que se acumulen envíos nuevos.</p>'},
   diario:{t:'Evolución diaria',b:'<p>Serie diaria del embudo: fila 1 = valor absoluto/tasa por día (barras); fila 2 = <b>promedio móvil de 7 días</b> (línea). Enviados → Conversión a respuesta → resp→interesado → interesado→creado → creado→calificado MM.</p><p>Fuente en vivo: <code>send_log</code> (Neon) · inbound (mart) · <code>recreation</code> (Neon). ⚠ Las recreaciones son por evento, así que creados/calificados pueden verse planos hasta que haya más volumen.</p>'},
 };
 function openHelp(k){const h=CARD_HELP[k]; if(!h) return;
@@ -831,18 +849,36 @@ function renderErrores(){
   el.scrollLeft=el.scrollWidth;
 }
 
-function renderAB(){
-  const el=document.getElementById('ab'); if(!el) return;
-  const arr=(D.ab_templates||{})[country];
-  if(!arr||!arr.length){ el.innerHTML='<p class="note">Sin datos de A/B para '+country+' (aún no disponible).</p>'; return; }
+// Tabla comparativa estilo A/B — reutilizada por plantillas y por fuentes (misma estructura y columnas).
+function _abRender(elId, arr, firstHdr, firstVal, emptyMsg, note){
+  const el=document.getElementById(elId); if(!el) return;
+  if(!arr||!arr.length){ el.innerHTML='<p class="note">'+emptyMsg+'</p>'; return; }
   const rate=v=>pct(v==null?null:v*100);
-  const cols=[['Enviados',t=>fmt(t.enviados)],['Entregados',t=>fmt(t.entregados)],
-    ['Delivery rate',t=>rate(t.delivery_rate)],['Read rate',t=>rate(t.read_rate)],
-    ['Respond rate',t=>rate(t.respond_rate)],['Interesado rate',t=>rate(t.interesado_rate)]];
-  const th=cols.map(c=>`<th style="text-align:right">${c[0]}</th>`).join('');
-  const rows=arr.map(t=>`<tr class="row-stage"><td>${escx(t.template)}</td>${cols.map(c=>`<td style="text-align:right">${c[1](t)}</td>`).join('')}</tr>`).join('');
-  el.innerHTML=`<table><thead><tr><th>Plantilla</th>${th}</tr></thead><tbody>${rows}</tbody></table>
-  <p class="note" style="padding:8px 13px">${arr.length<2?'Solo una plantilla activa — sin comparación A/B todavía.':'v1 = control · v2 = oferta. Excluye envíos fallidos por plantilla sin imagen (7008). Read rate no disponible por esta vía (SEEN).'}</p>`;
+  const cols=[
+    {h:'Enviados',       f:t=>fmt(t.enviados),         k:'ab_env'},
+    {h:'Entregados',     f:t=>fmt(t.entregados),       k:'ab_entr'},
+    {h:'Leídos',         f:t=>fmt(t.leidos),           k:'ab_leidos'},
+    {h:'Respondidos',    f:t=>fmt(t.respondieron),     k:'ab_resp'},
+    {h:'Interesados',    f:t=>fmt(t.interesados),      k:'ab_int'},
+    {h:'Delivery rate',  f:t=>rate(t.delivery_rate),   k:'ab_dr'},
+    {h:'Read rate',      f:t=>rate(t.read_rate),       k:'ab_rr'},
+    {h:'Respond rate',   f:t=>rate(t.respond_rate),    k:'ab_rp'},
+    {h:'Interesado rate',f:t=>rate(t.interesado_rate), k:'ab_ir', hl:true}];
+  const th=cols.map(c=>`<th style="text-align:right" class="${c.hl?'ab-key':''}">${c.h} ${_hb(c.k)}</th>`).join('');
+  const rows=arr.map(t=>`<tr class="row-stage"><td>${firstVal(t)}</td>${cols.map(c=>`<td style="text-align:right" class="${c.hl?'ab-key':''}">${c.f(t)}</td>`).join('')}</tr>`).join('');
+  el.innerHTML=`<table><thead><tr><th>${firstHdr}</th>${th}</tr></thead><tbody>${rows}</tbody></table>`+(note?`<p class="note" style="padding:8px 13px">${note}</p>`:'');
+}
+function renderAB(){
+  const arr=(D.ab_templates||{})[country];
+  _abRender('ab', arr, 'Plantilla', t=>escx(t.template),
+    'Sin datos de A/B para '+country+' (aún no disponible).',
+    (arr&&arr.length<2)?'Solo una plantilla activa — sin comparación A/B todavía.':'v1 = control · v2 = oferta. Excluye envíos fallidos por plantilla sin imagen (7008). Read rate no disponible por esta vía (SEEN).');
+}
+function renderABFuente(){
+  const arr=(D.ab_fuentes||{})[country];
+  _abRender('ab_fuente', arr, 'Fuente', t=>escx(t.fuente_lead),
+    'Sin datos por fuente para '+country+' (aún no disponible).',
+    'Misma comparación que el A/B pero por FUENTE del lead original (enlace envío→fuente por nid contra TIG). Excluye fallidos 7008. Read rate no disponible por esta vía (SEEN).');
 }
 
 function renderPorHoraChart(){
