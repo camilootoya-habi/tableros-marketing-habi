@@ -125,11 +125,15 @@ def por_hora(pais, inbound_phones=None):
             a["e"]+=1
             if str(r.get("seen"))=="1": a["l"]+=1
             if r.get("tel10") in responders: a["r"]+=1
-    serie=[{"hora":h, "enviados":agg_h[h]["env"], "entregados":agg_h[h]["e"],
-            "read_rate":   round(agg_h[h]["l"]/agg_h[h]["e"],3) if agg_h[h]["e"] else None,
-            "respond_rate":round(agg_h[h]["r"]/agg_h[h]["e"],3) if agg_h[h]["e"] else None} for h in sorted(agg_h)]
+    # Siempre las 24 horas (0-23), aunque no haya envíos esa hora (enviados=0, rate=None) -> se ve el día completo.
+    serie=[]
+    for h in range(24):
+        a=agg_h.get(h, {"env":0,"e":0,"l":0,"r":0})
+        serie.append({"hora":h, "enviados":a["env"], "entregados":a["e"],
+            "read_rate":   round(a["l"]/a["e"],3) if a["e"] else None,
+            "respond_rate":round(a["r"]/a["e"],3) if a["e"] else None})
     return {"serie":serie, "desde":"2026-06-01",
-            "nota":"read/respond rate por hora de envío de CAMPAÑA (con plantilla; excluye mensajes de sesión); hora del mart, TZ a calibrar; respond = entregados cuyo tel respondió"}
+            "nota":"read/respond rate por hora de envío de CAMPAÑA (con plantilla; excluye mensajes de sesión); hora CDMX (UTC-6, verificado vs Neon); respond = entregados cuyo tel respondió"}
 
 COMP_FIELDS=["direccion","telefono","email","nombre","geo","zona","tipo","area","banos",
              "medios_banos","habitaciones","garaje","ascensor","piso","antiguedad","precio","estrato"]
