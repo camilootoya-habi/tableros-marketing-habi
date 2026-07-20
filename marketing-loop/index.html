@@ -133,6 +133,12 @@
   .expseg{display:inline-flex;border:1px solid var(--border);border-radius:9px;overflow:hidden}
   .expseg button{font:inherit;font-size:13px;font-weight:700;padding:6px 15px;border:0;background:transparent;color:var(--text-muted);cursor:pointer}
   .expseg button.on{background:var(--accent);color:#fff}
+  /* tablas de Neon (muestra) */
+  .rawtbl{width:100%;overflow-x:auto;margin:0 0 24px;border:1px solid var(--border);border-radius:10px}
+  .rawtbl table{border-collapse:collapse;font-size:12px;white-space:nowrap;width:100%}
+  .rawtbl th{background:var(--border);color:var(--text-muted);text-transform:uppercase;font-size:10px;letter-spacing:.4px;padding:7px 11px;text-align:left;position:sticky;top:0}
+  .rawtbl td{padding:6px 11px;border-top:1px solid var(--border);color:var(--text);max-width:320px;overflow:hidden;text-overflow:ellipsis}
+  .rawtbl tbody tr:hover td{background:var(--border)}
   /* explorador */
   .exp-prop{margin-top:26px}
   .exp-prop h3{font-size:16px;font-weight:700;color:var(--text-title);margin:0 0 2px;display:flex;gap:9px;align-items:baseline}
@@ -176,8 +182,10 @@
     <div class="tabnav">
       <button class="tab" data-tab="co"   onclick="go('dash','CO')">🇨🇴 Colombia</button>
       <button class="tab" data-tab="mx"   onclick="go('dash','MX')">🇲🇽 México</button>
-      <button class="tab" data-tab="exco" onclick="go('exp','CO')">🔎 Explorador · CO</button>
-      <button class="tab" data-tab="exmx" onclick="go('exp','MX')">🔎 Explorador · MX</button>
+      <button class="tab" data-tab="exco" onclick="go('exp','CO')">🇨🇴 Base</button>
+      <button class="tab" data-tab="exmx" onclick="go('exp','MX')">🇲🇽 Base</button>
+      <button class="tab" data-tab="tbco" onclick="go('tablas','CO')">🇨🇴 Tablas</button>
+      <button class="tab" data-tab="tbmx" onclick="go('tablas','MX')">🇲🇽 Tablas</button>
       <button class="tab" data-tab="docs" onclick="go('docs')">📋 Documentación</button>
     </div>
     <label class="granwrap">Temporalidad
@@ -309,6 +317,13 @@
     <div id="expBody"></div>
   </div>
 
+  <!-- ===== HOJA: TABLAS DE NEON (muestra) ===== -->
+  <div id="sheet-tablas" class="sheet" hidden>
+    <div class="sheet-head"><h2 id="tablasTitle">Tablas de Neon · CO</h2></div>
+    <p class="note" style="max-width:80ch">Últimos <b>5 registros</b> de cada tabla de <b>Neon</b> (Postgres — el único estado propio del loop) con <b>todas sus columnas</b>, filtrados por país. A modo de explicación de qué guarda el sistema.</p>
+    <div id="tablasBody"></div>
+  </div>
+
   <!-- ===== HOJA 5: DOCUMENTACIÓN ===== -->
   <div id="sheet-docs" class="sheet" hidden>
     <div class="sheet-head"><h2>Documentación del plan · Marketing Loop</h2></div>
@@ -348,7 +363,7 @@
 </div>
 
 <script>
-let D=null, country='MX', cicloTipo='dia', porhoraChart=null, cohorteChart=null, AUDIT=null, expC='CO';
+let D=null, country='MX', cicloTipo='dia', porhoraChart=null, cohorteChart=null, AUDIT=null, expC='CO', tbC='CO';
 const CIP={MX:'mexico',CO:'colombia'};
 const fmt=v=>(v==null?'—':Number(v).toLocaleString('es-CO'));
 const pct=v=>(v==null?'—':Number(v).toFixed(1)+'%');
@@ -425,7 +440,7 @@ async function load(){
 
 // ===== router multi-hoja (tabs) =====
 function go(sheet, c){
-  const map={dash:'sheet-dash', exp:'sheet-exp', docs:'sheet-docs'};
+  const map={dash:'sheet-dash', exp:'sheet-exp', tablas:'sheet-tablas', docs:'sheet-docs'};
   const id=map[sheet]||'sheet-dash';
   document.querySelectorAll('.sheet').forEach(s=>{ s.hidden = (s.id!==id); });
   let tab='co';
@@ -433,12 +448,30 @@ function go(sheet, c){
     const r=document.querySelector('input[name=pais][value='+(c||'CO')+']'); if(r) r.checked=true;
     selectCountry(c||'CO'); }
   else if(sheet==='exp'){ tab='ex'+(c||'CO').toLowerCase(); setExp(c||'CO'); }
+  else if(sheet==='tablas'){ tab='tb'+(c||'CO').toLowerCase(); setTablas(c||'CO'); }
   else if(sheet==='docs'){ tab='docs'; }
   document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('active', t.dataset.tab===tab));
   window.scrollTo(0,0);
 }
 function setExp(c){ expC=c; const t=document.getElementById('expTitle'); if(t) t.textContent='Explorador de la base · '+c; renderExplorer(); }
 const escx=s=>String(s).replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+function setTablas(c){ tbC=c; const t=document.getElementById('tablasTitle'); if(t) t.textContent='Tablas de Neon · '+c; renderTablas(); }
+function renderTablas(){
+  const el=document.getElementById('tablasBody'); if(!el) return;
+  const d=(D.neon_tablas||{})[tbC]||{};
+  const meta={send_log:'un registro por intento de envío de WhatsApp',
+              recreation:'un registro por lead re-creado en el backbone',
+              contact_status:'estado actual por teléfono (enviado / reinteresado / ya_vendio / baja …)'};
+  const order=['send_log','recreation','contact_status'];
+  el.innerHTML=order.map(t=>{
+    const tb=d[t]||{cols:[],rows:[]};
+    const head=`<div class="tabletitle" style="margin-bottom:6px"><code>${escx(t)}</code> <span class="note" style="font-weight:400;text-transform:none;letter-spacing:0">— ${meta[t]||''}</span></div>`;
+    if(!tb.cols||!tb.cols.length) return head+'<p class="note">Sin registros para '+tbC+'.</p>';
+    const th=tb.cols.map(c=>`<th>${escx(c)}</th>`).join('');
+    const rows=tb.rows.map(r=>`<tr>${r.map(v=>`<td>${v==null?'<span class="muted">·</span>':escx(v)}</td>`).join('')}</tr>`).join('');
+    return head+`<div class="rawtbl"><table><thead><tr>${th}</tr></thead><tbody>${rows}</tbody></table></div>`;
+  }).join('');
+}
 const EXPMETA={
   "00.pipeline":["Pipeline","dónde vive el deal; solo importan los 2 pipelines vivos"],
   "01.estado_MM":["Estado backbone · MM","calificado si ∈ 20/36/63 (o Inmo ∈ 20/36/73)"],
