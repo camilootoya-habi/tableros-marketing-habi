@@ -119,8 +119,10 @@
   @media(max-width:760px){.grid{grid-template-columns:1fr}}
   /* --- multi-hoja --- */
   .sheet[hidden]{display:none!important}
-  .tabs{position:sticky;top:0;z-index:30;display:flex;gap:7px;flex-wrap:wrap;align-items:center;
+  .tabs{position:sticky;top:0;z-index:30;display:flex;gap:10px;flex-wrap:wrap;align-items:center;
     background:var(--bg);padding:12px 0;margin:6px 0 22px;border-bottom:1px solid var(--border)}
+  .tabnav{flex:1;display:flex;justify-content:center;gap:7px;flex-wrap:wrap;align-items:center}
+  .granwrap{display:flex;align-items:center;gap:6px;font-size:11px;text-transform:uppercase;letter-spacing:.4px;color:var(--text-muted);font-weight:700;white-space:nowrap}
   .tab{cursor:pointer;border:1px solid var(--border);background:var(--card);color:var(--text-muted);
     border-radius:9px;padding:8px 15px;font:inherit;font-size:13.5px;font-weight:600;white-space:nowrap;transition:background .12s,color .12s,border-color .12s}
   .tab:hover{color:var(--text);border-color:var(--border-strong)}
@@ -165,33 +167,30 @@
 <body>
 <div class="wrap">
   <button class="theme-btn" id="themeBtn">☀️ Claro</button>
-  <a href="https://camilootoya-habi.github.io/tableros-marketing-habi/" class="back">← Volver al hub</a>
   <h1>Marketing Loop · Reinterés de leads</h1>
   <div class="sub">Reinterés de leads · CO + MX. <span id="upd"></span></div>
 
-  <!-- ===== TABS (header fijo) ===== -->
+  <!-- ===== TABS (header fijo): Hub (izq) · navegación (centro) · granularidad (der) ===== -->
   <nav class="tabs">
-    <button class="tab" data-tab="co"   onclick="go('dash','CO')">🇨🇴 Colombia</button>
-    <button class="tab" data-tab="mx"   onclick="go('dash','MX')">🇲🇽 México</button>
-    <button class="tab" data-tab="exco" onclick="go('exp','CO')">🔎 Explorador · CO</button>
-    <button class="tab" data-tab="exmx" onclick="go('exp','MX')">🔎 Explorador · MX</button>
-    <button class="tab" data-tab="docs" onclick="go('docs')">📋 Documentación</button>
+    <a href="https://camilootoya-habi.github.io/tableros-marketing-habi/" class="back">← Volver al Hub</a>
+    <div class="tabnav">
+      <button class="tab" data-tab="co"   onclick="go('dash','CO')">🇨🇴 Colombia</button>
+      <button class="tab" data-tab="mx"   onclick="go('dash','MX')">🇲🇽 México</button>
+      <button class="tab" data-tab="exco" onclick="go('exp','CO')">🔎 Explorador · CO</button>
+      <button class="tab" data-tab="exmx" onclick="go('exp','MX')">🔎 Explorador · MX</button>
+      <button class="tab" data-tab="docs" onclick="go('docs')">📋 Documentación</button>
+    </div>
+    <label class="granwrap">Temporalidad
+      <select class="sel" id="granSel"><option value="dia" selected>Diario</option><option value="semana">Semana (Lun→Dom)</option><option value="mes">Mes</option></select>
+    </label>
   </nav>
 
   <!-- ===== HOJA 1/2: TABLERO ===== -->
   <div id="sheet-dash" class="sheet" hidden>
-  <div class="controls">
-    <div class="control-card" style="display:none">
-      <div class="control-label">País</div>
-      <div class="filter-bar">
-        <label><input type="radio" name="pais" value="MX" checked> 🇲🇽 México</label>
-        <label><input type="radio" name="pais" value="CO"> 🇨🇴 Colombia</label>
-      </div>
-    </div>
-    <div class="control-card">
-      <div class="control-label">Temporalidad</div>
-      <select class="sel" id="granSel"><option value="dia" selected>Diario</option><option value="semana">Semana (Lun→Dom)</option><option value="mes">Mes</option></select>
-    </div>
+  <!-- selección de país oculta (se maneja por tabs); radios usados por el JS -->
+  <div style="display:none">
+    <input type="radio" name="pais" value="MX" checked>
+    <input type="radio" name="pais" value="CO">
   </div>
 
   <div class="tabletitle">Indicadores de salud</div>
@@ -306,7 +305,7 @@
       <h2 id="expTitle">Explorador de la base · CO</h2>
       <span class="note" id="expUpd"></span>
     </div>
-    <p class="note" style="max-width:80ch">Ventana <b>2022-01-01 → creación &lt; hoy−180d</b>. Por cada propiedad-filtro: todos los valores, cuántas filas hay en la ventana (<b>en ventana</b>) y cuántas sobreviven TODA la cadena de filtros v3 (<b>en base</b>). Conteos a nivel fila (pre-dedup, con fanout de deals) → magnitud relativa e indicador incluido/excluido.</p>
+    <p class="note" style="max-width:80ch">Ventana <b>2023-01-01 → creación &lt; hoy−180d</b>. Por cada propiedad-filtro: todos los valores, cuántas filas hay en la ventana (<b>en ventana</b>) y cuántas sobreviven TODA la cadena de filtros <b>a nivel fila</b> del query vigente (<b>en base</b>). Fuente por país (MX 3,47 · CO 3,47,7,20). Conteos a nivel fila (<b>pre-dedup y pre-guard a nivel persona</b>, con fanout de deals) → magnitud relativa e indicador incluido/excluido.</p>
     <div id="expBody"></div>
   </div>
 

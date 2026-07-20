@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 """Genera marketing-loop/audit.json para el EXPLORADOR de la base (hojas 3 y 4 del tablero).
-Para cada propiedad-filtro: todos los valores en la ventana (2022→180d) con conteo 'en ventana'
-(universo) vs 'en base' (los que pasan TODA la cadena de filtros v3). Sirve para auditar qué
-entra/queda excluido. Conteos a nivel fila (pre-dedup, con fanout del join a deals).
+Para cada propiedad-filtro: todos los valores en la ventana (2023→180d) con conteo 'en ventana'
+(universo) vs 'en base' (los que pasan TODA la cadena de filtros ROW-LEVEL del query vigente).
+Sirve para auditar qué entra/queda excluido. Conteos a nivel fila (pre-dedup y pre-guard a nivel
+persona, con fanout del join a deals). Fuente/piso alineados con outbound_{co,mx}.sql del motor.
 Uso: python3 build_audit.py  (requiere bq autenticado). Cron aparte (diario), NO el de 10 min."""
 import json, os, csv, io, subprocess, datetime
 
@@ -11,12 +12,12 @@ CFG = {
   "CO": dict(proj="papyrus-data",
              nijoin='`sellers-main-prod.co_rds_staging.habi_db_tabla_negocio_inmueble` ni ON ni.id=g.negocio_id',
              mm="ni.last_estado_id", inmo="ni.last_state_id_real_estate", country="Colombia",
-             direc='(dir_g!="" OR dir_h!="")',
+             direc='dir_h!=""', fuente="3,47,7,20",
              live='"Sellers - Market Maker CO (NUEVO)","Nuevo - Inmobiliaria CO"'),
   "MX": dict(proj="papyrus-data-mx",
              nijoin='`sellers-main-prod.mx_rds_staging.habi_db_property_deal` ni ON ni.id=g.id_negocio',
              mm="ni.last_state_id", inmo="ni.last_state_id_real_estate", country="México",
-             direc='dir_h!=""',
+             direc='dir_h!=""', fuente="3,47",
              live='"Sellers - Market Maker MX (NUEVO)","Nuevo - Inmobiliaria MX"'),
 }
 HARD = ('"Ya vendió","Ya vendio","Rechazo definitivo de comité",'
@@ -39,12 +40,12 @@ WITH L AS (
   LEFT JOIN `sellers-main-prod.hubspot.deals` hd ON hd.nid=g.nid AND hd.country="{x['country']}"
   LEFT JOIN `sellers-main-prod.hubspot.deal_pipelines_stages` s ON s.id=hd.dealstage
   LEFT JOIN `sellers-main-prod.hubspot.deal_pipelines` p ON p.id=s.pipeline_id
-  WHERE CAST(g.fecha_creacion AS DATE) >= "2022-01-01"
+  WHERE CAST(g.fecha_creacion AS DATE) >= "2023-01-01"
     AND CAST(g.fecha_creacion AS DATE) < DATE_SUB(CURRENT_DATE(), INTERVAL 180 DAY)
 ),
 B AS (SELECT *, (
     (COALESCE(mm_state,-1) IN (20,36,63) OR COALESCE(inmo_state,-1) IN (20,36,73))
-    AND fuente_id IN (3,47,7,20,35)
+    AND fuente_id IN ({x['fuente']})
     AND COALESCE(opn,"") NOT IN ("Cierre - Comprado","Vendido Sales","Descartado","Descartado por comité","descartado por dirección","Rechazó oferta - No volver a llamar")
     AND COALESCE(opi,"") NOT IN ("Contrato firmado","Oferta aceptada","Pendiente Envio Legal","Enviado a Legal","Ya vendio","Descartado por Comite","Aprobación comité final","Precio Aprobado")
     AND (COALESCE(pipe,"") NOT IN ({x['live']}) OR TRIM(etapa)="Perdido")
