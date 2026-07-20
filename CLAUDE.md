@@ -38,6 +38,10 @@ El **dueño** se infiere por ubicación: carpeta en la raíz = `general`; bajo `
 
 Resumen: rama → copia `scripts/templates/dashboard.html` a `canales/<tu-carpeta>/<slug>/index.html` → crea `meta.json` + `query.sql` (pruébalo en BigQuery con TUS credenciales) → `git push` + **PR** → Camilo revisa y mergea → el cron corre tu query, regenera el hub, y tu card aparece bajo tu sección, actualizándose a diario.
 
+## Gráficas (estándar)
+
+**Las gráficas se hacen con [Chart.js](https://www.chartjs.org/) (CDN), NO con SVG dibujado a mano.** El template ya trae el `<script>` del CDN y un helper `mkChart(id, labels, data, {type, pct, color})` con tooltips, ejes y grilla temáticos (claro/oscuro). Patrón: un `<canvas>` dentro de `.panel > .ch`. Referencia de estilo: los tableros `marketing-loop` y `funnel-nexus`. Chart.js lee los colores al crear el gráfico, así que al cambiar de tema en vivo hay que re-renderizar (destruir y recrear).
+
 ## Desarrollo local
 
 ```bash

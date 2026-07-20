@@ -5,6 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📢</text></svg>">
 <title>Título del tablero</title>
+<!-- ESTÁNDAR: las gráficas se hacen con Chart.js (no SVG a mano). Ver helper mkChart() abajo. -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 <style>
   :root {
     --bg: #0f172a; --card: #1e293b; --card-hover: #263348;
@@ -41,6 +43,12 @@
 
   .empty-state { padding: 48px 24px; text-align: center; color: var(--text-muted-3); font-size: 14px; line-height: 1.6; }
   .empty-state strong { display: block; font-size: 16px; margin-bottom: 8px; color: var(--text-muted-2); }
+
+  /* Gráficas Chart.js: paneles en grilla + contenedor .ch de alto fijo (Chart.js necesita altura explícita) */
+  .charts-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 14px; margin-top: 16px; }
+  .panel { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 14px 15px 12px; display: flex; flex-direction: column; }
+  .panel h3 { font-size: 12.5px; color: var(--text-title); font-weight: 700; margin-bottom: 10px; }
+  .ch { position: relative; height: 190px; }
 </style>
 <script>
   function toggleTheme() {
@@ -66,6 +74,34 @@
     document.body.classList.add('light');
     document.getElementById('themeToggle').textContent = '☀️';
   }
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // ESTÁNDAR DE GRÁFICAS: Chart.js (no dibujar SVG a mano).
+  // Patrón: un <canvas> dentro de .panel > .ch, y renderízalo con mkChart().
+  //   <div class="charts-grid">
+  //     <div class="panel"><h3>Mi métrica</h3><div class="ch"><canvas id="miChart"></canvas></div></div>
+  //   </div>
+  //   mkChart('miChart', labels, valores, { type: 'bar', pct: false });
+  // Opciones: {type:'line'|'bar', pct:true (eje/tooltip en %), color:'#hex' (por defecto --accent)}.
+  // ─────────────────────────────────────────────────────────────────────────
+  const cssv = n => getComputedStyle(document.body).getPropertyValue(n).trim();
+  let _charts = [];
+  function mkChart(id, labels, data, o = {}) {
+    const c = document.getElementById(id); if (!c || !window.Chart) return;
+    const color = o.color || cssv('--accent'), grid = cssv('--border'), tick = cssv('--text-muted-2');
+    _charts.push(new Chart(c, {
+      type: o.type || 'line',
+      data: { labels, datasets: [{ data, borderColor: color, backgroundColor: color,
+        tension: .35, pointRadius: 0, borderWidth: 2, borderRadius: 3, spanGaps: true }] },
+      options: { responsive: true, maintainAspectRatio: false, interaction: { mode: 'index', intersect: false },
+        plugins: { legend: { display: false }, tooltip: { callbacks: { label: ctx => {
+          const y = ctx.parsed.y; return y == null ? '—' : (o.pct ? y.toFixed(1) + '%' : y.toLocaleString('es-CO')); } } } },
+        scales: { x: { ticks: { color: tick, maxTicksLimit: 8 }, grid: { display: false } },
+          y: { beginAtZero: !o.pct, ticks: { color: tick, callback: o.pct ? (v => v + '%') : undefined }, grid: { color: grid } } } }
+    }));
+  }
+  // Nota: Chart.js lee los colores al crear el gráfico. Si cambias de tema en vivo,
+  // vuelve a renderizar (destruye con _charts.forEach(c=>c.destroy()); _charts=[]; y recrea).
 
   (async () => {
     const app = document.getElementById('app');

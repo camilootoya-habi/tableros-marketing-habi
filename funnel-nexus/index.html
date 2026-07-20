@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📞</text></svg>">
 <title>Funnel Nexus (WEB)</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 <style>
   :root {
     --bg: #0E1020; --card: #171A2E; --card-hover: #1F2340;
@@ -77,6 +78,8 @@
   /* primera columna (etapas) fija */
   th.stage-h, td.stage-c { position: sticky; left: 0; z-index: 2; text-align: left; width: 210px; min-width: 210px; max-width: 210px; }
   thead th.stage-h { background: var(--border); }
+  thead th.cur { font-style: italic; color: var(--accent); }
+  thead th.cur::after { content: "*"; margin-left: 3px; }
   td.stage-c { background: var(--card); color: var(--text-title); font-weight: 600; border-right: 2px solid var(--border-strong); }
   tbody tr:hover td.stage-c { background: var(--card-hover); }
   td.stage-c .help { display: inline-flex; align-items: center; justify-content: center; width: 15px; height: 15px; border-radius: 50%; border: 1px solid var(--border-strong); color: var(--muted-2); font-size: 10px; font-weight: 700; margin-right: 8px; cursor: help; flex-shrink: 0; }
@@ -94,6 +97,12 @@
 
   .charts-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-bottom: 22px; }
   @media (max-width: 720px) { .charts-row { grid-template-columns: 1fr; } }
+  /* paneles de gráfica estilo Marketing Loop (Chart.js) */
+  .panel { background: var(--card); border: 1px solid var(--border); border-radius: var(--r); padding: 14px 15px 12px; display: flex; flex-direction: column; }
+  .panel h3.sm { font-size: 12.5px; color: var(--text-title); font-weight: 700; margin-bottom: 10px; display: flex; align-items: center; gap: 6px; }
+  .panel h3.sm .help { display: inline-flex; align-items: center; justify-content: center; width: 15px; height: 15px; border-radius: 50%; border: 1px solid var(--border-strong); color: var(--muted-2); font-size: 10px; font-weight: 700; cursor: help; flex-shrink: 0; }
+  .panel h3.sm .help:hover { border-color: var(--accent); color: var(--accent); }
+  .ch { position: relative; height: 190px; }
   .spark-card { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 14px 15px 12px; }
   .spark-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
   .spark-label { font-size: 11px; color: var(--muted-2); font-weight: 600; text-transform: uppercase; letter-spacing: .5px; }
@@ -232,6 +241,23 @@ function bucketRows(rows, gran){
   }
   return [...map.values()].sort((a,b)=> a.k < b.k ? 1 : -1); // newest first
 }
+// eje de períodos: los últimos n buckets de la granularidad ANCLADOS al período en curso,
+// incluyendo los vacíos (igual que marketing-loop). Devuelve newest→oldest.
+function zeroRow(k){ const o={k}; STAGE_ORDER.forEach(s=>o[s]=0); return o; }
+function allPeriods(gran, n){
+  const now = new Date();
+  const todayISO = fmtISO(new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate())));
+  const curKey = periodKey(todayISO, gran);
+  const out = [];
+  if (gran === "month"){
+    let y = +curKey.slice(0,4), m = +curKey.slice(5,7) - 1;
+    for (let i=0;i<n;i++){ out.push(fmtISO(new Date(Date.UTC(y, m, 1)))); if(--m<0){m=11;y--;} }
+  } else {
+    const step = gran === "day" ? 1 : 7, base = parseD(curKey);
+    for (let i=0;i<n;i++){ const t = new Date(base); t.setUTCDate(base.getUTCDate() - step*i); out.push(fmtISO(t)); }
+  }
+  return out; // newest → oldest
+}
 function dailySeries(rows){
   if (!rows.length) return [];
   const byd = new Map(rows.map(r=>[r.d, r]));
@@ -259,11 +285,14 @@ const ROW_DESC = {
   cvr: "CVR Reg→Calif MM — calificados MM ÷ registros del periodo. En modo Evento el numerador y el denominador caen en fechas distintas, así que es indicativo."
 };
 function renderTable(){
-  const cols = bucketRows(DATA[state.mode][state.pais] || [], state.gran).slice(0, 20); // 20 más recientes, newest→oldest
+  // eje fijo de 20 períodos anclado al período en curso; se rellenan los vacíos con 0.
+  const byk = new Map(bucketRows(DATA[state.mode][state.pais] || [], state.gran).map(o=>[o.k, o]));
+  const cols = allPeriods(state.gran, 20).map(k => byk.get(k) || zeroRow(k)).reverse(); // ascendente: curso a la derecha
+  const lastI = cols.length - 1;
 
   document.getElementById("tblHead").innerHTML =
     `<th class="stage-h">Etapa</th>` +
-    cols.map(c=>`<th>${periodLabel(c.k, state.gran)}</th>`).join("");
+    cols.map((c,i)=>`<th${i===lastI?' class="cur"':''}>${periodLabel(c.k, state.gran)}</th>`).join("");
 
   const nameCell = (key, label) =>
     `<td class="stage-c"><span class="stage-name"><span class="help" data-key="${key}">?</span>${label}</span></td>`;
@@ -285,7 +314,7 @@ function renderTable(){
   attachHelp("tblBody");
 
   const gl = {day:"días", week:"semanas (lun-dom)", cycle:"ciclos comerciales (mié-mar)", month:"meses"}[state.gran];
-  document.getElementById("tblHint").textContent = `· 20 ${gl} más recientes · ${state.mode==="cohort"?"cosecha (fecha de creación)":"fecha de evento"}`;
+  document.getElementById("tblHint").textContent = `· últimos 20 ${gl} (incluye vacíos) · * = período en curso · ${state.mode==="cohort"?"cosecha (fecha de creación)":"fecha de evento"}`;
 }
 function cell(stage, v){
   if (stage === "captacion_inmo" && v === 0) return `<span class="prov">—</span>`;
@@ -366,66 +395,62 @@ function card(cfg){
 }
 
 const GRAN_UNIT = { day:"el día", week:"la semana", cycle:"el ciclo comercial", month:"el mes" };
+// ---------- charts (Chart.js, formato Marketing Loop) ----------
+let nxCharts = [];
+function fmtN(n){ return (n == null) ? "—" : Math.round(n).toLocaleString("es-CO"); }
+function rgba(hex, a){ const h = hex.replace("#",""); const f = h.length===3 ? h.split("").map(c=>c+c).join("") : h; const n = parseInt(f,16); return `rgba(${(n>>16)&255},${(n>>8)&255},${n&255},${a})`; }
+function chartPanel(id, title, help){
+  return `<section class="panel"><h3 class="sm">${title} <span class="help" title="${help.replace(/"/g,"&quot;")}">?</span></h3><div class="ch"><canvas id="${id}"></canvas></div></section>`;
+}
+function mkChart(id, labels, data, o={}){
+  const el = document.getElementById(id); if (!el || !window.Chart) return;
+  const color = cssv(o.varname || "--mm"), grid = cssv("--border"), tick = cssv("--muted-2");
+  const bg = o.type === "bar" ? rgba(color, .55) : color;
+  nxCharts.push(new Chart(el, {
+    type: o.type || "line",
+    data: { labels, datasets: [{ data, borderColor: color, backgroundColor: bg,
+      tension: .35, pointRadius: 0, borderWidth: 2, borderRadius: 3, spanGaps: true }] },
+    options: { responsive: true, maintainAspectRatio: false, interaction: { mode: "index", intersect: false },
+      plugins: { legend: { display: false }, tooltip: { callbacks: { label: c => {
+        const y = c.parsed.y; if (y == null) return "—";
+        if (o.pct){ const n = o.num && o.num[c.dataIndex], d = o.den && o.den[c.dataIndex];
+          return y.toFixed(1) + "%" + ((n != null && d != null) ? ` (${fmtN(n)} de ${fmtN(d)})` : ""); }
+        return o.dec ? y.toFixed(1) : fmtN(y); } } } },
+      scales: { x: { ticks: { color: tick, maxTicksLimit: 8, maxRotation: 0, autoSkip: true }, grid: { display: false } },
+        y: { beginAtZero: !o.pct, ticks: { color: tick, callback: o.pct ? (v => v + "%") : undefined }, grid: { color: grid } } } }
+  }));
+}
 function renderCharts(){
+  nxCharts.forEach(c => c.destroy()); nxCharts = [];
   const rowsRaw = DATA[state.mode][state.pais] || [];
-  const tot = a => a.reduce((x,y)=>x+y,0);
-  const cReg=cssv("--reg"), cMm=cssv("--mm"), cCvr=cssv("--cvr");
-  const rowAbs=document.getElementById("rowAbs"), rowMa=document.getElementById("rowMa");
-  rowAbs.innerHTML=""; rowMa.innerHTML="";
+  const unit = GRAN_UNIT[state.gran];
 
-  // ---- Fila 1: atada a la granularidad seleccionada (cronológico asc) ----
+  // ---- 02 · Flujo por periodo: barras atadas a la granularidad (cronológico asc) ----
   const per = bucketRows(rowsRaw, state.gran).slice().reverse(); // oldest→newest
-  const pDays = per.map(p=>({d:p.k}));
-  const pReg = per.map(p=>p.reg), pCal = per.map(p=>p.calif_mm);
-  const pCvr = per.map(p=> p.reg ? 100*p.calif_mm/p.reg : 0);
-  const unit = GRAN_UNIT[state.gran], accCvr = tot(pReg)?(100*tot(pCal)/tot(pReg)):0;
+  const absLabels = per.map(p => periodLabel(p.k, state.gran));
+  const pReg = per.map(p => p.reg), pCal = per.map(p => p.calif_mm);
+  const pCvr = per.map(p => p.reg ? 100*p.calif_mm/p.reg : null);
+  document.getElementById("rowAbs").innerHTML =
+    chartPanel("nxReg", "Registros", `Leads WEB · sub-fuente Nexus registrados por ${unit}. ${modeNote()}`) +
+    chartPanel("nxCal", "Calificados MM", `Alcanzaron estado 20 ó 63 (calificación Market Maker) por ${unit}. ${modeNote()}`) +
+    chartPanel("nxCvr", "CVR Reg→Calif MM", `Calificados MM ÷ Registros por ${unit}. ${state.mode==="event"?"En modo Evento numerador y denominador caen en fechas distintas — indicativo.":""}`);
+  mkChart("nxReg", absLabels, pReg, { type: "bar", varname: "--reg" });
+  mkChart("nxCal", absLabels, pCal, { type: "bar", varname: "--mm" });
+  mkChart("nxCvr", absLabels, pCvr, { type: "bar", pct: true, varname: "--cvr", num: pCal, den: pReg });
 
-  rowAbs.appendChild(card({
-    title:"Registros", latest:last(pReg), delta:deltaOf(pReg,false), sub:`${tot(pReg)} en el rango`,
-    days:pDays, vals:pReg, varname:"--reg", isPct:false, gran:state.gran,
-    explain:i=>({ rows:[{label:"Registros", value:pReg[i], color:cReg}],
-      note:`Leads WEB · sub-fuente Nexus registrados en ${unit}. ${modeNote()}` })
-  }));
-  rowAbs.appendChild(card({
-    title:"Calificados MM", latest:last(pCal), delta:deltaOf(pCal,false), sub:`${tot(pCal)} · estados 20/63`,
-    days:pDays, vals:pCal, varname:"--mm", isPct:false, gran:state.gran,
-    explain:i=>({ rows:[{label:"Calificados MM", value:pCal[i], color:cMm}],
-      note:`Alcanzaron calificación Market Maker (estado 20 ó 63) en ${unit}. ${modeNote()}` })
-  }));
-  rowAbs.appendChild(card({
-    title:"CVR Reg→Calif MM", latest:`${Math.round(last(pCvr))}%`, delta:deltaOf(pCvr,true), sub:`${accCvr.toFixed(0)}% acumulado`,
-    days:pDays, vals:pCvr, varname:"--cvr", isPct:true, gran:state.gran,
-    explain:i=>({ rows:[
-        {label:"Registros", value:pReg[i], color:cReg},
-        {label:"Calificados MM", value:pCal[i], color:cMm},
-        {label:`CVR de ${unit}`, value:(pReg[i]?pCvr[i].toFixed(0):"0")+"%", color:cCvr}],
-      note:`Conversión Registro→Calificado MM. ${state.mode==="event"?"En modo Evento el numerador y el denominador caen en fechas distintas — es indicativo.":"calif MM ÷ registros de la cosecha."}` })
-  }));
-
-  // ---- Fila 2: SIEMPRE promedio móvil 7 días a nivel diario (ignora granularidad) ----
+  // ---- 03 · Promedio móvil 7 días: líneas, siempre a nivel diario ----
   const days = dailySeries(rowsRaw);
-  const reg = days.map(d=>d.reg), cal = days.map(d=>d.calif_mm);
-  const regMa = movingAvg(reg,7), calMa = movingAvg(cal,7);
-  const cvrMa = days.map((_,i)=> regMa[i] ? 100*calMa[i]/regMa[i] : 0);
-
-  rowMa.appendChild(card({
-    title:"Registros · MA7", latest:last(regMa).toFixed(1), delta:deltaOf(regMa,false), sub:"promedio móvil 7 días · último día",
-    days, vals:regMa, varname:"--reg", isPct:false,
-    explain:i=>({ rows:[{label:"MA7 Registros", value:regMa[i].toFixed(1), color:cReg},{label:"Registros del día", value:reg[i], color:cReg}],
-      note:"Promedio de registros de los últimos 7 días (incluye este día)." })
-  }));
-  rowMa.appendChild(card({
-    title:"Calificados MM · MA7", latest:last(calMa).toFixed(1), delta:deltaOf(calMa,false), sub:"promedio móvil 7 días · último día",
-    days, vals:calMa, varname:"--mm", isPct:false,
-    explain:i=>({ rows:[{label:"MA7 Calif. MM", value:calMa[i].toFixed(1), color:cMm},{label:"Calif. MM del día", value:cal[i], color:cMm}],
-      note:"Promedio de calificados MM de los últimos 7 días." })
-  }));
-  rowMa.appendChild(card({
-    title:"CVR · MA7", latest:`${Math.round(last(cvrMa))}%`, delta:deltaOf(cvrMa,true), sub:"MA7 calif ÷ MA7 reg · último día",
-    days, vals:cvrMa, varname:"--cvr", isPct:true,
-    explain:i=>({ rows:[{label:"CVR MA7", value:cvrMa[i].toFixed(0)+"%", color:cCvr}],
-      note:"CVR suavizado: promedio móvil 7d de calificados MM dividido por el de registros." })
-  }));
+  const maLabels = days.map(d => d.d.slice(5));
+  const reg = days.map(d => d.reg), cal = days.map(d => d.calif_mm);
+  const regMa = movingAvg(reg, 7), calMa = movingAvg(cal, 7);
+  const cvrMa = days.map((_, i) => regMa[i] ? 100*calMa[i]/regMa[i] : null);
+  document.getElementById("rowMa").innerHTML =
+    chartPanel("nxRegMa", "Registros · MA7", "Promedio móvil de 7 días de los registros diarios.") +
+    chartPanel("nxCalMa", "Calificados MM · MA7", "Promedio móvil de 7 días de los calificados MM diarios.") +
+    chartPanel("nxCvrMa", "CVR · MA7", "MA7 de calificados MM ÷ MA7 de registros (CVR suavizado).");
+  mkChart("nxRegMa", maLabels, regMa, { type: "line", varname: "--reg", dec: true });
+  mkChart("nxCalMa", maLabels, calMa, { type: "line", varname: "--mm", dec: true });
+  mkChart("nxCvrMa", maLabels, cvrMa, { type: "line", pct: true, varname: "--cvr" });
 }
 
 // ---------- chips ----------
