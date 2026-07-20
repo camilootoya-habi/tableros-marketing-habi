@@ -122,6 +122,7 @@
   .tabs{position:sticky;top:0;z-index:30;display:flex;gap:10px;flex-wrap:wrap;align-items:center;
     background:var(--bg);padding:12px 0;margin:6px 0 22px;border-bottom:1px solid var(--border)}
   .tabnav{flex:1;display:flex;justify-content:center;gap:7px;flex-wrap:wrap;align-items:center}
+  .navsep{width:1px;height:22px;background:var(--border-strong);margin:0 3px}
   .granwrap{display:flex;align-items:center;gap:6px;font-size:11px;text-transform:uppercase;letter-spacing:.4px;color:var(--text-muted);font-weight:700;white-space:nowrap}
   .tab{cursor:pointer;border:1px solid var(--border);background:var(--card);color:var(--text-muted);
     border-radius:9px;padding:8px 15px;font:inherit;font-size:13.5px;font-weight:600;white-space:nowrap;transition:background .12s,color .12s,border-color .12s}
@@ -180,13 +181,15 @@
   <nav class="tabs">
     <a href="https://camilootoya-habi.github.io/tableros-marketing-habi/" class="back">← Volver al Hub</a>
     <div class="tabnav">
-      <button class="tab" data-tab="co"   onclick="go('dash','CO')">🇨🇴 Colombia</button>
-      <button class="tab" data-tab="mx"   onclick="go('dash','MX')">🇲🇽 México</button>
-      <button class="tab" data-tab="exco" onclick="go('exp','CO')">🇨🇴 Base</button>
-      <button class="tab" data-tab="exmx" onclick="go('exp','MX')">🇲🇽 Base</button>
-      <button class="tab" data-tab="tbco" onclick="go('tablas','CO')">🇨🇴 Tablas</button>
-      <button class="tab" data-tab="tbmx" onclick="go('tablas','MX')">🇲🇽 Tablas</button>
-      <button class="tab" data-tab="docs" onclick="go('docs')">📋 Documentación</button>
+      <button class="tab" data-tab="mx"    onclick="go('dash','MX')">🇲🇽 Tablero</button>
+      <button class="tab" data-tab="exmx"  onclick="go('exp','MX')">🇲🇽 Base</button>
+      <button class="tab" data-tab="tbmx"  onclick="go('tablas','MX')">🇲🇽 Tablas</button>
+      <button class="tab" data-tab="docmx" onclick="go('docs','MX')">🇲🇽 Documentación</button>
+      <span class="navsep"></span>
+      <button class="tab" data-tab="co"    onclick="go('dash','CO')">🇨🇴 Tablero</button>
+      <button class="tab" data-tab="exco"  onclick="go('exp','CO')">🇨🇴 Base</button>
+      <button class="tab" data-tab="tbco"  onclick="go('tablas','CO')">🇨🇴 Tablas</button>
+      <button class="tab" data-tab="docco" onclick="go('docs','CO')">🇨🇴 Documentación</button>
     </div>
     <label class="granwrap">Temporalidad
       <select class="sel" id="granSel"><option value="dia" selected>Diario</option><option value="semana">Semana (Lun→Dom)</option><option value="mes">Mes</option></select>
@@ -326,44 +329,13 @@
 
   <!-- ===== HOJA 5: DOCUMENTACIÓN ===== -->
   <div id="sheet-docs" class="sheet" hidden>
-    <div class="sheet-head"><h2>Documentación del plan · Marketing Loop</h2></div>
-    <div class="docs">
-      <p>Reactivación de leads de sellers estancados: se les manda un WhatsApp; a quien responde <b>INTERESADO</b> se le <b>re-crea el lead</b> en el backbone para que vuelva a gestión comercial (GABI lo llama). CO + MX.</p>
-
-      <h3>Líneas de WhatsApp (Infobip · BSP)</h3>
-      <div class="kv"><table>
-        <tr><td><span class="flag">🇲🇽</span>México</td><td><code>52 1 55 9088 3423</code> · WABA <b>Tuhabi recuperación Gabi 1</b></td></tr>
-        <tr><td><span class="flag">🇨🇴</span>Colombia</td><td><code>57 300 911 0453</code> · WABA <b>Letreros SE VENDE en SAC</b></td></tr>
-        <tr><td>Calidad (Meta)</td><td>Se lee de la WhatsApp Business Management API. Al 10-jul: MX 🔴 LOW · CO 🟡 MEDIUM (ver semáforo en el tablero).</td></tr>
-      </table></div>
-
-      <h3>Plantillas aprobadas</h3>
-      <div class="kv"><table>
-        <tr><td><span class="flag">🇲🇽</span>MX · nombre</td><td><code>bot_reactivacion_leads_mx_sellers_camilootoya_16jun26</code></td></tr>
-        <tr><td><span class="flag">🇨🇴</span>CO · nombre</td><td><code>bot_reactivacion_leads_co_sellers_camilootoya_19jun26</code></td></tr>
-        <tr><td>Idioma</td><td><code>es</code></td></tr>
-        <tr><td>Header</td><td>IMAGE — <code>jcmm_mexico.png</code> / <code>jcmm_colombia.png</code> (S3)</td></tr>
-        <tr><td>Body</td><td>«<b>¿Aún vendes tu inmueble?</b>» — texto fijo, sin variables (mismo mensaje para todos)</td></tr>
-        <tr><td>Botones</td><td>QUICK_REPLY: «Quiero vender con Tuhabi» (→ INTERESADO) · «Ya no vendo» (→ baja)</td></tr>
-        <tr><td>Payloads</td><td><code>activacion_NewLeads_INTERESADO_{NID}</code> · <code>activacion_NewLeads_YAVENDIÓ_{NID}</code><br><span style="font-size:12px;color:var(--text-muted)">el NID viaja embebido → el webhook identifica al lead que respondió</span></td></tr>
-      </table></div>
-
-      <h3>UTM de las recreaciones (<code>utm_campaign</code>)</h3>
-      <div class="kv"><table>
-        <tr><td><span class="flag">🇲🇽</span>MX</td><td><code>mex-sellers-paid-experiments-web-without-leads-retargeting-national-reinteresados</code></td></tr>
-        <tr><td><span class="flag">🇨🇴</span>CO</td><td><code>col-sellers-paid-experiments-web-without-leads-retargeting-national-reinteresados</code></td></tr>
-        <tr><td>Agente (creador)</td><td><code>claude-camilo-otoya-reinteres</code></td></tr>
-      </table></div>
-
-      <h3>Definición de la base (SLA con comercial)</h3>
-      <p><b>Ventana:</b> creación <b>2022-01-01 → hoy−180 días</b>. Regla SLA: un lead con 180 días de creado que no esté <b>cerrado, captado ni descartado</b> → lo toma marketing para reinteresar.</p>
-      <p><b>Pipelines vivos</b> de gestión comercial (solo tomamos etapa «Perdido» dentro de ellos, para no robarle leads en curso al comercial): <b>Sellers - Market Maker {MX,CO} (NUEVO)</b> y <b>Nuevo - Inmobiliaria {MX,CO}</b>. En cualquier otro pipeline el lead no está en gestión viva → se toma. Detalle valor por valor en el <b>Explorador de la base</b>.</p>
-    </div>
+    <div class="sheet-head"><h2 id="docsTitle">Documentación · Marketing Loop · MX</h2></div>
+    <div id="docsBody" class="docs"></div>
   </div>
 </div>
 
 <script>
-let D=null, country='MX', cicloTipo='dia', porhoraChart=null, cohorteChart=null, AUDIT=null, expC='CO', tbC='CO';
+let D=null, country='MX', cicloTipo='dia', porhoraChart=null, cohorteChart=null, AUDIT=null, expC='CO', tbC='CO', docC='MX';
 const CIP={MX:'mexico',CO:'colombia'};
 const fmt=v=>(v==null?'—':Number(v).toLocaleString('es-CO'));
 const pct=v=>(v==null?'—':Number(v).toFixed(1)+'%');
@@ -449,7 +421,7 @@ function go(sheet, c){
     selectCountry(c||'CO'); }
   else if(sheet==='exp'){ tab='ex'+(c||'CO').toLowerCase(); setExp(c||'CO'); }
   else if(sheet==='tablas'){ tab='tb'+(c||'CO').toLowerCase(); setTablas(c||'CO'); }
-  else if(sheet==='docs'){ tab='docs'; }
+  else if(sheet==='docs'){ tab='doc'+(c||'MX').toLowerCase(); setDocs(c||'MX'); }
   document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('active', t.dataset.tab===tab));
   window.scrollTo(0,0);
 }
@@ -471,6 +443,49 @@ function renderTablas(){
     const rows=tb.rows.map(r=>`<tr>${r.map(v=>`<td>${v==null?'<span class="muted">·</span>':escx(v)}</td>`).join('')}</tr>`).join('');
     return head+`<div class="rawtbl"><table><thead><tr>${th}</tr></thead><tbody>${rows}</tbody></table></div>`;
   }).join('');
+}
+
+const DOCS={
+  MX:{
+    lineas:[['Envíos (línea activa)','<code>52 1 55 9548 3481</code> · <code>5215595483481</code>'],
+            ['Histórico (línea vieja)','<code>52 1 55 9088 3423</code> · <code>5215590883423</code> — ya no envía; se lee solo para el histórico de entregas del repo anterior']],
+    tpls:[['v1 · control','<code>reactivacion_sellers_mx_v1_jul26</code> · header TEXT'],
+          ['v2 · oferta','<code>reactivacion_sellers_mx_v2_oferta_jul26</code> · header IMAGE (<code>jcmm_mexico.png</code>)'],
+          ['Anterior (repo viejo)','<code>bot_reactivacion_leads_mx_sellers_camilootoya_16jun26</code>']],
+    utm:'mex-sellers-paid-experiments-web-without-leads-retargeting-national-reinteresados'},
+  CO:{
+    lineas:[['Envíos (línea activa)','<code>57 300 911 0453</code> · <code>573009110453</code>']],
+    tpls:[['v1 · control','<code>reactivacion_sellers_co_v1_jul26</code> · header TEXT'],
+          ['v2 · oferta','<code>reactivacion_sellers_co_v2_oferta_jul26</code> · header IMAGE (<code>jcmm_colombia.png</code>)'],
+          ['Anterior (repo viejo)','<code>bot_reactivacion_leads_co_sellers_camilootoya_19jun26</code>']],
+    utm:'col-sellers-paid-experiments-web-without-leads-retargeting-national-reinteresados'},
+};
+function setDocs(c){ docC=c; const t=document.getElementById('docsTitle'); if(t) t.textContent='Documentación · Marketing Loop · '+c; renderDocs(); }
+function renderDocs(){
+  const el=document.getElementById('docsBody'); if(!el) return;
+  const x=DOCS[docC]||DOCS.MX;
+  const kv=arr=>`<div class="kv"><table>${arr.map(([k,v])=>`<tr><td>${k}</td><td>${v}</td></tr>`).join('')}</table></div>`;
+  el.innerHTML=`
+    <p>Reactivación de leads de sellers estancados: se les manda un WhatsApp; a quien responde <b>INTERESADO</b> se le <b>re-crea el lead</b> en el backbone para que vuelva a gestión comercial (GABI lo llama).</p>
+
+    <h3>Líneas de WhatsApp (Infobip · BSP) — ${docC}</h3>
+    ${kv(x.lineas)}
+
+    <h3>Plantillas — ${docC}</h3>
+    ${kv(x.tpls)}
+    <p><b>Cuáles usamos:</b> las <b>dos primeras activas en simultáneo</b> (v1 control + v2 oferta), repartidas 50/50 por el A/B. La anterior es del repo viejo (ya no se envía). Body «<b>¿Aún vendes tu inmueble?</b>» fijo; botones QUICK_REPLY «Quiero vender con Habi» (→ INTERESADO) y «Ya no vendo» (→ baja). Payloads <code>activacion_NewLeads_INTERESADO_{NID}</code> / <code>…_YAVENDIÓ_{NID}</code> — el NID viaja embebido para identificar al lead que respondió.</p>
+
+    <h3>Cómo funciona el A/B testing</h3>
+    <p><b>Asignación:</b> en cada envío se elige la plantilla al <b>azar 50/50</b> (v1 vs v2), así ambas reciben audiencias comparables el mismo día.</p>
+    <p><b>Métrica ganadora:</b> el <b>Interesado rate</b> (interesados ÷ entregados), que es el objetivo del loop. El Delivery rate se mide sobre enviados; read/respond/interesado sobre entregados. Se excluyen los fallos por plantilla sin imagen (error 7008).</p>
+    <p><b>Decisión (prueba bayesiana Beta-Binomial):</b> se declara ganadora una plantilla cuando <b>P(es mejor) ≥ 95%</b> y la <b>pérdida esperada ≤ 0,5 pp</b>, exigiendo al menos <b>300 entregados por brazo</b> y <b>7 días</b> de corrida. Si a los <b>21 días</b> no hay diferencia clara, se corta y se queda el control (v1). Mientras no haya ganadora, se sigue repartiendo 50/50.</p>
+    <p class="note">El avance en vivo está en la tabla <b>A/B de plantillas</b> del tablero (columna Interesado rate resaltada en amarillo).</p>
+
+    <h3>UTM de las recreaciones (<code>utm_campaign</code>)</h3>
+    ${kv([['UTM',`<code>${x.utm}</code>`],['Agente (creador)','<code>claude-camilo-otoya-reinteres</code>']])}
+
+    <h3>Definición de la base (SLA con comercial)</h3>
+    <p><b>Ventana:</b> creación <b>2023-01-01 → hoy−180 días</b>. Regla SLA: un lead con 180 días de creado que no esté cerrado, captado ni descartado → lo toma marketing para reinteresar. Además, <b>guard a nivel persona</b>: si el teléfono tiene un lead más reciente aún dentro del SLA o ya terminal, no se contacta. Detalle valor por valor en la hoja <b>Base</b>.</p>`;
 }
 const EXPMETA={
   "00.pipeline":["Pipeline","dónde vive el deal; solo importan los 2 pipelines vivos"],
