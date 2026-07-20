@@ -278,6 +278,10 @@ data={
   "hoy": {r["pais"]: int(r.get("creados_hoy") or 0) for r in q("query_hoy.sql")},
   "comparativa": q("query_comparativa.sql"),
   "pendientes_crear": {"MX": mx["pendientes_crear"], "CO": co["pendientes_crear"]},
+  # Muestra (últimos 5, todas las columnas) de cada tabla de Neon — hojas 'Tablas' (explicación)
+  "neon_tablas": {p: {t: N.tabla_muestra(t, oc, country=p)
+                      for t,oc in (("send_log","attempted_at"),("recreation","created_at"),("contact_status","updated_at"))}
+                  for p in ("MX","CO")},
   "cohorte_origen": {"MX": mx["cohorte_origen"], "CO": co["cohorte_origen"]},
   "diario": {"MX": mx["diario"], "CO": co["diario"]},
   "asignados": q("query_asignados.sql"),
