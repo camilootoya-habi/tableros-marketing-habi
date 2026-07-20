@@ -218,6 +218,13 @@ def build_country(pais):
     parsed_wide=[(i["phone"], agg.parse_resp(i["respuesta_cliente"]), i["ts"]) for i in inb_resp]
     inbound_phones_wide={p for p,_,_ in parsed_wide if p}
     interesado_phones_wide={p for p,pr,_ in parsed_wide if p and pr["action"]=="INTERESADO"}
+    # INTERESADOS PENDIENTES POR CREAR: respondieron INTERESADO (nid del payload) pero su nid aún NO está en
+    # la tabla recreation (no se recreó el lead). Fuente de verdad = mart inbound. Card + fila de la Cosecha.
+    recreated_nids={str(r["old_nid"]) for r in rec if r.get("old_nid")}
+    interesado_pairs=[(p, pr.get("nid")) for p,pr,_ in parsed_wide if p and pr["action"]=="INTERESADO" and pr.get("nid")]
+    pend_nids={nid for _,nid in interesado_pairs if nid not in recreated_nids}
+    pendientes_crear=len(pend_nids)
+    interesado_nocreado_phones={p for p,nid in interesado_pairs if nid not in recreated_nids}
     # recreados/calificados por old_nid
     recreated_oldnids={r["old_nid"] for r in rec if r.get("success")}
     qualified_oldnids={r["old_nid"] for r in rec if r.get("state_at_creation") in (20,63)}
@@ -237,7 +244,8 @@ def build_country(pais):
         "embudo": agg.embudo(sl7,mbm,inbound_phones,interesado_phones,recreated_oldnids,qualified_oldnids,dias),
         "errores": {t: agg.errores_serie(sl_cosecha, mbm, t, n=40) for t in ("dia","semana","mes")},
         "respuestas": {t: agg.respuestas_serie(inb_resp, t) for t in ("dia","semana","mes")},
-        "cosecha": {t: agg.cosecha_serie(sl_cosecha, mbm, inbound_phones_wide, interesado_phones_wide, t, n=40) for t in ("dia","semana","mes")},
+        "cosecha": {t: agg.cosecha_serie(sl_cosecha, mbm, inbound_phones_wide, interesado_phones_wide, interesado_nocreado_phones, t, n=40) for t in ("dia","semana","mes")},
+        "pendientes_crear": pendientes_crear,
         "ab_templates": _ab(sl,mbm,inbound_phones,interesado_phones),
         "ab_fuentes": _ab(sl,mbm,inbound_phones,interesado_phones,keyfield="fuente_lead"),
         "antifunnel": {t: agg.antifunnel_serie(recreados,t) for t in ("dia","semana","mes")},
@@ -269,6 +277,7 @@ data={
   "completitud": {p: completitud(p, COMP) for p in ("MX","CO")},
   "hoy": {r["pais"]: int(r.get("creados_hoy") or 0) for r in q("query_hoy.sql")},
   "comparativa": q("query_comparativa.sql"),
+  "pendientes_crear": {"MX": mx["pendientes_crear"], "CO": co["pendientes_crear"]},
   "cohorte_origen": {"MX": mx["cohorte_origen"], "CO": co["cohorte_origen"]},
   "diario": {"MX": mx["diario"], "CO": co["diario"]},
   "asignados": q("query_asignados.sql"),
