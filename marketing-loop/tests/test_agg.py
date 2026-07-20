@@ -68,14 +68,18 @@ def test_cohorte():
     assert r[0]["bucket"]=="2024-Q1" and r[0]["enviados"]==2 and r[0]["device_error"]==1 and r[0]["entregados"]==1
 
 def test_recreacion():
-    rr=[{"created_at":"2026-07-14","state_at_creation":1},{"created_at":"2026-07-14","state_at_creation":20}]
+    # duplicado = estado_id "1"; calificado = calif "1" (estado 20/63). Fuente: query_recreados.
+    rr=[{"fecha_creacion":"2026-07-14","estado_id":"1","calif":"0"},
+        {"fecha_creacion":"2026-07-14","estado_id":"20","calif":"1"}]
     r=recreacion_serie(rr,"dia")
     assert r[0]=={"bucket":"2026-07-14","recreados":2,"duplicado":1,"calificado":1}
 
 def test_antifunnel_serie():
-    rr=[{"created_at":"2026-07-14","estado_actual":"activo"},{"created_at":"2026-07-14","estado_actual":"inactivo"},{"created_at":"2026-07-14","estado_actual":"activo"}]
+    rr=[{"fecha_creacion":"2026-07-14","estado_label":"Duplicado"},
+        {"fecha_creacion":"2026-07-14","estado_label":"No gestionado"},
+        {"fecha_creacion":"2026-07-14","estado_label":"Duplicado"}]
     r=antifunnel_serie(rr,"dia")
-    assert r[0]=={"bucket":"2026-07-14","estados":{"activo":2,"inactivo":1}}
+    assert r[0]=={"bucket":"2026-07-14","estados":{"Duplicado":2,"No gestionado":1}}
 
 def test_contact_dist():
     assert contact_dist([{"state":"enviado"},{"state":"baja"},{"state":"enviado"}])=={"enviado":2,"baja":1}

@@ -89,25 +89,28 @@ def cohorte(sendlog, mart_by_msgid, nid2quarter):
         elif b=="device_error": a["device_error"]+=1
     return [{"bucket":k, **A[k]} for k in sorted(A)]
 
-def recreacion_serie(recreation_rows, tipo):
+def recreacion_serie(recreados_rows, tipo):
+    """Outcome del dedup por período de creación. Fuente: query_recreados.sql (hubspot deals UTM
+    reinteresados + backbone real vía TIG). duplicado = estado backbone 1; calificado = calif (estado 20/63)."""
     from collections import defaultdict
     A=defaultdict(lambda: dict(recreados=0,duplicado=0,calificado=0))
-    for r in recreation_rows:
-        b=bucket((r.get("created_at") or "")[:10], tipo)
+    for r in recreados_rows:
+        b=bucket((r.get("fecha_creacion") or "")[:10], tipo)
         if not b: continue
         a=A[b]; a["recreados"]+=1
-        st=r.get("state_at_creation")
-        if st==1: a["duplicado"]+=1
-        elif st==20: a["calificado"]+=1
+        if str(r.get("estado_id"))=="1": a["duplicado"]+=1
+        if str(r.get("calif")) in ("1","1.0","True"): a["calificado"]+=1
     return [{"bucket":k, **A[k]} for k in sorted(A)]
 
-def antifunnel_serie(recreation_rows, tipo):
+def antifunnel_serie(recreados_rows, tipo):
+    """Distribución del estado ACTUAL del backbone (nombre del catálogo) por período de creación.
+    Fuente: query_recreados.sql (hubspot deals UTM reinteresados → TIG → backbone → catálogo de estados)."""
     from collections import defaultdict
     A=defaultdict(dict)
-    for r in recreation_rows:
-        b=bucket((r.get("created_at") or "")[:10], tipo)
+    for r in recreados_rows:
+        b=bucket((r.get("fecha_creacion") or "")[:10], tipo)
         if not b: continue
-        lab=str(r.get("estado_actual") if r.get("estado_actual") is not None else "sin estado")
+        lab=str(r.get("estado_label") or "sin estado")
         A[b][lab]=A[b].get(lab,0)+1
     return [{"bucket":k,"estados":A[k]} for k in sorted(A)]
 
