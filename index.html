@@ -83,10 +83,8 @@
   </div>
   <nav class="tabs" role="tablist">
     <button type="button" class="tab-btn active" data-tab="marketing-general">Marketing General</button>
-    <button type="button" class="tab-btn" data-tab="performance-colombia">Performance Colombia</button>
-    <button type="button" class="tab-btn" data-tab="growth-colombia">Growth Colombia</button>
-    <button type="button" class="tab-btn" data-tab="performance-mexico">Performance Mexico</button>
-    <button type="button" class="tab-btn" data-tab="growth-mexico">Growth Mexico</button>
+    <button type="button" class="tab-btn" data-tab="performance">Performance</button>
+    <button type="button" class="tab-btn" data-tab="growth">Growth</button>
   </nav>
   <div class="tab-panel active" id="panel-marketing-general">
   <h2 class="owner-title">General · Marketing</h2>
@@ -138,16 +136,6 @@
     <div class="column">
       <h2 class="section-title"><span>Dashboards</span></h2>
       <div class="card-stack">
-        <a class="card" href="incompletos-colombia/">
-          <h2><span class="country">CO</span>Leads Incompletos</h2>
-          <p>Análisis de leads que quedan en estado incompleto: variables faltantes, recuperación por agente, evolución por fuente y período.</p>
-        </a>
-
-        <a class="card" href="incompletos-direccion/">
-          <h2><span class="country">CO</span><span class="country">MX</span>Procesos Transitorios Marketing</h2>
-          <p>Cohorte por fuente y país: pasaron por incompleto (7+39) o revisar dirección (3), salieron del estado, y rescate hacia calificado (20).</p>
-        </a>
-
         <a class="card" href="wbr-2-0/">
           <h2><span class="country">CO</span><span class="country">MX</span>WBR 2.0</h2>
           <p>Drill-down semanal: fuente → canal → plataforma. Tabla con cumplimiento de meta + variación vs semana anterior y vs prom 7s, charts de tendencias por nivel de filtro.</p>
@@ -171,11 +159,6 @@
         <a class="card" href="okr-marketing/">
           <h2><span class="country">CO</span><span class="country">MX</span>OKR Marketing</h2>
           <p>Leads asignados, inversión y CPLA: seguimiento mensual vs metas del Q y comparación YoY.</p>
-        </a>
-
-        <a class="card" href="pmax-mexico-quality/">
-          <h2><span class="country">MX</span>PMAX — Calidad de leads</h2>
-          <p>Performance Max: registros diarios y % de leads sin ask_price por UTM. QA con objetivo &lt; 10%.</p>
         </a>
 
         <a class="card" href="creativo-pamela/">
@@ -208,16 +191,6 @@
           <p>Funnel y antifunnel de la campaña de retargeting de reinteresados (WEB), con selector de país (México / Colombia) y filtro geográfico: Registros → Calificados (MM/Inmo) → Owner → Asignados (WBR Mart) → Citas → Cierres/Contrato, por estado/ciudad. Fuente: hubspot.deals (~7 min de lag), refresco cada 10 min.</p>
         </a>
 
-        <a class="card" href="funnel-nexus/">
-          <h2><span class="country">CO</span><span class="country">MX</span>Funnel Nexus (WEB)</h2>
-          <p>Leads WEB · sub-fuente Nexus (callcenter): funnel Registros→Calif MM/INMO→Asignados→Cierres, por cosecha o evento. Selector de granularidad (día/semana/ciclo/mes) y gráficas diarias + MA7.</p>
-        </a>
-
-        <a class="card" href="marketing-loop/">
-          <h2><span class="country">MX/CO</span>Marketing Loop — Reinterés de leads (MX + CO)</h2>
-          <p>Resultados en vivo del Marketing Loop (Neon + mart Infobip + Meta): salud de línea, impacto en asignados de marketing, cosecha de envío por período, errores de entrega, A/B de plantillas (v1 vs v2), respuestas por período, funnel comparativo reinteresados vs WEB, calidad por antigüedad del lead y evolución diaria. MX-first.</p>
-        </a>
-
         <a class="card" href="funnel-web-mx/">
           <h2><span class="country">MX</span>Funnel Web MX</h2>
           <p>Diagnóstico paso a paso de la caída click→registro en MX fuente WEB, integrando tráfico real desde Segment. Funnel de 12 etapas + clusters por canal/plataforma, device y zona del inmueble.</p>
@@ -235,18 +208,17 @@
     </div>
   </div>
   </div>
-  <div class="tab-panel" id="panel-performance-colombia">
-    <div class="empty-state">Próximamente — aún no hay tableros en esta sección.</div>
-  </div>
-  <div class="tab-panel" id="panel-growth-colombia">
-    <div class="empty-state">Próximamente — aún no hay tableros en esta sección.</div>
-  </div>
-  <div class="tab-panel" id="panel-performance-mexico">
+  <div class="tab-panel" id="panel-performance">
   <h2 class="owner-title">General · Marketing</h2>
   <div class="columns">
     <div class="column">
       <h2 class="section-title"><span>Dashboards</span></h2>
       <div class="card-stack">
+        <a class="card" href="pmax-mexico-quality/">
+          <h2><span class="country">MX</span>PMAX — Calidad de leads</h2>
+          <p>Performance Max: registros diarios y % de leads sin ask_price por UTM. QA con objetivo &lt; 10%.</p>
+        </a>
+
         <a class="card" href="pauta-propiedades/">
           <h2><span class="country">MX</span>Pauta Propiedades.com</h2>
           <p>Rendimiento de la pauta automatizada de publicaciones de Propiedades.com en Meta (objetivo Tráfico → listing). Métricas por publicación y por cliente inmobiliario: gasto, impresiones, clics al enlace, CTR y costo por clic. Selector de cliente y estado. Fuente: Marketing API de Meta, actualización manual.</p>
@@ -255,8 +227,34 @@
     </div>
   </div>
   </div>
-  <div class="tab-panel" id="panel-growth-mexico">
-    <div class="empty-state">Próximamente — aún no hay tableros en esta sección.</div>
+  <div class="tab-panel" id="panel-growth">
+  <h2 class="owner-title">General · Marketing</h2>
+  <div class="columns">
+    <div class="column">
+      <h2 class="section-title"><span>Dashboards</span></h2>
+      <div class="card-stack">
+        <a class="card" href="incompletos-colombia/">
+          <h2><span class="country">CO</span>Leads Incompletos</h2>
+          <p>Análisis de leads que quedan en estado incompleto: variables faltantes, recuperación por agente, evolución por fuente y período.</p>
+        </a>
+
+        <a class="card" href="incompletos-direccion/">
+          <h2><span class="country">CO</span><span class="country">MX</span>Procesos Transitorios Marketing</h2>
+          <p>Cohorte por fuente y país: pasaron por incompleto (7+39) o revisar dirección (3), salieron del estado, y rescate hacia calificado (20).</p>
+        </a>
+
+        <a class="card" href="funnel-nexus/">
+          <h2><span class="country">CO</span><span class="country">MX</span>Funnel Nexus (WEB)</h2>
+          <p>Leads WEB · sub-fuente Nexus (callcenter): funnel Registros→Calif MM/INMO→Asignados→Cierres, por cosecha o evento. Selector de granularidad (día/semana/ciclo/mes) y gráficas diarias + MA7.</p>
+        </a>
+
+        <a class="card" href="marketing-loop/">
+          <h2><span class="country">MX/CO</span>Marketing Loop — Reinterés de leads (MX + CO)</h2>
+          <p>Resultados en vivo del Marketing Loop (Neon + mart Infobip + Meta): salud de línea, impacto en asignados de marketing, cosecha de envío por período, errores de entrega, A/B de plantillas (v1 vs v2), respuestas por período, funnel comparativo reinteresados vs WEB, calidad por antigüedad del lead y evolución diaria. MX-first.</p>
+        </a>
+      </div>
+    </div>
+  </div>
   </div>
   <footer>habi · marketing analytics</footer>
 <script>

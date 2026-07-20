@@ -4,5 +4,6 @@
   "country": "CO & MX",
   "section": "dashboard",
   "order": 130,
-  "hidden_card": true
+  "hidden_card": true,
+  "tab": "growth"
 }

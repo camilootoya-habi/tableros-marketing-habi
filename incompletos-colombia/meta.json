@@ -3,5 +3,6 @@
   "description": "Análisis de leads que quedan en estado incompleto: variables faltantes, recuperación por agente, evolución por fuente y período.",
   "country": "CO",
   "section": "dashboard",
-  "order": 10
+  "order": 10,
+  "tab": "growth"
 }

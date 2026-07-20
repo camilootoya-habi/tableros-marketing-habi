@@ -3,5 +3,6 @@
   "description": "Performance Max: registros diarios y % de leads sin ask_price por UTM. QA con objetivo < 10%.",
   "country": "MX",
   "section": "dashboard",
-  "order": 90
+  "order": 90,
+  "tab": "performance"
 }
