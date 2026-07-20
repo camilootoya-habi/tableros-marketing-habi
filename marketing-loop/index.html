@@ -272,19 +272,6 @@
     <section class="panel"><h3 class="sm">Conversión creado → calificado MM · prom. móvil 7d <span class="help" title="Promedio móvil de 7 días de calificados MM ÷ recreados.">?</span></h3><div class="ch"><canvas id="c_cc_ma"></canvas></div></section>
   </div>
 
-  <div class="tabletitle">Recreación · outcome del dedup al crear el lead
-    <button type="button" class="help-btn" onclick="document.getElementById('helpFun').showModal()" aria-label="Explicación">?</button>
-  </div>
-  <div id="dedup"></div>
-  <div class="tbl-wrap ftab" id="funtab"></div>
-  <dialog id="helpFun" class="help-dialog">
-    <h3>Recreación — outcome del dedup al crear el lead</h3>
-    <p>Por período (fecha de <b>creación</b> del lead recreado, UTM reinteresados): <b>Recreados</b> = total de leads WEB recreados. <b>Duplicado</b> = el backbone lo marcó duplicado de inmediato al crearlo (<code>state_at_creation=1</code>) ÷ recreados. <b>Calificado</b> = quedó calificado de inmediato (<code>state_at_creation=20</code>, No gestionado) ÷ recreados.</p>
-    <p>Es el resultado <b>instantáneo</b> del dedup en el momento de la recreación — no confundir con el <b>Antifunnel</b> de abajo, que mide el estado <b>actual</b> (hoy) de esos mismos leads.</p>
-    <p>El color es un <b>heatmap por fila</b>: verde = % más alto entre los períodos mostrados, rojo = más bajo. Sujeto al filtro de País y Temporalidad de arriba; últimos 20 períodos.</p>
-    <button class="close-btn" onclick="document.getElementById('helpFun').close()">Cerrar</button>
-  </dialog>
-
   <div class="tabletitle">Antifunnel · en qué estados quedan los leads creados
     <button type="button" class="help-btn" onclick="document.getElementById('helpAnti').showModal()" aria-label="Explicación">?</button>
   </div>
@@ -431,7 +418,7 @@ async function load(){
     : '';
   try{ AUDIT=await (await fetch('audit.json?t='+Date.now())).json(); }catch(e){ AUDIT=null; }
   document.querySelectorAll('input[name=pais]').forEach(r=>r.onchange=()=>selectCountry(r.value));
-  document.getElementById('granSel').onchange=e=>{cicloTipo=e.target.value;renderFuntab();renderAntifunnel();renderCompletitud();renderDedup();renderImpacto();renderCohorteOrigen();renderErrores();renderResp();};
+  document.getElementById('granSel').onchange=e=>{cicloTipo=e.target.value;renderAntifunnel();renderCompletitud();renderImpacto();renderCohorteOrigen();renderErrores();renderResp();};
   go('dash','MX');
 }
 
@@ -485,7 +472,7 @@ function renderExplorer(){
   }
   el.innerHTML=parts.join('');
 }
-function selectCountry(c){ country=c; renderStats(); renderImpacto(); renderErrores(); renderAB(); renderABFuente(); renderResp(); renderComparativa(); renderCalidad(); renderDiario(); renderFuntab(); renderAntifunnel(); renderDedup(); renderCompletitud(); renderCohorteOrigen(); renderPorHoraChart(); }
+function selectCountry(c){ country=c; renderStats(); renderImpacto(); renderErrores(); renderAB(); renderABFuente(); renderResp(); renderComparativa(); renderCalidad(); renderDiario(); renderAntifunnel(); renderCompletitud(); renderCohorteOrigen(); renderPorHoraChart(); }
 // Celdas "valor + %" con heatmap por fila (verde=conversión alta, rojo=baja), copiado del tablero de referencia.
 function heatCells(values, denoms){
   const pcts=values.map((v,i)=> denoms[i]>0 ? v/denoms[i]*100 : null);   // período sin base → null (celda vacía)
@@ -518,51 +505,6 @@ function heatCellsInv(values, denoms){
     return `<td${i===last?' class="cur"':''} style="text-align:right"><span class="n">${fmt(v)}</span><span class="p" style="color:${clr}">${ps}%</span></td>`;
   }).join('');
 }
-function renderFuntab(){
-  const el=document.getElementById('funtab'); if(!el) return;
-  const src=((D.recreacion||{})[country]||{})[cicloTipo]||[];
-  if(!(D.recreacion||{})[country]){ el.innerHTML='<p class="note">Sin datos de recreación para '+country+' (aún no disponible).</p>'; return; }
-  const byB={}; src.forEach(r=>byB[r.bucket]=r);
-  const rows=lastPeriods(cicloTipo,20).map(b=>byB[b]||{bucket:b,recreados:0,duplicado:0,calificado:0}); // últimos 20 períodos, rellena vacíos
-  const MES=['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
-  const lbl=b=> cicloTipo==='mes' ? (MES[+b.slice(5,7)-1]+' '+b.slice(2,4)) : b.slice(5);
-  const last=rows.length-1, cur=i=> i===last?' class="cur"':'';
-  const col=k=>rows.map(r=>+r[k]||0);
-  const th=rows.map((r,i)=>`<th${cur(i)} style="text-align:right">${lbl(r.bucket)}</th>`).join('');
-  // fila base: solo absoluto. filas de outcome: absoluto + % de recreados, con heatmap por fila.
-  const base=`<tr class="row-total"><td>${H('Leads WEB recreados (UTM reinteresados) en el período, por fecha de creación.')}Recreados</td>${rows.map((r,i)=>`<td${cur(i)} style="text-align:right">${z(+r.recreados)}</td>`).join('')}</tr>`;
-  const step=(lab,key)=>`<tr class="row-stage"><td>${lab}</td>${heatCells(col(key),col('recreados'))}</tr>`;
-  const hcol={dia:'Día',semana:'Semana (inicia Lun)',mes:'Mes'}[cicloTipo]||'Periodo';
-  el.innerHTML=`<table><thead><tr><th>${hcol}</th>${th}</tr></thead><tbody>
-    ${base}
-    ${step(H('Marcado duplicado por el backbone al momento de crearse (state_at_creation=1) ÷ recreados.')+'Duplicado','duplicado')}
-    ${step(H('Calificado de inmediato al recrearse (state_at_creation=20, No gestionado) ÷ recreados.')+'Calificado','calificado')}
-  </tbody></table>`;
-  el.scrollLeft=el.scrollWidth;
-}
-
-// Resumen agregado del outcome de dedup (mismo universo/ventana que la tabla de arriba: últimos 20 períodos de cicloTipo).
-function renderDedup(){
-  const el=document.getElementById('dedup'); if(!el) return;
-  if(!(D.recreacion||{})[country]){ el.innerHTML=''; return; }
-  const src=((D.recreacion||{})[country]||{})[cicloTipo]||[];
-  const byB={}; src.forEach(r=>byB[r.bucket]=r);
-  const rows=lastPeriods(cicloTipo,20).map(b=>byB[b]||{bucket:b,recreados:0,duplicado:0,calificado:0});
-  const tot=rows.reduce((s,r)=>s+(+r.recreados||0),0);
-  const dup=rows.reduce((s,r)=>s+(+r.duplicado||0),0);
-  const cal=rows.reduce((s,r)=>s+(+r.calificado||0),0);
-  const otro=Math.max(0,tot-dup-cal);
-  if(!tot){ el.innerHTML='<p class="note">Sin recreados en la ventana mostrada.</p>'; return; }
-  const rowsUI=[['Duplicado',dup,'var(--bad)'],['Calificado',cal,'var(--ok)'],['Otro / en curso',otro,'var(--text-muted)']];
-  const body=rowsUI.map(([lab,v,color])=>{
-    const p=tot?(v/tot*100):0;
-    return `<div class="rowline"><div class="lab" style="width:120px">${lab}</div>
-      <div class="bar"><div style="width:${Math.max(0.5,p).toFixed(1)}%;background:${color}"></div></div>
-      <div class="val" style="width:90px"><b>${fmt(v)}</b> <span class="muted" style="font-size:11px">${p.toFixed(0)}%</span></div></div>`;
-  }).join('');
-  el.innerHTML=`${body}<p class="note">Outcome del dedup al momento de crear el lead (${fmt(tot)} recreados), agregado sobre los mismos períodos de la tabla de abajo.</p>`;
-}
-
 function renderAntifunnel(){
   const el=document.getElementById('antifunnel'); if(!el) return;
   if(!(D.antifunnel||{})[country]){ el.innerHTML='<p class="note">Sin datos de antifunnel para '+country+' (aún no disponible).</p>'; return; }
