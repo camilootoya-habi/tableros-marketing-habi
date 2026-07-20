@@ -228,9 +228,10 @@ def build_country(pais):
     # nid->fuente del lead original (para la tabla "Comparación por fuente", análoga al A/B)
     nidf=M.nid2fuente(list({r["nid"] for r in sl if r.get("nid")}), country=pais)
     for r in sl: r["fuente_lead"]=nidf.get(r.get("nid"), "(sin fuente)")
-    # antifunnel: estado actual de recreados
-    est=M.estado_actual_by_deal([r["new_deal_id"] for r in rec if r.get("new_deal_id")], country=pais)
-    for r in rec: r["estado_actual"]=est.get(str(r.get("new_deal_id")))
+    # Recreación + Antifunnel: desde tablas internas (query_recreados.sql = hubspot deals UTM reinteresados
+    # → TIG → estado REAL del backbone + catálogo de nombres). Reemplaza la tabla `recreation` de Neon, que
+    # nunca capturó new_deal_id/state_at_creation (dejaba ambas secciones vacías). Trae viejo + nuevo por UTM.
+    recreados=[r for r in RECRE if r.get("pais")==pais]
     return {
         "linea": linea_meta(pais),
         "embudo": agg.embudo(sl7,mbm,inbound_phones,interesado_phones,recreated_oldnids,qualified_oldnids,dias),
@@ -239,8 +240,8 @@ def build_country(pais):
         "cosecha": {t: agg.cosecha_serie(sl_cosecha, mbm, inbound_phones_wide, interesado_phones_wide, t, n=40) for t in ("dia","semana","mes")},
         "ab_templates": _ab(sl,mbm,inbound_phones,interesado_phones),
         "ab_fuentes": _ab(sl,mbm,inbound_phones,interesado_phones,keyfield="fuente_lead"),
-        "recreacion": {t: agg.recreacion_serie(rec,t) for t in ("dia","semana","mes")},
-        "antifunnel": {t: agg.antifunnel_serie(rec,t) for t in ("dia","semana","mes")},
+        "recreacion": {t: agg.recreacion_serie(recreados,t) for t in ("dia","semana","mes")},
+        "antifunnel": {t: agg.antifunnel_serie(recreados,t) for t in ("dia","semana","mes")},
         "contact_status": agg.contact_dist(cst),
         "por_hora": por_hora(pais, inbound_phones),
         "cohorte_origen": agg.cohorte_origen_serie(sl, inbound_phones, interesado_phones),
@@ -250,6 +251,7 @@ def build_country(pais):
     }
 
 COMP = q("query_completitud.sql")
+RECRE = q("query_recreados.sql")   # recreados (UTM reinteresados) con estado real del backbone → Recreación + Antifunnel
 mx = build_country("MX")
 co = build_country("CO")
 
