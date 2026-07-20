@@ -44,7 +44,8 @@ def test_build_page_orders_general_then_leaders():
     html = build_hub.build_page(dashboards, leaders, config, template=build_hub.load_template())
     assert "NO editar a mano" in html
     assert "Growth &amp; Marketing" in html or "Growth & Marketing" in html
-    assert html.index("General · Marketing") < html.index("Sebastián Ciendua · Performance Colombia")
+    # El título del bloque general es la etiqueta de la pestaña (DEFAULT_TABS → "Marketing General").
+    assert html.index('owner-title">Marketing General<') < html.index("Sebastián Ciendua · Performance Colombia")
     assert "canales/sebastian-ciendua/cpa-diario/" in html
 
 def test_discover_leaders_reads_leader_json():
@@ -74,6 +75,14 @@ def test_resolve_tab_priority():
     assert build_hub.resolve_tab({"owner": "general", "tab": "growth-mexico"}, leaders) == "growth-mexico"
     assert build_hub.resolve_tab({"owner": "general", "tab": None}, leaders) == "marketing-general"
     assert build_hub.resolve_tab({"owner": "sebastian-ciendua", "tab": None}, leaders) == "performance-colombia"
+
+def test_resolve_tab_general_section_routing():
+    # Tableros generales sin `tab` explícito se enrutan por su sección.
+    assert build_hub.resolve_tab({"owner": "general", "section": "dashboard"}, {}) == "marketing-general"
+    assert build_hub.resolve_tab({"owner": "general", "section": "analysis"}, {}) == "documentos"
+    assert build_hub.resolve_tab({"owner": "general", "section": "reference"}, {}) == "referencias"
+    # `tab` explícito siempre gana sobre la sección.
+    assert build_hub.resolve_tab({"owner": "general", "section": "analysis", "tab": "growth"}, {}) == "growth"
 
 def test_discover_dashboards_includes_tab_key():
     by_slug = {d["slug"]: d for d in build_hub.discover_dashboards(REPO)}

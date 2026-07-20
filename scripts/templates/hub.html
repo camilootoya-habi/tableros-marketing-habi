@@ -58,11 +58,18 @@
   .owner-title { font-size: 26px; font-weight: 700; color: var(--text-title); margin: 8px 4px 20px; padding-top: 24px; border-top: 1px solid var(--border); width: 100%; max-width: 1400px; }
   .owner-title:first-of-type { border-top: none; padding-top: 0; }
 
-  .tabs { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; margin-bottom: 36px; max-width: 1400px; width: 100%; }
-  .tab-btn { background: var(--card); border: 1px solid var(--border); color: var(--text-muted); border-radius: 8px; padding: 8px 16px; font-size: 14px; font-weight: 600; cursor: pointer; transition: color .15s, border-color .15s, background .15s; }
-  .tab-btn:hover { color: var(--accent); border-color: var(--accent); }
-  .tab-btn.active { color: var(--bg); background: var(--accent); border-color: var(--accent); }
+  .tabs { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin-bottom: 36px; max-width: 1400px; width: 100%; }
+  .tab-btn { flex: 0 0 auto; width: 164px; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; background: var(--card); border: 1px solid var(--tab-c, var(--border)); color: var(--tab-c, var(--text-muted)); border-radius: 8px; padding: 9px 10px; font-size: 14px; font-weight: 600; cursor: pointer; transition: color .15s, border-color .15s, background .15s; }
+  .tab-btn:hover { background: var(--card-hover); }
+  .tab-btn.active { color: var(--bg); background: var(--tab-c, var(--accent)); border-color: var(--tab-c, var(--accent)); }
   body.light .tab-btn.active { color: #fff; }
+  /* Color por grupo: tableros (dash), documentos (docs), referencias (ref) */
+  .tab-btn.tab-dash { --tab-c: #818cf8; }
+  .tab-btn.tab-docs { --tab-c: #34d399; }
+  .tab-btn.tab-ref  { --tab-c: #fbbf24; }
+  body.light .tab-btn.tab-dash { --tab-c: #6366f1; }
+  body.light .tab-btn.tab-docs { --tab-c: #059669; }
+  body.light .tab-btn.tab-ref  { --tab-c: #d97706; }
   .tab-panel { display: none; width: 100%; max-width: 1400px; }
   .tab-panel.active { display: block; }
   .empty-state { text-align: center; color: var(--text-muted-2); font-size: 15px; padding: 64px 16px; }

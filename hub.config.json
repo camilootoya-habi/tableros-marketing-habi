@@ -4,8 +4,10 @@
   "general": { "title": "General · Marketing", "order": 0 },
   "external_cards": [],
   "tabs": [
-    { "id": "marketing-general", "label": "Marketing General", "order": 0 },
-    { "id": "performance",       "label": "Performance",       "order": 1 },
-    { "id": "growth",            "label": "Growth",            "order": 2 }
+    { "id": "marketing-general", "label": "Marketing General", "order": 0, "group": "dash" },
+    { "id": "performance",       "label": "Performance",       "order": 1, "group": "dash" },
+    { "id": "growth",            "label": "Growth",            "order": 2, "group": "dash" },
+    { "id": "documentos",        "label": "Documentos",        "order": 3, "group": "docs" },
+    { "id": "referencias",       "label": "Referencias",       "order": 4, "group": "ref" }
   ]
 }

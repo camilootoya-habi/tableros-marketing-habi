@@ -58,11 +58,18 @@
   .owner-title { font-size: 26px; font-weight: 700; color: var(--text-title); margin: 8px 4px 20px; padding-top: 24px; border-top: 1px solid var(--border); width: 100%; max-width: 1400px; }
   .owner-title:first-of-type { border-top: none; padding-top: 0; }
 
-  .tabs { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; margin-bottom: 36px; max-width: 1400px; width: 100%; }
-  .tab-btn { background: var(--card); border: 1px solid var(--border); color: var(--text-muted); border-radius: 8px; padding: 8px 16px; font-size: 14px; font-weight: 600; cursor: pointer; transition: color .15s, border-color .15s, background .15s; }
-  .tab-btn:hover { color: var(--accent); border-color: var(--accent); }
-  .tab-btn.active { color: var(--bg); background: var(--accent); border-color: var(--accent); }
+  .tabs { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin-bottom: 36px; max-width: 1400px; width: 100%; }
+  .tab-btn { flex: 0 0 auto; width: 164px; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; background: var(--card); border: 1px solid var(--tab-c, var(--border)); color: var(--tab-c, var(--text-muted)); border-radius: 8px; padding: 9px 10px; font-size: 14px; font-weight: 600; cursor: pointer; transition: color .15s, border-color .15s, background .15s; }
+  .tab-btn:hover { background: var(--card-hover); }
+  .tab-btn.active { color: var(--bg); background: var(--tab-c, var(--accent)); border-color: var(--tab-c, var(--accent)); }
   body.light .tab-btn.active { color: #fff; }
+  /* Color por grupo: tableros (dash), documentos (docs), referencias (ref) */
+  .tab-btn.tab-dash { --tab-c: #818cf8; }
+  .tab-btn.tab-docs { --tab-c: #34d399; }
+  .tab-btn.tab-ref  { --tab-c: #fbbf24; }
+  body.light .tab-btn.tab-dash { --tab-c: #6366f1; }
+  body.light .tab-btn.tab-docs { --tab-c: #059669; }
+  body.light .tab-btn.tab-ref  { --tab-c: #d97706; }
   .tab-panel { display: none; width: 100%; max-width: 1400px; }
   .tab-panel.active { display: block; }
   .empty-state { text-align: center; color: var(--text-muted-2); font-size: 15px; padding: 64px 16px; }
@@ -82,57 +89,15 @@
     <p>Lo que no se mide no se mejora — y acá buscamos mejora continua.</p>
   </div>
   <nav class="tabs" role="tablist">
-    <button type="button" class="tab-btn active" data-tab="marketing-general">Marketing General</button>
-    <button type="button" class="tab-btn" data-tab="performance">Performance</button>
-    <button type="button" class="tab-btn" data-tab="growth">Growth</button>
+    <button type="button" class="tab-btn tab-dash active" data-tab="marketing-general">Marketing General</button>
+    <button type="button" class="tab-btn tab-dash" data-tab="performance">Performance</button>
+    <button type="button" class="tab-btn tab-dash" data-tab="growth">Growth</button>
+    <button type="button" class="tab-btn tab-docs" data-tab="documentos">Documentos</button>
+    <button type="button" class="tab-btn tab-ref" data-tab="referencias">Referencias</button>
   </nav>
   <div class="tab-panel active" id="panel-marketing-general">
-  <h2 class="owner-title">General · Marketing</h2>
+  <h2 class="owner-title">Marketing General</h2>
   <div class="columns">
-    <div class="column">
-      <h2 class="section-title"><span>Analysis</span></h2>
-      <div class="card-stack">
-        <a class="card" href="analisis-asignados-co/">
-          <h2><span class="country">CO</span>Análisis de asignados — 2026</h2>
-          <p>Postmortem de la caída de asignados desde el 12 de marzo: nuevo Backbone, recalibración de metas y plan para recuperar volumen.</p>
-        </a>
-
-        <a class="card" href="analisis-mty-multimedios/">
-          <h2><span class="country">MX</span>Postmortem campaña Multimedios — MTY</h2>
-          <p>Impacto de la campaña ALL-IN TUHABI en Monterrey, marzo 2026: tráfico, registros, conversión y funnel comercial.</p>
-        </a>
-
-        <a class="card" href="analisis-atribucion-completitud-mx/">
-          <h2><span class="country">MX</span>Atribución de completitud — Lead Forms MX 2026</h2>
-          <p>Quién completa los leads que terminan en cierre (Lead Forms MX, 2026): volumen, concentración por agente y matices de atribución entre completitud y cierre comercial.</p>
-        </a>
-
-        <a class="card" href="analisis-transicion-automatizacion/">
-          <h2><span class="country">CO</span><span class="country">MX</span>Transición a marketing automatizado — equipo CO + MX</h2>
-          <p>Cómo se distribuye hoy el tiempo del equipo (ABC COSTING mayo 2026) y el plan para liberar capacidad con IA y agentes durante junio y Q3 2026. Tres capítulos, uno por eje: líderes de canal Performance, hub de marketing multi-marca (Growth), y agentes.</p>
-        </a>
-
-        <a class="card" href="diagnostico-performance-co/">
-          <h2><span class="country">CO</span>Diagnóstico Performance CO — Mundial 2026</h2>
-          <p>Por qué no cumplimos metas esta temporada (Mundial + festivos + pauta electoral), descompuesto en 3 palancas por fuente —inversión, CPL/CPM/CPC y conversión registro→asignado— y proyección Q2+Q3 optimista/conservador. Atribución por UTM.</p>
-        </a>
-
-        <a class="card" href="plan-mundial-marketing/">
-          <h2><span class="country">CO/MX</span>Plan Mundial 2026 — diagnóstico y 3 pilares</h2>
-          <p>Los costos de adquisición suben y se concentran en fuente WEB (CO y MX) al entrar al Mundial. El plan: 3 pilares para convertir una temporada cara en oportunidad —marca en la calle (UBER), escalar Leadforms con GABI, y re-gestión de calificados no cerrados.</p>
-        </a>
-
-        <a class="card" href="calentamiento-leads-sellers/">
-          <h2><span class="country">CO/MX</span>Calentamiento de leads sellers — el proceso</h2>
-          <p>Calificamos por inmueble (buybox), no por intención de venta. El proceso de calentamiento corrige eso con dos compuertas complementarias: filtrar curiosos antes de asignar (CX + eficiencia comercial) y rescatar enfriados que no cerraron ni se descartaron. Diseño de proceso CO + MX.</p>
-        </a>
-
-        <a class="card" href="segmentacion-jtbd-mx/">
-          <h2><span class="country">MX</span>Segmentación JTBD — Vendedores Tuhabi MX</h2>
-          <p>Re-lectura del estudio de GDV (n=291) por Job To Be Done en vez de buyer personas: 4 jobs (Urgencia, Soltar, Invertir, Crecer) desde P.4+P.22, transparencia del solapamiento (68% multi-job), re-corte de los cruces de GDV por job, y puente persona↔JTBD.</p>
-        </a>
-      </div>
-    </div>
     <div class="column">
       <h2 class="section-title"><span>Dashboards</span></h2>
       <div class="card-stack">
@@ -197,19 +162,10 @@
         </a>
       </div>
     </div>
-    <div class="column">
-      <h2 class="section-title"><span>Reference</span></h2>
-      <div class="card-stack">
-        <a class="card" href="docs-marketing/">
-          <h2><span class="country">CO</span><span class="country">MX</span>Marketing Sellers · Docs</h2>
-          <p>Diccionario de tablas, fuentes (fuente_id), canales y cómo se hace el cruce UTM para establecer el canal. Referencia rápida para queries y tableros.</p>
-        </a>
-      </div>
-    </div>
   </div>
   </div>
   <div class="tab-panel" id="panel-performance">
-  <h2 class="owner-title">General · Marketing</h2>
+  <h2 class="owner-title">Performance</h2>
   <div class="columns">
     <div class="column">
       <h2 class="section-title"><span>Dashboards</span></h2>
@@ -228,7 +184,7 @@
   </div>
   </div>
   <div class="tab-panel" id="panel-growth">
-  <h2 class="owner-title">General · Marketing</h2>
+  <h2 class="owner-title">Growth</h2>
   <div class="columns">
     <div class="column">
       <h2 class="section-title"><span>Dashboards</span></h2>
@@ -251,6 +207,69 @@
         <a class="card" href="marketing-loop/">
           <h2><span class="country">MX/CO</span>Marketing Loop — Reinterés de leads (MX + CO)</h2>
           <p>Resultados en vivo del Marketing Loop (Neon + mart Infobip + Meta): salud de línea, impacto en asignados de marketing, cosecha de envío por período, errores de entrega, A/B de plantillas (v1 vs v2), respuestas por período, funnel comparativo reinteresados vs WEB, calidad por antigüedad del lead y evolución diaria. MX-first.</p>
+        </a>
+      </div>
+    </div>
+  </div>
+  </div>
+  <div class="tab-panel" id="panel-documentos">
+  <h2 class="owner-title">Documentos</h2>
+  <div class="columns">
+    <div class="column">
+      <h2 class="section-title"><span>Analysis</span></h2>
+      <div class="card-stack">
+        <a class="card" href="analisis-asignados-co/">
+          <h2><span class="country">CO</span>Análisis de asignados — 2026</h2>
+          <p>Postmortem de la caída de asignados desde el 12 de marzo: nuevo Backbone, recalibración de metas y plan para recuperar volumen.</p>
+        </a>
+
+        <a class="card" href="analisis-mty-multimedios/">
+          <h2><span class="country">MX</span>Postmortem campaña Multimedios — MTY</h2>
+          <p>Impacto de la campaña ALL-IN TUHABI en Monterrey, marzo 2026: tráfico, registros, conversión y funnel comercial.</p>
+        </a>
+
+        <a class="card" href="analisis-atribucion-completitud-mx/">
+          <h2><span class="country">MX</span>Atribución de completitud — Lead Forms MX 2026</h2>
+          <p>Quién completa los leads que terminan en cierre (Lead Forms MX, 2026): volumen, concentración por agente y matices de atribución entre completitud y cierre comercial.</p>
+        </a>
+
+        <a class="card" href="analisis-transicion-automatizacion/">
+          <h2><span class="country">CO</span><span class="country">MX</span>Transición a marketing automatizado — equipo CO + MX</h2>
+          <p>Cómo se distribuye hoy el tiempo del equipo (ABC COSTING mayo 2026) y el plan para liberar capacidad con IA y agentes durante junio y Q3 2026. Tres capítulos, uno por eje: líderes de canal Performance, hub de marketing multi-marca (Growth), y agentes.</p>
+        </a>
+
+        <a class="card" href="diagnostico-performance-co/">
+          <h2><span class="country">CO</span>Diagnóstico Performance CO — Mundial 2026</h2>
+          <p>Por qué no cumplimos metas esta temporada (Mundial + festivos + pauta electoral), descompuesto en 3 palancas por fuente —inversión, CPL/CPM/CPC y conversión registro→asignado— y proyección Q2+Q3 optimista/conservador. Atribución por UTM.</p>
+        </a>
+
+        <a class="card" href="plan-mundial-marketing/">
+          <h2><span class="country">CO/MX</span>Plan Mundial 2026 — diagnóstico y 3 pilares</h2>
+          <p>Los costos de adquisición suben y se concentran en fuente WEB (CO y MX) al entrar al Mundial. El plan: 3 pilares para convertir una temporada cara en oportunidad —marca en la calle (UBER), escalar Leadforms con GABI, y re-gestión de calificados no cerrados.</p>
+        </a>
+
+        <a class="card" href="calentamiento-leads-sellers/">
+          <h2><span class="country">CO/MX</span>Calentamiento de leads sellers — el proceso</h2>
+          <p>Calificamos por inmueble (buybox), no por intención de venta. El proceso de calentamiento corrige eso con dos compuertas complementarias: filtrar curiosos antes de asignar (CX + eficiencia comercial) y rescatar enfriados que no cerraron ni se descartaron. Diseño de proceso CO + MX.</p>
+        </a>
+
+        <a class="card" href="segmentacion-jtbd-mx/">
+          <h2><span class="country">MX</span>Segmentación JTBD — Vendedores Tuhabi MX</h2>
+          <p>Re-lectura del estudio de GDV (n=291) por Job To Be Done en vez de buyer personas: 4 jobs (Urgencia, Soltar, Invertir, Crecer) desde P.4+P.22, transparencia del solapamiento (68% multi-job), re-corte de los cruces de GDV por job, y puente persona↔JTBD.</p>
+        </a>
+      </div>
+    </div>
+  </div>
+  </div>
+  <div class="tab-panel" id="panel-referencias">
+  <h2 class="owner-title">Referencias</h2>
+  <div class="columns">
+    <div class="column">
+      <h2 class="section-title"><span>Reference</span></h2>
+      <div class="card-stack">
+        <a class="card" href="docs-marketing/">
+          <h2><span class="country">CO</span><span class="country">MX</span>Marketing Sellers · Docs</h2>
+          <p>Diccionario de tablas, fuentes (fuente_id), canales y cómo se hace el cruce UTM para establecer el canal. Referencia rápida para queries y tableros.</p>
         </a>
       </div>
     </div>

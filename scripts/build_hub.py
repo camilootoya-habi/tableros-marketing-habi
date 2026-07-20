@@ -19,13 +19,17 @@ def slugify(text: str) -> str:
     return "-".join(norm.lower().split())
 
 
+SECTION_TO_TAB = {"analysis": "documentos", "reference": "referencias"}
+
+
 def resolve_tab(dashboard: dict, leaders: dict) -> str:
-    """Pestaña de un tablero: override `tab` explícito → general → marketing-general;
-    líder → slug de su `channel`. Sin channel, cae a marketing-general."""
+    """Pestaña de un tablero: override `tab` explícito gana. Si es general, su
+    `section` decide (analysis→documentos, reference→referencias, resto→marketing-general).
+    Si es de un líder, slug de su `channel`; sin channel, cae a marketing-general."""
     if dashboard.get("tab"):
         return dashboard["tab"]
     if dashboard["owner"] == "general":
-        return "marketing-general"
+        return SECTION_TO_TAB.get(dashboard.get("section", "dashboard"), "marketing-general")
     channel = leaders.get(dashboard["owner"], {}).get("channel", "")
     return slugify(channel) if channel else "marketing-general"
 
@@ -116,9 +120,10 @@ def render_empty_panel() -> str:
             'esta sección.</div>')
 
 
-def render_tab_content(tab_id, dashboards, leaders, config) -> str:
+def render_tab_content(tab_id, tab_label, dashboards, leaders, config) -> str:
     """Owner-blocks dentro de una pestaña: general primero, luego líderes por order.
-    Las external_cards solo cuelgan de la pestaña marketing-general."""
+    Las external_cards solo cuelgan de la pestaña marketing-general. El título del
+    bloque general es la etiqueta de la propia pestaña (no un texto fijo)."""
     blocks = []
     general_cards = [d for d in dashboards if d["owner"] == "general"]
     if tab_id == "marketing-general":
@@ -126,7 +131,7 @@ def render_tab_content(tab_id, dashboards, leaders, config) -> str:
             {**c, "link": c["url"]} for c in config.get("external_cards", [])
         ]
     if general_cards:
-        blocks.append(render_owner_block(config["general"]["title"], general_cards))
+        blocks.append(render_owner_block(tab_label, general_cards))
     for lid in sorted(leaders, key=lambda k: leaders[k].get("order", 9999)):
         lcards = [d for d in dashboards if d["owner"] == lid]
         if lcards:
@@ -149,12 +154,13 @@ def build_page(dashboards, leaders, config, template) -> str:
     tab_bar, panels = [], []
     for i, t in enumerate(tabs):
         active = " active" if i == 0 else ""
+        gcls = f' tab-{t["group"]}' if t.get("group") else ""
         tab_bar.append(
-            f'    <button type="button" class="tab-btn{active}" '
+            f'    <button type="button" class="tab-btn{gcls}{active}" '
             f'data-tab="{escape(t["id"])}">{escape(t["label"])}</button>'
         )
         in_tab = [d for d in dashboards if d["_tab"] == t["id"]]
-        content = render_tab_content(t["id"], in_tab, leaders, config)
+        content = render_tab_content(t["id"], t["label"], in_tab, leaders, config)
         panels.append(
             f'  <div class="tab-panel{active}" id="panel-{escape(t["id"])}">\n'
             f'{content}\n  </div>'
