@@ -114,11 +114,12 @@ def antifunnel_serie(recreados_rows, tipo):
         A[b][lab]=A[b].get(lab,0)+1
     return [{"bucket":k,"estados":A[k]} for k in sorted(A)]
 
-def cosecha_serie(sendlog, mart_by_msgid, inbound_phones, interesado_phones, tipo, n=20):
-    """Cosecha por período de ENVÍO (attempted_at, granularidad `tipo`): avance enviados→entregados→leidos→respondidos→interesados.
-    Devuelve los `n` períodos más recientes (ascendente). leidos usa seen del mart (SEEN suele faltar en envíos recientes)."""
+def cosecha_serie(sendlog, mart_by_msgid, inbound_phones, interesado_phones, interesado_nocreado_phones, tipo, n=20):
+    """Cosecha por período de ENVÍO (attempted_at, granularidad `tipo`): avance enviados→entregados→leidos→
+    respondidos→interesados→interesados_no_creados. Devuelve los `n` períodos más recientes (ascendente).
+    interesados_no_creados = interesados cuyo nid aún NO se recreó (no está en la tabla recreation)."""
     from collections import defaultdict
-    A=defaultdict(lambda: dict(enviados=0,entregados=0,leidos=0,respondidos=0,interesados=0))
+    A=defaultdict(lambda: dict(enviados=0,entregados=0,leidos=0,respondidos=0,interesados=0,interesados_no_creados=0))
     for r in sendlog:
         b=bucket((r.get("attempted_at") or "")[:10], tipo)
         if not b: continue
@@ -127,6 +128,7 @@ def cosecha_serie(sendlog, mart_by_msgid, inbound_phones, interesado_phones, tip
         if m and m.get("status")=="delivered":
             a["entregados"]+=1
             if m.get("seen"): a["leidos"]+=1
+        if r.get("phone") in interesado_nocreado_phones: a["interesados_no_creados"]+=1
         if r.get("phone") in inbound_phones: a["respondidos"]+=1
         if r.get("phone") in interesado_phones: a["interesados"]+=1
     return [{"bucket":k, **A[k]} for k in sorted(A)[-n:]]
