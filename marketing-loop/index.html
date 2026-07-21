@@ -178,6 +178,9 @@
   .docs .kv td:last-child{color:var(--text)}
   .docs code{background:var(--border);padding:2px 7px;border-radius:5px;font-size:12.5px;color:var(--text-title);word-break:break-all}
   .docs .flag{font-size:22px;vertical-align:-3px;margin-right:4px}
+  .docs .docfilters{margin:8px 0 10px 4px;padding-left:22px}
+  .docs .docfilters li{font-size:13.5px;line-height:1.55;color:var(--text-muted);margin-bottom:7px}
+  .docs .docfilters li b{color:var(--text)}
 </style>
 </head>
 <body>
@@ -462,13 +465,15 @@ const DOCS={
     tpls:[['v1 · control','<code>reactivacion_sellers_mx_v1_jul26</code> · header TEXT'],
           ['v2 · oferta','<code>reactivacion_sellers_mx_v2_oferta_jul26</code> · header IMAGE (<code>jcmm_mexico.png</code>)'],
           ['Anterior (repo viejo)','<code>bot_reactivacion_leads_mx_sellers_camilootoya_16jun26</code>']],
-    utm:'mex-sellers-paid-experiments-web-without-leads-retargeting-national-reinteresados'},
+    utm:'mex-sellers-paid-experiments-web-without-leads-retargeting-national-reinteresados',
+    fuente_desc:'WEB (3) + Lead Forms (47)'},
   CO:{
     lineas:[['Envíos (línea activa)','<code>57 300 911 0453</code> · <code>573009110453</code>']],
     tpls:[['v1 · control','<code>reactivacion_sellers_co_v1_jul26</code> · header TEXT'],
           ['v2 · oferta','<code>reactivacion_sellers_co_v2_oferta_jul26</code> · header IMAGE (<code>jcmm_colombia.png</code>)'],
           ['Anterior (repo viejo)','<code>bot_reactivacion_leads_co_sellers_camilootoya_19jun26</code>']],
-    utm:'col-sellers-paid-experiments-web-without-leads-retargeting-national-reinteresados'},
+    utm:'col-sellers-paid-experiments-web-without-leads-retargeting-national-reinteresados',
+    fuente_desc:'WEB (3) + Lead Forms (47) + Estudio Inmueble/Habímetro (7) + CRM (20)'},
 };
 function setDocs(c){ docC=c; const t=document.getElementById('docsTitle'); if(t) t.textContent='Documentación · Marketing Loop · '+c; renderDocs(); }
 function renderDocs(){
@@ -494,8 +499,23 @@ function renderDocs(){
     <h3>UTM de las recreaciones (<code>utm_campaign</code>)</h3>
     ${kv([['UTM',`<code>${x.utm}</code>`],['Agente (creador)','<code>claude-camilo-otoya-reinteres</code>']])}
 
-    <h3>Definición de la base (SLA con comercial)</h3>
-    <p><b>Ventana:</b> creación <b>2023-01-01 → hoy−180 días</b>. Regla SLA: un lead con 180 días de creado que no esté cerrado, captado ni descartado → lo toma marketing para reinteresar. Además, <b>guard a nivel persona</b>: si el teléfono tiene un lead más reciente aún dentro del SLA o ya terminal, no se contacta. Detalle valor por valor en la hoja <b>Base</b>.</p>`;
+    <h3>Cómo se arma la base a reinteresar (filtros) — ${docC}</h3>
+    <p>El universo son leads de sellers <b>estancados pero aún calificados</b> que el comercial ya no está trabajando. Se filtran así (detalle valor por valor en la hoja <b>Base</b>):</p>
+    <ol class="docfilters">
+      <li><b>Calificado hoy</b> — el negocio está <b>actualmente</b> en estado 20/36/63 (MM) o 20/36/73 (Inmo) según el <b>backbone</b> (fuente de verdad, no el espejo de HubSpot).</li>
+      <li><b>Fuente de marketing</b> — ${x.fuente_desc}.</li>
+      <li><b>Ventana de creación</b> — creado desde <b>2023-01-01</b> y con <b>más de 180 días</b> (SLA: si tiene &lt;180d, el comercial lo trabaja; no se lo quitamos).</li>
+      <li><b>No terminal en Market Maker</b> — excluye cierre/vendido/descartado (<code>oportunidad_del_negocio</code>).</li>
+      <li><b>No cerrado/avanzado en Inmobiliaria</b> — excluye contrato/oferta/legal/vendido (<code>oportunidad_inmobiliaria</code>).</li>
+      <li><b>Etapa HubSpot (pipeline-aware)</b> — en los pipelines <b>vivos</b> de gestión solo entra la etapa «Perdido»; en cualquier otro, se toma.</li>
+      <li><b>No rechazado por remodelaciones</b> — excluye rechazos de comité (grietas, humedad grave, &gt;40 años, etc.).</li>
+      <li><b>Con dirección</b> — debe tener calle (el comercial la necesita para gestionar/visitar).</li>
+      <li><b>Descarte duro</b> — excluye descartes permanentes (ya vendió, duplicado, datos incorrectos, rechazo definitivo…). <b>Mantiene</b> «Ya no quiere vender» (reactivable).</li>
+      <li><b>Teléfono válido</b> — 10 dígitos y no todos iguales.</li>
+      <li><b>Dedup</b> — 1 fila por persona (NID + teléfono + correo), quedándose con el lead <b>más reciente</b>.</li>
+      <li><b>Guard a nivel persona</b> — se <b>excluye el teléfono</b> si su lead <b>más reciente</b> (de cualquier estado) sigue dentro del SLA (&lt;180d) o ya es <b>terminal</b> (vendió/cerró/descartó). Evita pisar al comercial o recontactar a quien ya transó.</li>
+    </ol>
+    <p class="note">Además, en el <b>envío</b>: no se re-contacta a quien ya recibió (entregado) ni a bloqueos/opt-out permanentes; freq-cap y no-entregados transitorios sí reintentan tras un cooldown de 30 días.</p>`;
 }
 const EXPMETA={
   "00.pipeline":["Pipeline","dónde vive el deal; solo importan los 2 pipelines vivos"],
