@@ -630,6 +630,8 @@ const CARD_HELP={
   ab_rr:{t:'% Read Rate',b:'<p><b>Leídos ÷ Entregados.</b> % de los <b>entregados</b> que el usuario abrió (marca SEEN del mart). ⚠ WhatsApp no siempre reporta SEEN → puede salir 0.</p>'},
   ab_rp:{t:'% Respond Rate',b:'<p><b>Respondieron ÷ Entregados.</b> % de los <b>entregados</b> que respondieron (cualquier botón o texto).</p>'},
   ab_ir:{t:'% Interesado Rate',b:'<p><b>Interesados ÷ Entregados.</b> % de los <b>entregados</b> que tocaron el botón «Estoy interesado».</p><p>Es el <b>indicador MÁS clave</b> del loop y por eso va resaltado en amarillo: define qué plantilla/fuente gana.</p>'},
+  ab_yv:{t:'Ya no vendo (opt-out)',b:'<p><b>Cuántos</b> tocaron el botón <b>«Ya no vendo»</b> (payload YAVENDIÓ). Es la <b>interacción negativa</b> — se dieron de baja por el botón (no bloquearon).</p>'},
+  ab_or:{t:'% Opt-out Rate',b:'<p><b>«Ya no vendo» ÷ Entregados.</b> % de los <b>entregados</b> que se dieron de baja por el botón. Sirve para comparar si una plantilla <b>molesta/rechaza más</b> que otra.</p><p>⚠ Los <b>bloqueos</b> de usuario (que castigan la calidad de la línea) NO se pueden medir por plantilla — son una señal agregada de Meta a nivel línea, post-entrega. El opt-out es el proxy negativo medible por plantilla.</p>'},
   abf:{t:'Comparación por fuente',b:'<p>Igual que el <b>A/B de plantillas</b> pero agrupando por la <b>fuente del lead original</b> (WEB, Estudio Inmueble/Habímetro, CRM, Lead Forms…) en vez de por plantilla. Una fila por fuente; mismas columnas y denominadores (delivery sobre enviados; read/respond/interesado sobre entregados).</p><p>Enlace envío→fuente por <code>nid</code> contra TIG. Sirve para decidir <b>qué fuentes vale la pena reactivar</b> (las que convierten a «interesado»). Read rate no disponible por esta vía (SEEN).</p>'},
   resp:{t:'Respuestas por período',b:'<p>Respuestas recibidas en la línea (<b>mart inbound</b> de Infobip) bucketeadas por su <b>fecha de llegada</b> (Temporalidad: día / semana / mes). Filas fijas: total, botón <b>Interesado</b>, botón <b>Ya no vendo</b>, y <b>Baja</b> (escribieron «baja» como texto).</p><p><b>Respuestas Abiertas</b> resume el resto del texto libre; ábrela con ▸ para ver cada respuesta con su conteo por período. Columnas = 20 períodos recientes.</p>'},
   resp_tot:{t:'Respondieron (total)',b:'<p>Total de respuestas recibidas en los últimos 14 días (botones + texto libre).</p>'},
@@ -852,10 +854,12 @@ function _abRender(elId, arr, firstHdr, firstVal, emptyMsg, note){
     {h:'Leídos',         f:t=>fmt(t.leidos),           k:'ab_leidos'},
     {h:'Respondidos',    f:t=>fmt(t.respondieron),     k:'ab_resp'},
     {h:'Interesados',    f:t=>fmt(t.interesados),      k:'ab_int'},
+    {h:'Ya no vendo',    f:t=>fmt(t.yavendio),         k:'ab_yv'},
     {h:'Delivery rate',  f:t=>rate(t.delivery_rate),   k:'ab_dr'},
     {h:'Read rate',      f:t=>rate(t.read_rate),       k:'ab_rr'},
     {h:'Respond rate',   f:t=>rate(t.respond_rate),    k:'ab_rp'},
-    {h:'Interesado rate',f:t=>rate(t.interesado_rate), k:'ab_ir', hl:true}];
+    {h:'Interesado rate',f:t=>rate(t.interesado_rate), k:'ab_ir', hl:true},
+    {h:'Opt-out rate',   f:t=>rate(t.optout_rate),     k:'ab_or'}];
   const th=cols.map(c=>`<th style="text-align:right" class="${c.hl?'ab-key':''}">${c.h} ${_hb(c.k)}</th>`).join('');
   const rows=arr.map(t=>`<tr class="row-stage"><td>${firstVal(t)}</td>${cols.map(c=>`<td style="text-align:right" class="${c.hl?'ab-key':''}">${c.f(t)}</td>`).join('')}</tr>`).join('');
   el.innerHTML=`<table><thead><tr><th>${firstHdr}</th>${th}</tr></thead><tbody>${rows}</tbody></table>`+(note?`<p class="note" style="padding:8px 13px">${note}</p>`:'');
