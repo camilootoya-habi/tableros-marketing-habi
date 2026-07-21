@@ -185,6 +185,25 @@ def _ab(sl, mbm, inbound_phones, interesado_phones, yavendio_phones, keyfield="t
             "yavendio":a["yavendio"], "optout_rate": rate(a["yavendio"],a["entregados"])})
     return out
 
+# Inicio del experimento A/B (config.EXPERIMENT.since MX / countries.co CO)
+AB_SINCE = {"MX": "2026-07-16", "CO": "2026-07-17"}
+def _ab_veredicto(rows, since):
+    """Veredicto bayesiano del A/B sobre INTERESADO rate (interesados/entregados), v1 control vs v2 oferta.
+    Misma metodología/umbrales que el motor (ab_stats.decide)."""
+    import ab_stats
+    ctrl = next((r for r in rows if "_v1_" in (r.get("template") or "")), None)
+    ofer = next((r for r in rows if "_v2_" in (r.get("template") or "")), None)
+    if not ctrl or not ofer or not ctrl["entregados"] or not ofer["entregados"]:
+        return {"disponible": False}
+    dias = (datetime.date.today() - datetime.date.fromisoformat(since)).days + 1
+    d = ab_stats.decide(ctrl["template"], ctrl["entregados"], ctrl["interesados"],
+                        ofer["template"], ofer["entregados"], ofer["interesados"], dias)
+    return {"disponible": True, "ganador": ("v2" if d["winner"]==ofer["template"] else "v1"),
+            "prob": round(d["prob_winner"],3), "loss_pp": round(d["expected_loss_winner"]*100,3),
+            "decidido": d["decided"], "razon": d["reason"], "dias": dias,
+            "entregados": {"v1": ctrl["entregados"], "v2": ofer["entregados"]},
+            "min_brazo": 300, "min_dias": 7}
+
 # --- ensamblado ---
 WIN = 7
 
@@ -275,6 +294,8 @@ data={
   "cosecha": {"MX": mx["cosecha"], "CO": co["cosecha"]},
   "ab_templates": {"MX": mx["ab_templates"], "CO": co["ab_templates"]},
   "ab_fuentes": {"MX": mx["ab_fuentes"], "CO": co["ab_fuentes"]},
+  "ab_veredicto": {"MX": _ab_veredicto(mx["ab_templates"], AB_SINCE["MX"]),
+                   "CO": _ab_veredicto(co["ab_templates"], AB_SINCE["CO"])},
   "antifunnel": {"MX": mx["antifunnel"], "CO": co["antifunnel"]},
   "contact_status": {"MX": mx["contact_status"], "CO": co["contact_status"]},
   "por_hora": {"MX": mx["por_hora"], "CO": co["por_hora"]},

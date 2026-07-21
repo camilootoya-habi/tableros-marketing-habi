@@ -102,6 +102,15 @@
   /* Columna clave (Interesado rate) del A/B: resaltada en amarillo */
   th.ab-key{background:rgba(251,191,36,.20);color:var(--warn)}
   td.ab-key{background:rgba(251,191,36,.14);font-weight:700;color:var(--warn)}
+  /* veredicto bayesiano A/B */
+  .veredicto{border-radius:12px;padding:12px 15px;margin:0 0 12px;border:1px solid var(--border)}
+  .veredicto.vd-ok{border-color:var(--ok);background:rgba(52,211,153,.10)}
+  .veredicto.vd-wait{border-color:var(--warn);background:rgba(251,191,36,.08)}
+  .vd-main{font-size:14px;color:var(--text);margin-bottom:6px}
+  .vd-sub{font-size:12px;color:var(--text-muted);display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+  .vd-chip{padding:2px 8px;border-radius:20px;font-weight:700;font-size:11px}
+  .vd-c-ok{background:rgba(52,211,153,.18);color:var(--ok)}
+  .vd-c-no{background:rgba(148,163,184,.18);color:var(--text-muted)}
   .help-btn{display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;border-radius:50%;background:var(--border);color:var(--text-muted);border:none;font-size:11px;font-weight:700;cursor:pointer;margin-left:6px;vertical-align:middle;padding:0;line-height:1}
   .help-btn:hover{background:var(--accent);color:var(--accent-on)}
   .ftab tbody tr.row-stage .n{font-weight:600;color:var(--text)}
@@ -236,6 +245,7 @@
   <div class="tabletitle">A/B de plantillas
     <button type="button" class="help-btn" onclick="openHelp('ab')" aria-label="Explicación">?</button>
   </div>
+  <div id="abVeredicto"></div>
   <div class="tbl-wrap ftab" id="ab"></div>
 
   <div class="tabletitle">Comparación por fuente
@@ -630,6 +640,7 @@ const CARD_HELP={
   ab_rr:{t:'% Read Rate',b:'<p><b>Leídos ÷ Entregados.</b> % de los <b>entregados</b> que el usuario abrió (marca SEEN del mart). ⚠ WhatsApp no siempre reporta SEEN → puede salir 0.</p>'},
   ab_rp:{t:'% Respond Rate',b:'<p><b>Respondieron ÷ Entregados.</b> % de los <b>entregados</b> que respondieron (cualquier botón o texto).</p>'},
   ab_ir:{t:'% Interesado Rate',b:'<p><b>Interesados ÷ Entregados.</b> % de los <b>entregados</b> que tocaron el botón «Estoy interesado».</p><p>Es el <b>indicador MÁS clave</b> del loop y por eso va resaltado en amarillo: define qué plantilla/fuente gana.</p>'},
+  ab_bayes:{t:'Veredicto bayesiano del A/B',b:'<p>Compara las dos plantillas sobre el <b>Interesado rate</b> con una prueba <b>bayesiana Beta-Binomial</b>. <b>P(mejor)</b> = probabilidad de que la plantilla líder sea realmente la mejor. <b>Pérdida esperada</b> = cuánto interesado-rate arriesgas si eliges al líder y estás equivocado (en puntos porcentuales).</p><p>Se declara <b>DECIDIDO</b> cuando P(mejor) ≥ <b>95%</b> y pérdida esperada ≤ <b>0,5 pp</b>, con al menos <b>300 entregados por brazo</b> y <b>7 días</b>. Si a los <b>21 días</b> no hay señal, gana el de mayor probabilidad. Los chips muestran el progreso hacia esos mínimos.</p>'},
   ab_yv:{t:'Ya no vendo (opt-out)',b:'<p><b>Cuántos</b> tocaron el botón <b>«Ya no vendo»</b> (payload YAVENDIÓ). Es la <b>interacción negativa</b> — se dieron de baja por el botón (no bloquearon).</p>'},
   ab_or:{t:'% Opt-out Rate',b:'<p><b>«Ya no vendo» ÷ Entregados.</b> % de los <b>entregados</b> que se dieron de baja por el botón. Sirve para comparar si una plantilla <b>molesta/rechaza más</b> que otra.</p><p>⚠ Los <b>bloqueos</b> de usuario (que castigan la calidad de la línea) NO se pueden medir por plantilla — son una señal agregada de Meta a nivel línea, post-entrega. El opt-out es el proxy negativo medible por plantilla.</p>'},
   abf:{t:'Comparación por fuente',b:'<p>Igual que el <b>A/B de plantillas</b> pero agrupando por la <b>fuente del lead original</b> (WEB, Estudio Inmueble/Habímetro, CRM, Lead Forms…) en vez de por plantilla. Una fila por fuente; mismas columnas y denominadores (delivery sobre enviados; read/respond/interesado sobre entregados).</p><p>Enlace envío→fuente por <code>nid</code> contra TIG. Sirve para decidir <b>qué fuentes vale la pena reactivar</b> (las que convierten a «interesado»). Read rate no disponible por esta vía (SEEN).</p>'},
@@ -869,6 +880,23 @@ function renderAB(){
   _abRender('ab', arr, 'Plantilla', t=>escx(t.template),
     'Sin datos de A/B para '+country+' (aún no disponible).',
     (arr&&arr.length<2)?'Solo una plantilla activa — sin comparación A/B todavía.':'v1 = control · v2 = oferta. Excluye envíos fallidos por plantilla sin imagen (7008). Read rate no disponible por esta vía (SEEN).');
+  renderVeredicto();
+}
+function renderVeredicto(){
+  const el=document.getElementById('abVeredicto'); if(!el) return;
+  const v=(D.ab_veredicto||{})[country];
+  if(!v||!v.disponible){ el.innerHTML=''; return; }
+  const gcls=v.decidido?'vd-ok':'vd-wait';
+  const prob=(v.prob*100).toFixed(0), loss=v.loss_pp.toFixed(2);
+  const musA=v.entregados.v1>=v.min_brazo, musB=v.entregados.v2>=v.min_brazo, musOK=musA&&musB;
+  const diasOK=v.dias>=v.min_dias;
+  const chip=(ok,txt)=>`<span class="vd-chip ${ok?'vd-c-ok':'vd-c-no'}">${ok?'✓':'○'} ${txt}</span>`;
+  el.innerHTML=`<div class="veredicto ${gcls}">
+    <div class="vd-main">${_hb('ab_bayes')} Veredicto bayesiano (sobre Interesado rate):
+      <b>${v.decidido?'DECIDIDO':'aún sin decisión'}</b> — gana provisionalmente <b>${v.ganador}</b>
+      · P(mejor) <b>${prob}%</b> · pérdida esperada <b>${loss} pp</b></div>
+    <div class="vd-sub">${chip(diasOK,`${v.dias}/${v.min_dias} días`)} ${chip(musA,`v1 ${fmt(v.entregados.v1)}/${v.min_brazo} entregados`)} ${chip(musB,`v2 ${fmt(v.entregados.v2)}/${v.min_brazo} entregados`)} · <span class="muted">${v.razon}</span></div>
+  </div>`;
 }
 function renderABFuente(){
   const arr=(D.ab_fuentes||{})[country];
