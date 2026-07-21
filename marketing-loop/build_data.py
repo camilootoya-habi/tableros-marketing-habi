@@ -241,13 +241,19 @@ def build_country(pais):
     parsed_wide=[(i["phone"], agg.parse_resp(i["respuesta_cliente"]), i["ts"]) for i in inb_resp]
     inbound_phones_wide={p for p,_,_ in parsed_wide if p}
     interesado_phones_wide={p for p,pr,_ in parsed_wide if p and pr["action"]=="INTERESADO"}
-    # INTERESADOS PENDIENTES POR CREAR: respondieron INTERESADO (nid del payload) pero su nid aún NO está en
-    # la tabla recreation (no se recreó el lead). Fuente de verdad = mart inbound. Card + fila de la Cosecha.
+    # INTERESADOS PENDIENTES POR CREAR: respondieron INTERESADO (nid del payload) pero aún NO se recreó el lead.
+    # Refinado (2026-07-21) para NO sobre-contar: solo cuenta si además (a) es lead del LOOP (nid en send_log),
+    # y (b) NO está en estado TERMINAL (baja/ya_vendio/respondio_otro = se dio de baja o respondió otra cosa).
+    # Así excluye opt-outs post-interesado y los interesados del repo viejo que nunca enviamos. Fuente: mart inbound.
     recreated_nids={str(r["old_nid"]) for r in rec if r.get("old_nid")}
-    interesado_pairs=[(p, pr.get("nid")) for p,pr,_ in parsed_wide if p and pr["action"]=="INTERESADO" and pr.get("nid")]
-    pend_nids={nid for _,nid in interesado_pairs if nid not in recreated_nids}
-    pendientes_crear=len(pend_nids)
-    interesado_nocreado_phones={p for p,nid in interesado_pairs if nid not in recreated_nids}
+    loop_nids={str(r["nid"]) for r in sl if r.get("nid")}                      # (a) leads del loop (en send_log)
+    TERMINAL_NEG={"baja","ya_vendio","respondio_otro"}
+    terminal_phones={r["phone"] for r in cst if r.get("state") in TERMINAL_NEG}  # (b) estados terminales negativos
+    interesado_pairs=[(p, str(pr.get("nid"))) for p,pr,_ in parsed_wide if p and pr["action"]=="INTERESADO" and pr.get("nid")]
+    pend=[(p,nid) for p,nid in interesado_pairs
+          if nid not in recreated_nids and nid in loop_nids and p not in terminal_phones]
+    pendientes_crear=len({nid for _,nid in pend})
+    interesado_nocreado_phones={p for p,_ in pend}
     # recreados/calificados por old_nid
     recreated_oldnids={r["old_nid"] for r in rec if r.get("success")}
     qualified_oldnids={r["old_nid"] for r in rec if r.get("state_at_creation") in (20,63)}
