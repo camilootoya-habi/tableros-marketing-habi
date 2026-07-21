@@ -156,11 +156,12 @@ def completitud(pais, rows):
     return {"series":series,"na":na}
 
 # --- helpers nuevos: respuestas parseadas del mart (INTERESADO/YAVENDIO/OTRO) y A/B por template ---
-def _ab(sl, mbm, inbound_phones, interesado_phones, keyfield="template"):
-    """Comparativo por `keyfield` (template o fuente): enviados, entregados, delivery/read/respond/interesado rate.
-    delivery = entregados/enviados; read/respond/interesado = x/entregados. Excluye fallidos por bug 7008."""
+def _ab(sl, mbm, inbound_phones, interesado_phones, yavendio_phones, keyfield="template"):
+    """Comparativo por `keyfield` (template o fuente): enviados, entregados, delivery/read/respond/interesado/optout rate.
+    delivery = entregados/enviados; read/respond/interesado/optout = x/entregados. Excluye fallidos por bug 7008.
+    optout = tocaron el botón «Ya no vendo» (YAVENDIÓ) — interacción NEGATIVA medible por plantilla."""
     from collections import defaultdict
-    A=defaultdict(lambda: dict(enviados=0,entregados=0,leidos=0,respondieron=0,interesados=0))
+    A=defaultdict(lambda: dict(enviados=0,entregados=0,leidos=0,respondieron=0,interesados=0,yavendio=0))
     for r in sl:
         m = mbm.get(r.get("message_id") or "")
         if m and "7008" in (m.get("error_name") or ""): continue  # bug plantilla sin imagen (7008): fuera de la comparación
@@ -171,6 +172,7 @@ def _ab(sl, mbm, inbound_phones, interesado_phones, keyfield="template"):
             if m.get("seen"): a["leidos"]+=1
         if r.get("phone") in inbound_phones: a["respondieron"]+=1
         if r.get("phone") in interesado_phones: a["interesados"]+=1
+        if r.get("phone") in yavendio_phones: a["yavendio"]+=1
     def rate(x,y): return round(x/y,3) if y else None
     out=[]
     for t in sorted(A):
@@ -179,7 +181,8 @@ def _ab(sl, mbm, inbound_phones, interesado_phones, keyfield="template"):
             "delivery_rate": rate(a["entregados"],a["enviados"]),
             "leidos":a["leidos"], "read_rate": rate(a["leidos"],a["entregados"]),
             "respondieron":a["respondieron"], "respond_rate": rate(a["respondieron"],a["entregados"]),
-            "interesados":a["interesados"], "interesado_rate": rate(a["interesados"],a["entregados"])})
+            "interesados":a["interesados"], "interesado_rate": rate(a["interesados"],a["entregados"]),
+            "yavendio":a["yavendio"], "optout_rate": rate(a["yavendio"],a["entregados"])})
     return out
 
 # --- ensamblado ---
@@ -210,6 +213,7 @@ def build_country(pais):
     parsed=[(i["phone"], agg.parse_resp(i["respuesta_cliente"]), i["ts"]) for i in inb]
     inbound_phones={p for p,_,_ in parsed if p}
     interesado_phones={p for p,pr,_ in parsed if p and pr["action"]=="INTERESADO"}
+    yavendio_phones={p for p,pr,_ in parsed if p and pr["action"]=="YAVENDIO"}   # opt-out por botón «Ya no vendo»
     # --- REPO VIEJO: envíos de la plantilla vieja (jun–jul) que solo viven en el mart, para la Cosecha ---
     old_sl, old_mbm = M.old_repo_sends(pais)
     for mid, v in old_mbm.items(): mbm.setdefault(mid, v)   # completa delivery/seen de los viejos (no pisa los recientes/​/logs)
@@ -246,8 +250,8 @@ def build_country(pais):
         "respuestas": {t: agg.respuestas_serie(inb_resp, t) for t in ("dia","semana","mes")},
         "cosecha": {t: agg.cosecha_serie(sl_cosecha, mbm, inbound_phones_wide, interesado_phones_wide, interesado_nocreado_phones, t, n=40) for t in ("dia","semana","mes")},
         "pendientes_crear": pendientes_crear,
-        "ab_templates": _ab(sl,mbm,inbound_phones,interesado_phones),
-        "ab_fuentes": _ab(sl,mbm,inbound_phones,interesado_phones,keyfield="fuente_lead"),
+        "ab_templates": _ab(sl,mbm,inbound_phones,interesado_phones,yavendio_phones),
+        "ab_fuentes": _ab(sl,mbm,inbound_phones,interesado_phones,yavendio_phones,keyfield="fuente_lead"),
         "antifunnel": {t: agg.antifunnel_serie(recreados,t) for t in ("dia","semana","mes")},
         "contact_status": agg.contact_dist(cst),
         "por_hora": por_hora(pais, inbound_phones),
