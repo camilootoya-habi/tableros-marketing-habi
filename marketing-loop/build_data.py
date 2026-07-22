@@ -103,8 +103,10 @@ def por_hora(pais, inbound_phones=None):
     `inbound_phones`: set de teléfonos (10 dígitos) que respondieron (de sources_mart.inbound_rows);
     si no se pasa, se calcula aquí (últimos 30d) para no depender de las hojas viejas."""
     lines = ",".join(f'"{l}"' for l in MART_LINES.get(pais, []))
-    if pais != "MX" or not lines:
-        return {"serie":[], "nota":"pendiente acceso al mart de CO"}
+    if not lines:
+        return {"serie":[], "nota":f"sin líneas configuradas para {pais}"}
+    # El mart guarda send_at en hora LOCAL de cada país (MX=CDMX UTC-6, CO=Bogotá UTC-5;
+    # ambos verificados message_id↔Neon) → EXTRACT(HOUR) ya devuelve la hora local, sin ajuste.
     rows = bq_sql(f'''SELECT EXTRACT(HOUR FROM {SENDAT}) hora,
         RIGHT(REGEXP_REPLACE(to_number, r"[^0-9]", ""),10) tel10,
         LOWER(TRIM(status)) status, IF({SEEN},1,0) seen
@@ -132,8 +134,9 @@ def por_hora(pais, inbound_phones=None):
         serie.append({"hora":h, "enviados":a["env"], "entregados":a["e"],
             "read_rate":   round(a["l"]/a["e"],3) if a["e"] else None,
             "respond_rate":round(a["r"]/a["e"],3) if a["e"] else None})
+    tzlab = {"MX":"hora CDMX (UTC-6)", "CO":"hora Bogotá (UTC-5)"}.get(pais, "hora local")
     return {"serie":serie, "desde":"2026-06-01",
-            "nota":"read/respond rate por hora de envío de CAMPAÑA (con plantilla; excluye mensajes de sesión); hora CDMX (UTC-6, verificado vs Neon); respond = entregados cuyo tel respondió"}
+            "nota":f"read/respond rate por hora de envío de CAMPAÑA (con plantilla; excluye mensajes de sesión); {tzlab}, verificado vs Neon; respond = entregados cuyo tel respondió"}
 
 COMP_FIELDS=["direccion","telefono","email","nombre","geo","zona","tipo","area","banos",
              "medios_banos","habitaciones","garaje","ascensor","piso","antiguedad","precio","estrato"]
