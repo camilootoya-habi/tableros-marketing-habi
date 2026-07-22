@@ -466,20 +466,65 @@ const DOCS={
           ['v2 · oferta','<code>reactivacion_sellers_mx_v2_oferta_jul26</code> · header IMAGE (<code>jcmm_mexico.png</code>)'],
           ['Anterior (repo viejo)','<code>bot_reactivacion_leads_mx_sellers_camilootoya_16jun26</code>']],
     utm:'mex-sellers-paid-experiments-web-without-leads-retargeting-national-reinteresados',
-    fuente_desc:'WEB (3) + Lead Forms (47)'},
+    fuente_desc:'WEB (3) + Lead Forms (47)',
+    ab_result:{
+      status:'decidido', winner:'v2 · oferta',
+      since:'16 jul 2026', closed:'22 jul 2026', dias:7,
+      prob:99.7, loss:'0,002', fisher:'0,007', ic:'[1,26 – 7,45] pp',
+      rows:[
+        ['v1 · control', 732, 306, '41,8%', '2,3%', '8,8%'],
+        ['v2 · oferta',  924, 389, '42,1%', '6,7%', '10,8%'],
+      ],
+      desc:[
+        ['v1 · control','Header <b>TEXT</b>, sin imagen. Mensaje corto de reactivación.'],
+        ['v2 · oferta','Header <b>IMAGE</b> (<code>jcmm_mexico.png</code>) + copy de <b>dos productos</b> (vender <i>y</i> comprar con Habi). Propuesta más rica.'],
+      ],
+      conclusion:'<b>v2 casi triplica la tasa de interesados</b> (6,7% vs 2,3%) con <b>la misma entrega</b> (~42%): el temor a que el header de imagen bajara la entrega (device-error) no se materializó. El leve exceso de bajas de v2 (10,8% vs 8,8%) queda ampliamente compensado por las positivas. <b>v2 queda como plantilla única</b> y como control del próximo A/B.'},
+  },
   CO:{
     lineas:[['Envíos (línea activa)','<code>57 300 911 0453</code> · <code>573009110453</code>']],
     tpls:[['v1 · control','<code>reactivacion_sellers_co_v1_jul26</code> · header TEXT'],
           ['v2 · oferta','<code>reactivacion_sellers_co_v2_oferta_jul26</code> · header IMAGE (<code>jcmm_colombia.png</code>)'],
           ['Anterior (repo viejo)','<code>bot_reactivacion_leads_co_sellers_camilootoya_19jun26</code>']],
     utm:'col-sellers-paid-experiments-web-without-leads-retargeting-national-reinteresados',
-    fuente_desc:'WEB (3) + Lead Forms (47) + Estudio Inmueble/Habímetro (7) + CRM (20)'},
+    fuente_desc:'WEB (3) + Lead Forms (47) + Estudio Inmueble/Habímetro (7) + CRM (20)',
+    ab_result:{
+      status:'analogia', winner:'v2 · oferta',
+      since:'17 jul 2026', closed:'22 jul 2026',
+      desc:[
+        ['v1 · control','Header <b>TEXT</b>, sin imagen. Mensaje corto de reactivación.'],
+        ['v2 · oferta','Header <b>IMAGE</b> (<code>jcmm_colombia.png</code>) + copy de <b>dos productos</b> (vender <i>y</i> comprar con Habi). Propuesta más rica.'],
+      ],
+      conclusion:'CO no acumuló muestra propia suficiente para un veredicto estadístico (y el reporte tiene un <i>bug</i> que impide medir CO por separado, pendiente de arreglar). Dado el resultado <b>decisivo de v2 en MX</b> y que la familia de copy es la misma, <b>se adopta v2 en CO por analogía</b>. En el próximo A/B se medirá CO con su propio dato.'},
+  },
 };
 function setDocs(c){ docC=c; const t=document.getElementById('docsTitle'); if(t) t.textContent='Documentación · Marketing Loop · '+c; renderDocs(); }
 function renderDocs(){
   const el=document.getElementById('docsBody'); if(!el) return;
   const x=DOCS[docC]||DOCS.MX;
   const kv=arr=>`<div class="kv"><table>${arr.map(([k,v])=>`<tr><td>${k}</td><td>${v}</td></tr>`).join('')}</table></div>`;
+  const abResult=()=>{
+    const a=x.ab_result; if(!a) return '';
+    const decided=a.status==='decidido';
+    const card=`<div class="veredicto ${decided?'vd-ok':'vd-wait'}">
+      <div class="vd-main"><b>${decided?'✅ DECIDIDO':'◐ Adoptado por analogía'}</b> — ganadora <b>${a.winner}</b>${decided?` · P(mejor) <b>${a.prob}%</b> · pérdida esperada <b>${a.loss} pp</b> · Fisher p <b>${a.fisher}</b>`:''}</div>
+      <div class="vd-sub">${decided
+        ? `<span class="vd-chip vd-c-ok">✓ ${a.dias} días</span> <span class="vd-chip vd-c-ok">✓ IC95 de la diferencia ${a.ic}</span> <span class="muted">· experimento ${a.since} → cerrado ${a.closed}</span>`
+        : `<span class="vd-chip vd-c-no">○ sin muestra propia suficiente</span> <span class="muted">· cerrado ${a.closed}</span>`}</div>
+    </div>`;
+    const tbl=a.rows?`<div class="rawtbl" style="margin:0 0 12px"><table class="ftab"><thead><tr>
+      <th>Plantilla</th><th>Enviados</th><th>Entregados</th><th>Entrega</th><th class="ab-key">Interesado</th><th>Baja</th></tr></thead><tbody>
+      ${a.rows.map(r=>`<tr>${r.map((c,j)=>`<td class="${j===4?'ab-key':''}"${j===0?'':' style="text-align:right"'}>${c}</td>`).join('')}</tr>`).join('')}
+      </tbody></table></div>`:'';
+    return `
+    <h3>Resultados del A/B testing entre plantillas — ${docC}</h3>
+    ${card}
+    ${tbl}
+    <p><b>Plantillas comparadas:</b></p>
+    ${kv(a.desc)}
+    <p><b>Conclusiones:</b> ${a.conclusion}</p>
+    <p class="note">Metodología del veredicto abajo. El próximo A/B enfrentará a v2 (ganadora) contra una plantilla retadora nueva.</p>`;
+  };
   el.innerHTML=`
     <p>Reactivación de leads de sellers estancados: se les manda un WhatsApp; a quien responde <b>INTERESADO</b> se le <b>re-crea el lead</b> en el backbone para que vuelva a gestión comercial (GABI lo llama).</p>
 
@@ -488,10 +533,12 @@ function renderDocs(){
 
     <h3>Plantillas — ${docC}</h3>
     ${kv(x.tpls)}
-    <p><b>Cuáles usamos:</b> las <b>dos primeras activas en simultáneo</b> (v1 control + v2 oferta), repartidas 50/50 por el A/B. La anterior es del repo viejo (ya no se envía). Body «<b>¿Aún vendes tu inmueble?</b>» fijo; botones QUICK_REPLY «Quiero vender con Habi» (→ INTERESADO) y «Ya no vendo» (→ baja). Payloads <code>activacion_NewLeads_INTERESADO_{NID}</code> / <code>…_YAVENDIÓ_{NID}</code> — el NID viaja embebido para identificar al lead que respondió.</p>
+    <p><b>Cuál usamos hoy:</b> desde el <b>22 jul 2026</b> se envía <b>100% v2 (oferta)</b>, ganadora del A/B (ver <b>Resultados</b> abajo). v1 fue el control; la anterior es del repo viejo (ya no se envía). Body «<b>¿Aún vendes tu inmueble?</b>» fijo; botones QUICK_REPLY «Quiero vender con Habi» (→ INTERESADO) y «Ya no vendo» (→ baja). Payloads <code>activacion_NewLeads_INTERESADO_{NID}</code> / <code>…_YAVENDIÓ_{NID}</code> — el NID viaja embebido para identificar al lead que respondió.</p>
 
-    <h3>Cómo funciona el A/B testing</h3>
-    <p><b>Asignación:</b> en cada envío se elige la plantilla al <b>azar 50/50</b> (v1 vs v2), así ambas reciben audiencias comparables el mismo día.</p>
+    ${abResult()}
+
+    <h3>Cómo funciona el A/B testing (metodología)</h3>
+    <p><b>Asignación:</b> durante un A/B activo, en cada envío se elige la plantilla al <b>azar 50/50</b>, así ambas reciben audiencias comparables el mismo día.</p>
     <p><b>Métrica ganadora:</b> el <b>Interesado rate</b> (interesados ÷ entregados), que es el objetivo del loop. El Delivery rate se mide sobre enviados; read/respond/interesado sobre entregados. Se excluyen los fallos por plantilla sin imagen (error 7008).</p>
     <p><b>Decisión (prueba bayesiana Beta-Binomial):</b> se declara ganadora una plantilla cuando <b>P(es mejor) ≥ 95%</b> y la <b>pérdida esperada ≤ 0,5 pp</b>, exigiendo al menos <b>300 entregados por brazo</b> y <b>7 días</b> de corrida. Si a los <b>21 días</b> no hay diferencia clara, se corta y se queda el control (v1). Mientras no haya ganadora, se sigue repartiendo 50/50.</p>
     <p class="note">El avance en vivo está en la tabla <b>A/B de plantillas</b> del tablero (columna Interesado rate resaltada en amarillo).</p>
