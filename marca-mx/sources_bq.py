@@ -34,3 +34,17 @@ def exit_poll_series(rows):
     for a in acc.values():
         a["tasa"] = a["respuestas"] / a["registros_web"] if a["registros_web"] else 0.0
     return [acc[k] for k in sorted(acc)]
+
+
+def traffic_series(rows):
+    """Usuarios activos e inversión por (mes, plaza) → CPV. Sin inversión o sin usuarios,
+    cpv=None: un cero se leería como 'costó cero', que es distinto de 'no hay dato'."""
+    out = []
+    for r in rows:
+        users = int(r["users"] or 0)
+        spend = float(r["spend"]) if r.get("spend") is not None else None
+        out.append({
+            "month": r["month"], "plaza": r["plaza"], "users": users, "spend": spend,
+            "cpv": (spend / users) if (spend is not None and users) else None,
+        })
+    return sorted(out, key=lambda x: (x["month"], x["plaza"]))
