@@ -79,7 +79,7 @@ def main():
         if est is None or est in OK_STATUSES:
             continue
         if ads.get(p["ad_id"]) == "ACTIVE":
-            objetivo.append((p["ad_id"], p["id_aviso"], est, p["cliente_id"]))
+            objetivo.append((p["ad_id"], p["id_aviso"], est, p.get("cliente_id")))
 
     print(f"Guardia de estado{' (DRY RUN)' if DRY_RUN else ''}: "
           f"{len(objetivo)} ads ACTIVE sobre listings no-activos.")
@@ -91,10 +91,13 @@ def main():
         try:
             pause(ad_id)
             ok += 1
-            ledger.log_event("PAUSED", cliente_id, ad_id=ad_id,
-                             id_aviso=str(id_aviso), razon=est,
-                             fuente="guardia",
-                             detalle={"estatus_listing": est, "actor": "guardia"})
+            try:
+                ledger.log_event("PAUSED", cliente_id, ad_id=ad_id,
+                                 id_aviso=str(id_aviso), razon=est,
+                                 fuente="guardia",
+                                 detalle={"estatus_listing": est, "actor": "guardia"})
+            except Exception as e:  # noqa: BLE001
+                print(f"  ⚠ ledger no registró la pausa de {ad_id}: {e}")
             print(f"  ✓ PAUSED {ad_id}  {est:10s} {id_aviso}")
         except Exception as e:  # noqa: BLE001
             print(f"  ✗ ERROR  {ad_id}  {id_aviso}: {e}")
