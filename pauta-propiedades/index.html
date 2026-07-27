@@ -92,6 +92,8 @@
     .badge.dead { background: #3a1620; color: #f87171; border: 1px solid #b91c1c66; }
     .badge.warn { background: #3a2f14; color: #fbbf24; border: 1px solid #b4880e66; }
     .badge.unknown { background: #232f3f; color: #94a3b8; border: 1px solid #33415566; }
+    .badge.recon { background:#3a2f00; color:#f5c451; border: 1px solid #f5c45155; }
+    .badge.vivo  { background:#00332b; color:#4fd1c5; border: 1px solid #4fd1c555; }
 
     .period-wrap { overflow-x: auto; }
     .period-tbl { width: 100%; border-collapse: collapse; font-size: 13px; }
@@ -174,7 +176,7 @@
   <h2 class="section-title">Evolución diaria · promedio móvil 7 días</h2>
   <div class="mini-grid" id="mini-ma"></div>
 
-  <div class="table-card">
+  <div class="table-card" style="margin-bottom:24px">
     <h3>Detalle por publicación</h3>
     <div class="legend" id="legend"></div>
     <table>
@@ -197,6 +199,22 @@
         </tr>
       </thead>
       <tbody id="tbody"></tbody>
+    </table>
+  </div>
+
+  <div class="table-card">
+    <h3>Bitácora de cambios</h3>
+    <div class="hint" style="font-size:11px;color:#64748b;margin-bottom:12px">
+      Altas, pausas y cambios de presupuesto por ad · <span class="badge recon">reconstruido</span> = inferido del histórico (±4h) · <span class="badge vivo">en vivo</span> = medido
+    </div>
+    <div class="selector-group" id="bita-tipos" style="margin-bottom:12px"></div>
+    <table>
+      <thead>
+        <tr>
+          <th>Fecha</th><th>Cliente</th><th>Acción</th><th>Publicación</th><th>Razón</th><th>Fuente</th>
+        </tr>
+      </thead>
+      <tbody id="bita-tbody"></tbody>
     </table>
   </div>
 
@@ -237,6 +255,7 @@
     let chartMensual = null;
     let miniCharts = {};  // id de canvas -> instancia Chart (12 mini-gráficas)
     let serieByAd = {};   // ad_id -> [{fecha, gasto, impresiones, clics_enlace}]
+    let bitaTipo = 'todos';   // filtro de tipo de evento para la Bitácora de cambios
 
     const fmtUsd = v => '$' + (v || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
     const fmtInt = v => (v || 0).toLocaleString('es-MX');
@@ -345,6 +364,7 @@
       renderMiniCharts(rows);
       renderMonthlyChart();
       renderTable(rows);
+      renderBitacora();
     }
 
     // eje diario = fechas presentes en la serie, EXCLUYE hoy (día parcial)
@@ -594,6 +614,36 @@
           <td title="${r.leads_pauta || 0} leads · ${r.dias_pauta || 0} días">${r.leads_sem_pauta == null ? '<span class="muted">·</span>' : r.leads_sem_pauta.toFixed(2)}</td>
           <td>${r.link ? `<a class="btn-link" href="${r.link}" target="_blank" rel="noopener">Ver ↗</a>` : '<span class="muted">·</span>'}</td>
         </tr>`).join('');
+    }
+
+    // Bitácora de cambios: mismos badges de estado que "Detalle por publicación"
+    const TIPO_BADGE = { CREATED: 'ok', ACTIVATED: 'active', PAUSED: 'paused', DELETED: 'dead', BUDGET_CHANGED: 'warn' };
+    const TIPO_LABEL = { CREATED: 'Creado', ACTIVATED: 'Activado', PAUSED: 'Pausado', DELETED: 'Eliminado', BUDGET_CHANGED: 'Presupuesto' };
+
+    function renderBitacora() {
+      const b = state.data.bitacora || { eventos: [], resumen: {} };
+      const tipos = ['todos', ...Object.keys(b.resumen || {})];
+      const chips = document.getElementById('bita-tipos');
+      chips.innerHTML = '<label>Tipo</label>' + tipos.map(t =>
+        `<button class="chip ${t === bitaTipo ? 'active' : ''}" data-bt="${t}">${t === 'todos' ? 'Todos' : (TIPO_LABEL[t] || t)}</button>`
+      ).join('');
+      chips.querySelectorAll('[data-bt]').forEach(el => el.onclick = () => {
+        bitaTipo = el.dataset.bt;
+        renderBitacora();
+      });
+      const rows = (b.eventos || []).filter(e =>
+        (state.cliente === 'todos' || e.cliente_id === state.cliente) &&
+        (bitaTipo === 'todos' || e.tipo === bitaTipo));
+      const fmt = s => (s || '').replace('T', ' ').slice(0, 16);
+      document.getElementById('bita-tbody').innerHTML = rows.map(e => `
+        <tr>
+          <td>${fmt(e.ts)}</td>
+          <td>${e.cliente || e.cliente_id}</td>
+          <td><span class="badge ${TIPO_BADGE[e.tipo] || 'unknown'}">${TIPO_LABEL[e.tipo] || e.tipo}</span></td>
+          <td>${e.id_aviso || e.ad_id || '—'}</td>
+          <td>${e.razon || '—'}</td>
+          <td><span class="badge ${e.reconstruido ? 'recon' : 'vivo'}">${e.reconstruido ? 'reconstruido' : (e.fuente || 'en vivo')}</span></td>
+        </tr>`).join('') || '<tr><td colspan="6" class="muted" style="text-align:center">Sin eventos</td></tr>';
     }
 
     document.querySelectorAll('[data-estado]').forEach(el => el.addEventListener('click', () => {
