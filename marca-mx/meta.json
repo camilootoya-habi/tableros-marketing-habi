@@ -1,0 +1,8 @@
+{
+  "title": "Marca — Brand Lift, tráfico y atribución declarada",
+  "description": "Indicadores de marca: Brand Lift de Meta (CO+MX), tráfico y CPV por plaza, y atribución declarada del exit poll (MX).",
+  "country": "MX & CO",
+  "section": "dashboard",
+  "order": 20,
+  "maximum_bytes_billed": 20000000000
+}
