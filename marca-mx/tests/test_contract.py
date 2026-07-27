@@ -26,3 +26,10 @@ def test_envelope_arma_las_tres_metricas_por_pais():
                             now="2026-07-27T18:00:00Z")
     assert env["generated_at"] == "2026-07-27T18:00:00Z"
     assert env["metrics"]["brand_lift"]["MX"]["status"] == "ok"
+
+def test_metric_stale_conserva_serie_y_last_updated():
+    m = contract.metric("stale", series=[{"month": "2026-06"}, {"month": "2026-07"}], last_updated="2026-07-24T12:00:00Z")
+    assert m["status"] == "stale"
+    assert len(m["series"]) == 2
+    assert m["last_updated"] == "2026-07-24T12:00:00Z"
+    assert "reason" not in m

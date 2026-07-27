@@ -21,7 +21,7 @@ def metric(status, source=None, series=None, reason=None, last_updated=None):
         out["last_updated"] = last_updated
     if reason:
         out["reason"] = reason
-    if status == "ok":
+    if status in ("ok", "stale"):
         out["series"] = series or []
     return out
 
