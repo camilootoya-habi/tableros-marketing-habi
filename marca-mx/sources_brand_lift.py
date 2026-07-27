@@ -21,6 +21,7 @@ FIELDS = ("id,name,type,start_time,end_time,results_first_available_date,"
           "objectives{id,name,type,is_primary,results}")
 HERE = os.path.dirname(os.path.abspath(__file__))
 CACHE = os.path.join(HERE, "brand_lift_cache.json")
+QUESTIONS = os.path.join(HERE, "questions.json")
 
 
 def _token():
@@ -103,3 +104,30 @@ def series(rows):
     for r in rows:
         acc[(r["country"], r["month"], r["question"], r["experiment_id"])] = r
     return [acc[k] for k in sorted(acc, key=lambda k: (k[0], k[1], str(k[2])))]
+
+
+def load_questions():
+    """{experiment_id: nombre_pregunta}. Se llena a mano al identificar cada firma.
+
+    `questions.json` incluye una clave `_nota` con la procedencia del mapeo — no es un
+    experiment_id, así que cualquier clave que empiece con `_` se descarta aquí para que
+    nunca se cuele como fila mapeada (y para no tener que acordarse de filtrarla en cada
+    llamador)."""
+    if not os.path.exists(QUESTIONS):
+        return {}
+    raw = json.loads(open(QUESTIONS, encoding="utf-8").read())
+    return {k: v for k, v in raw.items() if not k.startswith("_")}
+
+
+def map_questions(rows, mapping=None):
+    """Etiqueta cada fila. Lo no identificado se marca, nunca se adivina: publicar una
+    pregunta con el nombre equivocado es peor que no publicarla."""
+    mapping = load_questions() if mapping is None else mapping
+    for r in rows:
+        r["question"] = mapping.get(r["experiment_id"], "sin_identificar")
+    return rows
+
+
+def publishable(rows):
+    """Solo lo identificado llega al tablero y al informe."""
+    return [r for r in rows if r.get("question") not in (None, "sin_identificar")]
