@@ -83,3 +83,27 @@ def test_antifunnel_serie():
 
 def test_contact_dist():
     assert contact_dist([{"state":"enviado"},{"state":"baja"},{"state":"enviado"}])=={"enviado":2,"baja":1}
+
+def test_merge_neon_fills_missing():
+    import agg
+    mbm = {}
+    agg.merge_neon_delivery(mbm, {"m1": {"status": "delivered", "error_name": "No Error (code 0)"}})
+    assert mbm["m1"]["status"] == "delivered"
+
+def test_merge_neon_terminal_overrides_pending():
+    import agg
+    mbm = {"m1": {"status": "pending", "error_name": "x", "seen": False}}
+    agg.merge_neon_delivery(mbm, {"m1": {"status": "delivered", "error_name": "No Error (code 0)"}})
+    assert mbm["m1"]["status"] == "delivered"
+
+def test_merge_neon_does_not_regress_terminal_and_preserves_seen():
+    import agg
+    mbm = {"m1": {"status": "delivered", "error_name": "No Error (code 0)", "seen": True}}
+    agg.merge_neon_delivery(mbm, {"m1": {"status": "pending", "error_name": "x"}})
+    assert mbm["m1"]["status"] == "delivered" and mbm["m1"]["seen"] is True
+
+def test_merge_neon_undeliverable_overrides_but_keeps_seen():
+    import agg
+    mbm = {"m1": {"status": "delivered", "error_name": "No Error (code 0)", "seen": True}}
+    agg.merge_neon_delivery(mbm, {"m1": {"status": "undeliverable", "error_name": "EC_X (code 5)"}})
+    assert mbm["m1"]["status"] == "undeliverable" and mbm["m1"]["seen"] is True

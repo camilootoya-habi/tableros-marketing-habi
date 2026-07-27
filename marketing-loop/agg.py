@@ -217,3 +217,14 @@ def diario_serie(sendlog, inbound_rows, recreation_rows, days=60):
 def contact_dist(contact_rows):
     from collections import Counter
     return dict(Counter(r.get("state") for r in contact_rows if r.get("state")))
+
+_NEON_TERMINAL = {"delivered", "undeliverable", "rejected"}
+
+def merge_neon_delivery(mbm, nbm):
+    """Incorpora la entrega durable de Neon a mbm. Rellena lo ausente y pisa con estado terminal;
+    nunca regresa un terminal a pending; preserva `seen` (Neon no lo trae)."""
+    for mid, v in nbm.items():
+        prev = mbm.get(mid)
+        if prev is None or v.get("status") in _NEON_TERMINAL:
+            mbm[mid] = {**(prev or {}), **v}
+    return mbm

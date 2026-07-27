@@ -229,6 +229,10 @@ def build_country(pais):
     for mid, v in ibm.items():
         prev = mbm.get(mid)
         mbm[mid] = {**v, "seen": bool((prev or {}).get("seen")) or bool(v.get("seen"))}
+    # Entrega DURABLE de Neon (persistida por el motor): rellena huecos del mart (p.ej. 22-jul) y pisa
+    # con estado terminal, sin regresar terminales frescos ni tocar `seen`. Fuente propia, sin lag.
+    nbm = N.delivery_by_msgid(country=pais)
+    agg.merge_neon_delivery(mbm, nbm)
     inb = M.inbound_rows(30, country=pais)
     inb_resp = M.inbound_rows(180, country=pais)   # ventana más larga para la tabla de Respuestas por período (día/semana/mes)
     # respuestas parseadas del mart
@@ -286,7 +290,7 @@ def build_country(pais):
         "cohorte_origen": agg.cohorte_origen_serie(sl, inbound_phones, interesado_phones),
         "diario": agg.diario_serie(sl_cosecha, inb_resp, rec),
         "_debug": {"send_log":len(sl), "sl7":len(sl7), "recreation":len(rec), "contact_status":len(cst),
-                   "mart_msgids":len(mbm), "infobip":len(ibm), "inbound":len(inb)},
+                   "mart_msgids":len(mbm), "infobip":len(ibm), "neon_delivery": len(nbm), "inbound":len(inb)},
     }
 
 COMP = q("query_completitud.sql")
