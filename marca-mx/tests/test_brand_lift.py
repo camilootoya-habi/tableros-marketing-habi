@@ -35,17 +35,6 @@ def test_estudio_no_lift_se_ignora():
     s = dict(STUDY, type="SPLIT_TEST_V2")
     assert BL.parse_results([s], "MX") == []
 
-def test_estudio_cerrado_y_ya_cacheado_no_se_reconsulta():
-    cache = BL.parse_results([STUDY], "MX")
-    assert BL.needs_refresh(STUDY, cache, today="2026-09-15") is False
-
-def test_estudio_cerrado_pero_ausente_del_cache_si_se_consulta():
-    assert BL.needs_refresh(STUDY, [], today="2026-09-15") is True
-
-def test_estudio_todavia_abierto_siempre_se_refresca():
-    cache = BL.parse_results([STUDY], "MX")
-    assert BL.needs_refresh(STUDY, cache, today="2026-07-20") is True
-
 def test_series_agrupa_por_mes_y_pregunta():
     rows = BL.parse_results([STUDY], "MX")
     rows[0]["question"] = "ad_recall"

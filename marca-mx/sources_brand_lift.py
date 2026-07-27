@@ -1,9 +1,13 @@
 """Brand Lift de Meta para CO y MX.
 
 ⚠ Estas son cuentas publicitarias de PRODUCCIÓN. La cuota de API es por cuenta y agotarla
-throttlea a cualquier otra integración que las consulte. Reglas: techo duro de llamadas por
-corrida, nada se re-consulta si ya está cacheado y cerrado, y al primer error transitorio se
-aborta conservando el caché. El backfill histórico se corre a mano, nunca desde el cron.
+throttlea a cualquier otra integración que las consulte. Regla del cron: **una sola llamada por
+país por corrida** — `fetch()` no pagina. El caché versionado en disco (`brand_lift_cache.json`)
+es la fuente de verdad histórica; la API solo aporta lo nuevo que trae esa página, y `series()`
+deduplica por (país, mes, pregunta, experiment_id), así que si un estudio cerrado reaparece en la
+página no cuesta nada — se sobrescribe con el mismo dato. Al primer error transitorio se
+imprime la advertencia y se devuelve lo que haya (nada), conservando el caché existente en disco.
+El backfill histórico se corre a mano, nunca desde el cron.
 """
 import json
 import os
@@ -59,13 +63,6 @@ def parse_results(studies, country):
     return rows
 
 
-def needs_refresh(study, cache_rows, today):
-    """Un estudio cerrado y ya cacheado es inmutable: no se vuelve a pedir jamás."""
-    cerrado = (study.get("end_time") or "")[:10] < today
-    cacheado = any(r["study_id"] == study.get("id") for r in cache_rows)
-    return not (cerrado and cacheado)
-
-
 def load_cache():
     if not os.path.exists(CACHE):
         return []
@@ -87,20 +84,17 @@ def _get(path, **params):
         return False, {"error": {"message": str(e), "is_transient": True}}
 
 
-def fetch(country, max_calls=2):
-    """Refresco incremental. `max_calls` es un techo duro, no una sugerencia."""
-    rows, used = [], 0
-    while used < max_calls:
-        used += 1
-        ok, pl = _get(f"{ACCOUNTS[country]}/ad_studies", fields=FIELDS, limit=10)
-        if not ok:
-            err = pl.get("error") or {}
-            print(f"WARN brand_lift {country}: {err.get('message')} "
-                  f"(transient={err.get('is_transient')}) — se conserva el caché")
-            break
-        rows += parse_results(pl.get("data") or [], country)
-        break      # limit=10 cubre el mes en curso y los anteriores: no paginar en el cron
-    return rows
+def fetch(country):
+    """Una llamada, un país, sin paginar. `limit=10` cubre el mes en curso y los anteriores.
+    Ante cualquier error transitorio se conserva el caché: nunca se vacía la serie por un rate
+    limit."""
+    ok, pl = _get(f"{ACCOUNTS[country]}/ad_studies", fields=FIELDS, limit=10)
+    if not ok:
+        err = pl.get("error") or {}
+        print(f"WARN brand_lift {country}: {err.get('message')} "
+              f"(transient={err.get('is_transient')}) — se conserva el caché")
+        return []
+    return parse_results(pl.get("data") or [], country)
 
 
 def series(rows):
