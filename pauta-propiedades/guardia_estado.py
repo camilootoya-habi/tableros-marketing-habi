@@ -16,6 +16,8 @@ import os
 
 import requests
 
+import ledger
+
 HERE = os.path.dirname(os.path.abspath(__file__))
 CATALOGO = os.path.join(HERE, "catalogo.json")
 
@@ -77,18 +79,22 @@ def main():
         if est is None or est in OK_STATUSES:
             continue
         if ads.get(p["ad_id"]) == "ACTIVE":
-            objetivo.append((p["ad_id"], p["id_aviso"], est))
+            objetivo.append((p["ad_id"], p["id_aviso"], est, p["cliente_id"]))
 
     print(f"Guardia de estado{' (DRY RUN)' if DRY_RUN else ''}: "
           f"{len(objetivo)} ads ACTIVE sobre listings no-activos.")
     ok = 0
-    for ad_id, id_aviso, est in objetivo:
+    for ad_id, id_aviso, est, cliente_id in objetivo:
         if DRY_RUN:
             print(f"  [dry] pausaría {ad_id}  {est:10s} {id_aviso}")
             continue
         try:
             pause(ad_id)
             ok += 1
+            ledger.log_event("PAUSED", cliente_id, ad_id=ad_id,
+                             id_aviso=str(id_aviso), razon=est,
+                             fuente="guardia",
+                             detalle={"estatus_listing": est, "actor": "guardia"})
             print(f"  ✓ PAUSED {ad_id}  {est:10s} {id_aviso}")
         except Exception as e:  # noqa: BLE001
             print(f"  ✗ ERROR  {ad_id}  {id_aviso}: {e}")
