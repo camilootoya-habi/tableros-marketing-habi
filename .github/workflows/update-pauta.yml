@@ -22,12 +22,13 @@ jobs:
           python-version: '3.11'
 
       - name: Instalar dependencias
-        run: pip install requests
+        run: pip install requests "psycopg[binary]"
 
       - name: Build data.json
         env:
           META_PCOM_TOKEN:      ${{ secrets.META_PCOM_TOKEN }}
           META_PCOM_AD_ACCOUNT: ${{ secrets.META_PCOM_AD_ACCOUNT }}
+          NEON_DATABASE_URL:    ${{ secrets.NEON_DATABASE_URL }}
         run: |
           cd pauta-propiedades
           export BUILD_TS="$(date -u +%Y-%m-%dT%H:%MZ)"

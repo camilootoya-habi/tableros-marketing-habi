@@ -14,6 +14,7 @@ Fuentes:
 Variables de entorno:
   META_PCOM_TOKEN        token de sistema con acceso a la cuenta de pauta
   META_PCOM_AD_ACCOUNT   act_XXXXXXXX de la cuenta de Propiedades.com
+  NEON_DATABASE_URL      conexión al ledger de eventos (bitácora); opcional
 """
 import datetime
 import json
@@ -148,6 +149,36 @@ def leads_prepost(mb_rows, ad_start, today):
     return out
 
 
+# ---------- Ledger de eventos (Neon) ----------
+def fetch_bitacora(limite=200):
+    """Últimos eventos del ledger + resumen por tipo. Falla suave."""
+    url = os.environ.get("NEON_DATABASE_URL", "")
+    if not url:
+        print("  ⚠ NEON_DATABASE_URL ausente; bitácora vacía")
+        return {"eventos": [], "resumen": {}}
+    try:
+        import ledger
+        conn = ledger.connect()
+        with conn.cursor() as cur:
+            cur.execute(f"""
+                SELECT ts, tipo, ad_id, id_aviso, cliente_id, razon, fuente,
+                       detalle->>'reconstruido'
+                FROM {ledger.SCHEMA}.eventos
+                ORDER BY ts DESC LIMIT %s""", (limite,))
+            evs = [{"ts": r[0].isoformat(), "tipo": r[1], "ad_id": r[2],
+                    "id_aviso": r[3], "cliente_id": r[4], "razon": r[5],
+                    "fuente": r[6],
+                    "reconstruido": (r[7] == "true")} for r in cur.fetchall()]
+            cur.execute(f"SELECT tipo, count(*) FROM {ledger.SCHEMA}.eventos "
+                        f"GROUP BY tipo")
+            resumen = {t: n for t, n in cur.fetchall()}
+        conn.close()
+        return {"eventos": evs, "resumen": resumen}
+    except Exception as e:  # noqa: BLE001 — no romper el build por el ledger
+        print(f"  ⚠ ledger no disponible ({e}); bitácora vacía")
+        return {"eventos": [], "resumen": {}}
+
+
 # ---------- Google Sheet ----------
 def load_config():
     """Config de campaña desde clientes.json (reemplaza el Google Sheet).
@@ -194,6 +225,10 @@ def build(date_preset="maximum"):
             if pid and (pid not in ad_start or s["fecha"] < ad_start[pid]):
                 ad_start[pid] = s["fecha"]
     prepost = leads_prepost(mb_rows, ad_start, datetime.date.today())
+
+    bitacora = fetch_bitacora()
+    for ev in bitacora["eventos"]:
+        ev["cliente"] = clientes.get(ev["cliente_id"], {}).get("nombre", ev["cliente_id"])
 
     filas = []
     for p in pubs:
@@ -269,6 +304,7 @@ def build(date_preset="maximum"):
         "clientes": cli_rows,
         "publicaciones": filas,
         "serie": serie,
+        "bitacora": bitacora,
     }
     with open(DATA_OUT, "w", encoding="utf-8") as f:
         json.dump(data, f, ensure_ascii=False, indent=2)
