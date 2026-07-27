@@ -499,10 +499,15 @@ git commit -m "feat(marca): trafico GA4 y CPV por plaza con inversion de bi_mx"
 
 **Interfaces:**
 - Produces: `sources_brand_lift.py::parse_results(studies: list, country: str) -> list[dict]`,
-  `::needs_refresh(study: dict, cache_rows: list, today: str) -> bool`,
-  `::fetch(country: str, max_calls: int = 2) -> list[dict]`,
+  `::fetch(country: str) -> list[dict]` (UNA llamada, sin paginar),
+  `::load_cache() -> list[dict]`,
   `::series(rows: list[dict]) -> list[dict]` (agrupada por mes y pregunta),
   `::ACCOUNTS: dict[str, str]`
+
+No hay `needs_refresh` ni parámetro `max_calls`: con una sola página fija por país no tienen
+trabajo, y un techo que no se aplica es peor que ninguno — alguien va a confiar en él. La garantía
+real es otra: el caché versionado en disco es la fuente de verdad, la API solo agrega lo nuevo, y
+`series()` deduplica, así que un estudio cerrado que reaparezca en la página no cuesta nada.
 
 **Contexto crítico:** ver la sección "Reglas de trato con la cuenta publicitaria" del spec. Las
 llamadas son contra producción. La sonda del 2026-07-27 confirmó la ruta:
@@ -549,17 +554,6 @@ def test_resultado_sin_experiment_id_se_descarta():
 def test_estudio_no_lift_se_ignora():
     s = dict(STUDY, type="SPLIT_TEST_V2")
     assert BL.parse_results([s], "MX") == []
-
-def test_estudio_cerrado_y_ya_cacheado_no_se_reconsulta():
-    cache = BL.parse_results([STUDY], "MX")
-    assert BL.needs_refresh(STUDY, cache, today="2026-09-15") is False
-
-def test_estudio_cerrado_pero_ausente_del_cache_si_se_consulta():
-    assert BL.needs_refresh(STUDY, [], today="2026-09-15") is True
-
-def test_estudio_todavia_abierto_siempre_se_refresca():
-    cache = BL.parse_results([STUDY], "MX")
-    assert BL.needs_refresh(STUDY, cache, today="2026-07-20") is True
 
 def test_series_agrupa_por_mes_y_pregunta():
     rows = BL.parse_results([STUDY], "MX")
@@ -638,13 +632,6 @@ def parse_results(studies, country):
     return rows
 
 
-def needs_refresh(study, cache_rows, today):
-    """Un estudio cerrado y ya cacheado es inmutable: no se vuelve a pedir jamás."""
-    cerrado = (study.get("end_time") or "")[:10] < today
-    cacheado = any(r["study_id"] == study.get("id") for r in cache_rows)
-    return not (cerrado and cacheado)
-
-
 def load_cache():
     if not os.path.exists(CACHE):
         return []
@@ -666,20 +653,19 @@ def _get(path, **params):
         return False, {"error": {"message": str(e), "is_transient": True}}
 
 
-def fetch(country, max_calls=2):
-    """Refresco incremental. `max_calls` es un techo duro, no una sugerencia."""
-    rows, used = [], 0
-    while used < max_calls:
-        used += 1
-        ok, pl = _get(f"{ACCOUNTS[country]}/ad_studies", fields=FIELDS, limit=10)
-        if not ok:
-            err = pl.get("error") or {}
-            print(f"WARN brand_lift {country}: {err.get('message')} "
-                  f"(transient={err.get('is_transient')}) — se conserva el caché")
-            break
-        rows += parse_results(pl.get("data") or [], country)
-        break      # limit=10 cubre el mes en curso y los anteriores: no paginar en el cron
-    return rows
+def fetch(country):
+    """UNA sola llamada por país y por corrida. `limit=10` cubre el mes en curso y los
+    anteriores, que es todo lo que puede cambiar. No pagina a propósito: son cuentas de
+    producción en tier `development_access` con cuota baja y compartida.
+    Ante error, devuelve lo que tenga para que el caché del llamador sobreviva — un rate
+    limit nunca debe vaciar la serie."""
+    ok, pl = _get(f"{ACCOUNTS[country]}/ad_studies", fields=FIELDS, limit=10)
+    if not ok:
+        err = pl.get("error") or {}
+        print(f"WARN brand_lift {country}: {err.get('message')} "
+              f"(transient={err.get('is_transient')}) — se conserva el caché")
+        return []
+    return parse_results(pl.get("data") or [], country)
 
 
 def series(rows):
