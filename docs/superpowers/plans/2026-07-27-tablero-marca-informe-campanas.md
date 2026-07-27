@@ -145,7 +145,10 @@ def metric(status, source=None, series=None, reason=None, last_updated=None):
         out["last_updated"] = last_updated
     if reason:
         out["reason"] = reason
-    if status == "ok":
+    # `stale` conserva su serie: si la API de Meta falla varios días, el driver sirve el
+    # caché y last_updated envejece — es justo cuando el histórico debe seguir dibujándose,
+    # con el badge de vencido. `not_available` y `error` NO llevan serie, a propósito.
+    if status in ("ok", "stale"):
         out["series"] = series or []
     return out
 
@@ -193,8 +196,12 @@ git commit -m "feat(marca): contrato de data.json con status por metrica y pais"
 **Interfaces:**
 - Consumes: `contract.metric`
 - Produces: `sources_bq.py::run_query(sql_path: str) -> list[dict]`,
-  `sources_bq.py::PLAZA_EXIT_POLL: dict[str, str]` (valor de `estado_mexico` → plaza),
   `sources_bq.py::exit_poll_series(rows: list[dict]) -> list[dict]`
+
+El mapeo de plazas vive en el `CASE` de cada query, **no** en un diccionario de Python. Las tres
+fuentes nombran las plazas en su propio vocabulario — `estado_mexico`, `geo.region` y
+`area_metropolitana` — así que un solo diccionario no puede servirlas, y una copia en Python de una
+de ellas se desincroniza el día que alguien edite el SQL y no el diccionario.
 
 - [ ] **Step 1: Escribir la query**
 
@@ -388,7 +395,9 @@ inv AS (
     END AS plaza,
     SUM(spend) AS spend
   FROM `sellers-main-prod.bi_mx.resumen_inversiones_regiones_mexico`
-  WHERE mes >= '2024-01-01' AND pais = 'MX'
+  -- `pais` en esta tabla viene como 'México', NO 'MX'. Con 'MX' el join devuelve spend NULL en
+  -- todas las filas y el CPV sale vacío sin ningún error. Verificado con SELECT DISTINCT pais.
+  WHERE mes >= '2024-01-01' AND pais = 'México'
   GROUP BY 1, 2
 )
 SELECT u.month, u.plaza, u.users, i.spend
@@ -1833,16 +1842,19 @@ falló — corregir el `.md`, no el render.
 - [ ] **Step 5: Revisión en localhost y push final**
 
 ```bash
-cd /home/administrador/habi/tableros-marketing && python3 scripts/build_hub.py
-python3 -m http.server 8091
+python3 scripts/build_hub.py && python3 -m http.server 8091
 ```
 
-Revisar `/marca-mx/` y `/informe-uber-ooh/2026-07/`. Con el visto bueno de Camilo:
+Revisar `/marca-mx/` y `/informe-uber-ooh/2026-07/` desde el worktree.
 
 ```bash
 git add -A && git commit -m "feat(informe): contenido editorial del informe Uber OOH"
-gh auth switch -u camilootoya-habi && git push origin main
 ```
+
+**Commit a la rama, nada de push.** El trabajo vive en `feat/tablero-marca-informes`; la
+integración a `main` la decide Camilo al final, con
+superpowers:finishing-a-development-branch. Ningún implementador debe pushear ni tocar `main`:
+`main` es lo que sirve GitHub Pages y el cron le escribe cada 4 horas.
 
 ---
 
