@@ -6,21 +6,6 @@ import subprocess
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 
-# Valor de estado_mexico -> plaza. Reflejo del CASE de queries/exit_poll.sql,
-# expuesto para quien necesite mapear un estado_mexico sin volver a ejecutar la query.
-PLAZA_EXIT_POLL = {
-    "Nuevo Leon": "MTY",
-    "Nuevo León": "MTY",
-    "Jalisco": "GDL",
-    "Ciudad de Mexico": "CDMX",
-    "Ciudad de México": "CDMX",
-    "Distrito Federal": "CDMX",
-    "Estado de Mexico": "CDMX",
-    "Estado de México": "CDMX",
-    "Mexico": "CDMX",
-    "México": "CDMX",
-}
-
 
 def run_query(sql_path, max_bytes=20_000_000_000):
     sql = open(os.path.join(HERE, sql_path), encoding="utf-8").read()
