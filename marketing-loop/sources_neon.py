@@ -55,3 +55,22 @@ def contact_status_rows(country=None):
     args=[]
     if country: q += " WHERE country=%s"; args=[country]
     return _rows(q, tuple(args))
+
+def _delivery_dict(delivery_status, error_name, error_id):
+    """Forma la entrada de mbm desde una fila de send_log. error_name con el formato
+    '<NAME> (code <ID>)' que agg.err_bucket parsea (igual que mart/Infobip)."""
+    if error_id in (None, 0):
+        ename = "No Error (code 0)"
+    else:
+        ename = f"{error_name} (code {error_id})"
+    return {"status": delivery_status, "error_name": ename}
+
+def delivery_by_msgid(country=None):
+    """Entrega persistida por el motor en send_log (durable, sin lag). {message_id: {status,error_name}}."""
+    q = ("SELECT message_id, delivery_status, error_name, error_id FROM send_log "
+         "WHERE message_id IS NOT NULL AND delivery_status IS NOT NULL")
+    args = []
+    if country:
+        q += " AND country=%s"; args.append(country)
+    return {r["message_id"]: _delivery_dict(r["delivery_status"], r["error_name"], r["error_id"])
+            for r in _rows(q, tuple(args))}
