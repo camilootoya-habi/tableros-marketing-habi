@@ -2,9 +2,48 @@
 bq devuelve todos los números como string: convertir aquí, no en el HTML."""
 import json
 import os
+import re
 import subprocess
 
 HERE = os.path.dirname(os.path.abspath(__file__))
+
+# Marca dónde empieza el texto libre. Ninguna opción del catálogo contiene la palabra "otro".
+_OTRO = re.compile(r"\botro\b", re.IGNORECASE)
+
+
+def opciones_elegidas(valor):
+    """El exit poll es de SELECCIÓN MÚLTIPLE: un solo valor guarda todas las opciones marcadas
+    separadas por coma ("Televisión, Búsqueda en Google, Vehículos de Uber"), y al final
+    "Otro: <texto libre>" cuando la persona escribió algo.
+
+    Dos consecuencias que hay que respetar:
+
+    1. Hay que partir por coma. Contar el valor completo como si fuera una opción convierte cada
+       combinación en una categoría propia y produce cientos de series de una sola respuesta.
+    2. **El texto libre se descarta.** Trae datos personales — correos y nombres de personas
+       aparecieron en los datos reales — y este tablero se publica en GitHub Pages desde un repo
+       público. Solo se conserva que la respuesta fue "Otro". Se corta desde la palabra "otro"
+       en adelante, no por coma, porque el texto libre puede tener comas dentro.
+
+    Los shares por opción suman más de 100% a propósito: una persona marca varias.
+    """
+    v = (valor or "").strip().strip('"').strip()
+    if not v:
+        return []
+    m = _OTRO.search(v)
+    if m:
+        v = v[:m.start()]
+    partes = [p.strip().strip('"').strip(" ,") for p in v.split(",")]
+    partes = [p for p in partes if p]
+    if m:
+        partes.append("Otro")
+    # dedup preservando orden: "Redes sociales, Redes sociales" no cuenta doble
+    vistas, out = set(), []
+    for p in partes:
+        if p not in vistas:
+            vistas.add(p)
+            out.append(p)
+    return out
 
 
 def run_query(sql_path, max_bytes=20_000_000_000):
@@ -27,13 +66,11 @@ def exit_poll_series(rows):
                                "registros_web": 0, "respuestas": 0, "opciones": {}})
         n = int(r["registros_web"])
         a["registros_web"] += n
-        # El formulario guarda muchas respuestas con comillas dobles literales dentro del
-        # valor ('"Redes sociales de la empresa"'), que se verían tal cual en el tablero y en
-        # el informe. Se limpian acá, en la frontera con la fuente, no en la vista.
-        opcion = (r.get("opcion") or "").strip().strip('"').strip()
-        if opcion:
+        elegidas = opciones_elegidas(r.get("opcion"))
+        if elegidas:
             a["respuestas"] += n
-            a["opciones"][opcion] = a["opciones"].get(opcion, 0) + n
+            for opcion in elegidas:
+                a["opciones"][opcion] = a["opciones"].get(opcion, 0) + n
     for a in acc.values():
         a["tasa"] = a["respuestas"] / a["registros_web"] if a["registros_web"] else 0.0
     return [acc[k] for k in sorted(acc)]

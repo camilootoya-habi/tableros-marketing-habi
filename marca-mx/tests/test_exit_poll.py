@@ -24,3 +24,38 @@ def test_serie_ordenada_por_mes_y_plaza():
     rows = ROWS + [{"month": "2026-01", "plaza": "GDL", "opcion": "Google", "registros_web": "10"}]
     s = sources_bq.exit_poll_series(rows)
     assert [(f["month"], f["plaza"]) for f in s] == [("2026-01", "GDL"), ("2026-03", "MTY")]
+
+
+# ── Selección múltiple y privacidad ───────────────────────────────────────────
+
+def test_seleccion_multiple_se_parte_por_coma():
+    assert sources_bq.opciones_elegidas("Televisión, Búsqueda en Google, Vehículos de Uber") == [
+        "Televisión", "Búsqueda en Google", "Vehículos de Uber"]
+
+def test_texto_libre_de_otro_se_descarta_por_privacidad():
+    """Apareció un correo real y nombres de personas en los datos. El tablero es público."""
+    v = "Televisión, Vehículos de Uber, Otro: correo@ejemplo.com"
+    assert sources_bq.opciones_elegidas(v) == ["Televisión", "Vehículos de Uber", "Otro"]
+
+def test_texto_libre_con_comas_no_se_fragmenta_en_opciones_falsas():
+    v = "Redes sociales, Otro: Nombre Apellido Ejemplo, vecino de la cuadra"
+    assert sources_bq.opciones_elegidas(v) == ["Redes sociales", "Otro"]
+
+def test_comillas_literales_del_formulario_se_limpian():
+    assert sources_bq.opciones_elegidas('"Redes sociales de la empresa"') == [
+        "Redes sociales de la empresa"]
+
+def test_opcion_repetida_no_cuenta_doble():
+    assert sources_bq.opciones_elegidas("Cines, Cines") == ["Cines"]
+
+def test_vacio_o_nulo_no_es_respuesta():
+    assert sources_bq.opciones_elegidas(None) == []
+    assert sources_bq.opciones_elegidas("   ") == []
+
+def test_una_respuesta_multiple_cuenta_una_vez_en_el_denominador():
+    """La persona respondió una vez aunque marcó tres opciones: `respuestas` no se infla."""
+    s = sources_bq.exit_poll_series([
+        {"month": "2026-07", "plaza": "MTY", "registros_web": "10",
+         "opcion": "Televisión, Cines, Vehículos de Uber"}])
+    assert s[0]["respuestas"] == 10
+    assert s[0]["opciones"] == {"Televisión": 10, "Cines": 10, "Vehículos de Uber": 10}
