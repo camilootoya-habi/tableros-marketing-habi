@@ -38,7 +38,7 @@ METABASE_CARD = "51604d7d-00ed-46af-8223-78a0a01b940d"
 METABASE_URL = f"https://metabase.propiedades.com/api/public/card/{METABASE_CARD}/query/json"
 
 INSIGHT_FIELDS = ("ad_id,spend,impressions,reach,clicks,inline_link_clicks,"
-                  "ctr,cpc,cpm")
+                  "ctr,cpc,cpm,actions,cost_per_action_type")
 
 
 # ---------- Meta ----------
@@ -105,6 +105,24 @@ def fetch_daily(ad_ids, date_preset="maximum"):
         url = data.get("paging", {}).get("next")
         params = None
     return serie
+
+
+def event_metrics(actions, cost_per_action, spend, custom_event="interes_marketing"):
+    """Extrae (nº eventos, CPA) de los custom conversions offsite del pixel.
+    Suma cualquier action_type 'offsite_conversion.custom.*' (la cuenta tiene un
+    único custom event). CPA = promedio ponderado; fallback spend/eventos."""
+    ev = 0
+    for a in actions or []:
+        if str(a.get("action_type", "")).startswith("offsite_conversion.custom."):
+            ev += int(float(a.get("value", 0) or 0))
+    cpa = 0.0
+    for a in cost_per_action or []:
+        if str(a.get("action_type", "")).startswith("offsite_conversion.custom."):
+            cpa = round(float(a.get("value", 0) or 0), 2)
+            break
+    if not cpa and ev:
+        cpa = round(float(spend) / ev, 2)
+    return ev, cpa
 
 
 # ---------- Metabase: estatus del listing + leads diarios ----------
@@ -236,6 +254,7 @@ def build(date_preset="maximum"):
         spend = _f(m.get("spend"))
         link_clicks = _i(m.get("inline_link_clicks"))
         la, da, lp, dp = prepost.get(str(p["id_aviso"]), (0, 0, 0, 0))
+        ev, cpa = event_metrics(m.get("actions"), m.get("cost_per_action_type"), spend)
         filas.append({
             **p,
             "status": status_live.get(p["ad_id"], p.get("status", "")),
@@ -251,6 +270,9 @@ def build(date_preset="maximum"):
             "ctr": round(_f(m.get("ctr")), 2),
             "cpc": round(_f(m.get("cpc")), 2),
             "costo_x_clic_enlace": round(spend / link_clicks, 2) if link_clicks else 0.0,
+            "etapa": p.get("etapa", "traffic"),
+            "eventos": ev,
+            "cpa": cpa,
         })
 
     filas.sort(key=lambda x: x["gasto"], reverse=True)
