@@ -3,11 +3,15 @@
 ⚠ Estas son cuentas publicitarias de PRODUCCIÓN. La cuota de API es por cuenta y agotarla
 throttlea a cualquier otra integración que las consulte. Regla del cron: **una sola llamada por
 país por corrida** — `fetch()` no pagina. El caché versionado en disco (`brand_lift_cache.json`)
-es la fuente de verdad histórica; la API solo aporta lo nuevo que trae esa página, y `series()`
-deduplica por (país, mes, pregunta, experiment_id), así que si un estudio cerrado reaparece en la
-página no cuesta nada — se sobrescribe con el mismo dato. Al primer error transitorio se
-imprime la advertencia y se devuelve lo que haya (nada), conservando el caché existente en disco.
-El backfill histórico se corre a mano, nunca desde el cron.
+es la fuente de verdad histórica; la API solo aporta lo nuevo que trae esa página, y tanto
+`series()` como `merge_rows()` deduplican por (país, mes, pregunta, experiment_id), así que si un
+estudio cerrado reaparece en la página no cuesta nada — se sobrescribe con el mismo dato.
+
+`fetch()` devuelve `(ok, rows)`: el llamador (`build.py`) es quien decide qué hacer con un
+refresco fallido — servir el caché como `stale` con el timestamp del último éxito real, nunca
+disfrazarlo de refresco nuevo. Un éxito se persiste con `save_cache()`, fusionando sobre el caché
+completo (`merge_rows`) para que ninguna fila se pierda cuando una página de 10 estudios deja
+afuera algo que ya estaba guardado. El backfill histórico se corre a mano, nunca desde el cron.
 """
 import json
 import os
@@ -64,10 +68,46 @@ def parse_results(studies, country):
     return rows
 
 
-def load_cache():
+def _row_key(r):
+    """Identidad de una fila para deduplicar: la misma que usa `series()` y `merge_rows()`."""
+    return (r["country"], r["month"], r["question"], r["experiment_id"])
+
+
+def _read_cache_file():
     if not os.path.exists(CACHE):
-        return []
-    return json.loads(open(CACHE, encoding="utf-8").read()).get("rows", [])
+        return {}
+    return json.loads(open(CACHE, encoding="utf-8").read())
+
+
+def load_cache():
+    return _read_cache_file().get("rows", [])
+
+
+def load_last_refresh():
+    """{"MX": iso_ts, "CO": iso_ts} — última vez que `fetch()` tuvo éxito para ese país.
+    Vive junto a "rows" en el mismo archivo; separado de `load_cache()` para que ningún
+    llamador existente de `load_cache()` tenga que enterarse de este campo nuevo."""
+    return _read_cache_file().get("last_refresh", {})
+
+
+def save_cache(rows, last_refresh):
+    """Escribe `rows` + `last_refresh` de vuelta a `brand_lift_cache.json`. Solo se llama
+    tras un refresco exitoso (`build.py` decide cuándo) — nunca a ciegas: si la API falla no
+    hay nada nuevo que fusionar y el archivo se queda como está."""
+    with open(CACHE, "w", encoding="utf-8") as f:
+        json.dump({"rows": rows, "last_refresh": last_refresh}, f, ensure_ascii=False, indent=2)
+        f.write("\n")
+
+
+def merge_rows(cached, fresh):
+    """Funde `fresh` (filas crudas de `fetch()`, sin mapear) dentro de `cached`, con la misma
+    identidad que usa `series()`: (país, mes, pregunta, experiment_id). Un estudio que
+    reaparece en la página se actualiza in place; uno nuevo se agrega. El caché **nunca se
+    encoge**: toda fila que ya estaba y no vino en esta página se conserva tal cual."""
+    acc = {_row_key(r): r for r in cached}
+    for r in fresh:
+        acc[_row_key(r)] = r
+    return list(acc.values())
 
 
 def _get(path, **params):
@@ -87,22 +127,21 @@ def _get(path, **params):
 
 def fetch(country):
     """Una llamada, un país, sin paginar. `limit=10` cubre el mes en curso y los anteriores.
-    Ante cualquier error transitorio se conserva el caché: nunca se vacía la serie por un rate
-    limit."""
+    Devuelve `(ok, rows)`: `ok=False` ante cualquier error transitorio, con `rows=[]` — el
+    llamador es quien decide cómo servir el caché existente cuando la API falla (nunca aquí:
+    este módulo no vacía nada, solo informa honestamente si la llamada funcionó)."""
     ok, pl = _get(f"{ACCOUNTS[country]}/ad_studies", fields=FIELDS, limit=10)
     if not ok:
         err = pl.get("error") or {}
         print(f"WARN brand_lift {country}: {err.get('message')} "
               f"(transient={err.get('is_transient')}) — se conserva el caché")
-        return []
-    return parse_results(pl.get("data") or [], country)
+        return False, []
+    return True, parse_results(pl.get("data") or [], country)
 
 
 def series(rows):
     """Una fila por (país, mes, pregunta). El más reciente gana si hay duplicados."""
-    acc = {}
-    for r in rows:
-        acc[(r["country"], r["month"], r["question"], r["experiment_id"])] = r
+    acc = {_row_key(r): r for r in rows}
     return [acc[k] for k in sorted(acc, key=lambda k: (k[0], k[1], str(k[2])))]
 
 

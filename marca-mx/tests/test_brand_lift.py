@@ -40,3 +40,93 @@ def test_series_agrupa_por_mes_y_pregunta():
     rows[0]["question"] = "ad_recall"
     s = BL.series(rows)
     assert s[0]["month"] == "2026-07" and s[0]["question"] == "ad_recall"
+
+
+# --- fetch() devuelve (ok, rows) — Task 5 defecto 1: el llamador necesita distinguir un
+# refresco exitoso de uno degradado para no mentir con el timestamp. ---
+
+def test_fetch_ok_devuelve_ok_true_y_las_filas_parseadas(monkeypatch):
+    monkeypatch.setattr(BL, "_get", lambda path, **params: (True, {"data": [STUDY]}))
+    ok, rows = BL.fetch("MX")
+    assert ok is True
+    assert len(rows) == 1 and rows[0]["experiment_id"] == "1380313597249074"
+
+
+def test_fetch_fallo_devuelve_ok_false_y_filas_vacias(monkeypatch):
+    monkeypatch.setattr(BL, "_get", lambda path, **params:
+                         (False, {"error": {"message": "rate limited", "is_transient": True}}))
+    ok, rows = BL.fetch("MX")
+    assert ok is False
+    assert rows == []
+
+
+# --- merge_rows() — Task 5 defecto 2: el caché nunca debe encogerse y un estudio que
+# reaparece en la página se actualiza in place, no se duplica. ---
+
+CACHED_A = {"country": "MX", "month": "2026-01", "question": None, "experiment_id": "1",
+            "exposed": 0.10}
+CACHED_B = {"country": "MX", "month": "2026-02", "question": None, "experiment_id": "2",
+            "exposed": 0.20}
+
+
+def test_merge_rows_agrega_fila_nueva_sin_tocar_las_existentes():
+    fresh = [{"country": "MX", "month": "2026-03", "question": None, "experiment_id": "3",
+              "exposed": 0.30}]
+    merged = BL.merge_rows([CACHED_A, CACHED_B], fresh)
+    assert len(merged) == 3
+    assert {r["experiment_id"] for r in merged} == {"1", "2", "3"}
+
+
+def test_merge_rows_actualiza_in_place_por_la_misma_identidad_sin_duplicar():
+    # misma (country, month, question, experiment_id) que CACHED_A, pero con un valor nuevo:
+    # un estudio que reaparece en la página se sobreescribe, no se duplica.
+    fresh = [{"country": "MX", "month": "2026-01", "question": None, "experiment_id": "1",
+              "exposed": 0.99}]
+    merged = BL.merge_rows([CACHED_A, CACHED_B], fresh)
+    assert len(merged) == 2
+    actualizada = [r for r in merged if r["experiment_id"] == "1"][0]
+    assert actualizada["exposed"] == 0.99
+
+
+def test_merge_rows_nunca_encoge_el_cache():
+    # la página trae menos estudios de los que ya hay en el caché (p.ej. uno viejo salió
+    # de los 10 más recientes) — el merge debe conservar TODO el histórico, nunca truncar.
+    cached = [CACHED_A, CACHED_B,
+              {"country": "MX", "month": "2026-03", "question": None, "experiment_id": "3",
+               "exposed": 0.30}]
+    fresh = [dict(CACHED_A, exposed=0.11)]     # la página de hoy solo trae 1 de los 3
+    merged = BL.merge_rows(cached, fresh)
+    assert len(merged) == len(cached)
+    assert {r["experiment_id"] for r in merged} == {"1", "2", "3"}
+
+
+def test_merge_rows_sin_fresh_conserva_el_cache_completo():
+    merged = BL.merge_rows([CACHED_A, CACHED_B], [])
+    assert len(merged) == 2
+
+
+# --- save_cache() / load_last_refresh() — el timestamp de refresco exitoso vive en el mismo
+# archivo, junto a "rows", para que build.py pueda servir un "stale" honesto. ---
+
+def test_save_cache_y_load_cache_hacen_roundtrip(monkeypatch, tmp_path):
+    cache_path = tmp_path / "brand_lift_cache.json"
+    monkeypatch.setattr(BL, "CACHE", str(cache_path))
+    BL.save_cache([CACHED_A, CACHED_B], {"MX": "2026-07-27T18:00:00Z"})
+    assert BL.load_cache() == [CACHED_A, CACHED_B]
+    assert BL.load_last_refresh() == {"MX": "2026-07-27T18:00:00Z"}
+
+
+def test_load_last_refresh_sin_archivo_devuelve_vacio(monkeypatch, tmp_path):
+    monkeypatch.setattr(BL, "CACHE", str(tmp_path / "no_existe.json"))
+    assert BL.load_last_refresh() == {}
+
+
+def test_load_cache_sigue_devolviendo_solo_la_lista_de_filas(monkeypatch, tmp_path):
+    # contrato existente: load_cache() no debe empezar a exigir que los llamadores sepan de
+    # last_refresh — solo agrega una llave, no cambia la forma de la que ya depende el resto.
+    cache_path = tmp_path / "brand_lift_cache.json"
+    monkeypatch.setattr(BL, "CACHE", str(cache_path))
+    BL.save_cache([CACHED_A], {"MX": "2026-07-27T18:00:00Z"})
+    rows = BL.load_cache()
+    assert isinstance(rows, list)
+    assert rows == [CACHED_A]
