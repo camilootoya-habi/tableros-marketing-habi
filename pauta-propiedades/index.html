@@ -94,6 +94,8 @@
     .badge.unknown { background: #232f3f; color: #94a3b8; border: 1px solid #33415566; }
     .badge.recon { background:#3a2f00; color:#f5c451; border: 1px solid #f5c45155; }
     .badge.vivo  { background:#00332b; color:#4fd1c5; border: 1px solid #4fd1c555; }
+    .badge.evt { background:#241a3a; color:#b794f6; border: 1px solid #b794f655; }
+    .badge.trf { background:#1a2a3a; color:#63b3ed; border: 1px solid #63b3ed55; }
 
     .period-wrap { overflow-x: auto; }
     .period-tbl { width: 100%; border-collapse: collapse; font-size: 13px; }
@@ -132,6 +134,12 @@
       <button class="chip active" data-estado="todos">Todos</button>
       <button class="chip" data-estado="ACTIVE">Activos</button>
       <button class="chip" data-estado="PAUSED">Pausados</button>
+    </div>
+    <div class="selector-group">
+      <label>Etapa</label>
+      <button class="chip active" data-etapa="todas">Todas</button>
+      <button class="chip" data-etapa="traffic">Tráfico</button>
+      <button class="chip" data-etapa="evento">Evento</button>
     </div>
     <div class="selector-group">
       <label>Temporalidad</label>
@@ -186,6 +194,9 @@
           <th data-k="cliente">Cliente</th>
           <th data-k="status">Estado Ad</th>
           <th data-k="estatus_listing">Estado Publicación</th>
+          <th data-k="etapa">Etapa</th>
+          <th data-k="eventos" style="text-align:right">Eventos</th>
+          <th data-k="cpa" style="text-align:right">CPA</th>
           <th data-k="colonia">Colonia</th>
           <th data-k="gasto" class="sorted">Gasto</th>
           <th data-k="impresiones">Impr.</th>
@@ -250,7 +261,7 @@
 
     // Colores categóricos validados (dataviz, modo oscuro): azul / aqua / amarillo
     const PALETTE = ['#3987e5', '#199e70', '#c98500'];
-    const state = { data: null, cliente: 'todos', estado: 'todos', gran: 'dia', sortKey: 'gasto', sortDir: 'desc' };
+    const state = { data: null, cliente: 'todos', estado: 'todos', etapa: 'todas', gran: 'dia', sortKey: 'gasto', sortDir: 'desc' };
     let colorByClient = {};
     let chartMensual = null;
     let miniCharts = {};  // id de canvas -> instancia Chart (12 mini-gráficas)
@@ -353,7 +364,8 @@
     function filtered() {
       return state.data.publicaciones.filter(p =>
         (state.cliente === 'todos' || p.cliente_id === state.cliente) &&
-        (state.estado === 'todos' || p.status === state.estado));
+        (state.estado === 'todos' || p.status === state.estado) &&
+        (state.etapa === 'todas' || (p.etapa || 'traffic') === state.etapa));
     }
 
     function renderAll() {
@@ -603,6 +615,9 @@
           <td><span class="dot" style="background:${colorByClient[r.cliente_id]};display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:8px"></span>${r.cliente || ''}</td>
           <td><span class="badge ${r.status === 'ACTIVE' ? 'active' : 'paused'}">${r.status === 'ACTIVE' ? 'Activo' : 'Pausado'}</span></td>
           <td><span class="badge ${listingClass(r.estatus_listing)}">${r.estatus_listing || 'Sin dato'}</span></td>
+          <td><span class="badge ${(r.etapa||'traffic')==='evento'?'evt':'trf'}">${(r.etapa||'traffic')==='evento'?'Evento':'Tráfico'}</span></td>
+          <td style="text-align:right">${r.eventos||0}</td>
+          <td style="text-align:right">${r.cpa? '$'+r.cpa : '—'}</td>
           <td>${r.colonia || ''}</td>
           <td>${fmtUsd(r.gasto)}</td>
           <td>${fmtInt(r.impresiones)}</td>
@@ -649,6 +664,11 @@
     document.querySelectorAll('[data-estado]').forEach(el => el.addEventListener('click', () => {
       state.estado = el.dataset.estado;
       document.querySelectorAll('[data-estado]').forEach(x => x.classList.toggle('active', x === el));
+      renderAll();
+    }));
+    document.querySelectorAll('[data-etapa]').forEach(el => el.addEventListener('click', () => {
+      state.etapa = el.dataset.etapa;
+      document.querySelectorAll('[data-etapa]').forEach(x => x.classList.toggle('active', x === el));
       renderAll();
     }));
     document.querySelectorAll('[data-gran]').forEach(el => el.addEventListener('click', () => {
