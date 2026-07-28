@@ -168,3 +168,39 @@ def test_exit_poll_limpia_comillas_literales_de_las_opciones():
          "registros_web": "10"}])
     assert "Redes sociales de la empresa" in s[0]["opciones"]
     assert not any(k.startswith('"') for k in s[0]["opciones"])
+
+
+# ── Compuerta de cuota: el cron corre cada 4h, la API se llama 1 vez al día ────
+
+def test_refresco_reciente_evita_la_llamada(monkeypatch):
+    """12 llamadas diarias por país a una cuenta de producción, para datos mensuales, es gasto puro."""
+    llamadas = []
+    monkeypatch.setattr(build.BL, "fetch", lambda c: (llamadas.append(c), (True, []))[1])
+    monkeypatch.setattr(build.BL, "load_last_refresh", lambda: {"MX": "2026-07-28T00:00:00Z"})
+    monkeypatch.setattr(build.BL, "load_cache",
+                        lambda: [{"country": "MX", "month": "2026-07", "experiment_id": "e1",
+                                  "question": None, "study_id": "s1", "exposed": 0.3}])
+    monkeypatch.setattr(build.BL, "map_questions",
+                        lambda rows, mapping=None: [dict(r, question="ad_recall") for r in rows])
+    m = build.collect_brand_lift("MX", now="2026-07-28T06:00:00Z")   # 6 h después
+    assert llamadas == [], "no debió llamar a la API"
+    assert m["status"] == "ok" and m["source"] == "cache"
+    assert m["last_updated"] == "2026-07-28T00:00:00Z"
+
+
+def test_refresco_viejo_si_llama(monkeypatch):
+    llamadas = []
+    monkeypatch.setattr(build.BL, "fetch", lambda c: (llamadas.append(c), (False, []))[1])
+    monkeypatch.setattr(build.BL, "load_last_refresh", lambda: {"MX": "2026-07-26T00:00:00Z"})
+    monkeypatch.setattr(build.BL, "load_cache", lambda: [])
+    build.collect_brand_lift("MX", now="2026-07-28T06:00:00Z")       # 54 h después
+    assert llamadas == ["MX"]
+
+
+def test_sin_refresco_previo_si_llama(monkeypatch):
+    llamadas = []
+    monkeypatch.setattr(build.BL, "fetch", lambda c: (llamadas.append(c), (False, []))[1])
+    monkeypatch.setattr(build.BL, "load_last_refresh", lambda: {})
+    monkeypatch.setattr(build.BL, "load_cache", lambda: [])
+    build.collect_brand_lift("MX", now="2026-07-28T06:00:00Z")
+    assert llamadas == ["MX"]
