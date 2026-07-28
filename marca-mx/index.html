@@ -248,8 +248,23 @@ function aggExit(serie) {
     .map(a => ({ ...a, tasa: a.registros_web ? a.respuestas / a.registros_web : 0 }));
 }
 
+// Piso de volumen: la encuesta existía desde 2022 pero casi nadie la respondía, y un mes con
+// 3 respuestas produce shares de 33% o 100% que no significan nada y aplastan la escala del
+// resto de la serie. Se omiten esos meses y se dice cuáles.
+const PISO_RESPUESTAS = 50;
+
 function drawExitPoll(host, serie) {
-  const s = aggExit(serie), L = s.map(r => r.month);
+  const todo = aggExit(serie);
+  const s = todo.filter(r => r.respuestas >= PISO_RESPUESTAS);
+  const omitidos = todo.length - s.length;
+  const desde = s.length ? s[0].month : null;
+  const L = s.map(r => r.month);
+  if (!s.length) {
+    host.innerHTML = `<div class="empty-metric"><span class="icon">—</span>
+      <strong>Volumen insuficiente</strong><p>Ningún mes de esta plaza alcanza las
+      ${PISO_RESPUESTAS} respuestas mínimas para calcular un share con sentido.</p></div>`;
+    return;
+  }
   // Top opciones por volumen total, y Uber siempre presente aunque sea marginal:
   // es la que motiva el informe de campaña.
   const tot = {};
@@ -263,13 +278,17 @@ function drawExitPoll(host, serie) {
 
   host.innerHTML = `<div class="charts-grid">
     <div class="panel"><h3>Tasa de respuesta</h3>
-      <div class="cap">Quién contesta "¿dónde nos conociste?" sobre registros WEB. Último mes: ${(100 * (ult.tasa || 0)).toFixed(1)}%.</div>
+      <div class="cap">Quién contesta "¿dónde nos conociste?" sobre registros WEB. Último mes: ${(100 * (ult.tasa || 0)).toFixed(1)}%.
+        Serie desde ${desde}${omitidos ? ` · se omiten ${omitidos} ${omitidos === 1 ? 'mes' : 'meses'} previos con menos de ${PISO_RESPUESTAS} respuestas` : ''}.</div>
       <div class="ch"><canvas id="ep-tasa"></canvas></div>${legend([[C.gris, 'Tasa de respuesta']])}</div>
     <div class="panel"><h3>Share por canal declarado</h3>
       <div class="cap">Sobre el total de respuestas del mes. Es <strong>selección múltiple</strong>:
         una persona marca varios canales, así que los shares suman más de 100%.${shareUber != null
         ? ` Uber en ${ult.month}: <strong>${(100 * shareUber).toFixed(2)}%</strong>.` : ''}
-        El texto libre de "Otro" no se guarda — traía datos personales.</div>
+        El texto libre de "Otro" no se guarda — traía datos personales.
+        <br><strong>Ojo:</strong> el catálogo del formulario cambió a inicios de 2026 —
+        "Redes sociales" dejó de usarse y apareció "Redes sociales de la empresa". La caída de una
+        y el salto de la otra en enero 2026 es un renombre, no un cambio de comportamiento.</div>
       <div class="ch"><canvas id="ep-share"></canvas></div>
       ${legend(mostrar.map((k, i) => [esUber(k) ? C.verde : PALETA[(i + 1) % PALETA.length], k]))}</div></div>`;
 
