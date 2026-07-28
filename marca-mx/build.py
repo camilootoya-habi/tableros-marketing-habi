@@ -22,22 +22,20 @@ def collect_traffic():
     return BQ.traffic_series(BQ.run_query("queries/trafico_plazas.sql"))
 
 
-REFRESCO_MIN_HORAS = 20
-
-
 def _refresco_reciente(last_refresh, now):
-    """El cron del hub corre cada 4 h. Los estudios de Brand Lift son mensuales y sus resultados
-    se actualizan a diario como máximo, así que refrescar en cada corrida gastaría 12 llamadas
-    diarias por país contra una cuenta publicitaria de PRODUCCIÓN sin traer un solo dato nuevo.
-    Se refresca una vez al día y el resto de las corridas sirven el caché."""
-    if not last_refresh:
+    """¿Ya se refrescó hoy? El cron del hub corre cada 4 h; los estudios de Brand Lift son
+    mensuales y sus resultados se actualizan a diario como máximo, así que refrescar en cada
+    corrida gastaría 12 llamadas diarias por país contra una cuenta publicitaria de PRODUCCIÓN
+    sin traer un solo dato nuevo.
+
+    Se compara la **fecha UTC**, no las horas transcurridas. Con un umbral en horas el gate no
+    cumple lo que promete: con 20 h y un cron alineado a múltiplos de 4, un refresco a la hora 0
+    vuelve a ser elegible a la hora 20 del MISMO día → dos llamadas en un día. Comparar fechas
+    da la garantía dura de una llamada por país por día calendario, sin depender de la
+    alineación del cron."""
+    if not last_refresh or not now:
         return False
-    try:
-        t0 = datetime.datetime.strptime(last_refresh, "%Y-%m-%dT%H:%M:%SZ")
-        t1 = datetime.datetime.strptime(now, "%Y-%m-%dT%H:%M:%SZ")
-    except (ValueError, TypeError):
-        return False
-    return (t1 - t0).total_seconds() < REFRESCO_MIN_HORAS * 3600
+    return str(last_refresh)[:10] == str(now)[:10]
 
 
 def _sin_identificar(country):
@@ -71,11 +69,11 @@ def collect_brand_lift(country, now):
             return contract.metric("not_available", reason=_sin_identificar(country))
         return contract.metric(status, source="cache", series=series, last_updated=last_updated)
 
-    # Compuerta de cuota: si ya se refrescó hace menos de REFRESCO_MIN_HORAS, no se llama a la API.
-    # El dato sigue vigente, así que es `ok`, no `stale`.
+    # Compuerta de cuota: si ya se refrescó hoy, no se llama a la API. El dato sigue vigente,
+    # así que es `ok`, no `stale` — no está viejo, simplemente no hacía falta volver a pedirlo.
     previo = BL.load_last_refresh().get(country)
     if _refresco_reciente(previo, now):
-        print(f"  brand_lift {country}: refrescado hace <{REFRESCO_MIN_HORAS}h, se sirve el caché")
+        print(f"  brand_lift {country}: ya se refrescó hoy ({previo}), se sirve el caché")
         return _desde_cache("ok", previo)
 
     ok, fresh = BL.fetch(country)

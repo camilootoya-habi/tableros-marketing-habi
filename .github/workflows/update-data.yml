@@ -500,6 +500,15 @@ jobs:
           GCP_PROJECT: ${{ secrets.GCP_PROJECT }}
         run: python3 scripts/run_queries.py
 
+      # Va DESPUÉS del auto-discovery a propósito: hornea las cifras de marca-mx/data.json, así que
+      # tiene que correr cuando ese archivo ya se regeneró en esta misma corrida. El auto-discovery
+      # recorre los meta.json en orden alfabético, donde "informe-uber-ooh" cae antes que "marca-mx",
+      # y ahí habría horneado los datos del ciclo anterior. Por eso el informe declara
+      # skip_hub_cron y se corre explícitamente aquí.
+      - name: Informe Uber — renderizar la edición del mes en curso
+        if: always()
+        run: python3 informe-uber-ooh/build.py
+
       - name: Regenerar el hub (index.html)
         if: always()
         run: python3 scripts/build_hub.py

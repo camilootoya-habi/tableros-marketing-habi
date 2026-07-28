@@ -33,7 +33,9 @@ def test_seleccion_multiple_se_parte_por_coma():
         "Televisión", "Búsqueda en Google", "Vehículos de Uber"]
 
 def test_texto_libre_de_otro_se_descarta_por_privacidad():
-    """Apareció un correo real y nombres de personas en los datos. El tablero es público."""
+    """En producción este campo trae correos y nombres de personas reales, y el tablero se
+    publica en un repo público. Las fixtures de acá son sintéticas a propósito: copiar un dato
+    real a un test lo mete al historial de git, que es justo lo que se quiere evitar."""
     v = "Televisión, Vehículos de Uber, Otro: correo@ejemplo.com"
     assert sources_bq.opciones_elegidas(v) == ["Televisión", "Vehículos de Uber", "Otro"]
 

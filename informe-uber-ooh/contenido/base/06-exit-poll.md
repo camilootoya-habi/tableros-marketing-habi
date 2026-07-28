@@ -50,6 +50,11 @@ la respuesta fue "Otro".
 
 **Corrección respecto a la versión anterior de este informe.** La edición manual de Q1 reportó que la
 atribución declarada a Uber alcanzaba 2% en marzo de 2026. Recalculada con la definición canónica que
-ahora usa el tablero, marzo da 1.62% en Monterrey y Guadalajara, y 0.63% a nivel nacional; el 2% se
-alcanza en mayo. La cifra anterior correspondía a otro corte. Se publica la serie reproducible, que
+ahora usa el tablero, marzo dio 1.62% en Monterrey y Guadalajara, y 0.63% a nivel nacional; el 2% se
+alcanzó en mayo. La cifra anterior correspondía a otro corte. Se publica la serie reproducible, que
 además sostiene mejor el argumento: sigue subiendo hasta el último dato disponible.
+
+*Las cuatro cifras del párrafo anterior son de un corte cerrado y se dejan escritas a mano
+deliberadamente, como nota histórica: son las únicas del informe que no se interpolan del tablero,
+porque describen una comparación con una versión pasada del documento y no un dato vivo. Si la serie
+de ese periodo llegara a recalcularse, este párrafo hay que revisarlo a mano.*

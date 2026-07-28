@@ -3,5 +3,6 @@
   "description": "Evaluación mensual de la campaña de branding en vehículos de Uber en MTY y GDL: Brand Lift, tráfico, CPV y atribución declarada. Cada edición congela sus cifras.",
   "country": "MX",
   "section": "analysis",
-  "order": 8
+  "order": 8,
+  "skip_hub_cron": true
 }

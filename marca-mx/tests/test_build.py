@@ -182,7 +182,7 @@ def test_refresco_reciente_evita_la_llamada(monkeypatch):
                                   "question": None, "study_id": "s1", "exposed": 0.3}])
     monkeypatch.setattr(build.BL, "map_questions",
                         lambda rows, mapping=None: [dict(r, question="ad_recall") for r in rows])
-    m = build.collect_brand_lift("MX", now="2026-07-28T06:00:00Z")   # 6 h después
+    m = build.collect_brand_lift("MX", now="2026-07-28T06:00:00Z")   # mismo día UTC
     assert llamadas == [], "no debió llamar a la API"
     assert m["status"] == "ok" and m["source"] == "cache"
     assert m["last_updated"] == "2026-07-28T00:00:00Z"
@@ -193,7 +193,7 @@ def test_refresco_viejo_si_llama(monkeypatch):
     monkeypatch.setattr(build.BL, "fetch", lambda c: (llamadas.append(c), (False, []))[1])
     monkeypatch.setattr(build.BL, "load_last_refresh", lambda: {"MX": "2026-07-26T00:00:00Z"})
     monkeypatch.setattr(build.BL, "load_cache", lambda: [])
-    build.collect_brand_lift("MX", now="2026-07-28T06:00:00Z")       # 54 h después
+    build.collect_brand_lift("MX", now="2026-07-28T06:00:00Z")       # otro día UTC
     assert llamadas == ["MX"]
 
 
@@ -204,3 +204,49 @@ def test_sin_refresco_previo_si_llama(monkeypatch):
     monkeypatch.setattr(build.BL, "load_cache", lambda: [])
     build.collect_brand_lift("MX", now="2026-07-28T06:00:00Z")
     assert llamadas == ["MX"]
+
+
+def test_veinte_horas_el_mismo_dia_no_dispara_segunda_llamada(monkeypatch):
+    """El bug que encontró la revisión final: con umbral de 20 h y cron cada 4 h, un refresco a
+    la hora 0 volvía a ser elegible a la hora 20 del MISMO día → 2 llamadas en un día a una
+    cuenta de producción. Comparar la fecha UTC lo cierra sin depender del cron."""
+    llamadas = []
+    monkeypatch.setattr(build.BL, "fetch", lambda c: (llamadas.append(c), (True, []))[1])
+    monkeypatch.setattr(build.BL, "load_last_refresh", lambda: {"MX": "2026-07-28T00:00:00Z"})
+    monkeypatch.setattr(build.BL, "load_cache",
+                        lambda: [{"country": "MX", "month": "2026-07", "experiment_id": "e1",
+                                  "question": None, "study_id": "s1", "exposed": 0.3}])
+    monkeypatch.setattr(build.BL, "map_questions",
+                        lambda rows, mapping=None: [dict(r, question="ad_recall") for r in rows])
+    build.collect_brand_lift("MX", now="2026-07-28T20:00:00Z")
+    assert llamadas == []
+
+
+def test_a_lo_mas_una_llamada_por_dia_sobre_un_mes_de_cron(monkeypatch):
+    """Simula el cron real (cada 4 h) durante 30 días y cuenta llamadas por día calendario."""
+    import datetime as dt
+    estado = {"MX": None}
+    llamadas = []
+    monkeypatch.setattr(build.BL, "load_cache", lambda: [])
+    monkeypatch.setattr(build.BL, "load_last_refresh", lambda: dict(
+        {k: v for k, v in estado.items() if v}))
+
+    def fake_fetch(c):
+        llamadas.append(ahora[0])
+        return False, []          # falla: no persiste, pero sí cuenta la llamada
+    monkeypatch.setattr(build.BL, "fetch", fake_fetch)
+
+    ahora = [None]
+    t = dt.datetime(2026, 1, 1, 0, 0, 0)
+    for _ in range(30 * 6):       # 30 días × 6 corridas diarias
+        ahora[0] = t.strftime("%Y-%m-%dT%H:%M:%SZ")
+        if not build._refresco_reciente(estado["MX"], ahora[0]):
+            fake_fetch("MX")
+            estado["MX"] = ahora[0]     # simula el éxito que persistiría el timestamp
+        t += dt.timedelta(hours=4)
+
+    por_dia = {}
+    for c in llamadas:
+        por_dia[c[:10]] = por_dia.get(c[:10], 0) + 1
+    assert max(por_dia.values()) == 1, f"días con más de una llamada: {[d for d, n in por_dia.items() if n > 1]}"
+    assert len(por_dia) == 30
