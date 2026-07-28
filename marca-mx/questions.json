@@ -1,5 +1,5 @@
 {
-  "_nota": "experiment_id → pregunta. El id cambia cada mes (cada estudio recurrente genera ids nuevos): hay que agregar las entradas de cada mes nuevo a mano, este mapeo no se infiere solo. Identificadas por firma dentro de cada mes MX (3 preguntas desde 2025-04 en adelante; meses antes de 2025-04 traen 4 preguntas y la firma no aplica, quedan sin mapear): la pregunta con ~790-805 responders (~1.6x las otras dos, lift típicamente negativo) se deja sin identificar a propósito. De las dos restantes (~500 responders cada una), la de mayor exposed% es ad_recall y la de menor es toma. toma se validó contra la serie TOMA publicada en el informe MTY (sep-2025 a feb-2026, 6 meses consecutivos, diferencia <=0.3 pts). ad_recall se validó contra el informe Uber: feb-2026 dio 33.56% expuesto / +16.29 pts de lift contra el 33.6% / +16.3 publicados. Colombia queda deliberadamente sin mapear: sus estudios traen 4 preguntas (no 3), exposed 37-52% (vs 17-35% en MX) y tres preguntas a ~500 responders en vez de dos, así que la regla de firma de MX no aplica. Toda fila CO resuelve a sin_identificar hasta que Camilo traiga las etiquetas reales desde Ads Manager.",
+  "_nota": "experiment_id → pregunta. El id CAMBIA CADA MES (cada estudio recurrente es nuevo), así que hay que agregar los ids nuevos cada vez que entra un estudio. MX trae exactamente 3 preguntas por estudio: Ad Recall, Top of Mind y Brand Favorability. NO hay Intent en MX. Regla de identificación por firma, confirmada por Camilo contra Ads Manager en jun-2026 (Ad recall 19.1 pts / Top of mind 11.5 pts / Brand favorability -1.7 pts): dentro de un mes, la de MÁS responders (~800 vs ~500) es favorability; de las dos restantes, la de mayor tasa de expuestos es ad_recall y la menor es toma. Los meses anteriores a 2025-04 traen 4 preguntas y la regla no aplica: quedan sin identificar. COLOMBIA sigue sin mapear: trae 4 preguntas con tasas de 37-52%, estructura distinta a MX, así que la regla no transfiere. Pendiente de leer las 4 etiquetas en Ads Manager → Experimentos.",
   "628585800067757": "ad_recall",
   "722975443445979": "toma",
   "1806078963301163": "ad_recall",
@@ -31,5 +31,21 @@
   "1311621773662362": "ad_recall",
   "1709571373592604": "toma",
   "2099109637670184": "ad_recall",
-  "2567282403691189": "toma"
+  "2567282403691189": "toma",
+  "2718575998530870": "favorability",
+  "955358813227788": "favorability",
+  "677634441546784": "favorability",
+  "9185180424918933": "favorability",
+  "1057397429876360": "favorability",
+  "1431416431630789": "favorability",
+  "832815305745497": "favorability",
+  "817036167853202": "favorability",
+  "1388435559337779": "favorability",
+  "708011792086511": "favorability",
+  "884551980614206": "favorability",
+  "1588864065757814": "favorability",
+  "1355876169898170": "favorability",
+  "1472777571158621": "favorability",
+  "1248390664036851": "favorability",
+  "1380313597249074": "favorability"
 }
