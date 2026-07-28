@@ -250,3 +250,26 @@ def test_a_lo_mas_una_llamada_por_dia_sobre_un_mes_de_cron(monkeypatch):
         por_dia[c[:10]] = por_dia.get(c[:10], 0) + 1
     assert max(por_dia.values()) == 1, f"días con más de una llamada: {[d for d, n in por_dia.items() if n > 1]}"
     assert len(por_dia) == 30
+
+
+# ── Mes en curso: el estudio abierto no es un dato cerrado ─────────────────────
+
+def test_marca_parcial_el_estudio_que_no_cerro():
+    s = build.marca_parciales([
+        {"month": "2026-06", "end_time": "2026-07-01T06:59:59+0000"},
+        {"month": "2026-07", "end_time": "2026-08-01T06:59:59+0000"},
+    ], now="2026-07-27T00:00:00Z")
+    assert s[0]["parcial"] is False
+    assert s[1]["parcial"] is True
+
+
+def test_sin_end_time_no_se_marca_parcial():
+    """Ausencia de dato no es evidencia de mes en vuelo: se asume cerrado."""
+    s = build.marca_parciales([{"month": "2026-07"}], now="2026-07-27T00:00:00Z")
+    assert s[0]["parcial"] is False
+
+
+def test_el_dia_del_cierre_ya_no_es_parcial():
+    s = build.marca_parciales([{"month": "2026-07", "end_time": "2026-08-01T06:59:59+0000"}],
+                              now="2026-08-01T12:00:00Z")
+    assert s[0]["parcial"] is False

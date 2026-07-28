@@ -38,6 +38,22 @@ def _refresco_reciente(last_refresh, now):
     return str(last_refresh)[:10] == str(now)[:10]
 
 
+def marca_parciales(series, now):
+    """Marca las filas cuyo estudio todavía no cerró.
+
+    Un estudio mensual de Brand Lift sigue abierto hasta el primer día del mes siguiente, así que
+    el mes en curso siempre es un dato en vuelo: su cifra puede moverse. Sin marcarlo, el tablero
+    lo pinta igual que un mes cerrado y alguien lo lee como definitivo.
+
+    Ojo con la interpretación: Meta llena su cuota de encuestados a lo largo de la ventana, no
+    proporcional a los días transcurridos, así que un mes parcial suele traer una muestra casi
+    completa y un intervalo de confianza igual de estrecho que un mes cerrado. Parcial no es
+    sinónimo de impreciso — pero sí de provisional."""
+    for r in series:
+        r["parcial"] = bool(r.get("end_time")) and str(r["end_time"])[:10] > str(now)[:10]
+    return series
+
+
 def _sin_identificar(country):
     """Un país con estudios pero sin preguntas mapeadas no está 'desactualizado': le falta una
     pieza distinta. Servirlo como `stale` con serie vacía pintaría un chart en blanco, que se
@@ -64,7 +80,7 @@ def collect_brand_lift(country, now):
     country_cache = [r for r in all_cache if r["country"] == country]
 
     def _desde_cache(status, last_updated):
-        series = BL.publishable(BL.series(BL.map_questions(country_cache)))
+        series = marca_parciales(BL.publishable(BL.series(BL.map_questions(country_cache))), now)
         if not series:
             return contract.metric("not_available", reason=_sin_identificar(country))
         return contract.metric(status, source="cache", series=series, last_updated=last_updated)
@@ -91,7 +107,7 @@ def collect_brand_lift(country, now):
     BL.save_cache(merged, refresh_times)
 
     rows = BL.map_questions([r for r in merged if r["country"] == country])
-    series = BL.publishable(BL.series(rows))
+    series = marca_parciales(BL.publishable(BL.series(rows)), now)
     if not series:
         return contract.metric("not_available", reason=_sin_identificar(country))
     return contract.metric("ok", source="api", series=series, last_updated=now)

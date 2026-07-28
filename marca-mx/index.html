@@ -212,6 +212,17 @@ function drawBrandLift(host, serie) {
   const L = meses(serie);
   const dato = (s, m, k) => (s.find(r => r.month === m) || {})[k] ?? null;
 
+  // El mes en curso viene de un estudio que todavía no cerró: su cifra puede moverse. Se pinta
+  // translúcido para que no se lea como un mes cerrado. Ojo: Meta llena su cuota de encuestados
+  // a lo largo de la ventana, no en proporción a los días, así que un mes parcial suele traer
+  // muestra casi completa e intervalo igual de estrecho — es provisional, no impreciso.
+  const parciales = new Set(serie.filter(r => r.parcial).map(r => r.month));
+  const conParcial = (color, alfa = '55') => parciales.size
+    ? L.map(m => parciales.has(m) ? color + alfa : color) : color;
+  const notaParcial = parciales.size
+    ? ` · <strong>${[...parciales].join(', ')} en curso</strong>, el estudio no ha cerrado`
+    : '';
+
   // Fila 1: el valor del indicador (el lift en puntos) mes a mes.
   const fila1 = preguntas.map((q, i) => {
     const s = serie.filter(r => r.question === q);
@@ -221,7 +232,7 @@ function drawBrandLift(host, serie) {
     return `<div class="panel">
       <h3>${NOMBRE_PREGUNTA[q] || q}</h3>
       <div class="cap">${ult.month || '—'}: <strong>${lift >= 0 ? '+' : ''}${lift.toFixed(1)} pts</strong>
-        · máximo ${(100 * (pico.lift || 0)).toFixed(1)} pts en ${pico.month || '—'}</div>
+        · máximo ${(100 * (pico.lift || 0)).toFixed(1)} pts en ${pico.month || '—'}${notaParcial}</div>
       <div class="ch"><canvas id="bl-v-${i}"></canvas></div>
       ${legend([[PALETA[i], 'Lift en puntos']])}</div>`;
   }).join('');
@@ -233,7 +244,7 @@ function drawBrandLift(host, serie) {
     return `<div class="panel">
       <h3>${NOMBRE_PREGUNTA[q] || q} — expuestos vs no expuestos</h3>
       <div class="cap">${ult.month || '—'}: ${(100 * (ult.exposed || 0)).toFixed(1)}% con exposición
-        vs ${(100 * (ult.control || 0)).toFixed(1)}% sin exposición</div>
+        vs ${(100 * (ult.control || 0)).toFixed(1)}% sin exposición${notaParcial}</div>
       <div class="ch"><canvas id="bl-d-${i}"></canvas></div>
       ${legend([[C.gris, 'No expuestos'], [C.azul, 'Expuestos'], [C.ambar, 'Lift (eje derecho)']])}</div>`;
   }).join('');
@@ -244,13 +255,13 @@ function drawBrandLift(host, serie) {
   preguntas.forEach((q, i) => {
     const s = serie.filter(r => r.question === q);
     mkMulti(`bl-v-${i}`, L, [
-      { type: 'bar', label: 'Lift', color: PALETA[i], data: L.map(m => dato(s, m, 'lift')) },
+      { type: 'bar', label: 'Lift', color: conParcial(PALETA[i]), data: L.map(m => dato(s, m, 'lift')) },
     ], { fmt: 'pts' });
     // Doble eje: el lift son unos pocos puntos y quedaría pegado al suelo si compartiera
     // escala con tasas de 15-35%.
     mkMulti(`bl-d-${i}`, L, [
-      { type: 'bar', label: 'No expuestos', color: C.gris + '88', data: L.map(m => dato(s, m, 'control')) },
-      { type: 'bar', label: 'Expuestos', color: C.azul, data: L.map(m => dato(s, m, 'exposed')) },
+      { type: 'bar', label: 'No expuestos', color: conParcial(C.gris + '88', '33'), data: L.map(m => dato(s, m, 'control')) },
+      { type: 'bar', label: 'Expuestos', color: conParcial(C.azul), data: L.map(m => dato(s, m, 'exposed')) },
       { type: 'line', label: 'Lift', color: C.ambar, eje: 'y1', data: L.map(m => dato(s, m, 'lift')) },
     ], { fmt: 'pct', fmtDerecha: 'pts' });
   });
