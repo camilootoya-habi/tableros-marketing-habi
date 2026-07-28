@@ -137,3 +137,34 @@ def test_brand_lift_refresco_exitoso_de_mx_no_borra_las_filas_de_co_del_archivo(
 
     assert any(r["country"] == "CO" and r["experiment_id"] == "99" for r in saved["rows"])
     assert len(saved["rows"]) == 3
+
+
+def test_pais_con_estudios_pero_sin_preguntas_mapeadas_es_not_available(monkeypatch):
+    """CO tiene 180 filas en caché y cero publicables. Servir eso como `stale` con serie vacía
+    pintaría un chart en blanco — se leería como 'no hay marca que medir' en vez de 'falta
+    identificar las preguntas'."""
+    monkeypatch.setattr(build.BL, "fetch", lambda c: (False, []))
+    monkeypatch.setattr(build.BL, "load_cache",
+                        lambda: [{"country": "CO", "month": "2026-06", "experiment_id": "999",
+                                  "question": None, "study_id": "s1", "exposed": 0.3}])
+    m = build.collect_brand_lift("CO", now="2026-07-28T00:00:00Z")
+    assert m["status"] == "not_available"
+    assert "no están identificadas" in m["reason"]
+    assert m.get("series") in (None, [])
+
+
+def test_pais_sin_cache_y_sin_refresco_es_error(monkeypatch):
+    monkeypatch.setattr(build.BL, "fetch", lambda c: (False, []))
+    monkeypatch.setattr(build.BL, "load_cache", lambda: [])
+    m = build.collect_brand_lift("CO", now="2026-07-28T00:00:00Z")
+    assert m["status"] == "error"
+
+
+def test_exit_poll_limpia_comillas_literales_de_las_opciones():
+    """El formulario guarda '"Redes sociales"' con comillas dentro del valor."""
+    import sources_bq
+    s = sources_bq.exit_poll_series([
+        {"month": "2026-07", "plaza": "MTY", "opcion": '"Redes sociales de la empresa"',
+         "registros_web": "10"}])
+    assert "Redes sociales de la empresa" in s[0]["opciones"]
+    assert not any(k.startswith('"') for k in s[0]["opciones"])

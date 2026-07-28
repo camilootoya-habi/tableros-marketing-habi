@@ -27,7 +27,10 @@ def exit_poll_series(rows):
                                "registros_web": 0, "respuestas": 0, "opciones": {}})
         n = int(r["registros_web"])
         a["registros_web"] += n
-        opcion = (r.get("opcion") or "").strip()
+        # El formulario guarda muchas respuestas con comillas dobles literales dentro del
+        # valor ('"Redes sociales de la empresa"'), que se verían tal cual en el tablero y en
+        # el informe. Se limpian acá, en la frontera con la fuente, no en la vista.
+        opcion = (r.get("opcion") or "").strip().strip('"').strip()
         if opcion:
             a["respuestas"] += n
             a["opciones"][opcion] = a["opciones"].get(opcion, 0) + n

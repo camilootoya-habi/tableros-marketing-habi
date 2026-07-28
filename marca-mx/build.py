@@ -22,6 +22,17 @@ def collect_traffic():
     return BQ.traffic_series(BQ.run_query("queries/trafico_plazas.sql"))
 
 
+def _sin_identificar(country):
+    """Un país con estudios pero sin preguntas mapeadas no está 'desactualizado': le falta una
+    pieza distinta. Servirlo como `stale` con serie vacía pintaría un chart en blanco, que se
+    lee como 'no hay marca que medir' en vez de 'falta identificar las preguntas'."""
+    return (f"Hay estudios de Brand Lift de {country} en el caché, pero sus preguntas todavía no "
+            f"están identificadas: el `experiment_id` cambia cada mes y la API no trae la etiqueta "
+            f"de la pregunta. Publicar la serie sin saber cuál es Ad Recall y cuál TOMA sería "
+            f"adivinar. Pendiente de leer las etiquetas en Ads Manager → Experimentos y agregarlas "
+            f"a questions.json.")
+
+
 def collect_brand_lift(country, now):
     """Caché + refresco incremental. El estado (ok/stale/error) depende de si `fetch()` tuvo
     éxito, no de si hubo una excepción: `fetch()` fallando y devolviendo el caché de siempre
@@ -43,6 +54,8 @@ def collect_brand_lift(country, now):
                 "error",
                 reason=f"Brand Lift API falló para {country} y no hay caché histórico que servir.")
         series = BL.publishable(BL.series(BL.map_questions(country_cache)))
+        if not series:
+            return contract.metric("not_available", reason=_sin_identificar(country))
         last_refresh = BL.load_last_refresh().get(country)
         return contract.metric("stale", source="cache", series=series, last_updated=last_refresh)
 
@@ -53,6 +66,8 @@ def collect_brand_lift(country, now):
 
     rows = BL.map_questions([r for r in merged if r["country"] == country])
     series = BL.publishable(BL.series(rows))
+    if not series:
+        return contract.metric("not_available", reason=_sin_identificar(country))
     return contract.metric("ok", source="api", series=series, last_updated=now)
 
 
