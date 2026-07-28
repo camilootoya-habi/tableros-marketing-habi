@@ -101,16 +101,42 @@ const cssv = n => getComputedStyle(document.body).getPropertyValue(n).trim();
 let _charts = [];
 function destroyCharts() { _charts.forEach(c => c.destroy()); _charts = []; }
 
-// Extiende el mkChart de la plantilla del repo a varias series: Brand Lift necesita
-// expuesto y control juntos, y el CPV es una serie aparte del volumen.
+// Formatea un valor según el tipo de eje. `pct` y `pts` vienen como fracción en data.json.
+const FMT = {
+  pct: v => (100 * v).toFixed(2) + '%', pts: v => (100 * v).toFixed(1) + ' pts',
+  money: v => '$' + v.toLocaleString('es-MX', { maximumFractionDigits: 2 }),
+  num: v => v.toLocaleString('es-MX'),
+};
+const FMT_EJE = {
+  pct: v => (100 * v).toFixed(0) + '%', pts: v => (100 * v).toFixed(0),
+  money: v => '$' + v.toLocaleString('es-MX', { maximumFractionDigits: 1 }),
+  num: v => v.toLocaleString('es-MX'),
+};
+
+// Extiende el mkChart de la plantilla del repo a varias series y a doble eje. Brand Lift necesita
+// las tasas (columnas, en %) y el lift (línea, en puntos) en el mismo chart: son magnitudes
+// distintas y compartir eje aplastaría la línea contra el suelo.
 function mkMulti(id, labels, datasets, o = {}) {
   const c = document.getElementById(id); if (!c || !window.Chart) return;
   const grid = cssv('--border'), tick = cssv('--text-muted-2');
+  const izq = o.fmt || 'num', der = o.fmtDerecha;
+  const usaDerecha = datasets.some(d => d.eje === 'y1');
+  const scales = {
+    x: { ticks: { color: tick, maxTicksLimit: 8 }, grid: { display: false } },
+    y: { beginAtZero: izq !== 'pts', stacked: false,
+         ticks: { color: tick, callback: FMT_EJE[izq] }, grid: { color: grid } },
+  };
+  if (usaDerecha) {
+    scales.y1 = { position: 'right', beginAtZero: false,
+                  ticks: { color: tick, callback: FMT_EJE[der || 'pts'] },
+                  grid: { drawOnChartArea: false } };
+  }
   _charts.push(new Chart(c, {
     data: { labels, datasets: datasets.map(d => ({
-      type: d.type || 'line', label: d.label, data: d.data,
+      type: d.type || 'line', label: d.label, data: d.data, yAxisID: d.eje || 'y',
       borderColor: d.color, backgroundColor: d.fill || d.color,
-      borderDash: d.dash || [], tension: .35, pointRadius: 0, borderWidth: 2, borderRadius: 3,
+      borderDash: d.dash || [], tension: .35, pointRadius: d.type === 'line' ? 2 : 0,
+      borderWidth: 2, borderRadius: 3,
       // spanGaps: false a propósito — un cpv nulo debe dejar HUECO, no unir la línea por encima
       // de un mes sin medición. Ver el contrato de data.json.
       spanGaps: false })) },
@@ -120,16 +146,9 @@ function mkMulti(id, labels, datasets, o = {}) {
       plugins: { legend: { display: false }, tooltip: { callbacks: { label: ctx => {
         const y = ctx.parsed.y;
         if (y == null) return `${ctx.dataset.label}: sin dato`;
-        return `${ctx.dataset.label}: ${o.pct ? (100 * y).toFixed(2) + '%'
-          : o.pts ? (100 * y).toFixed(1) + ' pts'
-          : o.money ? '$' + y.toLocaleString('es-MX', { maximumFractionDigits: 2 })
-          : y.toLocaleString('es-MX')}`; } } } },
-      scales: { x: { ticks: { color: tick, maxTicksLimit: 8 }, grid: { display: false } },
-        y: { beginAtZero: !o.pts, ticks: { color: tick, callback: v =>
-              o.pct ? (100 * v).toFixed(0) + '%' : o.pts ? (100 * v).toFixed(0)
-              : o.money ? '$' + v.toLocaleString('es-MX', { maximumFractionDigits: 1 })
-              : v.toLocaleString('es-MX') },
-            grid: { color: grid } } }
+        const f = ctx.dataset.yAxisID === 'y1' ? (der || 'pts') : izq;
+        return `${ctx.dataset.label}: ${FMT[f](y)}`; } } } },
+      scales,
     }
   }));
 }
@@ -179,31 +198,40 @@ function drawBrandLift(host, serie) {
   const paneles = preguntas.map((q, i) => {
     const s = serie.filter(r => r.question === q);
     const ult = s[s.length - 1] || {};
+    const lift = 100 * (ult.lift || 0);
     return `<div class="panel">
       <h3>${NOMBRE_PREGUNTA[q] || q}</h3>
-      <div class="cap">Último dato ${ult.month || '—'}: expuesto ${(100 * (ult.exposed || 0)).toFixed(1)}%
-        vs control ${(100 * (ult.control || 0)).toFixed(1)}% · lift ${(100 * (ult.lift || 0)) >= 0 ? '+' : ''}${(100 * (ult.lift || 0)).toFixed(1)} pts</div>
+      <div class="cap">Último dato ${ult.month || '—'}: ${(100 * (ult.exposed || 0)).toFixed(1)}% con
+        exposición vs ${(100 * (ult.control || 0)).toFixed(1)}% sin exposición ·
+        lift ${lift >= 0 ? '+' : ''}${lift.toFixed(1)} pts</div>
       <div class="ch"><canvas id="bl-${i}"></canvas></div>
-      ${legend([[C.azul, 'Expuesto'], [C.gris, 'Control']])}</div>`;
+      ${legend([[C.gris, 'No expuestos'], [C.azul, 'Expuestos'], [C.ambar, 'Lift (eje derecho)']])}</div>`;
   }).join('');
   host.innerHTML = `<div class="charts-grid">${paneles}
-    <div class="panel"><h3>Lift neto en puntos</h3>
-      <div class="cap">Diferencia expuesto − control. Es la métrica que aísla el efecto de la pauta.</div>
+    <div class="panel"><h3>Lift neto — todos los indicadores</h3>
+      <div class="cap">El mismo lift de los paneles anteriores, junto, para ver cuál indicador se
+        mueve más. Es la métrica que aísla el efecto de la pauta.</div>
       <div class="ch"><canvas id="bl-lift"></canvas></div>
       ${legend(preguntas.map((q, i) => [PALETA[i], NOMBRE_PREGUNTA[q] || q]))}</div></div>`;
 
+  // Un panel por indicador: columnas con las dos tasas y línea con el lift en el eje derecho.
+  // Doble eje porque el lift (unos pocos puntos) quedaría pegado al suelo compartiendo escala
+  // con tasas de 15-35%.
   preguntas.forEach((q, i) => {
     const s = serie.filter(r => r.question === q);
+    const val = (m, k) => (s.find(r => r.month === m) || {})[k] ?? null;
     mkMulti(`bl-${i}`, L, [
-      { label: 'Expuesto', color: C.azul, data: L.map(m => (s.find(r => r.month === m) || {}).exposed ?? null) },
-      { label: 'Control', color: C.gris, dash: [4, 4], data: L.map(m => (s.find(r => r.month === m) || {}).control ?? null) },
-    ], { pct: true });
+      { type: 'bar', label: 'No expuestos', color: C.gris + '88', data: L.map(m => val(m, 'control')) },
+      { type: 'bar', label: 'Expuestos', color: C.azul, data: L.map(m => val(m, 'exposed')) },
+      { type: 'line', label: 'Lift', color: C.ambar, eje: 'y1', data: L.map(m => val(m, 'lift')) },
+    ], { fmt: 'pct', fmtDerecha: 'pts' });
   });
+
   mkMulti('bl-lift', L, preguntas.map((q, i) => {
     const s = serie.filter(r => r.question === q);
     return { type: 'bar', label: NOMBRE_PREGUNTA[q] || q, color: PALETA[i],
              data: L.map(m => (s.find(r => r.month === m) || {}).lift ?? null) };
-  }), { pts: true });
+  }), { fmt: 'pts' });
 }
 
 // ── Tráfico y CPV ─────────────────────────────────────────────────────────────
@@ -230,8 +258,8 @@ function drawTraffic(host, serie) {
       <div class="cap">Inversión de la plaza ÷ usuarios activos. Mensual por diseño: la tabla de inversión no tiene granularidad diaria.
         ${conCpv < L.length ? `<br><strong>${L.length - conCpv} de ${L.length} meses sin inversión registrada</strong> — la línea deja hueco, no cero.` : ''}</div>
       <div class="ch"><canvas id="tr-cpv"></canvas></div>${legend([[C.ambar, 'CPV']])}</div></div>`;
-  mkMulti('tr-users', L, [{ label: 'Usuarios activos', color: C.azul, data: s.map(r => r.users) }], {});
-  mkMulti('tr-cpv', L, [{ label: 'CPV', color: C.ambar, data: s.map(r => r.cpv) }], { money: true });
+  mkMulti('tr-users', L, [{ label: 'Usuarios activos', color: C.azul, data: s.map(r => r.users) }], { fmt: 'num' });
+  mkMulti('tr-cpv', L, [{ label: 'CPV', color: C.ambar, data: s.map(r => r.cpv) }], { fmt: 'money' });
 }
 
 // ── Exit poll ─────────────────────────────────────────────────────────────────
@@ -292,10 +320,10 @@ function drawExitPoll(host, serie) {
       <div class="ch"><canvas id="ep-share"></canvas></div>
       ${legend(mostrar.map((k, i) => [esUber(k) ? C.verde : PALETA[(i + 1) % PALETA.length], k]))}</div></div>`;
 
-  mkMulti('ep-tasa', L, [{ label: 'Tasa de respuesta', color: C.gris, data: s.map(r => r.tasa) }], { pct: true });
+  mkMulti('ep-tasa', L, [{ label: 'Tasa de respuesta', color: C.gris, data: s.map(r => r.tasa) }], { fmt: 'pct' });
   mkMulti('ep-share', L, mostrar.map((k, i) => ({
     label: k, color: esUber(k) ? C.verde : PALETA[(i + 1) % PALETA.length],
-    data: s.map(r => share(r, k)) })), { pct: true });
+    data: s.map(r => share(r, k)) })), { fmt: 'pct' });
 }
 
 // ── Filtros y render ──────────────────────────────────────────────────────────
