@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🚗</text></svg>">
+<title>Informe de impacto — Branding OOH móvil (Uber)</title>
+<style>
+  :root { --bg:#0f172a; --card:#1e293b; --card-hover:#263348; --border:#334155;
+          --text:#e2e8f0; --text-title:#f8fafc; --text-muted-2:#94a3b8; --text-muted-3:#64748b; --accent:#818cf8; }
+  body.light { --bg:#f7f8fa; --card:#fff; --card-hover:#f1f5f9; --border:#e2e8f0;
+          --text:#334155; --text-title:#0f172a; --text-muted-2:#64748b; --text-muted-3:#94a3b8; --accent:#4f46e5; }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family:'Segoe UI',system-ui,sans-serif; background:var(--bg); color:var(--text);
+         padding:34px 24px 80px; line-height:1.7; }
+  .wrap { max-width:760px; margin:0 auto; }
+  .top { display:flex; justify-content:space-between; margin-bottom:22px; }
+  .back-link { display:inline-flex; gap:6px; padding:6px 12px; background:var(--card);
+    border:1px solid var(--border); border-radius:6px; color:var(--text-muted-2); text-decoration:none; font-size:13px; }
+  .back-link:hover { color:var(--accent); border-color:var(--accent); }
+  .theme-btn { background:var(--card); border:1px solid var(--border); color:var(--text-muted-2);
+    border-radius:6px; padding:4px 10px; font-size:14px; cursor:pointer; }
+  h1 { font-size:25px; color:var(--text-title); margin-bottom:12px; line-height:1.3; }
+  p { color:var(--text-muted-2); font-size:14.5px; margin-bottom:14px; }
+  ul { list-style:none; margin-top:24px; }
+  li { margin-bottom:9px; }
+  li a { display:block; background:var(--card); border:1px solid var(--border); border-radius:9px;
+    padding:14px 18px; color:var(--text-title); text-decoration:none; font-size:15px; font-weight:600; }
+  li a:hover { background:var(--card-hover); border-color:var(--accent); }
+  .nota { margin-top:30px; font-size:12.5px; color:var(--text-muted-3); line-height:1.65;
+    border-top:1px solid var(--border); padding-top:16px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top">
+    <a href="../" class="back-link">← Volver al hub</a>
+    <button class="theme-btn" id="themeToggle" onclick="toggleTheme()">🌙</button>
+  </div>
+  <h1>Informe de impacto — Branding OOH móvil (Uber)</h1>
+  <p>Evaluación mensual de la campaña de branding en vehículos de Uber en Monterrey y Guadalajara.
+  Cada edición congela las cifras del <a href="../marca-mx/">tablero de marca</a> al cierre de su mes
+  y ya no se modifica: sirve como documento firmado, no como reporte vivo.</p>
+  <ul><li><a href="2026-07/">Edición 2026-07</a> · última</li></ul>
+  <div class="nota">La edición del mes en curso se regenera con cada corrida del cron. Al cambiar de
+  mes deja de tocarse y queda inmutable por construcción, sin depender de que alguien se acuerde de
+  sellarla.</div>
+</div>
+<script>
+function toggleTheme() {
+  const isLight = document.body.classList.toggle('light');
+  localStorage.setItem('tablero-theme', isLight ? 'light' : 'dark');
+  document.getElementById('themeToggle').textContent = isLight ? '☀️' : '🌙';
+}
+if (localStorage.getItem('tablero-theme') === 'light') {
+  document.body.classList.add('light');
+  document.getElementById('themeToggle').textContent = '☀️';
+}
+</script>
+</body>
+</html>
