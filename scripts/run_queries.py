@@ -65,7 +65,11 @@ def main():
     import os, sys
     only = sys.argv[sys.argv.index("--only") + 1] if "--only" in sys.argv else None
     repo = Path(__file__).resolve().parents[1]
-    project = os.environ.get("GCP_PROJECT", "papyrus-data")
+    # El proyecto es solo el FACTURADOR del job; las tablas se leen cross-project.
+    # `papyrus-*` ya no acepta bigquery.jobs.create con las credenciales del hub
+    # (verificado 2026-07-29: papyrus-data / -mx / -master / -staging dan Access Denied),
+    # así que el default tiene que ser el único proyecto donde sí podemos crear jobs.
+    project = os.environ.get("GCP_PROJECT", "sellers-main-prod")
     jobs = discover_jobs(repo, only=only)
     print(f"Auto-discovery{f' (--only {only})' if only else ''}: {len(jobs)} job(s)")
     ok = sum(run_job(j, project) for j in jobs)

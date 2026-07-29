@@ -1,4 +1,7 @@
-import subprocess, json, re
+import subprocess, json, os, re
+
+# Mismo criterio que build_data.py: el facturador del job no puede ser un papyrus-*.
+BQ_PROJECT = os.environ.get("BQ_BILLING_PROJECT", "sellers-main-prod")
 
 MART = {
     "MX": "papyrus-master.infobib_gold_mx.mart_infobip_messages_daily_mx",
@@ -19,7 +22,7 @@ TIG_STATE_COL = {"MX": "id_last_state", "CO": "last_estado_id"}
 SENDAT='SAFE.PARSE_DATETIME("%d/%m/%Y %H:%M:%S", TRIM(send_at_raw))'
 
 def _bq(sql):
-    out=subprocess.run(["bq","query","--use_legacy_sql=false","--format=json","--max_rows=200000"],
+    out=subprocess.run(["bq",f"--project_id={BQ_PROJECT}","query","--use_legacy_sql=false","--format=json","--max_rows=200000"],
         input=sql,capture_output=True,text=True,timeout=600)
     try: return json.loads(out.stdout)
     except Exception as e: print("WARN bq",e); return []

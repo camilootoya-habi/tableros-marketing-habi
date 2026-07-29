@@ -10,9 +10,16 @@ import agg, sources_neon as N, sources_mart as M, sources_infobip as I
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 
+# Proyecto que FACTURA los jobs de BQ (las tablas se leen cross-project). No se hereda del
+# `gcloud config` del runner a propósito: el proyecto ambiente son los papyrus-*, que ya no
+# aceptan bigquery.jobs.create y dejaban todas las secciones de BQ en vacío sin fallar el cron.
+BQ_PROJECT = os.environ.get("BQ_BILLING_PROJECT", "sellers-main-prod")
+BQ_CMD = ["bq", f"--project_id={BQ_PROJECT}", "query",
+          "--use_legacy_sql=false", "--format=json", "--max_rows=100000"]
+
 def q(name):
     sql = open(os.path.join(HERE, name)).read()
-    out = subprocess.run(["bq","query","--use_legacy_sql=false","--format=json","--max_rows=100000"],
+    out = subprocess.run(BQ_CMD,
         input=sql, capture_output=True, text=True, timeout=600)
     try: return json.loads(out.stdout)
     except Exception as e: print(f"WARN bq {name}: {e}\n{out.stdout[:300]}\n{out.stderr[:300]}"); return []
@@ -72,7 +79,7 @@ def linea_meta(pais):
 
 def bq_sql(sql):
     """Corre SQL inline en BigQuery y devuelve filas (JSON). [] si falla (ej. sin acceso al mart CO)."""
-    out = subprocess.run(["bq","query","--use_legacy_sql=false","--format=json","--max_rows=100000"],
+    out = subprocess.run(BQ_CMD,
                          input=sql, capture_output=True, text=True, timeout=600)
     try: return json.loads(out.stdout)
     except Exception as e: print(f"  ⚠ bq_sql: {e}"); return []
