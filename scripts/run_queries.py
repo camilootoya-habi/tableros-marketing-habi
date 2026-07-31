@@ -1,4 +1,4 @@
-import json, subprocess, sys
+import json, os, subprocess, sys
 from pathlib import Path
 
 DEFAULT_MAX_BYTES = 5_000_000_000  # 5 GB
@@ -36,6 +36,16 @@ def discover_jobs(repo_root: Path, only=None):
         })
     return jobs
 
+def billing_project() -> str:
+    """Proyecto que FACTURA los jobs de BQ (las tablas se leen cross-project).
+
+    No puede ser un papyrus-*: estas credenciales perdieron `bigquery.jobs.create` en papyrus-data,
+    -mx, -master y -staging, y cada query devolvía Access Denied. La variable se llama
+    BQ_BILLING_PROJECT (no GCP_PROJECT) para que el secret viejo del repo no vuelva a colarse.
+    """
+    return os.environ.get("BQ_BILLING_PROJECT", "sellers-main-prod")
+
+
 def build_bq_command(max_bytes: int, project: str, max_rows: int = DEFAULT_MAX_ROWS):
     return [
         "bq", "query", "--nouse_legacy_sql", "--format=json",
@@ -62,16 +72,11 @@ def run_job(job: dict, project: str) -> bool:
         return False
 
 def main():
-    import os, sys
     only = sys.argv[sys.argv.index("--only") + 1] if "--only" in sys.argv else None
     repo = Path(__file__).resolve().parents[1]
-    # El proyecto es solo el FACTURADOR del job; las tablas se leen cross-project.
-    # `papyrus-*` ya no acepta bigquery.jobs.create con las credenciales del hub
-    # (verificado 2026-07-29: papyrus-data / -mx / -master / -staging dan Access Denied),
-    # así que el default tiene que ser el único proyecto donde sí podemos crear jobs.
-    project = os.environ.get("GCP_PROJECT", "sellers-main-prod")
+    project = billing_project()
     jobs = discover_jobs(repo, only=only)
-    print(f"Auto-discovery{f' (--only {only})' if only else ''}: {len(jobs)} job(s)")
+    print(f"Auto-discovery{f' (--only {only})' if only else ''}: {len(jobs)} job(s) · factura en {project}")
     ok = sum(run_job(j, project) for j in jobs)
     print(f"Hecho: {ok}/{len(jobs)} OK")
 

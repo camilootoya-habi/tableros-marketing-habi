@@ -20,7 +20,10 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
-PROJECT = os.environ.get("GCP_PROJECT", "papyrus-data")
+# Solo el FACTURADOR del job (las tablas se leen cross-project). No puede ser un papyrus-*:
+# estas credenciales ya no tienen bigquery.jobs.create ahí. Se lee BQ_BILLING_PROJECT y no
+# GCP_PROJECT para que el secret viejo del repo no vuelva a pisar este default.
+PROJECT = os.environ.get("BQ_BILLING_PROJECT", "sellers-main-prod")
 MAX_BYTES = 5_000_000_000
 
 STAGES = ["reg", "calif_mm", "calif_inmo", "asig", "cierre_mm", "captacion_inmo"]

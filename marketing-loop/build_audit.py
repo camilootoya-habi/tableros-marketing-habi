@@ -8,6 +8,10 @@ Uso: python3 build_audit.py  (requiere bq autenticado). Cron aparte (diario), NO
 import json, os, csv, io, subprocess, datetime
 
 HERE = os.path.dirname(os.path.abspath(__file__))
+# OJO: `proj` de CFG nombra la TABLA (papyrus-data.habi_wh_bi.tabla_inmuebles_general) y no se toca.
+# El proyecto que FACTURA el job es otro y va aparte: estas credenciales perdieron
+# bigquery.jobs.create en los papyrus-*, pero las tablas se siguen leyendo cross-project.
+BQ_PROJECT = os.environ.get("BQ_BILLING_PROJECT", "sellers-main-prod")
 CFG = {
   "CO": dict(proj="papyrus-data",
              nijoin='`sellers-main-prod.co_rds_staging.habi_db_tabla_negocio_inmueble` ni ON ni.id=g.negocio_id',
@@ -75,7 +79,7 @@ GROUP BY 1,2 ORDER BY 1, ventana DESC
 '''
 
 def run(c):
-    out = subprocess.run(["bq","query","--project_id="+CFG[c]["proj"],"--use_legacy_sql=false",
+    out = subprocess.run(["bq","query","--project_id="+BQ_PROJECT,"--use_legacy_sql=false",
         "--format=csv","--max_rows=100000"], input=sql(c), capture_output=True, text=True, timeout=600)
     rows = {}
     for r in csv.reader(io.StringIO(out.stdout)):

@@ -21,7 +21,9 @@ jobs:
       - name: Authenticate with user credentials
         run: |
           echo '${{ secrets.GCP_CREDENTIALS }}' > /tmp/adc.json
-          gcloud config set project ${{ secrets.GCP_PROJECT }}
+          # Facturador de los jobs de BQ. Fijo a propósito: `secrets.GCP_PROJECT` apunta a un
+          # papyrus-*, donde estas credenciales ya no tienen bigquery.jobs.create.
+          gcloud config set project sellers-main-prod
           echo "CLOUDSDK_AUTH_CREDENTIAL_FILE_OVERRIDE=/tmp/adc.json" >> $GITHUB_ENV
           echo "GOOGLE_APPLICATION_CREDENTIALS=/tmp/adc.json" >> $GITHUB_ENV
 

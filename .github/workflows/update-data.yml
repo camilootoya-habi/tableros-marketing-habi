@@ -19,7 +19,12 @@ jobs:
       - name: Authenticate with user credentials
         run: |
           echo '${{ secrets.GCP_CREDENTIALS }}' > /tmp/adc.json
-          gcloud config set project ${{ secrets.GCP_PROJECT }}
+          # Proyecto que FACTURA los jobs de BQ. Las tablas se siguen leyendo cross-project
+          # (papyrus-data, papyrus-data-mx, papyrus-master…), pero estas credenciales ya NO tienen
+          # bigquery.jobs.create en ningún papyrus-*, así que el facturador tiene que ser este.
+          # Va fijo a propósito y no por `secrets.GCP_PROJECT`: ese secret apunta a un papyrus-* y
+          # dejaba todos los pasos de `bq query` de abajo devolviendo Access Denied.
+          gcloud config set project sellers-main-prod
           export CLOUDSDK_AUTH_CREDENTIAL_FILE_OVERRIDE=/tmp/adc.json
           echo "CLOUDSDK_AUTH_CREDENTIAL_FILE_OVERRIDE=/tmp/adc.json" >> $GITHUB_ENV
           export GOOGLE_APPLICATION_CREDENTIALS=/tmp/adc.json
@@ -496,8 +501,8 @@ jobs:
 
       - name: Auto-discovery — correr queries de tableros nuevos (líderes)
         if: always()
-        env:
-          GCP_PROJECT: ${{ secrets.GCP_PROJECT }}
+        # Sin `env: GCP_PROJECT` a propósito: inyectaba el secret (un papyrus-*) y pisaba el default
+        # correcto del script. run_queries.py factura en sellers-main-prod por su cuenta.
         run: python3 scripts/run_queries.py
 
       - name: Regenerar el hub (index.html)

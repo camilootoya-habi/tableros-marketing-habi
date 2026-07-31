@@ -23,13 +23,14 @@ jobs:
       - name: Authenticate with user credentials
         run: |
           echo '${{ secrets.GCP_CREDENTIALS }}' > /tmp/adc.json
-          gcloud config set project ${{ secrets.GCP_PROJECT }}
+          # Facturador de los jobs de BQ. Fijo a propósito: `secrets.GCP_PROJECT` apunta a un
+          # papyrus-*, donde estas credenciales ya no tienen bigquery.jobs.create.
+          gcloud config set project sellers-main-prod
           echo "CLOUDSDK_AUTH_CREDENTIAL_FILE_OVERRIDE=/tmp/adc.json" >> $GITHUB_ENV
           echo "GOOGLE_APPLICATION_CREDENTIALS=/tmp/adc.json" >> $GITHUB_ENV
 
       - name: Run reinteresados query
-        env:
-          GCP_PROJECT: ${{ secrets.GCP_PROJECT }}
+        # Sin `env: GCP_PROJECT`: inyectaba el secret (un papyrus-*) y pisaba el default del script.
         run: python3 scripts/run_queries.py --only funnel-reinteresados-mx
 
       - name: Run ciclo-asignados query
