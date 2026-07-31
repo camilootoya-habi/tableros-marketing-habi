@@ -251,6 +251,9 @@
   <div id="abVeredicto"></div>
   <div class="tbl-wrap ftab" id="ab"></div>
 
+  <div class="tabletitle">A/B de pool — Segmento (comité + lead ≥2025) vs aleatorio</div>
+  <div id="poolAB"></div>
+
   <div class="tabletitle">Comparación por fuente
     <button type="button" class="help-btn" onclick="openHelp('abf')" aria-label="Explicación">?</button>
   </div>
@@ -598,7 +601,7 @@ function renderExplorer(){
   }
   el.innerHTML=parts.join('');
 }
-function selectCountry(c){ country=c; renderStats(); renderImpacto(); renderErrores(); renderAB(); renderABFuente(); renderResp(); renderComparativa(); renderCalidad(); renderDiario(); renderAntifunnel(); renderCompletitud(); renderCohorteOrigen(); renderPorHoraChart(); }
+function selectCountry(c){ country=c; renderStats(); renderImpacto(); renderErrores(); renderAB(); renderPoolAB(); renderABFuente(); renderResp(); renderComparativa(); renderCalidad(); renderDiario(); renderAntifunnel(); renderCompletitud(); renderCohorteOrigen(); renderPorHoraChart(); }
 // Celdas "valor + %" con heatmap por fila (verde=conversión alta, rojo=baja), copiado del tablero de referencia.
 function heatCells(values, denoms){
   const pcts=values.map((v,i)=> denoms[i]>0 ? v/denoms[i]*100 : null);   // período sin base → null (celda vacía)
@@ -963,6 +966,40 @@ function renderVeredicto(){
       <b>${v.decidido?'DECIDIDO':'aún sin decisión'}</b> — gana provisionalmente <b>${v.ganador}</b>
       · P(mejor) <b>${prob}%</b> · pérdida esperada <b>${loss} pp</b></div>
     <div class="vd-sub">${chip(diasOK,`${v.dias}/${v.min_dias} días`)} ${chip(musA,`v1 ${fmt(v.entregados.v1)}/${v.min_brazo} entregados`)} ${chip(musB,`v2 ${fmt(v.entregados.v2)}/${v.min_brazo} entregados`)} · <span class="muted">${v.razon}</span></div>
+  </div>`;
+}
+function renderPoolAB(){
+  const el=document.getElementById('poolAB'); if(!el) return;
+  const v=(D.pool_ab||{})[country];
+  if(!v||!v.disponible){ el.innerHTML='<p class="note" style="padding:8px 13px">Experimento de pool sin datos para '+country+' todavía.</p>'; return; }
+  const light=document.body.classList.contains('light');
+  const S=v.brazos.segmento, C=v.brazos.control;
+  const rmax=Math.max(S.pos_rate||0, C.pos_rate||0, 1e-9);
+  const bar=(name,a,color)=>{
+    const pct=((a.pos_rate||0)*100).toFixed(1), w=Math.max(3,((a.pos_rate||0)/rmax*100));
+    return `<div style="margin:7px 0">
+      <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:3px">
+        <span><b>${name}</b> · ${fmt(a.interesados)} interesados / ${fmt(a.entregados)} entregados (de ${fmt(a.enviados)} env, entrega ${((a.delivery_rate||0)*100).toFixed(0)}%)</span>
+        <b>${pct}%</b></div>
+      <div style="background:${light?'#e2e8f0':'#1e293b'};border-radius:6px;height:14px;overflow:hidden">
+        <div style="width:${w}%;height:100%;background:${color};border-radius:6px"></div></div></div>`;
+  };
+  const lider=v.ganador==='segmento'?'Segmento':'Control';
+  const prob=(v.prob*100).toFixed(0);
+  const minDel=Math.min(S.entregados,C.entregados);
+  const pmuestra=Math.min(100, minDel/v.min_brazo*100).toFixed(0);
+  const pdias=Math.min(100, v.dias/v.min_dias*100).toFixed(0);
+  const chip=(ok,txt)=>`<span class="vd-chip ${ok?'vd-c-ok':'vd-c-no'}">${ok?'✓':'○'} ${txt}</span>`;
+  const estado=v.decidido?`DECIDIDO — ganó <b>${lider}</b>`:`ganando <b>${lider}</b> · P(mejor) <b>${prob}%</b>`;
+  const eta=v.decidido?'':` · veredicto estimado en <b>~${v.eta_dias} día${v.eta_dias===1?'':'s'}</b>`;
+  el.innerHTML=`<div class="veredicto ${v.decidido?'vd-ok':'vd-wait'}">
+    <div class="vd-main">Targeting del pool (misma plantilla en ambos brazos) — métrica: Interesado rate sobre entregados. ${estado}${eta}</div>
+    ${bar('Segmento (comité+2025)',S,'#34d399')}
+    ${bar('Control (aleatorio)',C,'#818cf8')}
+    <div class="vd-sub" style="margin-top:6px">
+      ${chip(minDel>=v.min_brazo,`muestra ${fmt(minDel)}/${v.min_brazo} entregados por brazo (${pmuestra}%)`)}
+      ${chip(v.dias>=v.min_dias,`día ${v.dias}/${v.min_dias} mín (${pdias}%) · tope ${v.max_dias}`)}
+      · pérdida esperada <b>${v.loss_pp.toFixed(2)} pp</b> · <span class="muted">${v.razon} · desde ${v.since}</span></div>
   </div>`;
 }
 function renderABFuente(){

@@ -214,6 +214,58 @@ def _ab_veredicto(rows, since):
             "entregados": {"v1": ctrl["entregados"], "v2": ofer["entregados"]},
             "min_brazo": 300, "min_dias": 7}
 
+
+# --- A/B de POOL: segmento "comité + lead >=2025" vs aleatorio (pool_comite25_vs_random_ago26) ---
+# Diseño: marketing-loop-sellers/docs/superpowers/specs/2026-07-30-ab-pool-comite-design.md
+# Brazo derivado del NID contra TIG (regla de asignación == membresía): sin columnas nuevas en Neon.
+POOL_AB = {"since": "2026-07-30", "fc_min": "2025-01-01", "min_brazo": 300, "min_dias": 7, "max_dias": 21}
+
+def _pool_ab(pais):
+    import math, ab_stats
+    import sources_neon as _SN, sources_mart as _SM
+    rows = _SN._rows(
+        """SELECT sl.nid::text AS nid, sl.delivery_status, cs.state
+           FROM send_log sl LEFT JOIN contact_status cs ON cs.phone=sl.phone AND cs.country=sl.country
+           WHERE sl.country=%s AND sl.nid IS NOT NULL
+             AND (sl.attempted_at AT TIME ZONE %s)::date >= %s""",
+        (pais, _SN.TZ[pais], POOL_AB["since"]))
+    if not rows: return {"disponible": False}
+    nids = sorted({r["nid"] for r in rows if (r["nid"] or "").isdigit()})
+    arm = {}
+    for i in range(0, len(nids), 40000):
+        inl = ",".join(nids[i:i+40000])
+        for x in _SM._bq(f"""SELECT CAST(nid AS STRING) nid,
+              IF(fecha_comite IS NOT NULL AND CAST(fecha_creacion AS DATE)>=\"{POOL_AB['fc_min']}\",
+                 'segmento','control') arm
+            FROM `{_SM.TIG[pais]}` WHERE nid IN ({inl})
+            QUALIFY ROW_NUMBER() OVER (PARTITION BY nid ORDER BY fecha_creacion DESC)=1"""):
+            arm[x["nid"]] = x["arm"]
+    agg = {"segmento": {"enviados":0,"entregados":0,"interesados":0},
+           "control":  {"enviados":0,"entregados":0,"interesados":0}}
+    for r in rows:
+        a = agg.get(arm.get(r["nid"] or ""))
+        if a is None: continue
+        a["enviados"] += 1
+        if (r.get("delivery_status") or "").lower() == "delivered": a["entregados"] += 1
+        if r.get("state") == "reinteresado": a["interesados"] += 1
+    s, c = agg["segmento"], agg["control"]
+    if not s["entregados"] or not c["entregados"]: return {"disponible": False}
+    dias = (datetime.date.today() - datetime.date.fromisoformat(POOL_AB["since"])).days + 1
+    d = ab_stats.decide("control", c["entregados"], c["interesados"],
+                        "segmento", s["entregados"], s["interesados"], dias)
+    for a in (s, c):
+        a["pos_rate"] = round(a["interesados"]/a["entregados"], 4) if a["entregados"] else None
+        a["delivery_rate"] = round(a["entregados"]/a["enviados"], 4) if a["enviados"] else None
+    min_del = min(s["entregados"], c["entregados"])
+    ritmo = max(min_del/dias, 1e-9)
+    eta = max(math.ceil(max(0, POOL_AB["min_brazo"]-min_del)/ritmo), max(0, POOL_AB["min_dias"]-dias))
+    return {"disponible": True, "since": POOL_AB["since"], "dias": dias,
+            "brazos": {"segmento": s, "control": c},
+            "ganador": d["winner"], "prob": round(d["prob_winner"],3),
+            "loss_pp": round(d["expected_loss_winner"]*100,3),
+            "decidido": d["decided"], "razon": d["reason"], "eta_dias": (0 if d["decided"] else eta),
+            "min_brazo": POOL_AB["min_brazo"], "min_dias": POOL_AB["min_dias"], "max_dias": POOL_AB["max_dias"]}
+
 # --- ensamblado ---
 WIN = 7
 
@@ -316,6 +368,7 @@ data={
   "ab_fuentes": {"MX": mx["ab_fuentes"], "CO": co["ab_fuentes"]},
   "ab_veredicto": {"MX": _ab_veredicto(mx["ab_templates"], AB_SINCE["MX"]),
                    "CO": _ab_veredicto(co["ab_templates"], AB_SINCE["CO"])},
+  "pool_ab": {"MX": _pool_ab("MX"), "CO": _pool_ab("CO")},
   "antifunnel": {"MX": mx["antifunnel"], "CO": co["antifunnel"]},
   "contact_status": {"MX": mx["contact_status"], "CO": co["contact_status"]},
   "por_hora": {"MX": mx["por_hora"], "CO": co["por_hora"]},
