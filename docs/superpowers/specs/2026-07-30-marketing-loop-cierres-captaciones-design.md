@@ -15,8 +15,10 @@ en que ocurrió el evento** (`fecha` de la tabla de funnel), no por el mes de cr
 
 | | Captaciones | Cierres |
 |---|---|---|
-| **CO** | `sellers-main-prod.bi_co.seguimiento_inmobiliaria_col` · `etapa='Captaciones' AND valor='Captación normal'` | `papyrus-data.habi_wh_bi.funnel_diarios_col` · `TRIM(valor)='Cierre - Comprado'` |
+| **CO** | `sellers-main-prod.bi_co.seguimiento_inmobiliaria_col` · `etapa='Captaciones'` (la etapa completa) | `papyrus-data.habi_wh_bi.funnel_diarios_col` · `TRIM(valor)='Cierre - Comprado'` |
 | **MX** | `sellers-main-prod.bi_mx.seguimiento_inmobiliaria_mex_copia` · `valor='Firma'` | `sellers-main-prod.bi_mx.seguimiento_funnel_mex` · `valor='Cierre - Comprado'` |
+
+En CO INMO el hito vive en **`etapa`**; en las otras tres tablas vive en **`valor`**.
 
 **Población:** nids con `utm_campaign LIKE '%reinteresados%'` en `sellers-main-prod.hubspot.deals`,
 con `country IN ('Colombia','México')`. Es el **mismo predicado que `query_asignados.sql`** — los dos
@@ -37,6 +39,11 @@ bloques del tablero tienen que hablar de la misma cohorte o los números no se p
   `DISTINCT` no es opcional.
 - **`Firma` es más laxa que `captaciones_3_checks`** (1.944 vs 734 nids históricos). Con `Firma` la
   cohorte del loop da 18 leads; con `3_checks` da 0. Decisión de Camilo: `Firma`.
+- **CO no filtra por `valor`.** Bajo `etapa='Captaciones'` solo existen dos valores: `Captación normal`
+  (11.523 nids, viva) y `Captación automatica` (1.693, apagada el 29-abr-2026). Se cuentan las dos.
+  Numéricamente da igual hoy — la automática se apagó antes de que naciera la cohorte del loop, así
+  que CO da 21 captaciones con o sin el filtro — pero tomar la etapa completa evita quedarse corto si
+  aparece un tercer tipo de captación.
 - **`Captado para inmobiliaria`** (funnel MM CO, 365 leads del loop) es el *handoff* MM→INMO, no un
   mandato firmado. **Fuera de alcance** en esta sección.
 

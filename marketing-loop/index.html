@@ -230,6 +230,13 @@
   </div>
   <section class="panel"><div id="comparativa"></div></section>
 
+  <div class="tabletitle">Cierres y captaciones · leads con UTM del loop · por mes
+    <button type="button" class="help-btn" onclick="openHelp('cc')" aria-label="Explicación">?</button>
+  </div>
+  <section class="panel"><div class="ch"><canvas id="c_cc_mes"></canvas></div></section>
+  <div class="tbl-wrap ftab" id="ccTab"></div>
+  <p class="note" id="ccNota"></p>
+
   <div class="tabletitle">Impacto en asignados
     <button type="button" class="help-btn" onclick="openHelp('imp')" aria-label="Explicación">?</button>
   </div>
@@ -349,6 +356,8 @@
 
 <script>
 let D=null, country='MX', cicloTipo='dia', porhoraChart=null, cohorteChart=null, AUDIT=null, expC='CO', tbC='CO', docC='MX';
+// cierres.json viaja aparte de data.json: su query escanea ~9,3 GB y corre en un cron diario propio.
+let CC=null, ccChart=null;
 const CIP={MX:'mexico',CO:'colombia'};
 const fmt=v=>(v==null?'—':Number(v).toLocaleString('es-CO'));
 const pct=v=>(v==null?'—':Number(v).toFixed(1)+'%');
@@ -418,6 +427,7 @@ async function load(){
     ? `<span style="display:inline-block;margin-top:6px;padding:3px 10px;border-radius:999px;background:var(--card);border:1px solid var(--border);font-size:12px;color:var(--text-muted)">🕓 Datos descargados vía query: <b style="color:var(--text)">${fmtUpdated(D.updated)}</b></span>`
     : '';
   try{ AUDIT=await (await fetch('audit.json?t='+Date.now())).json(); }catch(e){ AUDIT=null; }
+  try{ CC=await (await fetch('cierres.json?t='+Date.now())).json(); }catch(e){ CC=null; }
   document.querySelectorAll('input[name=pais]').forEach(r=>r.onchange=()=>selectCountry(r.value));
   document.getElementById('granSel').onchange=e=>{cicloTipo=e.target.value;renderAntifunnel();renderCompletitud();renderImpacto();renderCohorteOrigen();renderErrores();renderResp();};
   go('dash','MX');
@@ -598,7 +608,7 @@ function renderExplorer(){
   }
   el.innerHTML=parts.join('');
 }
-function selectCountry(c){ country=c; renderStats(); renderImpacto(); renderErrores(); renderAB(); renderABFuente(); renderResp(); renderComparativa(); renderCalidad(); renderDiario(); renderAntifunnel(); renderCompletitud(); renderCohorteOrigen(); renderPorHoraChart(); }
+function selectCountry(c){ country=c; renderStats(); renderImpacto(); renderErrores(); renderAB(); renderABFuente(); renderResp(); renderComparativa(); renderCierresCaptaciones(); renderCalidad(); renderDiario(); renderAntifunnel(); renderCompletitud(); renderCohorteOrigen(); renderPorHoraChart(); }
 // Celdas "valor + %" con heatmap por fila (verde=conversión alta, rojo=baja), copiado del tablero de referencia.
 function heatCells(values, denoms){
   const pcts=values.map((v,i)=> denoms[i]>0 ? v/denoms[i]*100 : null);   // período sin base → null (celda vacía)
@@ -672,6 +682,7 @@ function mkChart(id,labels,data,o={}){
 }
 // --- estándar del "?": modal reutilizable (openHelp) ---
 const CARD_HELP={
+  cc:{t:'Cierres y captaciones · por mes',b:'<p>De los leads que revive el loop, cuántos terminan en una <b>compra cerrada</b> o en una <b>captación de la inmobiliaria</b>, contados por el mes en que ocurrió el evento (no el de creación del lead). Cuenta <b>leads únicos</b>.</p><p><b>Captaciones.</b> CO: <code>bi_co.seguimiento_inmobiliaria_col</code> con <code>etapa=\'Captaciones\'</code> — la etapa completa. Es la única de las cuatro tablas donde el hito vive en <code>etapa</code>; bajo esa etapa solo existen <code>Captación normal</code> (viva) y <code>Captación automatica</code> (apagada el 29-abr-2026), y se cuentan las dos. MX: <code>bi_mx.seguimiento_inmobiliaria_mex_copia</code> con <code>valor=\'Firma\'</code>, el último hito del funnel INMO.</p><p><b>Cierres.</b> CO: <code>funnel_diarios_col</code> · MX: <code>bi_mx.seguimiento_funnel_mex</code>, ambas con <code>valor=\'Cierre - Comprado\'</code>. <b><code>Cierre OCD</code> se excluye a propósito:</b> es el mismo cierre visto dos veces (1.380 negocios traen los dos valores y 1.295 en la misma fecha exacta), sumarlo duplicaría.</p><p><b>Por qué los números son bajos.</b> La cohorte con UTM del loop arranca el 17-jun-2026 (MX) y el 22-jun (CO), y un cierre tarda meses en madurar. La serie se llena con el tiempo.</p><p>Fuera de esta métrica: <code>Captado para inmobiliaria</code> (el handoff MM→INMO, otro concepto). Se actualiza <b>una vez al día</b> en un cron aparte porque la query escanea ~9,3 GB.</p>'},
   pendientes:{t:'Interesados pendientes por crear',b:'<p>Leads del loop que respondieron <b>«Estoy interesado»</b> y cuyo lead <b>aún no se ha recreado</b> en el backbone. Es el <b>backlog real</b> de recreación.</p><p>Cuenta solo si: (1) no está en <code>recreation</code>, (2) es lead del loop (<b>en <code>send_log</code></b>), y (3) NO está en estado terminal (<b>baja / ya vendió / respondió otra cosa</b>). Así no cuenta opt-outs post-interesado ni interesados del repo viejo que nunca enviamos. Fuente: mart inbound (lag 1–2 días).</p>'},
   cos_nocreado:{t:'Interesados aún no creados',b:'<p>De los <b>interesados</b> de ese período de envío, cuántos siguen <b>sin recrear</b> — mismo criterio refinado del card: del loop, no recreados y en estado no-terminal (excluye bajas y respuestas de otro tipo).</p>'},
   quality:{t:'Calidad de línea',b:'<p>Calificación que <b>Meta</b> le da al número de WhatsApp según cómo reacciona quien recibe los mensajes (bloqueos, reportes, lecturas).</p><p><b>ALTA</b> = línea sana · <b>MEDIA</b> = cuidar el ritmo · <b>BAJA</b> = en riesgo de que Meta la limite o suspenda · <b>UNKNOWN</b> = sin histórico reciente suficiente.</p><p>Es la señal <b>más importante</b> para no quemar la línea. Fuente: Meta (WhatsApp Business Management API).</p>'},
@@ -804,6 +815,39 @@ function renderComparativa(){
     <div style="font-size:20px;font-weight:800;color:var(--text-title)">🔁 Reinteresados <span style="color:var(--accent)">${pct(acR)}</span> &nbsp;·&nbsp; 🌐 WEB nuevo <span style="color:var(--text-muted)">${pct(acN)}</span></div>
   </div>
   <p class="note">Dos funnels lado a lado (cada barra = % de conversión sobre la base de su cohorte). Asignado→cita = citas ÷ asignados. WEB nuevo = fuente WEB sin UTM reinteresados. Ventana: últimos 14 días.</p>`;
+}
+// Cierres y captaciones por mes de la cohorte del loop. Lee CC (cierres.json), NO D (data.json):
+// su query escanea ~9,3 GB y corre en un cron diario aparte.
+function renderCierresCaptaciones(){
+  const tab=document.getElementById('ccTab'), nota=document.getElementById('ccNota'),
+        el=document.getElementById('c_cc_mes');
+  if(!tab||!nota) return;
+  // Sin archivo (primer deploy o cron que nunca corrió): no se dibuja nada. Mejor ausencia que ceros.
+  if(!CC||!Array.isArray(CC.rows)){ tab.innerHTML=''; nota.textContent=''; if(ccChart){ccChart.destroy();ccChart=null;} return; }
+  const rows=CC.rows.filter(r=>r.pais===country);
+  const base='Captación: CO = <code>etapa=Captaciones</code> del funnel INMO · MX = <code>valor=Firma</code>. Cierre = <code>valor=Cierre - Comprado</code> en el funnel MM de cada país (se excluye <code>Cierre OCD</code>: es el mismo evento). Cohorte: leads con UTM <code>reinteresados</code>, que arranca el 17-jun-2026 en MX y el 22-jun en CO. <b>Un cierre madura en meses, así que los primeros meses se leen bajos por diseño.</b>';
+  // Aviso de frescura: el archivo trae su propio `updated` porque no comparte cron con data.json.
+  const horas=CC.updated?(Date.now()-Date.parse(CC.updated.replace(/Z$/,':00Z')))/36e5:null;
+  const viejo=(horas!=null&&horas>48)?` <b style="color:var(--warn)">⚠ Dato de hace ${Math.round(horas/24)} días: el cron diario no ha corrido.</b>`:'';
+  nota.innerHTML=base+viejo;
+  if(!rows.length){ tab.innerHTML='<p class="muted">Aún no hay cierres ni captaciones de esta cohorte en '+country+'.</p>';
+    if(ccChart){ccChart.destroy();ccChart=null;} return; }
+  const labels=rows.map(r=>r.mes), cap=rows.map(r=>+r.captaciones||0), cie=rows.map(r=>+r.cierres||0);
+  tab.innerHTML=`<table><thead><tr><th>Mes</th>${labels.map(m=>`<th>${m}</th>`).join('')}<th>Total</th></tr></thead><tbody>
+    <tr><td><b>Captaciones</b></td>${cap.map((v,i)=>`<td${i===cap.length-1?' class="cur"':''} style="text-align:right">${fmt(v)}</td>`).join('')}<td style="text-align:right"><b>${fmt(cap.reduce((a,b)=>a+b,0))}</b></td></tr>
+    <tr><td><b>Cierres</b></td>${cie.map((v,i)=>`<td${i===cie.length-1?' class="cur"':''} style="text-align:right">${fmt(v)}</td>`).join('')}<td style="text-align:right"><b>${fmt(cie.reduce((a,b)=>a+b,0))}</b></td></tr>
+    </tbody></table>`;
+  if(!el||!window.Chart) return;
+  const light=document.body.classList.contains('light');
+  if(ccChart) ccChart.destroy();
+  ccChart=new Chart(el,{type:'bar',data:{labels,datasets:[
+    {label:'Captaciones',data:cap,backgroundColor:light?'#c7d2fe':'#3b3f7a',borderColor:'#818cf8',borderWidth:1,borderRadius:3},
+    {label:'Cierres',data:cie,backgroundColor:'#34d399',borderColor:'#34d399',borderWidth:1,borderRadius:3},
+  ]},options:{responsive:true,maintainAspectRatio:false,interaction:{mode:'index',intersect:false},
+    plugins:{legend:{display:true,labels:{color:light?'#334155':'#e2e8f0',boxWidth:12,font:{size:11}}},
+      tooltip:{callbacks:{label:c=>`${c.dataset.label}: ${fmt(c.parsed.y)} leads`}}},
+    scales:{x:{ticks:{color:light?'#64748b':'#94a3b8'},grid:{display:false}},
+      y:{beginAtZero:true,ticks:{color:light?'#64748b':'#94a3b8',precision:0},grid:{color:light?'#e2e8f0':'#22304a'}}}}});
 }
 function renderCalidad(){
   const el=document.getElementById('c_cohorte'); if(!el||!window.Chart) return;
@@ -1048,7 +1092,8 @@ function renderCohorteOrigen(){
 
 function applyTheme(t){const light=t==='light';document.body.classList.toggle('light',light);
   document.getElementById('themeBtn').textContent=light?'🌙 Oscuro':'☀️ Claro';
-  if(window.Chart&&diaCharts.length){ renderResp(); renderCohorteOrigen(); }}
+  if(window.Chart&&diaCharts.length){ renderResp(); renderCohorteOrigen(); }
+  if(window.Chart&&ccChart){ renderCierresCaptaciones(); }}
 document.getElementById('themeBtn').onclick=()=>{const n=document.body.classList.contains('light')?'dark':'light';try{localStorage.setItem('ml-theme',n);}catch(e){}applyTheme(n);};
 applyTheme((()=>{try{return localStorage.getItem('ml-theme')||'dark';}catch(e){return 'dark';}})());
 load();

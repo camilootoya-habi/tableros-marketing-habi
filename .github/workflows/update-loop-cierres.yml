@@ -1,0 +1,51 @@
+name: Actualizar cierres y captaciones del loop (diario)
+
+# Aparte del cron de 10 minutos a propósito: la query escanea ~9,3 GB y no baja con filtros de fecha
+# (las tablas de funnel no están particionadas). Diario = ~$1,7/mes; cada 10 min serían ~$250/mes.
+
+on:
+  schedule:
+    - cron: '20 11 * * *'   # 06:20 Bogotá / 05:20 CDMX
+  workflow_dispatch:
+
+concurrency:
+  group: update-loop-cierres
+  cancel-in-progress: false
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: google-github-actions/setup-gcloud@v2
+
+      - name: Authenticate with user credentials
+        run: |
+          echo '${{ secrets.GCP_CREDENTIALS }}' > /tmp/adc.json
+          # NO se usa secrets.GCP_PROJECT: apunta a un papyrus-*, que ya no acepta
+          # bigquery.jobs.create. build_cierres.py pasa --project_id explícito de todos modos.
+          gcloud config set project sellers-main-prod
+          echo "CLOUDSDK_AUTH_CREDENTIAL_FILE_OVERRIDE=/tmp/adc.json" >> $GITHUB_ENV
+          echo "GOOGLE_APPLICATION_CREDENTIALS=/tmp/adc.json" >> $GITHUB_ENV
+
+      - name: Build cierres.json
+        run: |
+          cd marketing-loop
+          export BUILD_TS="$(date -u +%Y-%m-%dT%H:%MZ)"
+          python3 build_cierres.py
+
+      - name: Commit and push
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add marketing-loop/cierres.json
+          if git diff --staged --quiet; then echo "sin cambios"; exit 0; fi
+          git commit -m "Auto-update marketing-loop cierres.json $(date -u +%Y-%m-%dT%H:%MZ)"
+          for i in 1 2 3 4 5; do
+            if git push; then echo "push OK"; exit 0; fi
+            git fetch origin main; git rebase -X ours origin/main || { git rebase --abort; git reset --hard origin/main; git checkout origin/main -- .; }
+            git add marketing-loop/cierres.json; git diff --staged --quiet || git commit -m "Auto-update marketing-loop cierres.json $(date -u +%Y-%m-%dT%H:%MZ)"
+          done
+          echo "no se pudo pushear"; exit 1
