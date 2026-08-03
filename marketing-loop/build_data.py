@@ -14,6 +14,11 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 # `gcloud config` del runner a propósito: el proyecto ambiente son los papyrus-*, que ya no
 # aceptan bigquery.jobs.create y dejaban todas las secciones de BQ en vacío sin fallar el cron.
 BQ_PROJECT = os.environ.get("BQ_BILLING_PROJECT", "sellers-main-prod")
+
+# Plantilla ganadora vigente por pais (A/B tpl_v1_vs_v2_jul26, cerrado 2026-07-22): la serie
+# "mejor hora" se calcula SOLO sobre esta plantilla para no mezclar efectos de plantilla y hora.
+WINNER_TPL = {"MX": "reactivacion_sellers_mx_v2_oferta_jul26",
+              "CO": "reactivacion_sellers_co_v2_oferta_jul26"}
 BQ_CMD = ["bq", f"--project_id={BQ_PROJECT}", "query",
           "--use_legacy_sql=false", "--format=json", "--max_rows=100000"]
 
@@ -119,10 +124,10 @@ def por_hora(pais, inbound_phones=None):
         LOWER(TRIM(status)) status, IF({SEEN},1,0) seen
       FROM `{mart_table(pais)}`
       WHERE TRIM(from_number) IN ({lines}) AND DATE({SENDAT}) >= "2026-06-01"
-        -- SOLO envíos de CAMPAÑA (con plantilla). Excluye mensajes de sesión/conversación (template NULL):
-        -- esos son respuestas del bot dentro de conversaciones activas -> van a quien ya respondió, inflando
-        -- el respond rate a ~100% en horas de bajo volumen (00-09). No son el blast de reactivación.
-        AND NULLIF(TRIM(template), "") IS NOT NULL''')
+        -- SOLO la plantilla GANADORA vigente (v2 oferta). Antes: cualquier plantilla de campaña, pero el
+        -- mix v1/v2 contamina la señal por hora (entrega/lectura difieren por plantilla). Los mensajes de
+        -- sesión (template NULL) siguen excluidos: van a quien ya respondió e inflan el respond rate.
+        AND TRIM(template) = "{WINNER_TPL[pais]}"''')
     responders = inbound_phones if inbound_phones is not None else {i["phone"] for i in M.inbound_rows(30) if i.get("phone")}
     agg_h={}
     for r in rows:
@@ -143,7 +148,7 @@ def por_hora(pais, inbound_phones=None):
             "respond_rate":round(a["r"]/a["e"],3) if a["e"] else None})
     tzlab = {"MX":"hora CDMX (UTC-6)", "CO":"hora Bogotá (UTC-5)"}.get(pais, "hora local")
     return {"serie":serie, "desde":"2026-06-01",
-            "nota":f"delivery/open/response rate por hora de envío de CAMPAÑA (con plantilla; excluye mensajes de sesión); {tzlab}, verificado vs Neon; response = entregados cuyo tel respondió. Horas con muestra chica (<30 env / <20 entregados) no dibujan tasa"}
+            "nota":f"delivery/open/response rate por hora de envío, SOLO plantilla ganadora v2 ({WINNER_TPL[pais]}); excluye mensajes de sesión; {tzlab}, verificado vs Neon; response = entregados cuyo tel respondió. Horas con muestra chica (<30 env / <20 entregados) no dibujan tasa"}
 
 COMP_FIELDS=["direccion","telefono","email","nombre","geo","zona","tipo","area","banos",
              "medios_banos","habitaciones","garaje","ascensor","piso","antiguedad","precio","estrato"]
