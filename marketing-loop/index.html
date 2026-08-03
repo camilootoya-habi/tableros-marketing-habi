@@ -1018,22 +1018,27 @@ function renderPorHoraChart(){
     if(note) note.textContent='Aún sin datos — '+(ph.nota||'pendiente')+'.'; return; }
   const light=document.body.classList.contains('light');
   const labels=serie.map(r=>String(r.hora).padStart(2,'0')+':00');
-  const rd=serie.map(r=>r.read_rate==null?null:+(r.read_rate*100).toFixed(1));
-  const rp=serie.map(r=>r.respond_rate==null?null:+(r.respond_rate*100).toFixed(1));
+  // MIN_N: horas con muestra chica no dibujan tasa (1 mensaje leido = "100%" y distorsiona la lectura
+  // de mejor hora). El volumen si se dibuja siempre, para ver DONDE falta muestra.
+  const MIN_ENV=30, MIN_ENT=20;
+  const dr=serie.map(r=>(+r.enviados>=MIN_ENV && r.entregados!=null)?+((+r.entregados/+r.enviados)*100).toFixed(1):null);
+  const rd=serie.map(r=>(+r.entregados>=MIN_ENT && r.read_rate!=null)?+(r.read_rate*100).toFixed(1):null);
+  const rp=serie.map(r=>(+r.entregados>=MIN_ENT && r.respond_rate!=null)?+(r.respond_rate*100).toFixed(1):null);
   const ent=serie.map(r=>+r.entregados); const vol=serie.map(r=>+r.enviados);
   if(porhoraChart) porhoraChart.destroy();
   porhoraChart=new Chart(el,{data:{labels,datasets:[
     {type:'bar',label:'Volumen enviado',data:vol,yAxisID:'y2',order:3,borderWidth:0,barPercentage:.94,categoryPercentage:.98,
       backgroundColor:light?'rgba(148,163,184,.30)':'rgba(148,163,184,.16)'},
-    {type:'line',label:'Read rate',data:rd,yAxisID:'y',order:1,borderColor:'#818cf8',backgroundColor:'#818cf8',tension:.3,pointRadius:3,borderWidth:2,spanGaps:true},
-    {type:'line',label:'Respond rate',data:rp,yAxisID:'y1',order:1,borderColor:'#34d399',backgroundColor:'#34d399',tension:.3,pointRadius:3,borderWidth:2,spanGaps:true},
+    {type:'line',label:'Delivery rate',data:dr,yAxisID:'y',order:1,borderColor:'#f59e0b',backgroundColor:'#f59e0b',tension:.3,pointRadius:3,borderWidth:2,spanGaps:true},
+    {type:'line',label:'Open rate (leídos)',data:rd,yAxisID:'y',order:1,borderColor:'#818cf8',backgroundColor:'#818cf8',tension:.3,pointRadius:3,borderWidth:2,spanGaps:true},
+    {type:'line',label:'Response rate',data:rp,yAxisID:'y1',order:1,borderColor:'#34d399',backgroundColor:'#34d399',tension:.3,pointRadius:3,borderWidth:2,spanGaps:true},
   ]},options:{responsive:true,maintainAspectRatio:false,interaction:{mode:'index',intersect:false},
     plugins:{legend:{display:true,labels:{color:light?'#334155':'#e2e8f0',boxWidth:12,font:{size:11}}},
-      tooltip:{callbacks:{label:c=>{const i=c.dataIndex,ax=c.dataset.yAxisID;
+      tooltip:{callbacks:{label:c=>{const i=c.dataIndex,ax=c.dataset.yAxisID,lb=c.dataset.label;
         if(ax==='y2') return `Volumen enviado: ${fmt(vol[i])}`;
-        return ax==='y'
-          ? `Read rate: ${rd[i]==null?'—':rd[i].toFixed(1)+'%'} (n entregados ${fmt(ent[i])})`
-          : `Respond rate: ${rp[i]==null?'—':rp[i].toFixed(1)+'%'}`;}}}},
+        if(lb==='Delivery rate') return `Delivery: ${dr[i]==null?'— (muestra chica)':dr[i].toFixed(1)+'%'} (${fmt(ent[i])}/${fmt(vol[i])})`;
+        if(lb&&lb.startsWith('Open')) return `Open: ${rd[i]==null?'— (muestra chica)':rd[i].toFixed(1)+'%'} (n entregados ${fmt(ent[i])})`;
+        return `Response: ${rp[i]==null?'— (muestra chica)':rp[i].toFixed(1)+'%'} (n entregados ${fmt(ent[i])})`;}}}},
     scales:{x:{ticks:{color:light?'#64748b':'#94a3b8'},grid:{display:false}},
       y:{position:'left',beginAtZero:true,title:{display:true,text:'Read rate %',color:'#818cf8'},
         ticks:{color:light?'#64748b':'#94a3b8',callback:v=>v+'%'},grid:{color:light?'#e2e8f0':'#22304a'}},

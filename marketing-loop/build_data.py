@@ -143,7 +143,7 @@ def por_hora(pais, inbound_phones=None):
             "respond_rate":round(a["r"]/a["e"],3) if a["e"] else None})
     tzlab = {"MX":"hora CDMX (UTC-6)", "CO":"hora Bogotá (UTC-5)"}.get(pais, "hora local")
     return {"serie":serie, "desde":"2026-06-01",
-            "nota":f"read/respond rate por hora de envío de CAMPAÑA (con plantilla; excluye mensajes de sesión); {tzlab}, verificado vs Neon; respond = entregados cuyo tel respondió"}
+            "nota":f"delivery/open/response rate por hora de envío de CAMPAÑA (con plantilla; excluye mensajes de sesión); {tzlab}, verificado vs Neon; response = entregados cuyo tel respondió. Horas con muestra chica (<30 env / <20 entregados) no dibujan tasa"}
 
 COMP_FIELDS=["direccion","telefono","email","nombre","geo","zona","tipo","area","banos",
              "medios_banos","habitaciones","garaje","ascensor","piso","antiguedad","precio","estrato"]
