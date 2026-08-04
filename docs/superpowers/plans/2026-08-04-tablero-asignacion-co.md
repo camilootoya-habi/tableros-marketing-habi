@@ -15,7 +15,9 @@
 - **Nunca editar el `index.html` de la raíz** — es generado por `scripts/build_hub.py`.
 - Gráficas **siempre con Chart.js** vía `mkChart`, nunca SVG a mano.
 - Facturar BQ en `sellers-main-prod`. `papyrus-data` y `papyrus-master` **no** permiten crear jobs con estas credenciales: se leen cross-project con path completo.
-- pipeline_id: MM = `798578615` · INMO = `803674753` · legacy = `1679217`.
+- pipeline_id: MM = `798578615` · INMO = `803674753`.
+- ⚠️ **`1679217` ("Sellers CO") NO es un producto: es el pipeline donde nace todo deal** (1.373.130 nids en 940 días, más que el universo entero de leads de la ventana). Tampoco lo son los pipelines de MX (`15290604`, `638550350`, `10867264`). **`prod_1` se calcula SOLO entre MM e INMO**; todo lo demás se ignora. Las métricas de producto se condicionan además a que el lead esté asignado (`d_primera_asig IS NOT NULL`). Los asignados que nunca entraron a MM ni INMO se cuentan en una métrica propia, `sin_producto`.
+- ⚠️ **Cobertura de los pipelines nuevos: MM arranca 2025-09-18 e INMO 2025-10-02.** Los períodos anteriores tienen las columnas de producto en cero **por construcción, no por caída**. El frontend los marca "sin cobertura" (ver Task 5). Las métricas de asignación (`asig_30d`, `asig_ever`, `gabi_30d`, `directo_30d`) sí tienen data desde 2024-01 y se muestran normal.
 - `hubspot.historical`: particionada por MONTH en `fecha`, clusterizada por `propiedad`, `valor` es STRING, **~5 h de rezago**. Filtrar SIEMPRE por `propiedad` y por `fecha`.
 - **`bi_co.seguimiento_asignacion_ibuyer_co.pipeline` es snapshot** — prohibido usarlo para la secuencia de productos. De esa tabla solo se usan `fecha_asignacion`, `tipo_asignacion`, `tipo`, `equipo_inicial`, `area_metropolitana`, `fuente`.
 - **`product_qualified` no tiene fecha ni historial** — se usa solo como atributo de estado final, jamás como fecha ni como secuencia.
@@ -173,7 +175,7 @@ git commit -m "feat(asignacion-co): scaffolding del tablero y pipeline de datos"
   `d_asig` DATE, `tipo_1` STRING (`gabi`|`comercial`), `tipo_asignacion_1` STRING,
   `d_owner` DATE, `d_primera_asig` DATE, `senal_primera` STRING (`seguimiento`|`owner`),
   `gabi_flag` BOOL, `gabi_producto` STRING, `d_gabi` DATE,
-  `prod_1` STRING (`MM`|`INMO`|`LEGACY`), `d_mm` DATE, `d_inmo` DATE, `d_prod_1` DATE,
+  `prod_1` STRING (`MM`|`INMO`|NULL si nunca entró a ninguno), `d_mm` DATE, `d_inmo` DATE, `d_prod_1` DATE,
   `n_asig` INT64, `en_wbr` BOOL.
   Y las métricas de la lente A: `creados`, `asig_30d`, `asig_ever`, `gabi_30d`, `directo_30d`, `prod1_mm`, `prod1_inmo`, `prod1_legacy`.
 
@@ -210,13 +212,11 @@ En `asignacion-co/query.sql`, después del CTE `leads`, agregar:
   SELECT
     CAST(nid AS STRING) AS nid,
     DATE(fecha) AS d,
-    CASE TRIM(valor)
-      WHEN '798578615' THEN 'MM'
-      WHEN '803674753' THEN 'INMO'
-      ELSE 'LEGACY'
-    END AS prod
+    IF(TRIM(valor) = '798578615', 'MM', 'INMO') AS prod
   FROM `sellers-main-prod.hubspot.historical`
   WHERE propiedad = 'pipeline'
+    -- SOLO los dos pipelines de producto. 1679217 y los de MX no son productos (ver Global Constraints).
+    AND TRIM(valor) IN ('798578615', '803674753')
     AND DATE(fecha) >= DATE_SUB(CURRENT_DATE(), INTERVAL 940 DAY)
 )
 , pipes AS (
@@ -336,12 +336,14 @@ Expected:
                       AND DATE_DIFF(b.d_asig, b.d_creacion, DAY) <= 30, b.nid, NULL))         AS gabi_30d,
     COUNT(DISTINCT IF(b.d_primera_asig IS NOT NULL AND NOT COALESCE(b.gabi_flag, FALSE)
                       AND DATE_DIFF(b.d_primera_asig, b.d_creacion, DAY) <= 30, b.nid, NULL)) AS directo_30d,
-    COUNT(DISTINCT IF(b.prod_1 = 'MM'
+    -- Producto: solo MM/INMO, y SIEMPRE condicionado a estar asignado
+    COUNT(DISTINCT IF(b.d_primera_asig IS NOT NULL AND b.prod_1 = 'MM'
                       AND DATE_DIFF(b.d_prod_1, b.d_creacion, DAY) <= 30, b.nid, NULL))       AS prod1_mm,
-    COUNT(DISTINCT IF(b.prod_1 = 'INMO'
+    COUNT(DISTINCT IF(b.d_primera_asig IS NOT NULL AND b.prod_1 = 'INMO'
                       AND DATE_DIFF(b.d_prod_1, b.d_creacion, DAY) <= 30, b.nid, NULL))       AS prod1_inmo,
-    COUNT(DISTINCT IF(b.prod_1 = 'LEGACY'
-                      AND DATE_DIFF(b.d_prod_1, b.d_creacion, DAY) <= 30, b.nid, NULL))       AS prod1_legacy
+    -- Asignados que nunca entraron a MM ni INMO (dentro de la ventana de 30 d)
+    COUNT(DISTINCT IF(b.d_primera_asig IS NOT NULL AND b.prod_1 IS NULL
+                      AND DATE_DIFF(b.d_primera_asig, b.d_creacion, DAY) <= 30, b.nid, NULL)) AS sin_producto
   FROM base2 b
   JOIN dims x USING (nid)
   GROUP BY d, dim, dim_val
@@ -349,7 +351,7 @@ Expected:
 SELECT 'count' AS kind, 'A' AS lente, d, dim, dim_val, metrica, n
 FROM lente_a
 UNPIVOT (n FOR metrica IN (
-  creados, asig_30d, asig_ever, gabi_30d, directo_30d, prod1_mm, prod1_inmo, prod1_legacy
+  creados, asig_30d, asig_ever, gabi_30d, directo_30d, prod1_mm, prod1_inmo, sin_producto
 ))
 WHERE n > 0
 ```
@@ -371,7 +373,7 @@ for x in r:
 print(dict(tot))
 assert tot['asig_30d'] <= tot['asig_ever'] <= tot['creados'], 'jerarquía de asignados rota'
 assert tot['gabi_30d'] + tot['directo_30d'] <= tot['asig_ever'] + 1, 'gabi+directo excede asignados'
-assert tot['prod1_mm'] + tot['prod1_inmo'] + tot['prod1_legacy'] <= tot['asig_ever'], 'productos exceden asignados'
+assert tot['prod1_mm'] + tot['prod1_inmo'] + tot['sin_producto'] <= tot['asig_ever'], 'productos exceden asignados'
 # la suma por dimensión debe reproducir el total (± leads sin ese atributo)
 for dim in ('fuente','area','equipo'):
     s = sum(int(x['n']) for x in r if x['dim']==dim and x['metrica']=='creados')
@@ -781,7 +783,9 @@ El estado del filtro es `{dim, dimVal}` y se pasa tal cual a `agrega()`. Default
 
 - [ ] **Step 4: Renderizar la tabla de la lente A**
 
-Columnas, en este orden: `Cosecha` · `Creados` · `Asignado ≤30d` · `Ever asignado (ref.)` · `GABI` · `Directo a pipeline` · `1er producto MM` · `INMO` · `legacy`.
+Columnas, en este orden: `Cosecha` · `Creados` · `Asignado ≤30d` · `Ever asignado (ref.)` · `GABI` · `Directo a pipeline` · `1er producto MM` · `INMO` · `Sin producto`.
+
+**Regla de cobertura:** en los períodos cuyo fin sea anterior a **2025-09-18** (MM) / **2025-10-02** (INMO), las tres columnas de producto se renderizan como `—` con `title="los pipelines MM/INMO no existían aún"`, NUNCA como 0. Las columnas de asignación se muestran normal. Debajo de la tabla, una nota: "Las columnas de producto arrancan en sep-2025, cuando se crearon los pipelines MM e INMO en HubSpot".
 
 Reglas de render:
 - Cada celda de métrica muestra `n (%)`. El **denominador del % es `asig_30d`**, salvo `Asignado ≤30d` y `Ever asignado`, cuyo denominador es `creados`.
