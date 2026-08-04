@@ -71,7 +71,11 @@ Escrito para poder convertirse en `CREATE TABLE bi_co.base_asignacion_co AS …`
 | `ruta` | taxonomía derivada (ver lentes B/C) |
 | `en_wbr_mart` | flag del LEFT JOIN contra el mart |
 
-**Ventana:** cosechas desde **2026-01-01**. La serie se dibuja completa con un **corte visual marcado en abril 2026** ("cambio de lógica de asignación") y zoom por defecto en los últimos 6 meses. Los asignados MM caen de 39,6k (sep-2025) a ~8k (jun/jul-2026): el quiebre se muestra, no se trunca.
+**Ventana: sin fecha inicial fija.** Las tres lentes muestran los **últimos 20 períodos** de la granularidad seleccionada — 20 semanas, 20 meses o 20 ciclos comerciales — recalculados al cambiar el selector. La lente A los cuenta sobre `fecha_creacion`; B y C sobre su fecha de llegada al producto.
+
+Cobertura de las fuentes (verificada 2026-08-04): `seguimiento_asignacion_ibuyer_co` desde **2024-01-01** (32 meses) y `historical` con `propiedad='pipeline'` desde **feb-2020**. Los 20 períodos mensuales (hasta ~dic-2024) quedan cubiertos por ambas.
+
+⚠️ En granularidad mensual los 20 períodos alcanzan el tramo con **lógica de asignación anterior**. No se trunca: se marca. Corte visual en **abril 2026** ("cambio de lógica de asignación") — los asignados MM caen de 39,6k (sep-2025) a ~8k (jun/jul-2026), y ese escalón es información, no ruido. Cualquier comparación que cruce el corte debe leerse con esa advertencia visible en la gráfica.
 
 ## Capas y ventanas de maduración
 
@@ -99,7 +103,7 @@ Filtro: fuente · área metropolitana · equipo      ← selector estándar, uno
 ─── Conclusiones · reconciliación con el WBR mart
 ```
 
-Sin selector de lente: las tres apiladas, últimos 20 períodos cada una.
+Sin selector de lente: las tres apiladas. **Sin fecha inicial fija** — cada lente muestra los últimos 20 períodos de la granularidad seleccionada, y las tres se redibujan juntas al cambiarla.
 
 **⚠️ Requisito de diseño no negociable:** A ancla en **fecha de creación**, B y C anclan en **fecha de llegada al producto**. El mismo período en las tres tablas **no** habla del mismo grupo de leads. Cada bloque lleva su denominador escrito en el subtítulo, con peso tipográfico — no como nota al pie. Leídas en vertical, el riesgo de sumarlas mentalmente es alto.
 
@@ -167,5 +171,7 @@ Los cuadrantes ⚠️ se descomponen por: fuente no-marketing · Ventanas · fil
 | `historical` con ~5 h de rezago | El tablero no es casi-en-vivo. Declararlo en el encabezado. |
 | Costo de query | Dry-run medido: 2,03 GB. Tope 5 GB. Si crece, partir en dos queries. |
 | Leer los tres bloques como el mismo universo | Denominador en el subtítulo de cada bloque, con peso tipográfico. |
-| Cosechas recientes leídas como caída real | Marca de inmadurez por capa + corte visual en abr-2026. |
+| Cosechas recientes leídas como caída real | Marca de inmadurez por capa. |
+| 20 períodos mensuales cruzan la lógica de asignación anterior | Corte visual en abr-2026 en las gráficas; no se trunca la serie. |
+| El JSON crece al cubrir 20 períodos × 3 granularidades × 3 lentes | Cortes no cruzados (uno a la vez) y formato largo. Si supera ~1 MB, precalcular solo las dimensiones usadas. |
 | Ruta GABI(MM)→MM→INMO sobreinterpretada | Rotular como estado final, no secuencia fechada. |
