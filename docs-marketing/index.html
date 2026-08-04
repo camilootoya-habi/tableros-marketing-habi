@@ -172,6 +172,18 @@
             <td>Log del funnel Inmobiliaria. Activa desde 2026-03-12.</td>
           </tr>
           <tr>
+            <td><strong>Funnel completo MM</strong> (eventos)</td>
+            <td><span class="mono-sm">papyrus-data.habi_wh_bi.funnel_diarios_col</span></td>
+            <td><span class="mono-sm">sellers-main-prod.bi_mx.seguimiento_funnel_mex</span></td>
+            <td>Una fila por lead × etapa alcanzada, con <code>fecha</code>. Etapa en la columna <code>valor</code>. Cubre <strong>asignado → cierre</strong> completo. Ver <a href="#tablas-funnel-completo" class="inline">Funnel completo</a>.</td>
+          </tr>
+          <tr>
+            <td><strong>Funnel completo INMO</strong> (eventos)</td>
+            <td><span class="mono-sm">sellers-main-prod.bi_co.seguimiento_inmobiliaria_col</span></td>
+            <td><span class="mono-sm">sellers-main-prod.bi_mx.seguimiento_inmobiliaria_mex_copia</span></td>
+            <td>Equivalente Inmo: <strong>asignado → firma</strong>. En MX la etapa está en <code>valor</code>; <strong>en CO hay que usar <code>etapa</code></strong> (<code>valor</code> trae el dealstage ID crudo). Ver <a href="#tablas-funnel-completo" class="inline">Funnel completo</a>.</td>
+          </tr>
+          <tr>
             <td><strong>Catálogo de estados</strong></td>
             <td><span class="mono-sm">sellers-main-prod.co_rds_staging.habi_db_tabla_estados</span></td>
             <td><span class="mono-sm">sellers-main-prod.mx_rds_staging.habi_db_state</span></td>
@@ -235,6 +247,88 @@
           </tr>
         </tbody>
       </table>
+
+      <h3 id="tablas-funnel-completo">Funnel completo: las 4 tablas de eventos (MM / INMO × CO / MX)</h3>
+      <p>Los históricos de estado del OLTP dan las transiciones del backbone, pero <strong>el funnel de negocio completo — de asignado hasta cierre (MM) o firma (INMO) — vive en 4 tablas de eventos</strong>, una por producto × país. Todas tienen una fila por <code>nid</code> × etapa alcanzada con su <code>fecha</code>, así que sirven igual para cosechas (agrupando por fecha de creación) y para eventos (agrupando por fecha de la etapa).</p>
+      <table>
+        <thead>
+          <tr><th>Funnel</th><th>País</th><th>Tabla</th><th>Columna de etapa</th></tr>
+        </thead>
+        <tbody>
+          <tr><td rowspan="2"><strong>MM</strong></td><td>CO</td><td><span class="mono-sm">papyrus-data.habi_wh_bi.funnel_diarios_col</span></td><td><code>valor</code></td></tr>
+          <tr><td>MX</td><td><span class="mono-sm">sellers-main-prod.bi_mx.seguimiento_funnel_mex</span></td><td><code>valor</code></td></tr>
+          <tr><td rowspan="2"><strong>INMO</strong></td><td>CO</td><td><span class="mono-sm">sellers-main-prod.bi_co.seguimiento_inmobiliaria_col</span></td><td><strong><code>etapa</code></strong></td></tr>
+          <tr><td>MX</td><td><span class="mono-sm">sellers-main-prod.bi_mx.seguimiento_inmobiliaria_mex_copia</span></td><td><code>valor</code></td></tr>
+        </tbody>
+      </table>
+
+      <div class="callout">
+        <strong>⚠ Dos trampas de acceso.</strong> (1) El proyecto <code>papyrus-data</code> no permite crear jobs con nuestras credenciales: hay que consultar <span class="mono-sm">funnel_diarios_col</span> facturando en otro proyecto (path completo + <code>--project_id=sellers-main-prod</code>). (2) En INMO MX usar <strong>siempre la <code>_copia</code></strong>: la vista <span class="mono-sm">bi_mx.seguimiento_inmobiliaria_mex</span> (sin sufijo) depende de <span class="mono-sm">brokers-main-prod:mx_habi_brokers_listing.property_card</span> y devuelve <em>Access Denied</em>.
+      </div>
+
+      <h4>Etapas de MM (los nombres NO coinciden entre países)</h4>
+      <table>
+        <thead>
+          <tr><th>Etapa canónica</th><th>CO (<code>valor</code>)</th><th>MX (<code>valor</code>)</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Sin gestión</td><td><code>No gestionado</code></td><td>—</td></tr>
+          <tr><td>Primer asignación</td><td><code>Primer_asigancion</code> <em>(sic)</em></td><td><code>Primer asignacion</code></td></tr>
+          <tr><td>Llamadas comercial</td><td><code>llamadas_comercial</code></td><td><code>llamadas_comercial</code></td></tr>
+          <tr><td>Cita agendada</td><td><code>Cita agendada</code></td><td><code>Cita Agendada</code>, <code>Cita Agendada (hubspot)</code></td></tr>
+          <tr><td>Pre-comité validado</td><td><code>pre-comité validado</code></td><td><code>Pre-comite validado</code></td></tr>
+          <tr><td>Visita efectuada</td><td><code>Visita efectuada</code></td><td><code>Visita Efectuada</code>, <code>Visita Efectuada (hubspot)</code></td></tr>
+          <tr><td>Aprobado</td><td><code>Aprobado</code>, <code>inmueble aprobado</code></td><td><code>Aprobado General</code>, <code>Primer inmueble aprobado</code></td></tr>
+          <tr><td>Aceptó oferta</td><td><code>Aceptó Oferta - Pendiente firma</code></td><td><code>Acepto Oferta - Pendiente firma</code></td></tr>
+          <tr><td><strong>Cierre comprado</strong></td><td><code>Cierre - Comprado</code></td><td><code>Cierre - Comprado</code></td></tr>
+          <tr><td>Bifurcación a Inmo</td><td><code>Referido para inmobiliaria</code>, <code>Captado para inmobiliaria</code></td><td>—</td></tr>
+          <tr><td>Negativos / salidas</td><td><code>Descartado por comité</code>, <code>Rechazó Oferta</code>, <code>Rechazó oferta - No volver a llamar</code>, <code>Cierre OCD</code></td><td><code>rechazo Comité</code>, <code>Rechazo Oferta</code>, <code>Pendiente respuesta oferta</code>, <code>Cierre  OCD</code> <em>(doble espacio)</em></td></tr>
+        </tbody>
+      </table>
+      <p><strong>Ojo en MX:</strong> las variantes <code>(hubspot)</code> duplican la etapa — deduplicar por <code>nid</code>. <strong>Ojo en CO:</strong> <code>Aceptó Oferta - aplazado</code> está muerta (último evento 2026-02-16).</p>
+
+      <h4>Etapas de INMO MX</h4>
+      <p><code>Asignados</code> → <code>contactado</code> → <code>Enviado a comite inmo</code> → <code>Aprobado por comite inmo</code> → <code>ofertado</code> → <code>oferta_aceptada_gabi</code> → <code>En legal</code> → <strong><code>Firma</code></strong> → <code>Publicaciones</code>. Aparte: <code>captaciones_3_checks</code>.</p>
+
+      <h4 id="tablas-inmo-co-etapas">Etapas de INMO CO — usar <code>etapa</code>, no <code>valor</code></h4>
+      <p>En <span class="mono-sm">bi_co.seguimiento_inmobiliaria_col</span> la columna <code>valor</code> viene mezclada: para las etapas de HubSpot trae el <strong>dealstage ID crudo</strong>, para <code>Captaciones</code> trae texto, y para <code>Asignado</code> y <code>Publicaciones</code> viene <strong>NULL</strong>. La columna <code>etapa</code> ya es el label resuelto.</p>
+      <div class="callout">
+        <strong>Agrupar por <code>valor</code> en INMO CO borra el tope y la cola del funnel</strong> (los ~47.500 <code>Asignado</code> y los ~10.300 <code>Publicaciones</code> tienen <code>valor IS NULL</code>). Agrupa siempre por <code>etapa</code>.
+      </div>
+      <table>
+        <thead>
+          <tr><th>#</th><th>Etapa (<code>etapa</code>)</th><th>dealstage (<code>valor</code>)</th><th>nids únicos</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>1</td><td>Asignado</td><td><em>NULL</em></td><td>47.506</td></tr>
+          <tr><td>2</td><td>Primer intento de contacto realizado</td><td><code>1182117545</code></td><td>31.447</td></tr>
+          <tr><td>3</td><td>Perfilado</td><td><code>1182117546</code></td><td>17.949</td></tr>
+          <tr><td>4</td><td>Enviado a comite</td><td><code>1182117547</code></td><td>6.242</td></tr>
+          <tr><td>5</td><td>Aprobado</td><td><code>1182117549</code></td><td>8.236</td></tr>
+          <tr><td>6</td><td>Ofertado</td><td><code>1182117550</code></td><td>6.869</td></tr>
+          <tr><td>7</td><td>Ofertas aceptadas</td><td><code>1182117553</code></td><td>4.543</td></tr>
+          <tr><td>8</td><td>Documentación cargada</td><td><code>1182117556</code></td><td>3.511</td></tr>
+          <tr><td>9</td><td>Declaración juramentada firmada</td><td><code>1182117555</code></td><td>3.404</td></tr>
+          <tr><td>10</td><td>Aprobados cumplimiento</td><td><code>1182117558</code></td><td>3.376</td></tr>
+          <tr><td>11</td><td>Aprobados por legal</td><td><code>1182117560</code></td><td>3.172</td></tr>
+          <tr><td>12</td><td>Legalizados</td><td><code>1182117554</code></td><td>3.781</td></tr>
+          <tr><td>13</td><td>Contrato enviado</td><td><code>1182117561</code></td><td>3.120</td></tr>
+          <tr><td>14</td><td><strong>Firmado</strong></td><td><code>1182117633</code></td><td><strong>11.704</strong></td></tr>
+          <tr><td>15</td><td>Captaciones</td><td><em>texto:</em> <code>Captación normal</code> / <code>Captación automatica</code></td><td>13.243</td></tr>
+          <tr><td>16</td><td>Agendado / Fotos tomadas / Visita cancelada / Publicado</td><td><code>…634</code> / <code>…636</code> / <code>…635</code> / <code>…637</code></td><td>619 / 65 / 18 / 109</td></tr>
+          <tr><td>17</td><td>Publicaciones</td><td><em>NULL</em></td><td>10.299</td></tr>
+          <tr><td>18</td><td>Lo voy a comprar / Vendido</td><td><code>…640</code> / <code>…638</code></td><td>20 / 26</td></tr>
+          <tr><td>↩</td><td>Regresado por comité / Regresados por cumplimiento / Regresados por legal / Contrato regresado</td><td><code>…548</code> / <code>…557</code> / <code>…559</code> / <code>…632</code></td><td>1.502 / 514 / 1.305 / 380</td></tr>
+          <tr><td>✕</td><td><strong>Perdido</strong> (salida, excluir del numerador)</td><td><code>1182117639</code></td><td>61.464</td></tr>
+        </tbody>
+      </table>
+      <p>Conteos al 2026-08-04. Tres cosas antes de usarla:</p>
+      <ul>
+        <li><strong>El funnel no es monótono:</strong> <code>Firmado</code> (11.704) &gt; <code>Legalizados</code> (3.781) &gt; <code>Contrato enviado</code> (3.120). No se puede leer la escalera como CVR encadenado.</li>
+        <li><strong>Cobertura desigual en el tiempo:</strong> las etapas de HubSpot arrancan el 2025-10-26 y <code>Asignado</code> el 2025-12-01, mientras <code>Captaciones</code> existe desde 2021-06. Para series largas usar solo Asignado / Captaciones / Firmado / Publicaciones. <code>Captación automatica</code> está congelada desde 2026-04-29.</li>
+        <li><strong>El campo <code>orden</code> NO es el orden del funnel.</strong> Es un entero 1–196 sin semántica documentada (no es días desde la asignación, ni mes calendario, ni rank del evento por <code>nid</code>; cada valor contiene ~20 etapas distintas). No usarlo para secuenciar etapas — usar el mapeo de arriba.</li>
+      </ul>
+      <p>Otros campos útiles de la tabla: <code>etapa_actual</code> / <code>dealstage_actual</code> (estado vigente del deal, para snapshot vs histórico), <code>rc</code> (ciclo/recurrencia del lead), <code>fuente_id</code> / <code>fuente</code>, <code>area_metropolitana</code>, <code>comercial</code>, <code>equipo</code>, <code>lider</code>, <code>meta_captacion</code>.</p>
 
       <h3 id="tablas-inmueble-negocio">Inmueble vs Negocio: <code>habi_db_property</code> vs <code>habi_db_property_deal</code></h3>
       <p>Dos tablas OLTP que se confunden seguido porque casi siempre van 1-a-1, pero modelan cosas distintas: una es el <strong>activo físico</strong>, la otra es el <strong>proceso comercial</strong> sobre ese activo.</p>
