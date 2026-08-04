@@ -45,14 +45,10 @@ WITH leads AS (
   SELECT
     CAST(nid AS STRING) AS nid,
     DATE(fecha) AS d,
-    CASE TRIM(valor)
-      WHEN '798578615' THEN 'MM'
-      WHEN '803674753' THEN 'INMO'
-      WHEN '1679217'   THEN 'LEGACY'
-    END AS prod
+    IF(TRIM(valor) = '798578615', 'MM', 'INMO') AS prod
   FROM `sellers-main-prod.hubspot.historical`
   WHERE propiedad = 'pipeline'
-    AND TRIM(valor) IN ('798578615', '803674753', '1679217')
+    AND TRIM(valor) IN ('798578615', '803674753')
     AND DATE(fecha) >= DATE_SUB(CURRENT_DATE(), INTERVAL 940 DAY)
 )
 , pipes AS (
@@ -136,12 +132,12 @@ WITH leads AS (
                       AND DATE_DIFF(b.d_asig, b.d_creacion, DAY) <= 30, b.nid, NULL))         AS gabi_30d,
     COUNT(DISTINCT IF(b.d_primera_asig IS NOT NULL AND NOT COALESCE(b.gabi_flag, FALSE)
                       AND DATE_DIFF(b.d_primera_asig, b.d_creacion, DAY) <= 30, b.nid, NULL)) AS directo_30d,
-    COUNT(DISTINCT IF(b.prod_1 = 'MM'
+    COUNT(DISTINCT IF(b.d_primera_asig IS NOT NULL AND b.prod_1 = 'MM'
                       AND DATE_DIFF(b.d_prod_1, b.d_creacion, DAY) <= 30, b.nid, NULL))       AS prod1_mm,
-    COUNT(DISTINCT IF(b.prod_1 = 'INMO'
+    COUNT(DISTINCT IF(b.d_primera_asig IS NOT NULL AND b.prod_1 = 'INMO'
                       AND DATE_DIFF(b.d_prod_1, b.d_creacion, DAY) <= 30, b.nid, NULL))       AS prod1_inmo,
-    COUNT(DISTINCT IF(b.prod_1 = 'LEGACY'
-                      AND DATE_DIFF(b.d_prod_1, b.d_creacion, DAY) <= 30, b.nid, NULL))       AS prod1_legacy
+    COUNT(DISTINCT IF(b.d_primera_asig IS NOT NULL AND b.prod_1 IS NULL
+                      AND DATE_DIFF(b.d_primera_asig, b.d_creacion, DAY) <= 30, b.nid, NULL)) AS sin_producto
   FROM base2 b
   JOIN dims x USING (nid)
   GROUP BY d, dim, dim_val
@@ -149,6 +145,6 @@ WITH leads AS (
 SELECT 'count' AS kind, 'A' AS lente, d, dim, dim_val, metrica, n
 FROM lente_a
 UNPIVOT (n FOR metrica IN (
-  creados, asig_30d, asig_ever, gabi_30d, directo_30d, prod1_mm, prod1_inmo, prod1_legacy
+  creados, asig_30d, asig_ever, gabi_30d, directo_30d, prod1_mm, prod1_inmo, sin_producto
 ))
 WHERE n > 0
