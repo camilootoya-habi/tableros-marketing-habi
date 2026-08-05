@@ -584,14 +584,14 @@
     // ── Conclusiones: reconciliación con el WBR mart (lente REC) ──────────
     const CUADRANTES = [
       { key: 'q_asig_en_mart',    label: 'Asignado y en el mart',              desacuerdo: false },
-      { key: 'q_asig_no_mart',    label: 'De fuente de marketing, fuera del mart', desacuerdo: true },
+      { key: 'q_asig_no_mart',    label: 'Asignado, fuera del mart (total)',   desacuerdo: true },
       { key: 'q_noasig_en_mart',  label: 'No asignado y en el mart',           desacuerdo: true },
       { key: 'q_noasig_no_mart',  label: 'No asignado y fuera del mart',       desacuerdo: false },
     ];
     const GAP_METRICAS = [
       { key: 'gap_ventanas',      label: 'Ventanas',                          color: '#818cf8' },
       { key: 'gap_no_marketing',  label: 'Fuentes no-marketing',              color: '#64748b' },
-      { key: 'gap_sin_explicar',  label: 'De fuente de marketing, fuera del mart', color: '#34d399' },
+      { key: 'gap_sin_explicar',  label: 'De fuente de marketing, fuera del mart', color: '#94a3b8' },
     ];
 
     let chartGapDataPending = null;
@@ -646,7 +646,7 @@
 
             <p><strong>Tamaño de cada brecha en la ventana completa (1.077.961 leads creados):</strong> de los 144.584 leads que el mart cuenta como asignados, el ever-asignado los tiene a todos (0 de desacuerdo en esa dirección — ver hipótesis abajo). En la otra dirección, 56.801 leads están asignados según ever-asignado pero el mart no los cuenta, y esa brecha se descompone en <strong>ventanas de tiempo: 5.137</strong>, <strong>fuentes que no son de marketing: 95</strong>, y <strong>de fuente de marketing pero fuera del mart: 51.569</strong>.</p>
 
-            <p><strong>En los últimos 6 meses</strong>, la brecha "de fuente de marketing, fuera del mart" se mantuvo estable mes a mes: mar-2026 <strong>2.704</strong>, abr-2026 <strong>1.817</strong>, may-2026 <strong>2.789</strong>, jun-2026 <strong>1.743</strong> (más 6 de ventanas y 6 de fuentes no-marketing ese mes), jul-2026 <strong>2.013</strong>, ago-2026 <strong>174</strong> (mes incompleto, 4 días). Las otras dos categorías son marginales en todos los meses: ventanas nunca superó 6 leads/mes y fuentes no-marketing nunca superó 6 leads/mes en el período reciente.</p>
+            <p><strong>En los últimos 6 meses</strong>, la brecha "de fuente de marketing, fuera del mart" se mantuvo estable mes a mes: mar-2026 <strong>2.704</strong> (más 6 de ventanas), abr-2026 <strong>1.817</strong> (más 1 de ventanas), may-2026 <strong>2.789</strong> (más 1 de ventanas), jun-2026 <strong>1.743</strong> (más 1 de ventanas y 6 de fuentes no-marketing ese mes), jul-2026 <strong>2.013</strong> (más 2 de ventanas), ago-2026 <strong>174</strong> (mes incompleto, 4 días, sin ventanas ni fuentes no-marketing). Las otras dos categorías son marginales en todos los meses: ventanas nunca superó 6 leads/mes y fuentes no-marketing nunca superó 6 leads/mes en el período reciente.</p>
 
             <div class="concl-refutada">
               <strong>Hipótesis original del spec, refutada.</strong> El spec anticipaba que el hallazgo principal serían leads que el WBR mart cuenta como asignados y que nuestras señales de asignación no ven. Medido: <strong>0</strong> leads en ese cuadrante, en toda la ventana y en cada uno de los últimos 6 meses. No existen. Esa hipótesis no se sostuvo con los datos.
