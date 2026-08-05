@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📢</text></svg>">
 <title>Asignación · MM vs INMO (CO)</title>
-<!-- ESTÁNDAR: las gráficas se hacen con Chart.js (no SVG a mano). Ver helper mkChart() abajo. -->
+<!-- ESTÁNDAR: las gráficas se hacen con Chart.js (no SVG a mano). Este tablero las construye directo con `new Chart(...)` (multi-serie), sin helper genérico. -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 <style>
   :root {
@@ -194,32 +194,14 @@
   }
 
   // ─────────────────────────────────────────────────────────────────────────
-  // ESTÁNDAR DE GRÁFICAS: Chart.js (no dibujar SVG a mano).
-  // Patrón: un <canvas> dentro de .panel > .ch, y renderízalo con mkChart().
-  //   <div class="charts-grid">
-  //     <div class="panel"><h3>Mi métrica</h3><div class="ch"><canvas id="miChart"></canvas></div></div>
-  //   </div>
-  //   mkChart('miChart', labels, valores, { type: 'bar', pct: false });
-  // Opciones: {type:'line'|'bar', pct:true (eje/tooltip en %), color:'#hex' (por defecto --accent)}.
+  // ESTÁNDAR DE GRÁFICAS: Chart.js (no dibujar SVG a mano). Este tablero tiene
+  // solo gráficas multi-serie, así que se construyen directo con `new Chart(...)`
+  // (ver drawChartA / drawChartGap más abajo) en vez de un helper genérico.
+  // Nota: Chart.js lee los colores al crear el gráfico. Si cambias de tema en vivo,
+  // vuelve a renderizar (destruye con _charts.forEach(c=>c.destroy()); _charts=[]; y recrea).
   // ─────────────────────────────────────────────────────────────────────────
   const cssv = n => getComputedStyle(document.body).getPropertyValue(n).trim();
   let _charts = [];
-  function mkChart(id, labels, data, o = {}) {
-    const c = document.getElementById(id); if (!c || !window.Chart) return;
-    const color = o.color || cssv('--accent'), grid = cssv('--border'), tick = cssv('--text-muted-2');
-    _charts.push(new Chart(c, {
-      type: o.type || 'line',
-      data: { labels, datasets: [{ data, borderColor: color, backgroundColor: color,
-        tension: .35, pointRadius: 0, borderWidth: 2, borderRadius: 3, spanGaps: true }] },
-      options: { responsive: true, maintainAspectRatio: false, interaction: { mode: 'index', intersect: false },
-        plugins: { legend: { display: false }, tooltip: { callbacks: { label: ctx => {
-          const y = ctx.parsed.y; return y == null ? '—' : (o.pct ? y.toFixed(1) + '%' : y.toLocaleString('es-CO')); } } } },
-        scales: { x: { ticks: { color: tick, maxTicksLimit: 8 }, grid: { display: false } },
-          y: { beginAtZero: !o.pct, ticks: { color: tick, callback: o.pct ? (v => v + '%') : undefined }, grid: { color: grid } } } }
-    }));
-  }
-  // Nota: Chart.js lee los colores al crear el gráfico. Si cambias de tema en vivo,
-  // vuelve a renderizar (destruye con _charts.forEach(c=>c.destroy()); _charts=[]; y recrea).
 
   (async () => {
     const app = document.getElementById('app');
@@ -459,7 +441,7 @@
     const RUTAS_BC = {
       B: {
         titulo: 'Lente B — Rutas de llegada a INMO',
-        subt: 'Ancla: fecha de llegada a INMO. Este período NO es el mismo grupo de leads que la lente A.',
+        subt: 'Ancla: fecha de llegada a INMO. Este período NO es el mismo grupo de leads que la lente A. Además, la cohorte parte de leads creados en los últimos 760 días — inventario reactivado más antiguo (hasta 940 días vía pipeline) queda fuera de "Llegadas INMO".',
         colLlegadas: 'Llegadas INMO',
         cols: [
           { key: 'r_directo', label: 'Directo' },
@@ -473,7 +455,7 @@
       },
       C: {
         titulo: 'Lente C — Rutas de llegada a MM',
-        subt: 'Ancla: fecha de llegada a MM. Este período NO es el mismo grupo de leads que la lente A.',
+        subt: 'Ancla: fecha de llegada a MM. Este período NO es el mismo grupo de leads que la lente A. Además, la cohorte parte de leads creados en los últimos 760 días — inventario reactivado más antiguo (hasta 940 días vía pipeline) queda fuera de "Llegadas MM".',
         colLlegadas: 'Llegadas MM',
         cols: [
           { key: 'r_directo', label: 'Directo' },
@@ -553,18 +535,21 @@
         const tds = saltos.map(s => {
           const v = m.get(s.key);
           if (!v || v.mediana == null) return `<td class="na">—</td>`;
-          return `<td class="metric-cell">${v.mediana}d (${v.p90 ?? '—'}d)</td>`;
+          const nStr = v.n_casos != null ? ` <span class="pct">n=${v.n_casos.toLocaleString('es-CO')}</span>` : '';
+          return `<td class="metric-cell">${v.mediana}d (${v.p90 ?? '—'}d)${nStr}</td>`;
         }).join('');
-        return `<tr><td>${p}</td>${tds}</tr>`;
+        // p ya viene truncado por BigQuery a su período; solo se re-formatea la etiqueta
+        // (misma función `bucket` que usan las demás tablas), NO se re-bucketea el dato.
+        return `<tr><td>${bucket(p, granActual)}</td>${tds}</tr>`;
       }).join('');
 
       return `
         <div class="panel" style="grid-column: 1 / -1;">
-          <h3>Tiempo por salto — mediana (p90) en días — nunca promedio</h3>
+          <h3>Tiempo por salto — mediana (p90) en días, n=casos — nunca promedio</h3>
           <div class="table-container">
             <table class="tbl-lente">${thead}<tbody>${tbody}</tbody></table>
           </div>
-          <div class="nota">De los leads que llegaron en cada período, mediana/p90 de días desde la punta anterior del salto (que puede ser muy anterior al período). No sumar esto como "tiempo del mes"; y este panel NO reacciona al filtro de fuente/área/equipo (las filas de tiempo no tienen esas dimensiones).</div>
+          <div class="nota">De los leads que llegaron en cada período, mediana/p90 de días desde la punta anterior del salto (que puede ser muy anterior al período), y n=número de casos detrás de esa mediana/p90. No sumar esto como "tiempo del mes"; y este panel NO reacciona al filtro de fuente/área/equipo (las filas de tiempo no tienen esas dimensiones).</div>
         </div>`;
     }
 
@@ -597,8 +582,16 @@
     let chartGapDataPending = null;
 
     function renderConclusiones() {
-      const map = aggregaCached('REC');
+      // La reconciliación con el WBR mart solo existe agregada a dim='total' en el SQL
+      // (ver query.sql ~L267): SIEMPRE se lee sobre el total, sin importar el filtro activo,
+      // para no caer en ceros cuando hay un chip de fuente/área/equipo seleccionado.
+      const recKey = `REC|${granActual}|total|total`;
+      if (!aggCache.has(recKey)) {
+        aggCache.set(recKey, agrega(rows, { lente: 'REC', gran: granActual, dim: 'total', dimVal: 'total' }));
+      }
+      const map = aggCache.get(recKey);
       const periodos = ultimosPeriodos(rows.filter(r => r.kind === 'count' && r.lente === 'REC'), granActual, 20);
+      const filtroActivo = !(filtro.dim === 'total' && filtro.dimVal === 'total');
 
       const filas = periodos.map(p => {
         const m = map.get(p) || new Map();
@@ -624,6 +617,48 @@
         series: GAP_METRICAS.map((g, i) => ({ label: g.label, color: g.color, data: filas.map(f => f.gap[i]) })),
       };
 
+      // ── Cifras de las Conclusiones: derivadas de la misma agregación REC (dim=total),
+      // pero SIEMPRE en granularidad mensual (el texto habla de "meses"), sin importar
+      // el selector de granularidad de las tablas. Fuente única de verdad: data.json.
+      const fmt = n => n.toLocaleString('es-CO');
+      const recMesKey = 'REC|mes|total|total';
+      if (!aggCache.has(recMesKey)) {
+        aggCache.set(recMesKey, agrega(rows, { lente: 'REC', gran: 'mes', dim: 'total', dimVal: 'total' }));
+      }
+      const mapMes = aggCache.get(recMesKey);
+      const mesesTodos = [...mapMes.keys()].sort();
+      const sumaTotal = key => mesesTodos.reduce((acc, p) => acc + Number((mapMes.get(p) || new Map()).get(key) || 0), 0);
+
+      const totCreados = CUADRANTES.reduce((acc, c) => acc + sumaTotal(c.key), 0);
+      const totAsigEnMart = sumaTotal('q_asig_en_mart');
+      const totNoasigEnMart = sumaTotal('q_noasig_en_mart');
+      const totAsigNoMart = sumaTotal('q_asig_no_mart');
+      const totGapVentanas = sumaTotal('gap_ventanas');
+      const totGapNoMkt = sumaTotal('gap_no_marketing');
+      const totGapSinExplicar = sumaTotal('gap_sin_explicar');
+
+      const ultimos6Meses = mesesTodos.slice(-6);
+      const nombreMes = p => {
+        const [y, m] = p.split('-');
+        const nombres = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+        return `${nombres[Number(m) - 1]}-${y}`;
+      };
+      const detalleMeses = ultimos6Meses.map(p => {
+        const m = mapMes.get(p) || new Map();
+        const gapSinExplicar = Number(m.get('gap_sin_explicar') || 0);
+        const gapVentanas = Number(m.get('gap_ventanas') || 0);
+        const gapNoMkt = Number(m.get('gap_no_marketing') || 0);
+        const extras = [];
+        if (gapVentanas > 0) extras.push(`${fmt(gapVentanas)} de ventanas`);
+        if (gapNoMkt > 0) extras.push(`${fmt(gapNoMkt)} de fuentes no-marketing`);
+        const extraStr = extras.length ? ` (más ${extras.join(' y ')})` : '';
+        const incompleto = esInmaduro(p, 'mes', 30) ? ' (mes incompleto)' : '';
+        return `${nombreMes(p)} <strong>${fmt(gapSinExplicar)}</strong>${extraStr}${incompleto}`;
+      }).join(', ');
+      const maxGapVentanasReciente = Math.max(...ultimos6Meses.map(p => Number((mapMes.get(p) || new Map()).get('gap_ventanas') || 0)), 0);
+      const maxGapNoMktReciente = Math.max(...ultimos6Meses.map(p => Number((mapMes.get(p) || new Map()).get('gap_no_marketing') || 0)), 0);
+      const maxNoasigEnMartReciente = Math.max(...ultimos6Meses.map(p => Number((mapMes.get(p) || new Map()).get('q_noasig_en_mart') || 0)), 0);
+
       return `
         <div class="lente-block">
           <h2>Conclusiones — reconciliación con el WBR mart</h2>
@@ -632,11 +667,11 @@
           <div class="table-container">
             <table class="tbl-lente">${thead}<tbody>${tbody}</tbody></table>
           </div>
-          <div class="nota">En ámbar, los dos cuadrantes de desacuerdo entre ever-asignado y el WBR mart.</div>
+          <div class="nota">En ámbar, los dos cuadrantes de desacuerdo entre ever-asignado y el WBR mart. La reconciliación con el WBR mart se calcula sobre el total; no reacciona al filtro de fuente/área/equipo.${filtroActivo ? ` <strong>Filtro activo (${filtro.dimVal}) ignorado en este bloque.</strong>` : ''}</div>
 
           <div class="charts-grid">
             <div class="panel" style="grid-column: 1 / -1;">
-              <h3>Descomposición del cuadrante "de fuente de marketing, fuera del mart" — por período</h3>
+              <h3>Descomposición del cuadrante "Asignado, fuera del mart" — por período</h3>
               <div class="ch"><canvas id="chartGap"></canvas></div>
             </div>
           </div>
@@ -644,21 +679,21 @@
           <div class="concl-text">
             <p><strong>Por qué no coinciden, por construcción.</strong> El WBR mart es un indicador de marketing: cuenta leads de fuente de marketing que además pasan 16 filtros de calificación. El ever-asignado es más amplio: cuenta todo lead que en algún momento fue asignado, sin importar la fuente ni si califica para el mart. Que los dos números no coincidan es esperado; lo que importa es separar la brecha que ese diseño explica de la que no.</p>
 
-            <p><strong>Tamaño de cada brecha en la ventana completa (1.077.961 leads creados):</strong> de los 144.584 leads que el mart cuenta como asignados, el ever-asignado los tiene a todos (0 de desacuerdo en esa dirección — ver hipótesis abajo). En la otra dirección, 56.801 leads están asignados según ever-asignado pero el mart no los cuenta, y esa brecha se descompone en <strong>ventanas de tiempo: 5.137</strong>, <strong>fuentes que no son de marketing: 95</strong>, y <strong>de fuente de marketing pero fuera del mart: 51.569</strong>.</p>
+            <p><strong>Tamaño de cada brecha en la ventana completa (${fmt(totCreados)} leads creados):</strong> de los ${fmt(totAsigEnMart)} leads que el mart cuenta como asignados, el ever-asignado los tiene a todos (${fmt(totNoasigEnMart)} de desacuerdo en esa dirección — ver hipótesis abajo). En la otra dirección, ${fmt(totAsigNoMart)} leads están asignados según ever-asignado pero el mart no los cuenta, y esa brecha se descompone en <strong>ventanas de tiempo: ${fmt(totGapVentanas)}</strong>, <strong>fuentes que no son de marketing: ${fmt(totGapNoMkt)}</strong>, y <strong>de fuente de marketing pero fuera del mart: ${fmt(totGapSinExplicar)}</strong>.</p>
 
-            <p><strong>En los últimos 6 meses</strong>, la brecha "de fuente de marketing, fuera del mart" se mantuvo estable mes a mes: mar-2026 <strong>2.704</strong> (más 6 de ventanas), abr-2026 <strong>1.817</strong> (más 1 de ventanas), may-2026 <strong>2.789</strong> (más 1 de ventanas), jun-2026 <strong>1.743</strong> (más 1 de ventanas y 6 de fuentes no-marketing ese mes), jul-2026 <strong>2.013</strong> (más 2 de ventanas), ago-2026 <strong>174</strong> (mes incompleto, 4 días, sin ventanas ni fuentes no-marketing). Las otras dos categorías son marginales en todos los meses: ventanas nunca superó 6 leads/mes y fuentes no-marketing nunca superó 6 leads/mes en el período reciente.</p>
+            <p><strong>En los últimos 6 meses</strong>, la brecha "de fuente de marketing, fuera del mart" se mantuvo estable mes a mes: ${detalleMeses}. Las otras dos categorías son marginales en todos los meses: ventanas nunca superó ${fmt(maxGapVentanasReciente)} leads/mes y fuentes no-marketing nunca superó ${fmt(maxGapNoMktReciente)} leads/mes en el período reciente.</p>
 
             <div class="concl-refutada">
-              <strong>Hipótesis original del spec, refutada.</strong> El spec anticipaba que el hallazgo principal serían leads que el WBR mart cuenta como asignados y que nuestras señales de asignación no ven. Medido: <strong>0</strong> leads en ese cuadrante, en toda la ventana y en cada uno de los últimos 6 meses. No existen. Esa hipótesis no se sostuvo con los datos.
+              <strong>Hipótesis original del spec, refutada.</strong> El spec anticipaba que el hallazgo principal serían leads que el WBR mart cuenta como asignados y que nuestras señales de asignación no ven. Medido: <strong>${fmt(maxNoasigEnMartReciente)}</strong> leads en ese cuadrante, en toda la ventana y en cada uno de los últimos 6 meses. No existen. Esa hipótesis no se sostuvo con los datos.
             </div>
 
             <div class="concl-callout">
-              <strong>Límite de esta v1.</strong> El balde de <strong>51.569</strong> ("de fuente de marketing, fuera del mart") no es un hallazgo de leads perdidos. El WBR mart, además de filtrar por fuente, aplica 16 filtros de calificación que esta v1 no descompone — la mayor parte de esos 51.569 está esperablemente explicada por esos filtros, no por un problema de conteo. Este tablero no distingue cuánto de ese número es filtro legítimo y cuánto no; publicarlo como brecha accionable sería un error.
+              <strong>Límite de esta v1.</strong> El balde de <strong>${fmt(totGapSinExplicar)}</strong> ("de fuente de marketing, fuera del mart") no es un hallazgo de leads perdidos. El WBR mart, además de filtrar por fuente, aplica 16 filtros de calificación que esta v1 no descompone — la mayor parte de esos ${fmt(totGapSinExplicar)} está esperablemente explicada por esos filtros, no por un problema de conteo. Este tablero no distingue cuánto de ese número es filtro legítimo y cuánto no; publicarlo como brecha accionable sería un error.
             </div>
 
             <p><strong>Propuesta de mejora:</strong></p>
             <ul>
-              <li>Descomponer el balde de 51.569 filtro por filtro cruzando con el tablero <strong>asignados-creacion</strong> de este mismo repo, que ya tiene esa lógica construida (5 filtros) — no hace falta re-implementarla aquí.</li>
+              <li>Descomponer el balde de ${fmt(totGapSinExplicar)} filtro por filtro cruzando con el tablero <strong>asignados-creacion</strong> de este mismo repo, que ya tiene esa lógica construida (5 filtros) — no hace falta re-implementarla aquí.</li>
               <li>Instrumentar <code>product_qualified</code> en el historial de HubSpot: hoy es un estado sin fecha, así que la ruta GABI → producto no se puede fechar con precisión.</li>
               <li>Evaluar si <strong>asignacion-co</strong> y <strong>asignados-creacion</strong> deberían fusionarse en un solo tablero: uno reconcilia el conteo con el mart y el otro explica la mecánica filtro por filtro — hoy hay que mirar los dos para tener el cuadro completo.</li>
             </ul>
