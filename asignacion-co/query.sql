@@ -147,9 +147,77 @@ WITH leads AS (
   JOIN dims x USING (nid)
   GROUP BY d, dim, dim_val
 )
+-- Rutas de llegada a INMO. El CASE es EXCLUYENTE y el orden importa:
+--   1) regreso   : ya había estado en INMO, pasó por MM y volvió
+--   2) gabi_mm   : GABI lo tomó y su calificación actual es de MM (ibuyer*), y pasó por MM antes de INMO
+--   3) cruce     : pasó por MM antes de INMO (resto, incluye GABI con real_estate/transient/sin calificar)
+--   4) gabi_prod : GABI lo tomó y NO pasó por MM antes
+--   5) directo   : ni GABI ni MM previo
+, rutas_inmo AS (
+  SELECT b.*, CASE
+    WHEN b.d_inmo IS NULL THEN NULL
+    WHEN b.prod_1 = 'INMO' AND b.ts_mm IS NOT NULL AND b.ts_mm > b.ts_inmo
+         AND b.inmo_despues_de_mm                                   THEN 'r_regreso'
+    WHEN b.ts_mm IS NOT NULL AND b.ts_mm < b.ts_inmo
+         AND COALESCE(b.gabi_flag, FALSE)
+         AND b.gabi_producto IN ('ibuyer', 'ibuyer_and_real_estate') THEN 'r_gabi_mm_cruce'
+    WHEN b.ts_mm IS NOT NULL AND b.ts_mm < b.ts_inmo                    THEN 'r_cruce'
+    WHEN COALESCE(b.gabi_flag, FALSE)                                THEN 'r_gabi_prod'
+    ELSE 'r_directo' END AS ruta
+  FROM base2 b
+)
+-- Rutas de llegada a MM: espejo exacto, cambiando INMO <-> MM y la calificación de GABI
+, rutas_mm AS (
+  SELECT b.*, CASE
+    WHEN b.d_mm IS NULL THEN NULL
+    WHEN b.prod_1 = 'MM' AND b.mm_despues_de_inmo                    THEN 'r_regreso'
+    WHEN b.ts_inmo IS NOT NULL AND b.ts_inmo < b.ts_mm
+         AND COALESCE(b.gabi_flag, FALSE)
+         AND b.gabi_producto IN ('real_estate', 'ibuyer_and_real_estate') THEN 'r_gabi_mm_cruce'
+    WHEN b.ts_inmo IS NOT NULL AND b.ts_inmo < b.ts_mm                  THEN 'r_cruce'
+    WHEN COALESCE(b.gabi_flag, FALSE)                                THEN 'r_gabi_prod'
+    ELSE 'r_directo' END AS ruta
+  FROM base2 b
+)
+, rutas_inmo_agg AS (
+  SELECT d_inmo AS d, x.dim, x.dim_val,
+         COUNT(DISTINCT r.nid) AS llegadas,
+         COUNT(DISTINCT IF(ruta='r_directo',       r.nid, NULL)) AS r_directo,
+         COUNT(DISTINCT IF(ruta='r_gabi_prod',     r.nid, NULL)) AS r_gabi_prod,
+         COUNT(DISTINCT IF(ruta='r_gabi_mm_cruce', r.nid, NULL)) AS r_gabi_mm_cruce,
+         COUNT(DISTINCT IF(ruta='r_cruce',         r.nid, NULL)) AS r_cruce,
+         COUNT(DISTINCT IF(ruta='r_regreso',       r.nid, NULL)) AS r_regreso
+  FROM rutas_inmo r
+  JOIN dims x USING (nid)
+  WHERE r.d_inmo IS NOT NULL
+  GROUP BY d, x.dim, x.dim_val
+)
+, rutas_mm_agg AS (
+  SELECT d_mm AS d, x.dim, x.dim_val,
+         COUNT(DISTINCT r.nid) AS llegadas,
+         COUNT(DISTINCT IF(ruta='r_directo',       r.nid, NULL)) AS r_directo,
+         COUNT(DISTINCT IF(ruta='r_gabi_prod',     r.nid, NULL)) AS r_gabi_prod,
+         COUNT(DISTINCT IF(ruta='r_gabi_mm_cruce', r.nid, NULL)) AS r_gabi_mm_cruce,
+         COUNT(DISTINCT IF(ruta='r_cruce',         r.nid, NULL)) AS r_cruce,
+         COUNT(DISTINCT IF(ruta='r_regreso',       r.nid, NULL)) AS r_regreso
+  FROM rutas_mm r
+  JOIN dims x USING (nid)
+  WHERE r.d_mm IS NOT NULL
+  GROUP BY d, x.dim, x.dim_val
+)
 SELECT 'count' AS kind, 'A' AS lente, d, dim, dim_val, metrica, n
 FROM lente_a
 UNPIVOT (n FOR metrica IN (
   creados, asig_30d, asig_ever, gabi_30d, directo_30d, prod1_mm, prod1_inmo, sin_producto
 ))
+WHERE n > 0
+UNION ALL
+SELECT 'count', 'B', d, dim, dim_val, metrica, n
+FROM rutas_inmo_agg
+UNPIVOT (n FOR metrica IN (llegadas, r_directo, r_gabi_prod, r_gabi_mm_cruce, r_cruce, r_regreso))
+WHERE n > 0
+UNION ALL
+SELECT 'count', 'C', d, dim, dim_val, metrica, n
+FROM rutas_mm_agg
+UNPIVOT (n FOR metrica IN (llegadas, r_directo, r_gabi_prod, r_gabi_mm_cruce, r_cruce, r_regreso))
 WHERE n > 0
