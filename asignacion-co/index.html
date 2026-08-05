@@ -49,6 +49,36 @@
   .panel { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 14px 15px 12px; display: flex; flex-direction: column; }
   .panel h3 { font-size: 12.5px; color: var(--text-title); font-weight: 700; margin-bottom: 10px; }
   .ch { position: relative; height: 190px; }
+
+  /* Selector estándar del repo: chip-groups (ver feedback_selector_estandar) */
+  .selectors {
+    display: flex; gap: 24px; flex-wrap: wrap;
+    background: var(--card); border: 1px solid var(--border); border-radius: 12px;
+    padding: 16px; margin-bottom: 20px;
+  }
+  .selector-group { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .selector-group label {
+    font-size: 11px; color: var(--text-muted-2); text-transform: uppercase;
+    letter-spacing: 0.5px; font-weight: 600; margin-right: 4px;
+  }
+  .chip {
+    background: var(--bg); border: 1px solid var(--border); color: var(--text);
+    padding: 6px 12px; border-radius: 999px; cursor: pointer; font-size: 13px;
+    transition: all 0.1s;
+  }
+  .chip:hover { border-color: var(--accent); }
+  .chip.active { background: var(--accent); color: var(--accent-on); border-color: var(--accent); font-weight: 600; }
+
+  .lente-block { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 16px 18px; margin-bottom: 20px; }
+  .lente-block h2 { font-size: 16px; color: var(--text-title); margin-bottom: 4px; }
+  .lente-block .subt { font-size: 12.5px; color: var(--text-muted-2); margin-bottom: 14px; }
+  .lente-block .nota { font-size: 11.5px; color: var(--text-muted-3); margin-top: 8px; }
+
+  table.tbl-lente td.inmadura-cell, tr.inmadura { opacity: .55; }
+  .lbl-inmadura { font-size: 10px; color: var(--text-muted-3); border: 1px solid var(--border); border-radius: 4px; padding: 1px 5px; margin-left: 6px; }
+  td.na { color: var(--text-muted-3); text-align: center; }
+  td.metric-cell { text-align: right; }
+  td.metric-cell .pct { font-size: 11px; opacity: .75; margin-left: 4px; }
 </style>
 <script>
   function toggleTheme() {
@@ -73,6 +103,84 @@
   if (localStorage.getItem('tablero-theme') === 'light') {
     document.body.classList.add('light');
     document.getElementById('themeToggle').textContent = '☀️';
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // Helpers de bucketing y agregación (contrato consumido por las Tasks 6-7).
+  // ─────────────────────────────────────────────────────────────────────────
+  const D = s => new Date(s + 'T00:00:00Z');
+
+  function isoWeekKey(dt) {
+    const t = new Date(Date.UTC(dt.getUTCFullYear(), dt.getUTCMonth(), dt.getUTCDate()));
+    const dow = (t.getUTCDay() + 6) % 7;             // lunes = 0
+    t.setUTCDate(t.getUTCDate() - dow + 3);          // jueves de esa semana ISO
+    const y = t.getUTCFullYear();
+    const wk = 1 + Math.round((t - Date.UTC(y, 0, 4)) / 604800000);
+    return `${y}-W${String(wk).padStart(2, '0')}`;
+  }
+
+  // Ciclo comercial: semanas que arrancan el miércoles
+  function cicloKey(dt) {
+    const t = new Date(dt.getTime());
+    const shift = (t.getUTCDay() - 3 + 7) % 7;       // miércoles = 3
+    t.setUTCDate(t.getUTCDate() - shift);
+    return `${t.toISOString().slice(0, 10)}`;
+  }
+
+  function bucket(s, gran) {
+    const dt = D(s);
+    if (gran === 'mes')   return s.slice(0, 7);
+    if (gran === 'ciclo') return cicloKey(dt);
+    return isoWeekKey(dt);
+  }
+
+  function ultimosPeriodos(rows, gran, n = 20) {
+    const set = new Set(rows.map(r => bucket(r.d, gran)));
+    return [...set].sort().slice(-n);
+  }
+
+  function agrega(rows, { lente, gran, dim, dimVal }) {
+    const out = new Map();
+    for (const r of rows) {
+      if (r.kind !== 'count' || r.lente !== lente) continue;
+      if (r.dim !== dim || r.dim_val !== dimVal) continue;
+      const p = bucket(r.d, gran);
+      if (!out.has(p)) out.set(p, new Map());
+      const m = out.get(p);
+      m.set(r.metrica, (m.get(r.metrica) || 0) + Number(r.n));   // bq devuelve STRING
+    }
+    return out;
+  }
+
+  // Último día del período, según la granularidad
+  function finDePeriodo(periodo, gran) {
+    if (gran === 'mes') {
+      const [y, m] = periodo.split('-').map(Number);
+      return new Date(Date.UTC(y, m, 0));               // día 0 del mes siguiente = último del mes
+    }
+    if (gran === 'ciclo') {
+      const t = D(periodo);                             // miércoles de inicio
+      t.setUTCDate(t.getUTCDate() + 6);                 // martes de cierre
+      return t;
+    }
+    const [y, w] = periodo.split('-W').map(Number);     // semana ISO -> domingo
+    const jue = new Date(Date.UTC(y, 0, 4));
+    const lun = new Date(jue);
+    lun.setUTCDate(jue.getUTCDate() - ((jue.getUTCDay() + 6) % 7) + (w - 1) * 7);
+    lun.setUTCDate(lun.getUTCDate() + 6);
+    return lun;
+  }
+
+  // Un período está inmaduro si su último día aún no cumple `dias` desde hoy
+  function esInmaduro(periodo, gran, dias) {
+    const fin = finDePeriodo(periodo, gran);
+    return (Date.now() - fin.getTime()) / 86400000 < dias;
+  }
+
+  function valoresPorDim(rows) {
+    const out = { fuente: new Set(), area: new Set(), equipo: new Set() };
+    for (const r of rows) if (r.kind === 'count' && out[r.dim]) out[r.dim].add(r.dim_val);
+    return Object.fromEntries(Object.entries(out).map(([k, v]) => [k, [...v].sort()]));
   }
 
   // ─────────────────────────────────────────────────────────────────────────
@@ -133,17 +241,219 @@
       return;
     }
 
-    // `data` es el array que devuelve tu query.sql (bq query --format=json).
-    // Reemplaza esto por tu render. Demo: tabla con las primeras filas.
-    const cols = Object.keys(data[0]);
-    const rows = data.slice(0, 50); // limitar a 50 filas en el demo
+    const rows = data; // 120k filas, ya cargadas una sola vez en memoria
 
-    const thead = `<thead><tr>${cols.map(c => `<th>${c}</th>`).join('')}</tr></thead>`;
-    const tbody = `<tbody>${rows.map(r =>
-      `<tr>${cols.map(c => `<td>${r[c] ?? ''}</td>`).join('')}</tr>`
-    ).join('')}</tbody>`;
+    // ── Fechas de cobertura de los pipelines MM / INMO en HubSpot ──────────
+    const MM_PIPELINE_DESDE = new Date('2025-09-18T00:00:00Z');
+    const INMO_PIPELINE_DESDE = new Date('2025-10-02T00:00:00Z');
 
-    app.innerHTML = `<div class="table-container"><table>${thead}${tbody}</table></div>`;
+    // ── Estado global ────────────────────────────────────────────────────
+    let granActual = 'mes';
+    let filtro = { dim: 'total', dimVal: 'total' };
+    const aggCache = new Map(); // cachea agrega() por combinación lente|gran|dim|dimVal
+
+    function aggregaCached(lente) {
+      const key = `${lente}|${granActual}|${filtro.dim}|${filtro.dimVal}`;
+      if (!aggCache.has(key)) {
+        aggCache.set(key, agrega(rows, { lente, gran: granActual, dim: filtro.dim, dimVal: filtro.dimVal }));
+      }
+      return aggCache.get(key);
+    }
+
+    const dimLabels = { fuente: 'Fuente', area: 'Área metropolitana', equipo: 'Equipo' };
+    const valores = valoresPorDim(rows);
+
+    // ── Selectores globales ─────────────────────────────────────────────
+    function renderSelectors() {
+      const granChips = ['semana', 'mes', 'ciclo'].map(g => {
+        const label = g === 'semana' ? 'Semana' : g === 'mes' ? 'Mes' : 'Ciclo mié-mar';
+        return `<button class="chip ${granActual === g ? 'active' : ''}" data-gran="${g}">${label}</button>`;
+      }).join('');
+
+      const filtroGroups = Object.entries(valores).map(([dim, vals]) => {
+        const chips = vals.map(v =>
+          `<button class="chip ${filtro.dim === dim && filtro.dimVal === v ? 'active' : ''}" data-dim="${dim}" data-dimval="${v}">${v}</button>`
+        ).join('');
+        return `<div class="selector-group"><label>${dimLabels[dim]}</label>${chips}</div>`;
+      }).join('');
+
+      return `
+        <div class="selectors">
+          <div class="selector-group"><label>Granularidad</label>${granChips}</div>
+          <div class="selector-group"><label>Filtro</label>
+            <button class="chip ${filtro.dim === 'total' ? 'active' : ''}" data-dim="total" data-dimval="total">Todos</button>
+          </div>
+          ${filtroGroups}
+        </div>`;
+    }
+
+    function wireSelectors() {
+      document.querySelectorAll('.chip[data-gran]').forEach(el => {
+        el.addEventListener('click', () => {
+          granActual = el.dataset.gran;
+          render();
+        });
+      });
+      document.querySelectorAll('.chip[data-dim]').forEach(el => {
+        el.addEventListener('click', () => {
+          filtro = { dim: el.dataset.dim, dimVal: el.dataset.dimval };
+          render();
+        });
+      });
+    }
+
+    // ── Lente A: tabla + gráfica ─────────────────────────────────────────
+    const COLS_A = [
+      { key: 'creados', label: 'Creados', den: null },
+      { key: 'asig_30d', label: 'Asignado ≤30d', den: 'creados' },
+      { key: 'asig_ever', label: 'Ever asignado (ref.)', den: 'creados' },
+      { key: 'gabi_30d', label: 'GABI', den: 'asig_30d' },
+      { key: 'directo_30d', label: 'Directo a pipeline', den: 'asig_30d' },
+      { key: 'prod1_mm', label: '1er producto MM', den: 'asig_30d', producto: true },
+      { key: 'prod1_inmo', label: 'INMO', den: 'asig_30d', producto: true },
+      { key: 'sin_producto', label: 'Sin producto', den: 'asig_30d', producto: true },
+    ];
+
+    function heatColor(pct, min, max) {
+      if (pct == null || !isFinite(pct) || max === min) return 'transparent';
+      const t = Math.max(0, Math.min(1, (pct - min) / (max - min)));
+      // rojo (t=0) -> verde (t=1)
+      const r = Math.round(220 - 120 * t);
+      const g = Math.round(90 + 130 * t);
+      const b = 90;
+      return `rgba(${r},${g},${b},0.28)`;
+    }
+
+    function renderLenteA() {
+      const map = aggregaCached('A');
+      const periodos = ultimosPeriodos(rows.filter(r => r.kind === 'count' && r.lente === 'A'), granActual, 20);
+
+      // valores por columna (para heatmap min/max de %)
+      const pctPorCol = {};
+      COLS_A.forEach(c => { pctPorCol[c.key] = []; });
+
+      const filas = periodos.map(p => {
+        const m = map.get(p) || new Map();
+        const creados = Number(m.get('creados') || 0);
+        const asig30 = Number(m.get('asig_30d') || 0);
+        const cobertura = finDePeriodo(p, granActual);
+        const inmaduro = esInmaduro(p, granActual, 30);
+        const celdas = COLS_A.map(c => {
+          const sinCobertura = c.producto && (
+            (c.key === 'prod1_mm' && cobertura < MM_PIPELINE_DESDE) ||
+            (c.key === 'prod1_inmo' && cobertura < INMO_PIPELINE_DESDE) ||
+            (c.key === 'sin_producto' && cobertura < MM_PIPELINE_DESDE)
+          );
+          if (sinCobertura) {
+            pctPorCol[c.key].push(null);
+            return { na: true };
+          }
+          const n = Number(m.get(c.key) || 0);
+          const den = c.den ? Number(m.get(c.den) || 0) : null;
+          const pct = den ? (n / den * 100) : null;
+          pctPorCol[c.key].push(pct);
+          return { n, pct };
+        });
+        return { p, creados, asig30, inmaduro, celdas };
+      });
+
+      const minmax = {};
+      COLS_A.forEach(c => {
+        const vals = pctPorCol[c.key].filter(v => v != null && isFinite(v));
+        minmax[c.key] = vals.length ? { min: Math.min(...vals), max: Math.max(...vals) } : { min: 0, max: 0 };
+      });
+
+      const thead = `<thead><tr><th>Cosecha</th>${COLS_A.map(c => `<th>${c.label}</th>`).join('')}</tr></thead>`;
+      const tbody = filas.map(f => {
+        const tds = f.celdas.map((cel, i) => {
+          const c = COLS_A[i];
+          if (cel.na) return `<td class="na" title="los pipelines MM/INMO no existían aún">—</td>`;
+          const bg = c.den ? heatColor(cel.pct, minmax[c.key].min, minmax[c.key].max) : 'transparent';
+          const pctStr = cel.pct != null ? ` <span class="pct">(${cel.pct.toFixed(1)}%)</span>` : '';
+          return `<td class="metric-cell" style="background:${bg}">${cel.n.toLocaleString('es-CO')}${pctStr}</td>`;
+        }).join('');
+        const label = f.inmaduro ? `${f.p}<span class="lbl-inmadura">inmadura</span>` : f.p;
+        return `<tr class="${f.inmaduro ? 'inmadura' : ''}"><td>${label}</td>${tds}</tr>`;
+      }).join('');
+
+      const chartLabels = filas.map(f => f.p);
+      const pctAsig = filas.map(f => f.creados ? (f.asig30 / f.creados * 100) : null);
+      const pctMM = filas.map(f => {
+        const cel = f.celdas[COLS_A.findIndex(c => c.key === 'prod1_mm')];
+        return cel && !cel.na ? cel.pct : null;
+      });
+      const pctInmo = filas.map(f => {
+        const cel = f.celdas[COLS_A.findIndex(c => c.key === 'prod1_inmo')];
+        return cel && !cel.na ? cel.pct : null;
+      });
+
+      chartADataPending = { chartLabels, pctAsig, pctMM, pctInmo };
+
+      return `
+        <div class="lente-block">
+          <h2>Lente A — Cosechas por fecha de creación</h2>
+          <div class="subt">Ancla: fecha de creación del lead. Denominador de los %: asignados ≤30d.</div>
+          <div class="table-container">
+            <table class="tbl-lente">${thead}<tbody>${tbody}</tbody></table>
+          </div>
+          <div class="nota">Las columnas de producto arrancan en sep-2025, cuando se crearon los pipelines MM e INMO en HubSpot.</div>
+          <div class="charts-grid">
+            <div class="panel">
+              <h3>% asig_30d/creados · % prod1_mm/asig_30d · % prod1_inmo/asig_30d</h3>
+              <div class="ch"><canvas id="chartLenteA"></canvas></div>
+            </div>
+          </div>
+        </div>`;
+    }
+
+    let chartADataPending = null;
+
+    function drawChartA() {
+      const d = chartADataPending;
+      if (!d) return;
+      const c = document.getElementById('chartLenteA');
+      if (!c || !window.Chart) return;
+      const color1 = cssv('--accent'), grid = cssv('--border'), tick = cssv('--text-muted-2');
+      const corte = '2026-04';
+      // segmento antes/después de abril 2026: borderDash distinto antes del corte
+      const dashBefore = ctx => {
+        const label = d.chartLabels[ctx.p0DataIndex];
+        return label && label < corte ? [6, 4] : undefined;
+      };
+      _charts.push(new Chart(c, {
+        type: 'line',
+        data: {
+          labels: d.chartLabels,
+          datasets: [
+            { label: '% asig_30d/creados', data: d.pctAsig, borderColor: color1, backgroundColor: color1, tension: .35, pointRadius: 2, borderWidth: 2, spanGaps: true, segment: { borderDash: dashBefore } },
+            { label: '% prod1_mm/asig_30d', data: d.pctMM, borderColor: '#f59e0b', backgroundColor: '#f59e0b', tension: .35, pointRadius: 2, borderWidth: 2, spanGaps: true, segment: { borderDash: dashBefore } },
+            { label: '% prod1_inmo/asig_30d', data: d.pctInmo, borderColor: '#34d399', backgroundColor: '#34d399', tension: .35, pointRadius: 2, borderWidth: 2, spanGaps: true, segment: { borderDash: dashBefore } },
+          ],
+        },
+        options: {
+          responsive: true, maintainAspectRatio: false, interaction: { mode: 'index', intersect: false },
+          plugins: {
+            legend: { display: true, labels: { color: tick, font: { size: 10 } } },
+            tooltip: { callbacks: { label: ctx => `${ctx.dataset.label}: ${ctx.parsed.y == null ? '—' : ctx.parsed.y.toFixed(1) + '%'}` } },
+          },
+          scales: {
+            x: { ticks: { color: tick, maxTicksLimit: 8 }, grid: { display: false } },
+            y: { beginAtZero: true, ticks: { color: tick, callback: v => v + '%' }, grid: { color: grid } },
+          },
+        },
+      }));
+    }
+
+    // ── Render principal: redibuja selectores + lentes ───────────────────
+    function render() {
+      _charts.forEach(c => c.destroy());
+      _charts = [];
+      app.innerHTML = renderSelectors() + renderLenteA();
+      wireSelectors();
+      drawChartA();
+    }
+
+    render();
   })();
 </script>
 </body>
