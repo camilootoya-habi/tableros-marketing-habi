@@ -47,8 +47,13 @@
   - `d` = fecha del ancla (lente A: creación; B: llegada a INMO; C: llegada a MM; REC: creación)
   - `dim` ∈ `total` | `fuente` | `area` | `equipo`; `dim_val` = el valor (o `'total'`)
   - `metrica` = nombre de la métrica (ver cada tarea); `n` = conteo de nids
-- `kind='tiempo'` — pre-agregado: `{kind, gran, periodo, salto, mediana, p90, n}`
-  - `gran` ∈ `semana` | `mes` | `ciclo`; `salto` ∈ `creacion_gabi` | `gabi_mm` | `mm_inmo` | `inmo_mm`
+- `kind='tiempo'` — pre-agregado. ⚠️ **BigQuery nombra las columnas del `UNION ALL` según la PRIMERA rama**, así que las filas de tiempo comparten las 7 columnas de las filas de conteo. Para que ningún campo mienta sobre su contenido, se mapean así (una fila por medida, no una fila con tres medidas):
+  - `lente` = `'TIEMPO'` (identifica la familia)
+  - `d` = período (una fecha real: el inicio del período)
+  - `dim` = granularidad ∈ `semana` | `mes` | `ciclo`
+  - `dim_val` = salto ∈ `creacion_gabi` | `gabi_mm` | `mm_inmo` | `inmo_mm`
+  - `metrica` ∈ `mediana` | `p90` | `n_casos`; `n` = el valor
+  - **Prohibido** meter un número en un campo llamado `metrica` o un p90 en uno llamado `dim_val`.
 
 ---
 
