@@ -205,19 +205,76 @@ WITH leads AS (
   WHERE r.d_mm IS NOT NULL
   GROUP BY d, x.dim, x.dim_val
 )
-SELECT 'count' AS kind, 'A' AS lente, d, dim, dim_val, metrica, n
+SELECT 'count' AS kind, 'A' AS lente, CAST(d AS STRING) AS d, dim, dim_val, metrica, CAST(n AS STRING) AS n
 FROM lente_a
 UNPIVOT (n FOR metrica IN (
   creados, asig_30d, asig_ever, gabi_30d, directo_30d, prod1_mm, prod1_inmo, sin_producto
 ))
 WHERE n > 0
 UNION ALL
-SELECT 'count', 'B', d, dim, dim_val, metrica, n
+SELECT 'count', 'B', CAST(d AS STRING), dim, dim_val, metrica, CAST(n AS STRING)
 FROM rutas_inmo_agg
 UNPIVOT (n FOR metrica IN (llegadas, r_directo, r_gabi_prod, r_gabi_mm_cruce, r_cruce, r_regreso))
 WHERE n > 0
 UNION ALL
-SELECT 'count', 'C', d, dim, dim_val, metrica, n
+SELECT 'count', 'C', CAST(d AS STRING), dim, dim_val, metrica, CAST(n AS STRING)
 FROM rutas_mm_agg
 UNPIVOT (n FOR metrica IN (llegadas, r_directo, r_gabi_prod, r_gabi_mm_cruce, r_cruce, r_regreso))
+WHERE n > 0
+UNION ALL
+-- Tiempos por salto (mediana/p90 pre-agregados; NO re-agregables desde grano diario)
+SELECT 'tiempo' AS kind, gran AS lente, CAST(periodo AS STRING) AS d, salto AS dim,
+       CAST(mediana AS STRING) AS dim_val, CAST(p90 AS STRING) AS metrica, CAST(n AS STRING) AS n
+FROM (
+  SELECT gran, periodo, salto,
+         APPROX_QUANTILES(dias, 100)[OFFSET(50)] AS mediana,
+         APPROX_QUANTILES(dias, 100)[OFFSET(90)] AS p90,
+         COUNT(*) AS n
+  FROM (
+    SELECT gran,
+           CASE gran
+             WHEN 'semana' THEN DATE_TRUNC(s.d_ancla, ISOWEEK)
+             WHEN 'mes'    THEN DATE_TRUNC(s.d_ancla, MONTH)
+             ELSE               DATE_TRUNC(s.d_ancla, WEEK(WEDNESDAY))
+           END AS periodo,
+           s.salto, s.dias
+    FROM (
+      SELECT 'creacion_gabi' AS salto, d_gabi AS d_ancla, DATE_DIFF(d_gabi, d_creacion, DAY) AS dias
+        FROM base2 WHERE d_gabi IS NOT NULL
+      UNION ALL
+      SELECT 'gabi_mm',       d_mm,   DATE_DIFF(d_mm,   d_gabi, DAY)
+        FROM base2 WHERE d_gabi IS NOT NULL AND d_mm   IS NOT NULL AND d_mm   >= d_gabi
+      UNION ALL
+      SELECT 'mm_inmo',       d_inmo, DATE_DIFF(d_inmo, d_mm,   DAY)
+        FROM base2 WHERE d_mm   IS NOT NULL AND d_inmo IS NOT NULL AND d_inmo >  d_mm
+      UNION ALL
+      SELECT 'inmo_mm',       d_mm,   DATE_DIFF(d_mm,   d_inmo, DAY)
+        FROM base2 WHERE d_inmo IS NOT NULL AND d_mm   IS NOT NULL AND d_mm   >  d_inmo
+    ) s
+    CROSS JOIN UNNEST(['semana','mes','ciclo']) AS gran
+  )
+  GROUP BY gran, periodo, salto
+)
+UNION ALL
+-- Reconciliación con el WBR mart: 4 cuadrantes + descomposición del gap "asignado y no en mart"
+SELECT 'count', 'REC', CAST(d_creacion AS STRING), 'total', 'total', metrica, CAST(n AS STRING)
+FROM (
+  SELECT d_creacion,
+    COUNT(DISTINCT IF(    asignado AND     en_wbr, nid, NULL)) AS q_asig_en_mart,
+    COUNT(DISTINCT IF(    asignado AND NOT en_wbr, nid, NULL)) AS q_asig_no_mart,
+    COUNT(DISTINCT IF(NOT asignado AND     en_wbr, nid, NULL)) AS q_noasig_en_mart,
+    COUNT(DISTINCT IF(NOT asignado AND NOT en_wbr, nid, NULL)) AS q_noasig_no_mart,
+    -- descomposición del cuadrante ⚠ "asignado y NO en el mart", por prioridad
+    COUNT(DISTINCT IF(asignado AND NOT en_wbr AND fuente_id = 1,             nid, NULL)) AS gap_ventanas,
+    COUNT(DISTINCT IF(asignado AND NOT en_wbr AND fuente_id <> 1
+                      AND fuente_id NOT IN (3,47,37,41,42,7,20,39,35),       nid, NULL)) AS gap_no_marketing,
+    COUNT(DISTINCT IF(asignado AND NOT en_wbr
+                      AND fuente_id IN (3,47,37,41,42,7,20,39,35),           nid, NULL)) AS gap_sin_explicar
+  FROM (SELECT *, d_primera_asig IS NOT NULL AS asignado FROM base2)
+  GROUP BY d_creacion
+)
+UNPIVOT (n FOR metrica IN (
+  q_asig_en_mart, q_asig_no_mart, q_noasig_en_mart, q_noasig_no_mart,
+  gap_ventanas, gap_no_marketing, gap_sin_explicar
+))
 WHERE n > 0
