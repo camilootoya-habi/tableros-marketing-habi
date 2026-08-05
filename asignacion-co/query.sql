@@ -44,7 +44,7 @@ WITH leads AS (
 , pipe_ev AS (
   SELECT
     CAST(nid AS STRING) AS nid,
-    DATE(fecha) AS d,
+    TIMESTAMP(fecha) AS ts,
     IF(TRIM(valor) = '798578615', 'MM', 'INMO') AS prod
   FROM `sellers-main-prod.hubspot.historical`
   WHERE propiedad = 'pipeline'
@@ -54,16 +54,19 @@ WITH leads AS (
 , pipes AS (
   SELECT
     nid,
-    MIN(IF(prod = 'MM',   d, NULL)) AS d_mm,
-    MIN(IF(prod = 'INMO', d, NULL)) AS d_inmo,
-    ARRAY_AGG(prod ORDER BY d LIMIT 1)[OFFSET(0)] AS prod_1,
-    MIN(d) AS d_prod_1,
-    LOGICAL_OR(prod = 'INMO' AND d > primera_mm)   AS inmo_despues_de_mm,
-    LOGICAL_OR(prod = 'MM'   AND d > primera_inmo) AS mm_despues_de_inmo
+    MIN(IF(prod = 'MM',   ts, NULL)) AS ts_mm,
+    MIN(IF(prod = 'INMO', ts, NULL)) AS ts_inmo,
+    MIN(ts)                          AS ts_prod_1,
+    ARRAY_AGG(prod ORDER BY ts LIMIT 1)[OFFSET(0)] AS prod_1,
+    DATE(MIN(IF(prod = 'MM',   ts, NULL))) AS d_mm,
+    DATE(MIN(IF(prod = 'INMO', ts, NULL))) AS d_inmo,
+    DATE(MIN(ts))                          AS d_prod_1,
+    LOGICAL_OR(prod = 'INMO' AND ts > primera_mm)   AS inmo_despues_de_mm,
+    LOGICAL_OR(prod = 'MM'   AND ts > primera_inmo) AS mm_despues_de_inmo
   FROM (
-    SELECT nid, d, prod,
-           MIN(IF(prod = 'MM',   d, NULL)) OVER (PARTITION BY nid) AS primera_mm,
-           MIN(IF(prod = 'INMO', d, NULL)) OVER (PARTITION BY nid) AS primera_inmo
+    SELECT nid, ts, prod,
+           MIN(IF(prod = 'MM',   ts, NULL)) OVER (PARTITION BY nid) AS primera_mm,
+           MIN(IF(prod = 'INMO', ts, NULL)) OVER (PARTITION BY nid) AS primera_inmo
     FROM pipe_ev
   )
   GROUP BY nid
@@ -94,7 +97,9 @@ WITH leads AS (
     a.d_gabi,
     a.a1.tipo = 'gabi'                                      AS gabi_flag,
     COALESCE(NULLIF(TRIM(g.product_qualified), ''), '(sin calificar)') AS gabi_producto,
-    p.prod_1, p.d_prod_1, p.d_mm, p.d_inmo, p.inmo_despues_de_mm,
+    p.prod_1, p.d_prod_1, p.d_mm, p.d_inmo,
+    p.ts_mm, p.ts_inmo, p.ts_prod_1,
+    p.inmo_despues_de_mm, p.mm_despues_de_inmo,
     w.nid IS NOT NULL                                       AS en_wbr
   FROM leads l
   LEFT JOIN asig  a USING (nid)
