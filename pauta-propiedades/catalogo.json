@@ -1,6 +1,6 @@
 {
-  "exported_at_iso": "2026-08-04T10:27:07.226089",
-  "n": 110,
+  "exported_at_iso": "2026-08-05T16:02:01.738647",
+  "n": 120,
   "publicaciones": [
     {
       "id_aviso": "31495561",
@@ -1275,6 +1275,54 @@
       "link": "https://propiedades.com/inmuebles/bodega-en-venta-calle-4-bellavista-df-31548377"
     },
     {
+      "id_aviso": "31631604",
+      "cliente_id": "11826",
+      "ad_id": "120251278174000706",
+      "status": "ACTIVE",
+      "etapa": "evento",
+      "tipo": "Departamento",
+      "colonia": "Xoco",
+      "ciudad": "Benito Juárez",
+      "precio": "$ 17,000,000 MXN",
+      "link": "https://propiedades.com/inmuebles/departamento-en-venta-real-de-mayorazgo-xoco-df-31631604"
+    },
+    {
+      "id_aviso": "31304118",
+      "cliente_id": "11826",
+      "ad_id": "120251278116520706",
+      "status": "ACTIVE",
+      "etapa": "evento",
+      "tipo": "Departamento",
+      "colonia": "Anahuac I Sección",
+      "ciudad": "Miguel Hidalgo",
+      "precio": "$ 3,453,000 MXN",
+      "link": "https://propiedades.com/inmuebles/departamento-en-venta-marina-nacional-anahuac-i-seccion-df-31304118"
+    },
+    {
+      "id_aviso": "31434430",
+      "cliente_id": "12917",
+      "ad_id": "120251277790550706",
+      "status": "ACTIVE",
+      "etapa": "evento",
+      "tipo": "Oficina",
+      "colonia": "Jardines en la Montaña",
+      "ciudad": "Tlalpan",
+      "precio": "$ 6,975,000 MXN",
+      "link": "https://propiedades.com/inmuebles/oficina-en-venta-picacho-ajusco-jardines-en-la-montana-df-31434430"
+    },
+    {
+      "id_aviso": "31434431",
+      "cliente_id": "12917",
+      "ad_id": "120251277792850706",
+      "status": "ACTIVE",
+      "etapa": "evento",
+      "tipo": "Casa en condominio",
+      "colonia": "Arenal Tepepan",
+      "ciudad": "Tlalpan",
+      "precio": "$ 13,900,000 MXN",
+      "link": "https://propiedades.com/inmuebles/casa-en-condominio-en-venta-av-arenal-tepepan-arenal-tepepan-df-31434431"
+    },
+    {
       "id_aviso": "31638830",
       "cliente_id": "11",
       "ad_id": "120251243805620706",
@@ -1287,6 +1335,18 @@
       "link": "https://propiedades.com/inmuebles/casa-en-condominio-en-venta-mimosa-olivar-de-los-padres-df-31638830"
     },
     {
+      "id_aviso": "31616995",
+      "cliente_id": "11826",
+      "ad_id": "120251278159660706",
+      "status": "ACTIVE",
+      "etapa": "evento",
+      "tipo": "Departamento",
+      "colonia": "Polanco III Sección",
+      "ciudad": "Miguel Hidalgo",
+      "precio": "$ 21,000,000 MXN",
+      "link": "https://propiedades.com/inmuebles/departamento-en-venta-goldsmith-polanco-iii-seccion-df-31616995"
+    },
+    {
       "id_aviso": "31625311",
       "cliente_id": "11",
       "ad_id": "120251243786920706",
@@ -1297,6 +1357,54 @@
       "ciudad": "Álvaro Obregón",
       "precio": "$ 8,990,000 MXN",
       "link": "https://propiedades.com/inmuebles/departamento-en-venta-condor-ampliacion-alpes-df-31625311"
+    },
+    {
+      "id_aviso": "28713145",
+      "cliente_id": "11826",
+      "ad_id": "120251278076370706",
+      "status": "ACTIVE",
+      "etapa": "evento",
+      "tipo": "Terreno habitacional",
+      "colonia": "Legaria",
+      "ciudad": "Miguel Hidalgo",
+      "precio": "$ 29,893,000 MXN",
+      "link": "https://propiedades.com/inmuebles/terreno-habitacional-en-venta-felipe-carrillo-puerto-legaria-df-28713145"
+    },
+    {
+      "id_aviso": "31581816",
+      "cliente_id": "12917",
+      "ad_id": "120251277781750706",
+      "status": "ACTIVE",
+      "etapa": "evento",
+      "tipo": "Casa",
+      "colonia": "Napoles",
+      "ciudad": "Benito Juárez",
+      "precio": "$ 14,900,000 MXN",
+      "link": "https://propiedades.com/inmuebles/casa-en-venta-napoles-df-31581816"
+    },
+    {
+      "id_aviso": "31640054",
+      "cliente_id": "11826",
+      "ad_id": "120251278185990706",
+      "status": "ACTIVE",
+      "etapa": "evento",
+      "tipo": "Departamento",
+      "colonia": "Tetelpan",
+      "ciudad": "Álvaro Obregón",
+      "precio": "$ 6,200,000 MXN",
+      "link": "https://propiedades.com/inmuebles/departamento-en-venta-calz-desierto-de-los-leones-tetelpan-df-31640054"
+    },
+    {
+      "id_aviso": "31611444",
+      "cliente_id": "12917",
+      "ad_id": "120251277787380706",
+      "status": "ACTIVE",
+      "etapa": "evento",
+      "tipo": "Casa",
+      "colonia": "Ampliación Napoles",
+      "ciudad": "Benito Juárez",
+      "precio": "$ 14,900,000 MXN",
+      "link": "https://propiedades.com/inmuebles/casa-en-venta-ampliacion-napoles-df-31611444"
     },
     {
       "id_aviso": "31518535",
@@ -1321,6 +1429,18 @@
       "ciudad": "Cuajimalpa de Morelos",
       "precio": "$ 6,700,000 MXN",
       "link": "https://propiedades.com/inmuebles/departamento-en-venta-av-santa-fe-santa-fe-cuajimalpa-df-31598577"
+    },
+    {
+      "id_aviso": "30842301",
+      "cliente_id": "12917",
+      "ad_id": "120251277771060706",
+      "status": "ACTIVE",
+      "etapa": "evento",
+      "tipo": "Casa",
+      "colonia": "Jardines del Ajusco",
+      "ciudad": "Tlalpan",
+      "precio": "$ 9,697,000 MXN",
+      "link": "https://propiedades.com/inmuebles/casa-en-venta-jardines-del-ajusco-df-30842301"
     }
   ]
 }
