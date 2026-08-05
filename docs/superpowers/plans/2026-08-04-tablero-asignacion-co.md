@@ -513,8 +513,13 @@ s = sum(int(x['n']) for x in r
         if x['lente']=='B' and x['dim']=='total'
         and x['metrica'] in ('r_cruce','r_gabi_mm_cruce')
         and '2026-04-01' <= x['d'] <= '2026-07-31')
-print('MM->INMO abr-jul 2026:', s, '(baseline del spec: 8459)')
-assert 7000 <= s <= 10000, 'muy lejos del baseline: revisar la definición de cruce'
+print('MM->INMO con llegada en abr-jul 2026:', s)
+# ⚠️ Baseline recalibrado (verificado 2026-08-04). El baseline original de 8.459 se midió con
+# una ventana de eventos de 4 meses, así que solo veía cruces cuyo paso por MM también cayó
+# en abr-jul. Aquí la ventana de `pipes` es de 940 días, así que el total es ~2x: ~16.2k-16.6k,
+# de los cuales ~8.3k tienen su paso por MM dentro de abr-2026 (esos SÍ son comparables al
+# baseline) y ~8.0k lo tienen antes. Medición independiente del controlador: 16.572 / 8.302 / 8.270.
+assert 14000 <= s <= 19000, f'total de cruces fuera del rango esperado ({s}): revisar la definición de cruce'
 PY
 ```
 Expected: un valor cercano a 8.459. **Si se aleja más de ~20%, parar y explicar la diferencia** — puede ser legítima (la ventana de `pipes` es más larga aquí, así que capta cruces cuyo paso por MM fue antes de abril) pero hay que entenderla, no asumirla.
