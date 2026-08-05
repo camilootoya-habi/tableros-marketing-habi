@@ -808,7 +808,7 @@ El estado del filtro es `{dim, dimVal}` y se pasa tal cual a `agrega()`. Default
 
 Columnas, en este orden: `Cosecha` · `Creados` · `Asignado ≤30d` · `Ever asignado (ref.)` · `GABI` · `Directo a pipeline` · `1er producto MM` · `INMO` · `Sin producto`.
 
-**Regla de cobertura:** en los períodos cuyo fin sea anterior a **2025-09-18** (MM) / **2025-10-02** (INMO), las tres columnas de producto se renderizan como `—` con `title="los pipelines MM/INMO no existían aún"`, NUNCA como 0. Las columnas de asignación se muestran normal. Debajo de la tabla, una nota: "Las columnas de producto arrancan en sep-2025, cuando se crearon los pipelines MM e INMO en HubSpot".
+**Regla de cobertura:** `1er producto MM` usa el corte **2025-09-18**; `INMO` usa **2025-10-02**; y **`Sin producto` usa el más TARDÍO de los dos (2025-10-02)**, porque "nunca entró a ninguno" solo significa algo cuando ambos pipelines existen — entre el 18-sep y el 2-oct contaría como "sin producto" leads que simplemente no tenían INMO disponible. En los períodos cuyo fin sea anterior a su corte, esas columnas se renderizan como `—` con `title="los pipelines MM/INMO no existían aún"`, NUNCA como 0. Las columnas de asignación se muestran normal. Debajo de la tabla, una nota: "Las columnas de producto arrancan en sep-2025, cuando se crearon los pipelines MM e INMO en HubSpot".
 
 Reglas de render:
 - Cada celda de métrica muestra `n (%)`. El **denominador del % es `asig_30d`**, salvo `Asignado ≤30d` y `Ever asignado`, cuyo denominador es `creados`.
