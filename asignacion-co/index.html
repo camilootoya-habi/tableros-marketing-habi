@@ -444,11 +444,138 @@
       }));
     }
 
+    // ── Lentes B/C: tablas de rutas (llegada a INMO / a MM) ───────────────
+    // Config espejo: B ancla en llegada a INMO, C ancla en llegada a MM.
+    const RUTAS_BC = {
+      B: {
+        titulo: 'Lente B — Rutas de llegada a INMO',
+        subt: 'Ancla: fecha de llegada a INMO. Este período NO es el mismo grupo de leads que la lente A.',
+        colLlegadas: 'Llegadas INMO',
+        cols: [
+          { key: 'r_directo', label: 'Directo' },
+          { key: 'r_gabi_prod', label: 'GABI → INMO' },
+          { key: 'r_gabi_mm_cruce', label: 'GABI(MM) → MM → INMO', callout: true },
+          { key: 'r_cruce', label: 'MM → INMO' },
+          { key: 'r_regreso', label: 'INMO → MM → INMO' },
+        ],
+        saltoTiempo: 'mm_inmo',
+        saltoLabel: 'MM → INMO',
+      },
+      C: {
+        titulo: 'Lente C — Rutas de llegada a MM',
+        subt: 'Ancla: fecha de llegada a MM. Este período NO es el mismo grupo de leads que la lente A.',
+        colLlegadas: 'Llegadas MM',
+        cols: [
+          { key: 'r_directo', label: 'Directo' },
+          { key: 'r_gabi_prod', label: 'GABI → MM' },
+          { key: 'r_gabi_mm_cruce', label: 'GABI(INMO) → INMO → MM', callout: true },
+          { key: 'r_cruce', label: 'INMO → MM' },
+          { key: 'r_regreso', label: 're-entrada a MM' },
+        ],
+        saltoTiempo: 'inmo_mm',
+        saltoLabel: 'INMO → MM',
+      },
+    };
+
+    function renderTablaRutas(lente) {
+      const cfg = RUTAS_BC[lente];
+      const map = aggregaCached(lente);
+      const periodos = ultimosPeriodos(rows.filter(r => r.kind === 'count' && r.lente === lente), granActual, 20);
+
+      const filas = periodos.map(p => {
+        const m = map.get(p) || new Map();
+        const llegadas = Number(m.get('llegadas') || 0);
+        const inmaduro = esInmaduro(p, granActual, 30);
+        const celdas = cfg.cols.map(c => {
+          const n = Number(m.get(c.key) || 0);
+          const pct = llegadas ? (n / llegadas * 100) : null;
+          return { n, pct };
+        });
+        return { p, llegadas, inmaduro, celdas };
+      });
+
+      const thead = `<thead><tr><th>Período</th><th>${cfg.colLlegadas}</th>${cfg.cols.map(c => `<th>${c.label}</th>`).join('')}</tr></thead>`;
+      const tbody = filas.map(f => {
+        const tds = f.celdas.map(cel => {
+          const pctStr = cel.pct != null ? ` <span class="pct">(${cel.pct.toFixed(1)}%)</span>` : '';
+          return `<td class="metric-cell">${cel.n.toLocaleString('es-CO')}${pctStr}</td>`;
+        }).join('');
+        const label = f.inmaduro ? `${f.p}<span class="lbl-inmadura">inmadura</span>` : f.p;
+        return `<tr class="${f.inmaduro ? 'inmadura' : ''}"><td>${label}</td><td class="metric-cell">${f.llegadas.toLocaleString('es-CO')}</td>${tds}</tr>`;
+      }).join('');
+
+      return `
+        <div class="table-container">
+          <table class="tbl-lente">${thead}<tbody>${tbody}</tbody></table>
+        </div>
+        <div class="nota">
+          <code>product_qualified</code> no tiene fecha ni historial: es el <strong>estado actual</strong> de la calificación de GABI.
+          Estas columnas dicen "hoy está calificado así y pasó por el otro producto", <strong>no</strong> que la calificación fuera anterior al paso.
+        </div>`;
+    }
+
+    // ── Panel de tiempos por salto (filas kind='tiempo', pre-calculadas) ──
+    const SALTOS_TIEMPO = [
+      { key: 'creacion_gabi', label: 'creación → GABI' },
+      { key: 'gabi_mm', label: 'GABI → MM' },
+    ];
+
+    function renderPanelTiempos(lente) {
+      const cfg = RUTAS_BC[lente];
+      const saltos = [...SALTOS_TIEMPO, { key: cfg.saltoTiempo, label: cfg.saltoLabel }];
+
+      // Filas de tiempo: NO se re-agregan; ya vienen truncadas por `dim`=granularidad.
+      // ⚠️ No reaccionan al filtro de fuente/área/equipo: no tienen esas dimensiones.
+      const tiempoRows = rows.filter(r => r.kind === 'tiempo' && r.dim === granActual);
+      const periodos = [...new Set(tiempoRows.map(r => r.d))].sort().slice(-20);
+
+      const porPeriodo = new Map();
+      for (const r of tiempoRows) {
+        if (!porPeriodo.has(r.d)) porPeriodo.set(r.d, new Map());
+        const m = porPeriodo.get(r.d);
+        if (!m.has(r.dim_val)) m.set(r.dim_val, {});
+        m.get(r.dim_val)[r.metrica] = Number(r.n);   // bq devuelve STRING
+      }
+
+      const thead = `<thead><tr><th>Período</th>${saltos.map(s => `<th>${s.label}</th>`).join('')}</tr></thead>`;
+      const tbody = periodos.map(p => {
+        const m = porPeriodo.get(p) || new Map();
+        const tds = saltos.map(s => {
+          const v = m.get(s.key);
+          if (!v || v.mediana == null) return `<td class="na">—</td>`;
+          return `<td class="metric-cell">${v.mediana}d (${v.p90 ?? '—'}d)</td>`;
+        }).join('');
+        return `<tr><td>${p}</td>${tds}</tr>`;
+      }).join('');
+
+      return `
+        <div class="panel" style="grid-column: 1 / -1;">
+          <h3>Tiempo por salto — mediana (p90) en días — nunca promedio</h3>
+          <div class="table-container">
+            <table class="tbl-lente">${thead}<tbody>${tbody}</tbody></table>
+          </div>
+          <div class="nota">De los leads que llegaron en cada período, mediana/p90 de días desde la punta anterior del salto (que puede ser muy anterior al período). No sumar esto como "tiempo del mes"; y este panel NO reacciona al filtro de fuente/área/equipo (las filas de tiempo no tienen esas dimensiones).</div>
+        </div>`;
+    }
+
+    function renderLenteBC(lente) {
+      const cfg = RUTAS_BC[lente];
+      return `
+        <div class="lente-block">
+          <h2>${cfg.titulo}</h2>
+          <div class="subt"><strong>${cfg.subt}</strong></div>
+          ${renderTablaRutas(lente)}
+          <div class="charts-grid">
+            ${renderPanelTiempos(lente)}
+          </div>
+        </div>`;
+    }
+
     // ── Render principal: redibuja selectores + lentes ───────────────────
     function render() {
       _charts.forEach(c => c.destroy());
       _charts = [];
-      app.innerHTML = renderSelectors() + renderLenteA();
+      app.innerHTML = renderSelectors() + renderLenteA() + renderLenteBC('B') + renderLenteBC('C');
       wireSelectors();
       drawChartA();
     }
