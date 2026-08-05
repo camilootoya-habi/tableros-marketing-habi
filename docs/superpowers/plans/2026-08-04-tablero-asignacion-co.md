@@ -21,6 +21,7 @@
 - `hubspot.historical`: particionada por MONTH en `fecha`, clusterizada por `propiedad`, `valor` es STRING, **~5 h de rezago**. Filtrar SIEMPRE por `propiedad` y por `fecha`.
 - **`bi_co.seguimiento_asignacion_ibuyer_co.pipeline` es snapshot** — prohibido usarlo para la secuencia de productos. De esa tabla solo se usan `fecha_asignacion`, `tipo_asignacion`, `tipo`, `equipo_inicial`, `area_metropolitana`, `fuente`.
 - **`product_qualified` no tiene fecha ni historial** — se usa solo como atributo de estado final, jamás como fecha ni como secuencia.
+- ⚠️ **La secuencia de productos se compara SIEMPRE con TIMESTAMP, nunca con DATE.** 1.729 nids tienen eventos de MM e INMO el mismo día y a nivel DATE su orden es indefinido (el resultado cambiaría entre corridas del cron). Las fechas se derivan de los timestamps solo para agrupar por período y para medir diferencias en días.
 - Percentiles: **mediana y p90, nunca promedio**.
 - `bq query --format=json` devuelve **todos los valores como STRING** — el frontend debe hacer `Number()` en cada métrica.
 - Nunca usar `ANY_VALUE` para tomar "el primero" de un grupo: usar `ARRAY_AGG(... ORDER BY ... LIMIT 1)[OFFSET(0)]`.
@@ -176,6 +177,8 @@ git commit -m "feat(asignacion-co): scaffolding del tablero y pipeline de datos"
   `d_owner` DATE, `d_primera_asig` DATE, `senal_primera` STRING (`seguimiento`|`owner`),
   `gabi_flag` BOOL, `gabi_producto` STRING, `d_gabi` DATE,
   `prod_1` STRING (`MM`|`INMO`|NULL si nunca entró a ninguno), `d_mm` DATE, `d_inmo` DATE, `d_prod_1` DATE,
+  `ts_mm` TIMESTAMP, `ts_inmo` TIMESTAMP, `ts_prod_1` TIMESTAMP (la secuencia se compara con estos, no con las fechas),
+  `inmo_despues_de_mm` BOOL, `mm_despues_de_inmo` BOOL,
   `n_asig` INT64, `en_wbr` BOOL.
   Y las métricas de la lente A: `creados`, `asig_30d`, `asig_ever`, `gabi_30d`, `directo_30d`, `prod1_mm`, `prod1_inmo`, `prod1_legacy`.
 
@@ -211,7 +214,7 @@ En `asignacion-co/query.sql`, después del CTE `leads`, agregar:
 , pipe_ev AS (
   SELECT
     CAST(nid AS STRING) AS nid,
-    DATE(fecha) AS d,
+    TIMESTAMP(fecha) AS ts,          -- la secuencia se ordena por TIMESTAMP, no por DATE
     IF(TRIM(valor) = '798578615', 'MM', 'INMO') AS prod
   FROM `sellers-main-prod.hubspot.historical`
   WHERE propiedad = 'pipeline'
@@ -222,17 +225,23 @@ En `asignacion-co/query.sql`, después del CTE `leads`, agregar:
 , pipes AS (
   SELECT
     nid,
-    MIN(IF(prod = 'MM',   d, NULL)) AS d_mm,
-    MIN(IF(prod = 'INMO', d, NULL)) AS d_inmo,
-    ARRAY_AGG(prod ORDER BY d LIMIT 1)[OFFSET(0)] AS prod_1,
-    MIN(d) AS d_prod_1,
+    -- Timestamps: son la verdad de la SECUENCIA (1.729 nids tienen MM e INMO el mismo día,
+    -- y los 1.769 casos son desempatables con el timestamp)
+    MIN(IF(prod = 'MM',   ts, NULL)) AS ts_mm,
+    MIN(IF(prod = 'INMO', ts, NULL)) AS ts_inmo,
+    MIN(ts)                          AS ts_prod_1,
+    ARRAY_AGG(prod ORDER BY ts LIMIT 1)[OFFSET(0)] AS prod_1,
+    -- Fechas: derivadas de los timestamps, solo para agrupar por período y medir días
+    DATE(MIN(IF(prod = 'MM',   ts, NULL))) AS d_mm,
+    DATE(MIN(IF(prod = 'INMO', ts, NULL))) AS d_inmo,
+    DATE(MIN(ts))                          AS d_prod_1,
     -- Rutas de regreso: ¿hubo un evento de un producto POSTERIOR a la primera entrada al otro?
-    LOGICAL_OR(prod = 'INMO' AND d > primera_mm)   AS inmo_despues_de_mm,
-    LOGICAL_OR(prod = 'MM'   AND d > primera_inmo) AS mm_despues_de_inmo
+    LOGICAL_OR(prod = 'INMO' AND ts > primera_mm)   AS inmo_despues_de_mm,
+    LOGICAL_OR(prod = 'MM'   AND ts > primera_inmo) AS mm_despues_de_inmo
   FROM (
-    SELECT nid, d, prod,
-           MIN(IF(prod = 'MM',   d, NULL)) OVER (PARTITION BY nid) AS primera_mm,
-           MIN(IF(prod = 'INMO', d, NULL)) OVER (PARTITION BY nid) AS primera_inmo
+    SELECT nid, ts, prod,
+           MIN(IF(prod = 'MM',   ts, NULL)) OVER (PARTITION BY nid) AS primera_mm,
+           MIN(IF(prod = 'INMO', ts, NULL)) OVER (PARTITION BY nid) AS primera_inmo
     FROM pipe_ev
   )
   GROUP BY nid
@@ -263,7 +272,8 @@ En `asignacion-co/query.sql`, después del CTE `leads`, agregar:
     a.d_gabi,
     a.a1.tipo = 'gabi'                                      AS gabi_flag,
     COALESCE(NULLIF(TRIM(g.product_qualified), ''), '(sin calificar)') AS gabi_producto,
-    p.prod_1, p.d_prod_1, p.d_mm, p.d_inmo, p.inmo_despues_de_mm,
+    p.prod_1, p.d_prod_1, p.d_mm, p.d_inmo,
+    p.ts_mm, p.ts_inmo, p.ts_prod_1, p.inmo_despues_de_mm, p.mm_despues_de_inmo,
     w.nid IS NOT NULL                                       AS en_wbr
   FROM leads l
   LEFT JOIN asig  a USING (nid)
@@ -372,7 +382,7 @@ for x in r:
         tot[x['metrica']] += int(x['n'])
 print(dict(tot))
 assert tot['asig_30d'] <= tot['asig_ever'] <= tot['creados'], 'jerarquía de asignados rota'
-assert tot['gabi_30d'] + tot['directo_30d'] <= tot['asig_ever'] + 1, 'gabi+directo excede asignados'
+assert tot['gabi_30d'] + tot['directo_30d'] == tot['asig_30d'], 'gabi y directo deben particionar asig_30d exactamente'
 assert tot['prod1_mm'] + tot['prod1_inmo'] + tot['sin_producto'] <= tot['asig_ever'], 'productos exceden asignados'
 # la suma por dimensión debe reproducir el total (± leads sin ese atributo)
 for dim in ('fuente','area','equipo'):
@@ -416,12 +426,12 @@ Agregar antes del SELECT final:
 , rutas_inmo AS (
   SELECT b.*, CASE
     WHEN b.d_inmo IS NULL THEN NULL
-    WHEN b.prod_1 = 'INMO' AND b.d_mm IS NOT NULL AND b.d_mm > b.d_inmo
+    WHEN b.prod_1 = 'INMO' AND b.ts_mm IS NOT NULL AND b.ts_mm > b.ts_inmo
          AND b.inmo_despues_de_mm                                   THEN 'r_regreso'
-    WHEN b.d_mm IS NOT NULL AND b.d_mm < b.d_inmo
+    WHEN b.ts_mm IS NOT NULL AND b.ts_mm < b.ts_inmo
          AND COALESCE(b.gabi_flag, FALSE)
          AND b.gabi_producto IN ('ibuyer', 'ibuyer_and_real_estate') THEN 'r_gabi_mm_cruce'
-    WHEN b.d_mm IS NOT NULL AND b.d_mm < b.d_inmo                    THEN 'r_cruce'
+    WHEN b.ts_mm IS NOT NULL AND b.ts_mm < b.ts_inmo                    THEN 'r_cruce'
     WHEN COALESCE(b.gabi_flag, FALSE)                                THEN 'r_gabi_prod'
     ELSE 'r_directo' END AS ruta
   FROM base2 b
@@ -431,10 +441,10 @@ Agregar antes del SELECT final:
   SELECT b.*, CASE
     WHEN b.d_mm IS NULL THEN NULL
     WHEN b.prod_1 = 'MM' AND b.mm_despues_de_inmo                    THEN 'r_regreso'
-    WHEN b.d_inmo IS NOT NULL AND b.d_inmo < b.d_mm
+    WHEN b.ts_inmo IS NOT NULL AND b.ts_inmo < b.ts_mm
          AND COALESCE(b.gabi_flag, FALSE)
          AND b.gabi_producto IN ('real_estate', 'ibuyer_and_real_estate') THEN 'r_gabi_mm_cruce'
-    WHEN b.d_inmo IS NOT NULL AND b.d_inmo < b.d_mm                  THEN 'r_cruce'
+    WHEN b.ts_inmo IS NOT NULL AND b.ts_inmo < b.ts_mm                  THEN 'r_cruce'
     WHEN COALESCE(b.gabi_flag, FALSE)                                THEN 'r_gabi_prod'
     ELSE 'r_directo' END AS ruta
   FROM base2 b
