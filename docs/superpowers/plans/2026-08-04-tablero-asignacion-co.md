@@ -601,11 +601,14 @@ FROM (
     COUNT(DISTINCT IF(NOT asignado AND     en_wbr, nid, NULL)) AS q_noasig_en_mart,
     COUNT(DISTINCT IF(NOT asignado AND NOT en_wbr, nid, NULL)) AS q_noasig_no_mart,
     -- descomposición del cuadrante ⚠ "asignado y NO en el mart", por prioridad
-    COUNT(DISTINCT IF(asignado AND NOT en_wbr AND fuente_id = 1,             nid, NULL)) AS gap_ventanas,
-    COUNT(DISTINCT IF(asignado AND NOT en_wbr AND fuente_id <> 1
-                      AND fuente_id NOT IN (3,47,37,41,42,7,20,39,35),       nid, NULL)) AS gap_no_marketing,
+    -- ⚠️ COALESCE obligatorio: con fuente_id NULL las tres condiciones evalúan a NULL (no a FALSE)
+    -- y el lead se cae de los tres buckets, rompiendo la exhaustividad. Verificado: 41 leads así.
+    -- Un fuente_id nulo no es fuente de marketing → cae en gap_no_marketing.
+    COUNT(DISTINCT IF(asignado AND NOT en_wbr AND COALESCE(fuente_id, -1) = 1,  nid, NULL)) AS gap_ventanas,
+    COUNT(DISTINCT IF(asignado AND NOT en_wbr AND COALESCE(fuente_id, -1) <> 1
+                      AND COALESCE(fuente_id, -1) NOT IN (3,47,37,41,42,7,20,39,35), nid, NULL)) AS gap_no_marketing,
     COUNT(DISTINCT IF(asignado AND NOT en_wbr
-                      AND fuente_id IN (3,47,37,41,42,7,20,39,35),           nid, NULL)) AS gap_sin_explicar
+                      AND COALESCE(fuente_id, -1) IN (3,47,37,41,42,7,20,39,35),      nid, NULL)) AS gap_sin_explicar
   FROM (SELECT *, d_primera_asig IS NOT NULL AS asignado FROM base2)
   GROUP BY d_creacion
 )
