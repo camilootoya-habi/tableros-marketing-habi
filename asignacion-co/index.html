@@ -79,6 +79,16 @@
   td.na { color: var(--text-muted-3); text-align: center; }
   td.metric-cell { text-align: right; }
   td.metric-cell .pct { font-size: 11px; opacity: .75; margin-left: 4px; }
+
+  /* Bloque de conclusiones (Task 7) */
+  td.desacuerdo { background: rgba(245, 158, 11, 0.16); }
+  .concl-text { font-size: 13.5px; line-height: 1.7; color: var(--text); margin-top: 14px; }
+  .concl-text p { margin-bottom: 12px; }
+  .concl-text strong { color: var(--text-title); }
+  .concl-text ul { margin: 8px 0 12px 22px; }
+  .concl-text li { margin-bottom: 6px; }
+  .concl-callout { border-left: 3px solid #f59e0b; background: rgba(245, 158, 11, 0.08); padding: 10px 14px; border-radius: 0 6px 6px 0; margin-bottom: 12px; }
+  .concl-refutada { border-left: 3px solid #64748b; background: rgba(100, 116, 139, 0.08); padding: 10px 14px; border-radius: 0 6px 6px 0; margin-bottom: 12px; }
 </style>
 <script>
   function toggleTheme() {
@@ -571,13 +581,127 @@
         </div>`;
     }
 
+    // ── Conclusiones: reconciliación con el WBR mart (lente REC) ──────────
+    const CUADRANTES = [
+      { key: 'q_asig_en_mart',    label: 'Asignado y en el mart',              desacuerdo: false },
+      { key: 'q_asig_no_mart',    label: 'De fuente de marketing, fuera del mart', desacuerdo: true },
+      { key: 'q_noasig_en_mart',  label: 'No asignado y en el mart',           desacuerdo: true },
+      { key: 'q_noasig_no_mart',  label: 'No asignado y fuera del mart',       desacuerdo: false },
+    ];
+    const GAP_METRICAS = [
+      { key: 'gap_ventanas',      label: 'Ventanas',                          color: '#818cf8' },
+      { key: 'gap_no_marketing',  label: 'Fuentes no-marketing',              color: '#64748b' },
+      { key: 'gap_sin_explicar',  label: 'De fuente de marketing, fuera del mart', color: '#34d399' },
+    ];
+
+    let chartGapDataPending = null;
+
+    function renderConclusiones() {
+      const map = aggregaCached('REC');
+      const periodos = ultimosPeriodos(rows.filter(r => r.kind === 'count' && r.lente === 'REC'), granActual, 20);
+
+      const filas = periodos.map(p => {
+        const m = map.get(p) || new Map();
+        const inmaduro = esInmaduro(p, granActual, 30);
+        const cuad = CUADRANTES.map(c => Number(m.get(c.key) || 0));
+        const gap = GAP_METRICAS.map(g => Number(m.get(g.key) || 0));
+        return { p, inmaduro, cuad, gap };
+      });
+
+      // ── Tabla de cuadrantes ──
+      const thead = `<thead><tr><th>Período</th>${CUADRANTES.map(c => `<th>${c.label}</th>`).join('')}</tr></thead>`;
+      const tbody = filas.map(f => {
+        const tds = CUADRANTES.map((c, i) => {
+          const n = f.cuad[i];
+          return `<td class="metric-cell${c.desacuerdo ? ' desacuerdo' : ''}">${n.toLocaleString('es-CO')}</td>`;
+        }).join('');
+        const label = f.inmaduro ? `${f.p}<span class="lbl-inmadura">inmadura</span>` : f.p;
+        return `<tr class="${f.inmaduro ? 'inmadura' : ''}"><td>${label}</td>${tds}</tr>`;
+      }).join('');
+
+      chartGapDataPending = {
+        labels: filas.map(f => f.p),
+        series: GAP_METRICAS.map((g, i) => ({ label: g.label, color: g.color, data: filas.map(f => f.gap[i]) })),
+      };
+
+      return `
+        <div class="lente-block">
+          <h2>Conclusiones — reconciliación con el WBR mart</h2>
+          <div class="subt">Ancla: fecha de creación del lead. Cruce entre "asignado alguna vez" (ever-asignado) y el indicador de asignados del WBR mart.</div>
+
+          <div class="table-container">
+            <table class="tbl-lente">${thead}<tbody>${tbody}</tbody></table>
+          </div>
+          <div class="nota">En ámbar, los dos cuadrantes de desacuerdo entre ever-asignado y el WBR mart.</div>
+
+          <div class="charts-grid">
+            <div class="panel" style="grid-column: 1 / -1;">
+              <h3>Descomposición del cuadrante "de fuente de marketing, fuera del mart" — por período</h3>
+              <div class="ch"><canvas id="chartGap"></canvas></div>
+            </div>
+          </div>
+
+          <div class="concl-text">
+            <p><strong>Por qué no coinciden, por construcción.</strong> El WBR mart es un indicador de marketing: cuenta leads de fuente de marketing que además pasan 16 filtros de calificación. El ever-asignado es más amplio: cuenta todo lead que en algún momento fue asignado, sin importar la fuente ni si califica para el mart. Que los dos números no coincidan es esperado; lo que importa es separar la brecha que ese diseño explica de la que no.</p>
+
+            <p><strong>Tamaño de cada brecha en la ventana completa (1.077.961 leads creados):</strong> de los 144.584 leads que el mart cuenta como asignados, el ever-asignado los tiene a todos (0 de desacuerdo en esa dirección — ver hipótesis abajo). En la otra dirección, 56.801 leads están asignados según ever-asignado pero el mart no los cuenta, y esa brecha se descompone en <strong>ventanas de tiempo: 5.137</strong>, <strong>fuentes que no son de marketing: 95</strong>, y <strong>de fuente de marketing pero fuera del mart: 51.569</strong>.</p>
+
+            <p><strong>En los últimos 6 meses</strong>, la brecha "de fuente de marketing, fuera del mart" se mantuvo estable mes a mes: mar-2026 <strong>2.704</strong>, abr-2026 <strong>1.817</strong>, may-2026 <strong>2.789</strong>, jun-2026 <strong>1.743</strong> (más 6 de ventanas y 6 de fuentes no-marketing ese mes), jul-2026 <strong>2.013</strong>, ago-2026 <strong>174</strong> (mes incompleto, 4 días). Las otras dos categorías son marginales en todos los meses: ventanas nunca superó 6 leads/mes y fuentes no-marketing nunca superó 6 leads/mes en el período reciente.</p>
+
+            <div class="concl-refutada">
+              <strong>Hipótesis original del spec, refutada.</strong> El spec anticipaba que el hallazgo principal serían leads que el WBR mart cuenta como asignados y que nuestras señales de asignación no ven. Medido: <strong>0</strong> leads en ese cuadrante, en toda la ventana y en cada uno de los últimos 6 meses. No existen. Esa hipótesis no se sostuvo con los datos.
+            </div>
+
+            <div class="concl-callout">
+              <strong>Límite de esta v1.</strong> El balde de <strong>51.569</strong> ("de fuente de marketing, fuera del mart") no es un hallazgo de leads perdidos. El WBR mart, además de filtrar por fuente, aplica 16 filtros de calificación que esta v1 no descompone — la mayor parte de esos 51.569 está esperablemente explicada por esos filtros, no por un problema de conteo. Este tablero no distingue cuánto de ese número es filtro legítimo y cuánto no; publicarlo como brecha accionable sería un error.
+            </div>
+
+            <p><strong>Propuesta de mejora:</strong></p>
+            <ul>
+              <li>Descomponer el balde de 51.569 filtro por filtro cruzando con el tablero <strong>asignados-creacion</strong> de este mismo repo, que ya tiene esa lógica construida (5 filtros) — no hace falta re-implementarla aquí.</li>
+              <li>Instrumentar <code>product_qualified</code> en el historial de HubSpot: hoy es un estado sin fecha, así que la ruta GABI → producto no se puede fechar con precisión.</li>
+              <li>Evaluar si <strong>asignacion-co</strong> y <strong>asignados-creacion</strong> deberían fusionarse en un solo tablero: uno reconcilia el conteo con el mart y el otro explica la mecánica filtro por filtro — hoy hay que mirar los dos para tener el cuadro completo.</li>
+            </ul>
+          </div>
+        </div>`;
+    }
+
+    function drawChartGap() {
+      const d = chartGapDataPending;
+      if (!d) return;
+      const c = document.getElementById('chartGap');
+      if (!c || !window.Chart) return;
+      const grid = cssv('--border'), tick = cssv('--text-muted-2');
+      _charts.push(new Chart(c, {
+        type: 'bar',
+        data: {
+          labels: d.labels,
+          datasets: d.series.map(s => ({
+            label: s.label, data: s.data, backgroundColor: s.color, borderRadius: 3, stack: 'gap',
+          })),
+        },
+        options: {
+          responsive: true, maintainAspectRatio: false, interaction: { mode: 'index', intersect: false },
+          plugins: {
+            legend: { display: true, labels: { color: tick, font: { size: 10 } } },
+            tooltip: { callbacks: { label: ctx => `${ctx.dataset.label}: ${ctx.parsed.y == null ? '—' : ctx.parsed.y.toLocaleString('es-CO')}` } },
+          },
+          scales: {
+            x: { stacked: true, ticks: { color: tick, maxTicksLimit: 8 }, grid: { display: false } },
+            y: { stacked: true, beginAtZero: true, ticks: { color: tick }, grid: { color: grid } },
+          },
+        },
+      }));
+    }
+
     // ── Render principal: redibuja selectores + lentes ───────────────────
     function render() {
       _charts.forEach(c => c.destroy());
       _charts = [];
-      app.innerHTML = renderSelectors() + renderLenteA() + renderLenteBC('B') + renderLenteBC('C');
+      app.innerHTML = renderSelectors() + renderLenteA() + renderLenteBC('B') + renderLenteBC('C') + renderConclusiones();
       wireSelectors();
       drawChartA();
+      drawChartGap();
     }
 
     render();
