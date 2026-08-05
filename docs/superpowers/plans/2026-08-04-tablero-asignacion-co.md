@@ -920,7 +920,7 @@ Tabla 2×2 con los 4 cuadrantes (`q_asig_en_mart`, `q_asig_no_mart`, `q_noasig_e
 
 - [ ] **Step 2: Renderizar la descomposición del gap**
 
-Barras apiladas con `mkChart` (`type:'bar'`) sobre `gap_ventanas`, `gap_no_marketing`, `gap_sin_explicar`, por período. `gap_sin_explicar` en el color de alerta.
+Barras apiladas con Chart.js sobre `gap_ventanas`, `gap_no_marketing`, `gap_sin_explicar`, por período. ⚠️ **`gap_sin_explicar` NO va en color de alerta** y su etiqueta en la UI es **"De fuente de marketing, fuera del mart"**, nunca "sin explicar": contiene los filtros de calificación del mart que esta v1 no descompone (ver Step 3), así que pintarlo como alerta afirmaría un problema que no está demostrado.
 
 - [ ] **Step 3: Escribir el texto de conclusiones con las cifras reales**
 
@@ -928,10 +928,13 @@ Redactar el bloque usando los números que salieron en la Task 4 Step 4 (no inve
 
 1. **La premisa corregida:** ever-asignado y el WBR mart no pueden coincidir por construcción — el mart es un indicador de marketing con 16 filtros, el ever-asignado cuenta todo lo asignado. Las dos brechas (esperada vs no esperada) van separadas explícitamente.
 2. **El tamaño de cada brecha** con las cifras de los últimos 6 meses.
-3. **El hallazgo accionable:** qué hay en `gap_sin_explicar` (leads de fuente de marketing, asignados, ausentes del mart) y en `q_noasig_en_mart` (el mart los cuenta y nuestras señales no).
-4. **La propuesta de mejora**, con dos ítems concretos: (a) qué revisar en la construcción del mart según lo que domine el gap; (b) **instrumentar `product_qualified` en el historial de HubSpot**, sin lo cual la ruta GABI→producto no es fechable.
+3. **Los dos resultados medidos, ambos contra la hipótesis original del spec:**
+   - `q_noasig_en_mart` = **0** en toda la ventana y en cada uno de los últimos 6 meses. El spec anticipaba que el hallazgo principal serían leads que el mart cuenta y nuestras señales no ven. **No existen.** Hay que decirlo así, como hipótesis refutada.
+   - El gap corre en la otra dirección y está dominado por un solo balde: gap total **56.801** = Ventanas **5.137** + fuentes no-marketing **95** + de fuente de marketing fuera del mart **51.569**.
+4. ⚠️ **El límite de esta v1, escrito explícitamente y sin adornos.** Ese balde de 51.569 **no es un hallazgo de leads perdidos**: el mart, además de filtrar por fuente, aplica **filtros de calificación** (los 16 de su definición canónica) que esta v1 no descompone. La mayor parte de esos 51.569 está esperablemente explicada por ellos. Prohibido publicar ese número como brecha accionable.
+5. **La propuesta de mejora**, con tres ítems concretos: (a) descomponer ese balde filtro por filtro — **la lógica ya existe en el tablero `asignados-creacion`** (bitmask de 5 filtros), así que la recomendación es cruzar ambos tableros, no re-implementarla aquí; (b) **instrumentar `product_qualified` en el historial de HubSpot**, sin lo cual la ruta GABI→producto no es fechable; (c) evaluar si `asignacion-co` y `asignados-creacion` deberían fusionarse, dado que uno reconcilia el conteo y el otro la mecánica.
 
-Reglas de redacción: sin jerga técnica en el texto visible, framing factual, y **ninguna afirmación sin su cifra al lado**.
+Reglas de redacción: sin jerga técnica en el texto visible, framing factual, y **ninguna afirmación sin su cifra al lado**. Y la regla dura de este bloque: **ninguna cifra presentada como problema sin decir qué parte de ella está explicada.**
 
 - [ ] **Step 4: Verificar que las cifras del texto coinciden con el JSON**
 
