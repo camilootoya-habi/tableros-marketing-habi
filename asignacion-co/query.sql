@@ -138,9 +138,9 @@ WITH leads AS (
     COUNT(DISTINCT IF(b.d_primera_asig IS NOT NULL AND NOT COALESCE(b.gabi_flag, FALSE)
                       AND DATE_DIFF(b.d_primera_asig, b.d_creacion, DAY) <= 30, b.nid, NULL)) AS directo_30d,
     COUNT(DISTINCT IF(b.d_primera_asig IS NOT NULL AND b.prod_1 = 'MM'
-                      AND DATE_DIFF(b.d_prod_1, b.d_creacion, DAY) <= 30, b.nid, NULL))       AS prod1_mm,
+                      AND DATE_DIFF(b.d_primera_asig, b.d_creacion, DAY) <= 30, b.nid, NULL)) AS prod1_mm,
     COUNT(DISTINCT IF(b.d_primera_asig IS NOT NULL AND b.prod_1 = 'INMO'
-                      AND DATE_DIFF(b.d_prod_1, b.d_creacion, DAY) <= 30, b.nid, NULL))       AS prod1_inmo,
+                      AND DATE_DIFF(b.d_primera_asig, b.d_creacion, DAY) <= 30, b.nid, NULL)) AS prod1_inmo,
     COUNT(DISTINCT IF(b.d_primera_asig IS NOT NULL AND b.prod_1 IS NULL
                       AND DATE_DIFF(b.d_primera_asig, b.d_creacion, DAY) <= 30, b.nid, NULL)) AS sin_producto
   FROM base2 b
@@ -244,20 +244,25 @@ FROM (
              END AS periodo,
              s.salto, s.dias
       FROM (
-        SELECT 'creacion_gabi' AS salto, d_gabi AS d_ancla, DATE_DIFF(d_gabi, d_creacion, DAY) AS dias
-          FROM base2 WHERE d_gabi IS NOT NULL
-        UNION ALL
-        SELECT 'gabi_mm',       d_mm,   DATE_DIFF(d_mm,   d_gabi, DAY)
-          FROM base2 WHERE d_gabi IS NOT NULL AND d_mm   IS NOT NULL AND d_mm   >= d_gabi
-        UNION ALL
-        SELECT 'mm_inmo',       d_inmo, DATE_DIFF(d_inmo, d_mm,   DAY)
-          FROM base2 WHERE d_mm   IS NOT NULL AND d_inmo IS NOT NULL AND d_inmo >  d_mm
-        UNION ALL
-        SELECT 'inmo_mm',       d_mm,   DATE_DIFF(d_mm,   d_inmo, DAY)
-          FROM base2 WHERE d_inmo IS NOT NULL AND d_mm   IS NOT NULL AND d_mm   >  d_inmo
+        SELECT salto, d_ancla, dias FROM (
+          SELECT 'creacion_gabi' AS salto, d_gabi AS d_ancla, DATE_DIFF(d_gabi, d_creacion, DAY) AS dias
+            FROM base2 WHERE d_gabi IS NOT NULL
+          UNION ALL
+          SELECT 'gabi_mm',       d_mm,   DATE_DIFF(d_mm,   d_gabi, DAY)
+            FROM base2 WHERE d_gabi IS NOT NULL AND d_mm   IS NOT NULL AND d_mm   >= d_gabi
+          UNION ALL
+          -- saltos_raw: mm_inmo/inmo_mm ordenan por ts_mm/ts_inmo (timestamp), no por la fecha DATE,
+          -- para no excluir cruces del mismo día con horas distintas. `dias` sigue siendo el
+          -- DATE_DIFF entre las fechas DATE (no las horas) — solo cambia la condición de secuencia.
+          SELECT 'mm_inmo' AS salto, d_inmo AS d_ancla, DATE_DIFF(d_inmo, d_mm, DAY) AS dias
+            FROM base2 WHERE ts_mm IS NOT NULL AND ts_inmo IS NOT NULL AND ts_inmo >= ts_mm
+          UNION ALL
+          SELECT 'inmo_mm',       d_mm,   DATE_DIFF(d_mm,   d_inmo, DAY)
+            FROM base2 WHERE ts_inmo IS NOT NULL AND ts_mm IS NOT NULL AND ts_mm > ts_inmo
+        ) saltos_raw
       ) s
       CROSS JOIN UNNEST(['semana','mes','ciclo']) AS gran
-    )
+    ) saltos_gran
     GROUP BY gran, periodo, salto
   )
 )
