@@ -342,7 +342,7 @@
           const sinCobertura = c.producto && (
             (c.key === 'prod1_mm' && cobertura < MM_PIPELINE_DESDE) ||
             (c.key === 'prod1_inmo' && cobertura < INMO_PIPELINE_DESDE) ||
-            (c.key === 'sin_producto' && cobertura < MM_PIPELINE_DESDE)
+            (c.key === 'sin_producto' && cobertura < INMO_PIPELINE_DESDE)
           );
           if (sinCobertura) {
             pctPorCol[c.key].push(null);
