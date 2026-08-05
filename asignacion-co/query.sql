@@ -222,39 +222,46 @@ FROM rutas_mm_agg
 UNPIVOT (n FOR metrica IN (llegadas, r_directo, r_gabi_prod, r_gabi_mm_cruce, r_cruce, r_regreso))
 WHERE n > 0
 UNION ALL
--- Tiempos por salto (mediana/p90 pre-agregados; NO re-agregables desde grano diario)
-SELECT 'tiempo' AS kind, gran AS lente, CAST(periodo AS STRING) AS d, salto AS dim,
-       CAST(mediana AS STRING) AS dim_val, CAST(p90 AS STRING) AS metrica, CAST(n AS STRING) AS n
+-- Tiempos por salto (mediana/p90/n_casos pre-agregados; NO re-agregables desde grano diario).
+-- Contrato: lente='TIEMPO' (familia), d=periodo (fecha real, ya truncado a su granularidad),
+-- dim=granularidad (semana|mes|ciclo), dim_val=salto, metrica in (mediana|p90|n_casos), n=valor.
+-- Una fila por medida (no empaquetado posicional) para que ningún nombre de columna mienta.
+SELECT 'tiempo' AS kind, 'TIEMPO' AS lente, CAST(periodo AS STRING) AS d, gran AS dim,
+       salto AS dim_val, metrica, CAST(valor AS STRING) AS n
 FROM (
-  SELECT gran, periodo, salto,
-         APPROX_QUANTILES(dias, 100)[OFFSET(50)] AS mediana,
-         APPROX_QUANTILES(dias, 100)[OFFSET(90)] AS p90,
-         COUNT(*) AS n
+  SELECT gran, periodo, salto, mediana, p90, n
   FROM (
-    SELECT gran,
-           CASE gran
-             WHEN 'semana' THEN DATE_TRUNC(s.d_ancla, ISOWEEK)
-             WHEN 'mes'    THEN DATE_TRUNC(s.d_ancla, MONTH)
-             ELSE               DATE_TRUNC(s.d_ancla, WEEK(WEDNESDAY))
-           END AS periodo,
-           s.salto, s.dias
+    SELECT gran, periodo, salto,
+           APPROX_QUANTILES(dias, 100)[OFFSET(50)] AS mediana,
+           APPROX_QUANTILES(dias, 100)[OFFSET(90)] AS p90,
+           COUNT(*) AS n
     FROM (
-      SELECT 'creacion_gabi' AS salto, d_gabi AS d_ancla, DATE_DIFF(d_gabi, d_creacion, DAY) AS dias
-        FROM base2 WHERE d_gabi IS NOT NULL
-      UNION ALL
-      SELECT 'gabi_mm',       d_mm,   DATE_DIFF(d_mm,   d_gabi, DAY)
-        FROM base2 WHERE d_gabi IS NOT NULL AND d_mm   IS NOT NULL AND d_mm   >= d_gabi
-      UNION ALL
-      SELECT 'mm_inmo',       d_inmo, DATE_DIFF(d_inmo, d_mm,   DAY)
-        FROM base2 WHERE d_mm   IS NOT NULL AND d_inmo IS NOT NULL AND d_inmo >  d_mm
-      UNION ALL
-      SELECT 'inmo_mm',       d_mm,   DATE_DIFF(d_mm,   d_inmo, DAY)
-        FROM base2 WHERE d_inmo IS NOT NULL AND d_mm   IS NOT NULL AND d_mm   >  d_inmo
-    ) s
-    CROSS JOIN UNNEST(['semana','mes','ciclo']) AS gran
+      SELECT gran,
+             CASE gran
+               WHEN 'semana' THEN DATE_TRUNC(s.d_ancla, ISOWEEK)
+               WHEN 'mes'    THEN DATE_TRUNC(s.d_ancla, MONTH)
+               ELSE               DATE_TRUNC(s.d_ancla, WEEK(WEDNESDAY))
+             END AS periodo,
+             s.salto, s.dias
+      FROM (
+        SELECT 'creacion_gabi' AS salto, d_gabi AS d_ancla, DATE_DIFF(d_gabi, d_creacion, DAY) AS dias
+          FROM base2 WHERE d_gabi IS NOT NULL
+        UNION ALL
+        SELECT 'gabi_mm',       d_mm,   DATE_DIFF(d_mm,   d_gabi, DAY)
+          FROM base2 WHERE d_gabi IS NOT NULL AND d_mm   IS NOT NULL AND d_mm   >= d_gabi
+        UNION ALL
+        SELECT 'mm_inmo',       d_inmo, DATE_DIFF(d_inmo, d_mm,   DAY)
+          FROM base2 WHERE d_mm   IS NOT NULL AND d_inmo IS NOT NULL AND d_inmo >  d_mm
+        UNION ALL
+        SELECT 'inmo_mm',       d_mm,   DATE_DIFF(d_mm,   d_inmo, DAY)
+          FROM base2 WHERE d_inmo IS NOT NULL AND d_mm   IS NOT NULL AND d_mm   >  d_inmo
+      ) s
+      CROSS JOIN UNNEST(['semana','mes','ciclo']) AS gran
+    )
+    GROUP BY gran, periodo, salto
   )
-  GROUP BY gran, periodo, salto
 )
+UNPIVOT (valor FOR metrica IN (mediana AS 'mediana', p90 AS 'p90', n AS 'n_casos'))
 UNION ALL
 -- Reconciliación con el WBR mart: 4 cuadrantes + descomposición del gap "asignado y no en mart"
 SELECT 'count', 'REC', CAST(d_creacion AS STRING), 'total', 'total', metrica, CAST(n AS STRING)
