@@ -38,7 +38,21 @@ METABASE_CARD = "51604d7d-00ed-46af-8223-78a0a01b940d"
 METABASE_URL = f"https://metabase.propiedades.com/api/public/card/{METABASE_CARD}/query/json"
 
 INSIGHT_FIELDS = ("ad_id,spend,impressions,reach,clicks,inline_link_clicks,"
-                  "ctr,cpc,cpm,actions,cost_per_action_type")
+                  "ctr,cpc,cpm,actions,conversions")
+
+# Nombre del custom event del pixel de Propiedades.com por el que optimizan las
+# campañas de evento. Meta lo expone DESGLOSADO solo en `conversions`
+# ('offsite_conversion.fb_pixel_custom.<nombre>'); en `actions` aparece
+# agregado con TODOS los custom events de la cuenta ('..._custom', sin nombre),
+# que el 2026-08-05 daba 95 donde el nuestro eran 56. Leerlo de `actions`
+# sobrecuenta ~70%.
+CUSTOM_EVENT = "interes_marketing"
+
+# Meta permite que un ad set gaste hasta 75% por encima de su presupuesto
+# diario y lo compensa a lo largo de la semana. Verificado el 2026-08-05:
+# ad sets de $4/día cerraron el día en $7.00 exactos (= 4 × 1.75). El techo
+# real de gasto NO es el presupuesto nominal, y el tablero debe mostrarlo.
+TECHO_META = 1.75
 
 
 # ---------- Meta ----------
@@ -84,9 +98,15 @@ def fetch_status():
 def fetch_daily(ad_ids, date_preset="maximum"):
     """Serie diaria por ad (time_increment=1) -> lista de filas.
     Alimenta la tabla por período (día/semana/ciclo/mes) del tablero, que
-    bucketea del lado del cliente. Solo se conservan los ads del catálogo."""
+    bucketea del lado del cliente. Solo se conservan los ads del catálogo.
+
+    Trae `actions` porque desde que pauteamos por evento la métrica que importa
+    es la conversión, no el clic: sin esto ni los KPIs ni la tabla por período
+    ni las mini-gráficas pueden mostrar eventos/CPA en el tiempo."""
     url = f"{BASE}/{AD_ACCOUNT}/insights"
-    params = {"level": "ad", "fields": "ad_id,spend,impressions,inline_link_clicks",
+    params = {"level": "ad",
+              "fields": "ad_id,spend,impressions,inline_link_clicks,"
+                        "actions,conversions",
               "time_increment": 1, "date_preset": date_preset, "limit": 500,
               "access_token": TOKEN}
     serie = []
@@ -95,34 +115,51 @@ def fetch_daily(ad_ids, date_preset="maximum"):
         for r in data.get("data", []):
             if r["ad_id"] not in ad_ids:
                 continue
+            ev, contactos, leads, lpv = _acciones(r.get("actions"),
+                                                  r.get("conversions"))
             serie.append({
                 "ad_id": r["ad_id"],
                 "fecha": r["date_start"],
                 "gasto": round(_f(r.get("spend")), 2),
                 "impresiones": _i(r.get("impressions")),
                 "clics_enlace": _i(r.get("inline_link_clicks")),
+                "eventos": ev,
+                "contactos": contactos,
+                "leads": leads,
+                "lpv": lpv,
             })
         url = data.get("paging", {}).get("next")
         params = None
     return serie
 
 
-def event_metrics(actions, cost_per_action, spend, custom_event="interes_marketing"):
-    """Extrae (nº eventos, CPA) de los custom conversions offsite del pixel.
-    Suma cualquier action_type 'offsite_conversion.custom.*' (la cuenta tiene un
-    único custom event). CPA = promedio ponderado; fallback spend/eventos."""
-    ev = 0
+def _acciones(actions, conversions):
+    """(eventos, contactos, leads, landing_page_views) de una fila de insights.
+
+    - eventos: el custom event CUSTOM_EVENT, leído de `conversions` (ver nota
+      en la constante: `actions` lo trae agregado con los demás custom events).
+    - contactos: 'contact_total' — contacto real con el anunciante.
+    - leads: 'lead' del pixel.
+    - lpv: 'landing_page_view' = clics que SÍ alcanzaron a cargar la ficha.
+      Base de "eventos por página cargada", el indicador que separa "el anuncio
+      funciona" de "la ficha convierte".
+    """
+    ev = contactos = 0
+    for c in conversions or []:
+        t = str(c.get("action_type", ""))
+        if t.endswith(f".{CUSTOM_EVENT}"):
+            ev += _i(c.get("value"))
+        elif t == "contact_total":
+            contactos += _i(c.get("value"))
+    leads = lpv = 0
     for a in actions or []:
-        if str(a.get("action_type", "")).startswith("offsite_conversion.custom."):
-            ev += int(float(a.get("value", 0) or 0))
-    cpa = 0.0
-    for a in cost_per_action or []:
-        if str(a.get("action_type", "")).startswith("offsite_conversion.custom."):
-            cpa = round(float(a.get("value", 0) or 0), 2)
-            break
-    if not cpa and ev:
-        cpa = round(float(spend) / ev, 2)
-    return ev, cpa
+        t = str(a.get("action_type", ""))
+        if t == "lead":
+            leads += _i(a.get("value"))
+        elif t == "landing_page_view":
+            lpv += _i(a.get("value"))
+    return ev, contactos, leads, lpv
+
 
 
 # ---------- Metabase: estatus del listing + leads diarios ----------
@@ -202,8 +239,10 @@ def load_config():
     """Config de campaña desde clientes.json (reemplaza el Google Sheet).
     Devuelve (clientes, cfg) donde clientes: cid -> {nombre, presupuesto_diario, activo}."""
     cfg = json.load(open(CLIENTES, encoding="utf-8"))
+    pe_def = float(cfg.get("presupuesto_evento_default", 0))
     clientes = {c["cliente_id"]: {"nombre": c["nombre"],
                                   "presupuesto_diario": float(c.get("presupuesto_diario", 0)),
+                                  "presupuesto_evento": float(c.get("presupuesto_evento", pe_def)),
                                   "activo": bool(c.get("activo", True))}
                 for c in cfg.get("clientes", [])}
     return clientes, cfg
@@ -254,7 +293,8 @@ def build(date_preset="maximum"):
         spend = _f(m.get("spend"))
         link_clicks = _i(m.get("inline_link_clicks"))
         la, da, lp, dp = prepost.get(str(p["id_aviso"]), (0, 0, 0, 0))
-        ev, cpa = event_metrics(m.get("actions"), m.get("cost_per_action_type"), spend)
+        ev, contactos, leads, lpv = _acciones(m.get("actions"), m.get("conversions"))
+        cpa = round(spend / ev, 2) if ev else 0.0
         filas.append({
             **p,
             "status": status_live.get(p["ad_id"], p.get("status", "")),
@@ -273,34 +313,54 @@ def build(date_preset="maximum"):
             "etapa": p.get("etapa", "traffic"),
             "eventos": ev,
             "cpa": cpa,
+            "contactos": contactos,
+            "leads": leads,
+            "lpv": lpv,
+            # cuántas veces se dispara el evento por cada ficha que sí cargó:
+            # aísla la calidad de la ficha de la calidad del anuncio.
+            "ev_por_lpv": round(ev / lpv, 2) if lpv else 0.0,
+            "costo_x_lead": round(spend / leads, 2) if leads else 0.0,
         })
 
     filas.sort(key=lambda x: x["gasto"], reverse=True)
 
     def agg(rows):
-        return (sum(r["gasto"] for r in rows),
-                sum(r["impresiones"] for r in rows),
-                sum(r["clics_enlace"] for r in rows))
+        s = lambda k: sum(r[k] for r in rows)  # noqa: E731
+        return (s("gasto"), s("impresiones"), s("clics_enlace"),
+                s("eventos"), s("contactos"), s("leads"), s("lpv"))
 
-    g, imp, cl = agg(filas)
+    g, imp, cl, gev, gcon, glead, glpv = agg(filas)
     objetivo = int(cfg.get("ads_activos_objetivo", 20))
     min_usd = float(cfg.get("min_usd_por_ad", 1)) or 1
+    min_usd_ev = float(cfg.get("min_usd_por_ad_evento", 4)) or 4
     cli_rows = []
     for cid, c in clientes.items():
         rs = [r for r in filas if r["cliente_id"] == cid]
         if not rs:
             continue
-        cg, cimp, ccl = agg(rs)
+        cg, cimp, ccl, cev, ccon, clead, clpv = agg(rs)
+        ev_rs = [r for r in rs if r.get("etapa") == "evento"]
         # meta de ads activos: min(objetivo, presupuesto/$min) — respeta el $1/día
         meta_activos = min(objetivo, int(c["presupuesto_diario"] // min_usd))
         cli_rows.append({
             "cliente_id": cid, "nombre": c["nombre"],
             "presupuesto_diario": c["presupuesto_diario"],
+            "presupuesto_evento": c["presupuesto_evento"],
+            # Meta deja que un ad set gaste hasta 75% sobre su presupuesto
+            # diario y lo compensa en la semana: el techo real de un cliente
+            # NO es su presupuesto nominal.
+            "techo_evento": round(c["presupuesto_evento"] * TECHO_META, 2),
             "activo": c.get("activo", True),
             "meta_activos": meta_activos,
+            "meta_activos_evento": int(c["presupuesto_evento"] // min_usd_ev),
+            "activas_evento": sum(1 for r in ev_rs if r["status"] == "ACTIVE"),
             "gasto": round(cg, 2), "impresiones": cimp, "clics_enlace": ccl,
             "ctr": round(ccl / cimp * 100, 2) if cimp else 0.0,
             "cpc": round(cg / ccl, 2) if ccl else 0.0,
+            "eventos": cev, "contactos": ccon, "leads": clead, "lpv": clpv,
+            "cpa": round(cg / cev, 2) if cev else 0.0,
+            "costo_x_lead": round(cg / clead, 2) if clead else 0.0,
+            "ev_por_lpv": round(cev / clpv, 2) if clpv else 0.0,
             "publicaciones": len(rs),
             "activas": sum(1 for r in rs if r["status"] == "ACTIVE"),
         })
@@ -314,6 +374,10 @@ def build(date_preset="maximum"):
             "gasto": round(g, 2), "impresiones": imp, "clics_enlace": cl,
             "ctr": round(cl / imp * 100, 2) if imp else 0.0,
             "cpc": round(g / cl, 2) if cl else 0.0,
+            "eventos": gev, "contactos": gcon, "leads": glead, "lpv": glpv,
+            "cpa": round(g / gev, 2) if gev else 0.0,
+            "costo_x_lead": round(g / glead, 2) if glead else 0.0,
+            "ev_por_lpv": round(gev / glpv, 2) if glpv else 0.0,
             "publicaciones": len(filas),
             "activas": sum(1 for r in filas if r["status"] == "ACTIVE"),
             "con_gasto": sum(1 for r in filas if r["gasto"] > 0),
@@ -322,6 +386,9 @@ def build(date_preset="maximum"):
             "actualizado": cfg.get("actualizado"),
             "ads_activos_objetivo": objetivo,
             "min_usd_por_ad": min_usd,
+            "min_usd_por_ad_evento": min_usd_ev,
+            "presupuesto_evento_default": float(cfg.get("presupuesto_evento_default", 0)),
+            "techo_meta": TECHO_META,
         },
         "clientes": cli_rows,
         "publicaciones": filas,

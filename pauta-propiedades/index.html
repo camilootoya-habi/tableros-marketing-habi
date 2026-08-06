@@ -117,7 +117,7 @@
   <header class="titlebar">
     <div>
       <h1>🏡 Pauta Propiedades.com</h1>
-      <div class="subtitle">Rendimiento de la pauta automatizada de publicaciones del listing en Meta (objetivo Tráfico → ficha del inmueble). Métricas por publicación y por cliente inmobiliario.</div>
+      <div class="subtitle">Rendimiento de la pauta automatizada de publicaciones del listing en Meta. Desde el 05-ago-2026 solo corren campañas de <b>conversión</b>, optimizadas por el evento <code>interes_marketing</code> del pixel; las de tráfico quedaron pausadas.</div>
     </div>
     <div class="freshness">
       <span class="pill" id="last-update">Cargando…</span>
@@ -137,9 +137,9 @@
     </div>
     <div class="selector-group">
       <label>Etapa</label>
-      <button class="chip active" data-etapa="todas">Todas</button>
+      <button class="chip active" data-etapa="evento">Evento</button>
       <button class="chip" data-etapa="traffic">Tráfico</button>
-      <button class="chip" data-etapa="evento">Evento</button>
+      <button class="chip" data-etapa="todas">Todas</button>
     </div>
     <div class="selector-group">
       <label>Temporalidad</label>
@@ -152,7 +152,7 @@
 
   <div class="alarm" id="alarm"></div>
 
-  <h2 class="section-title">Configuración de campaña <span class="help" title="clientes.json · meta 20 ads activos por cliente, mín. $1/día">?</span></h2>
+  <h2 class="section-title">Configuración y control de gasto <span class="help" title="clientes.json · etapa evento: presupuesto por cliente ÷ mínimo por ad. El techo es el máximo que Meta puede gastar en un día.">?</span></h2>
   <div class="cfg-row">
     <div class="table-card"><div id="config"></div></div>
     <div class="chart-card">
@@ -165,11 +165,17 @@
   <h2 class="section-title">Indicadores · últimos 14 días</h2>
   <div class="kpis">
     <div class="kpi-card"><div class="kpi-label">Gasto</div><div class="kpi-value" id="k-gasto">—</div></div>
-    <div class="kpi-card"><div class="kpi-label">Impresiones</div><div class="kpi-value" id="k-impr">—</div></div>
-    <div class="kpi-card"><div class="kpi-label">Clics al enlace</div><div class="kpi-value" id="k-clics">—</div></div>
-    <div class="kpi-card"><div class="kpi-label">CTR</div><div class="kpi-value" id="k-ctr">—</div></div>
-    <div class="kpi-card"><div class="kpi-label">CPM</div><div class="kpi-value" id="k-cpm">—</div></div>
-    <div class="kpi-card"><div class="kpi-label">CPC</div><div class="kpi-value" id="k-cpc">—</div></div>
+    <div class="kpi-card"><div class="kpi-label">Eventos</div><div class="kpi-value" id="k-ev">—</div></div>
+    <div class="kpi-card"><div class="kpi-label">CPA</div><div class="kpi-value" id="k-cpa">—</div></div>
+    <div class="kpi-card"><div class="kpi-label">Ev. / página cargada</div><div class="kpi-value" id="k-evlpv">—</div></div>
+    <div class="kpi-card"><div class="kpi-label">Leads</div><div class="kpi-value" id="k-leads">—</div></div>
+    <div class="kpi-card"><div class="kpi-label">Costo / lead</div><div class="kpi-value" id="k-cpl">—</div></div>
+  </div>
+
+  <div class="table-card" style="margin-bottom:24px">
+    <h3>Comparativa por cliente <span class="help" title="Últimos 14 días completos. 'Ev./pág' separa la calidad del anuncio de la de la ficha: mide cuántos eventos dispara cada visita que sí cargó.">?</span></h3>
+    <div class="hint" id="comp-hint" style="font-size:11px;color:#64748b;margin-bottom:12px"></div>
+    <div id="comparativa"></div>
   </div>
 
   <div class="table-card" style="margin-bottom:24px">
@@ -197,6 +203,9 @@
           <th data-k="etapa">Etapa</th>
           <th data-k="eventos" style="text-align:right">Eventos</th>
           <th data-k="cpa" style="text-align:right">CPA</th>
+          <th data-k="ev_por_lpv" style="text-align:right">Ev./pág</th>
+          <th data-k="contactos" style="text-align:right">Contactos</th>
+          <th data-k="leads" style="text-align:right">Leads</th>
           <th data-k="colonia">Colonia</th>
           <th data-k="gasto" class="sorted">Gasto</th>
           <th data-k="impresiones">Impr.</th>
@@ -231,7 +240,10 @@
 
   <footer class="notas">
     Fuente: <code>Marketing API de Meta</code> (insights a nivel ad) cruzada con los registros locales del proyecto de pauta.
-    Cada publicación = 1 ad carrusel; 1 campaña por cliente con presupuesto diario compartido (CBO). Objetivo <b>Tráfico</b> → ficha del inmueble en Propiedades.com.
+    Cada publicación = 1 ad carrusel. Etapa <b>evento</b> (la que corre hoy): 1 campaña de conversión por cliente, 1 ad set por publicación con presupuesto propio (ABO),
+    optimizando el evento <code>interes_marketing</code> del pixel de Propiedades.com. Etapa <b>tráfico</b> (pausada el 05-ago-2026): campaña por cliente con presupuesto compartido (CBO), objetivo clics a la ficha.
+    Al mirar “Todas” las etapas, la caída de clics del 05-ago es esa decisión, no una caída de rendimiento.
+    <b>Ojo con los eventos:</b> <code>interes_marketing</code> se dispara varias veces por visita, así que no equivale a personas interesadas; el denominador comparable con otros canales son los <b>leads</b>.
     <b>Actualización automática cada 4h</b> vía GitHub Actions (Meta Marketing API). Los pausados aparecen en $0.
     La tabla por período usa la serie diaria de Meta, bucketeada según la <b>Temporalidad</b> (día / semana Lun→Dom / ciclo Mié→Mar / mes); últimos 20 períodos.
   </footer>
@@ -372,6 +384,7 @@
       const rows = filtered();
       renderAlarm(rows);
       renderKpis(rows);
+      renderComparativa();
       renderPeriodTable(rows);
       renderMiniCharts(rows);
       renderMonthlyChart();
@@ -397,21 +410,24 @@
       const axis = dailyAxis();
       const labels = axis.map(dLabel);
       const idx = axis.reduce((o, d, i) => (o[d] = i, o), {});
-      const g = axis.map(() => 0), im = axis.map(() => 0), c = axis.map(() => 0);
+      const g = axis.map(() => 0), ev = axis.map(() => 0), co = axis.map(() => 0),
+            ld = axis.map(() => 0), lp = axis.map(() => 0), c = axis.map(() => 0);
       rows.forEach(p => (serieByAd[p.ad_id] || []).forEach(s => {
         const i = idx[s.fecha]; if (i === undefined) return;
-        g[i] += s.gasto; im[i] += s.impresiones; c[i] += s.clics_enlace;
+        g[i] += s.gasto; c[i] += s.clics_enlace;
+        ev[i] += (s.eventos || 0); co[i] += (s.contactos || 0);
+        ld[i] += (s.leads || 0); lp[i] += (s.lpv || 0);
       }));
-      const ctr = axis.map((_, i) => im[i] > 0 ? c[i] / im[i] * 100 : null);
-      const cpc = axis.map((_, i) => c[i] > 0 ? g[i] / c[i] : null);
-      const cpm = axis.map((_, i) => im[i] > 0 ? g[i] / im[i] * 1000 : null);
+      const cpa = axis.map((_, i) => ev[i] > 0 ? g[i] / ev[i] : null);
+      const evlpv = axis.map((_, i) => lp[i] > 0 ? ev[i] / lp[i] : null);
+      const carga = axis.map((_, i) => c[i] > 0 ? lp[i] / c[i] * 100 : null);
       const series = [
         { key: 'gasto', label: 'Gasto', color: '#3987e5', data: g, fmt: fmtUsd0 },
-        { key: 'impr', label: 'Impresiones', color: '#199e70', data: im, fmt: fmtInt },
-        { key: 'clics', label: 'Clics al enlace', color: '#c98500', data: c, fmt: fmtInt },
-        { key: 'ctr', label: 'CTR %', color: '#a78bfa', data: ctr, fmt: v => v.toFixed(2) + '%' },
-        { key: 'cpm', label: 'CPM', color: '#22d3ee', data: cpm, fmt: fmtUsd },
-        { key: 'cpc', label: 'CPC', color: '#f472b6', data: cpc, fmt: fmtUsd },
+        { key: 'ev', label: 'Eventos', color: '#199e70', data: ev, fmt: fmtInt },
+        { key: 'cpa', label: 'CPA', color: '#c98500', data: cpa, fmt: fmtUsd },
+        { key: 'evlpv', label: 'Ev. / página cargada', color: '#a78bfa', data: evlpv, fmt: v => v.toFixed(2) },
+        { key: 'cont', label: 'Contactos', color: '#22d3ee', data: co, fmt: fmtInt },
+        { key: 'carga', label: '% clics que cargan', color: '#f472b6', data: carga, fmt: v => v.toFixed(0) + '%' },
       ];
       buildMiniRow('mini-abs', labels, series, 'abs');
       buildMiniRow('mini-ma', labels, series.map(s => ({ ...s, data: ma7(s.data) })), 'ma');
@@ -447,13 +463,17 @@
       const periods = lastPeriods(tipo, 20);
       const idx = periods.reduce((o, b, i) => (o[b] = i, o), {});
       // acumula la serie diaria de los ads visibles en su bucket de período
-      const G = periods.map(() => 0), I = periods.map(() => 0), C = periods.map(() => 0);
+      const G = periods.map(() => 0), I = periods.map(() => 0), C = periods.map(() => 0),
+            EV = periods.map(() => 0), CO = periods.map(() => 0),
+            LD = periods.map(() => 0), LP = periods.map(() => 0);
       rows.forEach(p => {
         (serieByAd[p.ad_id] || []).forEach(s => {
           const b = periodBucket(new Date(s.fecha + 'T00:00:00'), tipo);
           const i = idx[b];
           if (i === undefined) return;
           G[i] += s.gasto; I[i] += s.impresiones; C[i] += s.clics_enlace;
+          EV[i] += (s.eventos || 0); CO[i] += (s.contactos || 0);
+          LD[i] += (s.leads || 0); LP[i] += (s.lpv || 0);
         });
       });
       const last = periods.length - 1;
@@ -468,11 +488,14 @@
           <thead><tr><th>${hcol}</th>${head}</tr></thead>
           <tbody>
             <tr><td>Inversión</td>${G.map((v, i) => cell(v, i, fmtUsd0)).join('')}</tr>
-            <tr><td>Impresiones</td>${I.map((v, i) => cell(v, i, fmtInt)).join('')}</tr>
+            <tr><td>Eventos</td>${EV.map((v, i) => cell(v, i, fmtInt)).join('')}</tr>
+            <tr><td>CPA</td>${EV.map((e, i) => rcell(e > 0, i, fmtUsd(G[i] / e))).join('')}</tr>
+            <tr><td>Ev. / página cargada</td>${LP.map((l, i) => rcell(l > 0, i, (EV[i] / l).toFixed(2))).join('')}</tr>
+            <tr><td>Contactos</td>${CO.map((v, i) => cell(v, i, fmtInt)).join('')}</tr>
+            <tr><td>Leads</td>${LD.map((v, i) => cell(v, i, fmtInt)).join('')}</tr>
+            <tr><td>Costo / lead</td>${LD.map((l, i) => rcell(l > 0, i, fmtUsd(G[i] / l))).join('')}</tr>
             <tr><td>Clics al enlace</td>${C.map((v, i) => cell(v, i, fmtInt)).join('')}</tr>
-            <tr><td>CTR</td>${I.map((imp, i) => rcell(imp > 0, i, (C[i] / imp * 100).toFixed(2) + '%')).join('')}</tr>
-            <tr><td>CPM</td>${I.map((imp, i) => rcell(imp > 0, i, fmtUsd(G[i] / imp * 1000))).join('')}</tr>
-            <tr><td>CPC</td>${C.map((cl, i) => rcell(cl > 0, i, fmtUsd(G[i] / cl))).join('')}</tr>
+            <tr><td>% clics que cargan</td>${C.map((cl, i) => rcell(cl > 0, i, (LP[i] / cl * 100).toFixed(0) + '%')).join('')}</tr>
           </tbody>
         </table>`;
       document.getElementById('period-hint').textContent =
@@ -487,26 +510,134 @@
       return { lo: ymd(lo), hi: ymd(hi) };
     }
 
+    // gasto del último día COMPLETO por cliente (para contrastar contra el techo)
+    function gastoAyerPorCliente() {
+      const axis = dailyAxis();
+      const ayer = axis[axis.length - 1];
+      const adCli = {};
+      state.data.publicaciones.forEach(p => {
+        if ((p.etapa || 'traffic') === 'evento') adCli[p.ad_id] = p.cliente_id;
+      });
+      const out = {};
+      (state.data.serie || []).forEach(s => {
+        const cid = adCli[s.ad_id];
+        if (cid && s.fecha === ayer) out[cid] = (out[cid] || 0) + s.gasto;
+      });
+      return { ayer, out };
+    }
+
     function renderConfig() {
       const cs = state.data.clientes.filter(c => c.activo !== false);
+      const techoF = (state.data.config_campana || {}).techo_meta || 1.75;
+      const { ayer, out } = gastoAyerPorCliente();
       const rows = cs.map(c => {
-        const falta = Math.max((c.meta_activos || 0) - (c.activas || 0), 0);
+        const meta = c.meta_activos_evento || 0, act = c.activas_evento || 0;
+        const falta = Math.max(meta - act, 0);
         const est = falta === 0
           ? `<span class="badge ok">Completo</span>`
           : `<span class="badge warn">Faltan ${falta}</span>`;
+        const gastoAyer = out[c.cliente_id] || 0;
+        const techo = c.techo_evento || (c.presupuesto_evento || 0) * techoF;
+        // se marca cuando el gasto real superó el presupuesto nominal
+        const sobre = gastoAyer > (c.presupuesto_evento || 0) + 0.01;
         return `<tr>
           <td><span class="dot" style="background:${colorByClient[c.cliente_id]};display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:8px"></span>${c.nombre}</td>
-          <td style="text-align:right">${fmtUsd0(c.presupuesto_diario)}/día</td>
-          <td style="text-align:right">${c.meta_activos}</td>
-          <td style="text-align:right">${c.activas}</td>
+          <td style="text-align:right">${fmtUsd0(c.presupuesto_evento || 0)}/día</td>
+          <td style="text-align:right" class="muted">${fmtUsd0(techo)}/día</td>
+          <td style="text-align:right"${sobre ? ' style="text-align:right;color:#fbbf24"' : ''}>${gastoAyer ? fmtUsd(gastoAyer) : '<span class="muted">·</span>'}</td>
+          <td style="text-align:right">${meta}</td>
+          <td style="text-align:right">${act}</td>
           <td style="text-align:right">${est}</td>
         </tr>`;
       }).join('');
+      const totNom = cs.reduce((a, c) => a + (c.presupuesto_evento || 0), 0);
+      const totTecho = cs.reduce((a, c) => a + (c.techo_evento || 0), 0);
+      const totAyer = cs.reduce((a, c) => a + (out[c.cliente_id] || 0), 0);
       document.getElementById('config').innerHTML = `
-        <table style="min-width:520px">
-          <thead><tr><th>Cliente</th><th style="text-align:right">Presupuesto</th><th style="text-align:right">Meta activos</th><th style="text-align:right">Activos hoy</th><th style="text-align:right">Estado</th></tr></thead>
+        <table style="min-width:620px">
+          <thead><tr>
+            <th>Cliente</th>
+            <th style="text-align:right">Presupuesto</th>
+            <th style="text-align:right">Techo Meta</th>
+            <th style="text-align:right">Gasto ${ayer ? dLabel(ayer) : 'ayer'}</th>
+            <th style="text-align:right">Meta ads</th>
+            <th style="text-align:right">Activos</th>
+            <th style="text-align:right">Estado</th>
+          </tr></thead>
+          <tbody>${rows}
+            <tr style="border-top:1px solid #334155;font-weight:600">
+              <td>Total</td>
+              <td style="text-align:right">${fmtUsd0(totNom)}/día</td>
+              <td style="text-align:right" class="muted">${fmtUsd0(totTecho)}/día</td>
+              <td style="text-align:right">${fmtUsd(totAyer)}</td>
+              <td colspan="3"></td>
+            </tr>
+          </tbody>
+        </table>
+        <div class="hint" style="font-size:11px;color:#64748b;margin-top:10px">
+          Meta puede gastar hasta ${Math.round((techoF - 1) * 100)}% sobre el presupuesto diario de cada ad set y lo compensa en la semana:
+          el <b>techo</b> es el máximo real de un día, no el presupuesto nominal.
+        </div>`;
+    }
+
+    // Comparativa por cliente sobre los últimos 14 días completos. Respeta el
+    // filtro de Etapa/Estado (no el de Cliente: la gracia es comparar entre sí).
+    function renderComparativa() {
+      const { lo, hi } = last14Window();
+      const base = state.data.publicaciones.filter(p =>
+        (state.estado === 'todos' || p.status === state.estado) &&
+        (state.etapa === 'todas' || (p.etapa || 'traffic') === state.etapa));
+      const acc = {};
+      base.forEach(p => {
+        const a = acc[p.cliente_id] = acc[p.cliente_id] ||
+          { nombre: p.cliente, g: 0, ev: 0, co: 0, ld: 0, lp: 0, cl: 0, ads: 0 };
+        if (p.status === 'ACTIVE') a.ads++;
+        (serieByAd[p.ad_id] || []).forEach(s => {
+          if (s.fecha < lo || s.fecha > hi) return;
+          a.g += s.gasto; a.ev += (s.eventos || 0); a.co += (s.contactos || 0);
+          a.ld += (s.leads || 0); a.lp += (s.lpv || 0); a.cl += s.clics_enlace;
+        });
+      });
+      const cs = Object.entries(acc).map(([cid, a]) => ({ cid, ...a }))
+        .filter(a => a.g > 0 || a.ads > 0)
+        .sort((a, b) => b.ev - a.ev);
+      if (!cs.length) {
+        document.getElementById('comparativa').innerHTML =
+          '<div class="muted" style="padding:12px 0">Sin datos en la ventana para los filtros actuales.</div>';
+        document.getElementById('comp-hint').textContent = '';
+        return;
+      }
+      const mejorRatio = Math.max(...cs.map(a => a.lp ? a.ev / a.lp : 0));
+      const rows = cs.map(a => {
+        const ratio = a.lp ? a.ev / a.lp : null;
+        // se resalta al que rinde claramente por encima del resto
+        const destaca = ratio != null && mejorRatio > 0 && ratio >= mejorRatio * 0.9 && cs.length > 1;
+        return `<tr>
+          <td><span class="dot" style="background:${colorByClient[a.cid]};display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:8px"></span>${a.nombre}</td>
+          <td style="text-align:right">${a.ads}</td>
+          <td style="text-align:right">${fmtUsd(a.g)}</td>
+          <td style="text-align:right">${fmtInt(a.ev)}</td>
+          <td style="text-align:right">${a.ev ? fmtUsd(a.g / a.ev) : '<span class="muted">·</span>'}</td>
+          <td style="text-align:right${destaca ? ';color:#4ade80;font-weight:600' : ''}">${ratio != null ? ratio.toFixed(2) : '<span class="muted">·</span>'}</td>
+          <td style="text-align:right">${a.cl ? (a.lp / a.cl * 100).toFixed(0) + '%' : '<span class="muted">·</span>'}</td>
+          <td style="text-align:right">${fmtInt(a.co)}</td>
+          <td style="text-align:right">${fmtInt(a.ld)}</td>
+          <td style="text-align:right">${a.ld ? fmtUsd(a.g / a.ld) : '<span class="muted">·</span>'}</td>
+        </tr>`;
+      }).join('');
+      document.getElementById('comparativa').innerHTML = `
+        <table style="min-width:760px">
+          <thead><tr>
+            <th>Cliente</th><th style="text-align:right">Ads activos</th><th style="text-align:right">Gasto</th>
+            <th style="text-align:right">Eventos</th><th style="text-align:right">CPA</th>
+            <th style="text-align:right">Ev./pág</th><th style="text-align:right">% cargan</th>
+            <th style="text-align:right">Contactos</th><th style="text-align:right">Leads</th>
+            <th style="text-align:right">Costo/lead</th>
+          </tr></thead>
           <tbody>${rows}</tbody>
         </table>`;
+      document.getElementById('comp-hint').textContent =
+        `Últimos 14 días completos (${lo} → ${hi}) · no se aplica el filtro de Cliente, para poder compararlos entre sí`;
     }
 
     function renderAlarm(rows) {
@@ -527,18 +658,18 @@
 
     function renderKpis(rows) {
       const { lo, hi } = last14Window();
-      let g = 0, imp = 0, cl = 0;
+      let g = 0, ev = 0, lead = 0, lpv = 0;
       rows.forEach(p => (serieByAd[p.ad_id] || []).forEach(s => {
         if (s.fecha >= lo && s.fecha <= hi) {
-          g += s.gasto; imp += s.impresiones; cl += s.clics_enlace;
+          g += s.gasto; ev += (s.eventos || 0); lead += (s.leads || 0); lpv += (s.lpv || 0);
         }
       }));
       document.getElementById('k-gasto').textContent = fmtUsd(g);
-      document.getElementById('k-impr').textContent = fmtInt(imp);
-      document.getElementById('k-clics').textContent = fmtInt(cl);
-      document.getElementById('k-ctr').textContent = (imp ? (cl / imp * 100) : 0).toFixed(2) + '%';
-      document.getElementById('k-cpm').textContent = fmtUsd(imp ? g / imp * 1000 : 0);
-      document.getElementById('k-cpc').textContent = fmtUsd(cl ? g / cl : 0);
+      document.getElementById('k-ev').textContent = fmtInt(ev);
+      document.getElementById('k-cpa').textContent = ev ? fmtUsd(g / ev) : '—';
+      document.getElementById('k-evlpv').textContent = lpv ? (ev / lpv).toFixed(2) : '—';
+      document.getElementById('k-leads').textContent = fmtInt(lead);
+      document.getElementById('k-cpl').textContent = lead ? fmtUsd(g / lead) : '—';
     }
 
     const chartOpts = (extra = {}) => ({
@@ -618,6 +749,9 @@
           <td><span class="badge ${(r.etapa||'traffic')==='evento'?'evt':'trf'}">${(r.etapa||'traffic')==='evento'?'Evento':'Tráfico'}</span></td>
           <td style="text-align:right">${r.eventos||0}</td>
           <td style="text-align:right">${r.cpa? '$'+r.cpa : '—'}</td>
+          <td style="text-align:right" title="${r.lpv||0} páginas cargadas">${r.ev_por_lpv ? r.ev_por_lpv.toFixed(2) : '<span class="muted">·</span>'}</td>
+          <td style="text-align:right">${r.contactos||0}</td>
+          <td style="text-align:right">${r.leads||0}</td>
           <td>${r.colonia || ''}</td>
           <td>${fmtUsd(r.gasto)}</td>
           <td>${fmtInt(r.impresiones)}</td>
