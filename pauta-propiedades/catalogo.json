@@ -1,6 +1,6 @@
 {
-  "exported_at_iso": "2026-08-05T16:02:01.738647",
-  "n": 120,
+  "exported_at_iso": "2026-08-07T12:52:15.199856",
+  "n": 125,
   "publicaciones": [
     {
       "id_aviso": "31495561",
@@ -1275,6 +1275,18 @@
       "link": "https://propiedades.com/inmuebles/bodega-en-venta-calle-4-bellavista-df-31548377"
     },
     {
+      "id_aviso": "30939988",
+      "cliente_id": "1972496",
+      "ad_id": "120251326139040706",
+      "status": "ACTIVE",
+      "etapa": "evento",
+      "tipo": "Departamento",
+      "colonia": "La Guadalupana",
+      "ciudad": "Naucalpan de Juárez",
+      "precio": "$ 10,500,000 MXN",
+      "link": "https://propiedades.com/inmuebles/departamento-en-venta-avenida-lomas-del-rio-oriente-100-la-guadalupana-mexico-30939988"
+    },
+    {
       "id_aviso": "31631604",
       "cliente_id": "11826",
       "ad_id": "120251278174000706",
@@ -1287,6 +1299,18 @@
       "link": "https://propiedades.com/inmuebles/departamento-en-venta-real-de-mayorazgo-xoco-df-31631604"
     },
     {
+      "id_aviso": "31453188",
+      "cliente_id": "1972496",
+      "ad_id": "120251326132630706",
+      "status": "ACTIVE",
+      "etapa": "evento",
+      "tipo": "Departamento",
+      "colonia": "Juárez",
+      "ciudad": "Cuauhtémoc",
+      "precio": "$ 6,057,957 MXN",
+      "link": "https://propiedades.com/inmuebles/departamento-en-venta-hamburgo-225-juarez-df-31453188"
+    },
+    {
       "id_aviso": "31304118",
       "cliente_id": "11826",
       "ad_id": "120251278116520706",
@@ -1297,6 +1321,18 @@
       "ciudad": "Miguel Hidalgo",
       "precio": "$ 3,453,000 MXN",
       "link": "https://propiedades.com/inmuebles/departamento-en-venta-marina-nacional-anahuac-i-seccion-df-31304118"
+    },
+    {
+      "id_aviso": "31625643",
+      "cliente_id": "1972496",
+      "ad_id": "120251326149990706",
+      "status": "ACTIVE",
+      "etapa": "evento",
+      "tipo": "Casa en condominio",
+      "colonia": "San Mateo Otzacatipan",
+      "ciudad": "Toluca",
+      "precio": "$ 2,499,000 MXN",
+      "link": "https://propiedades.com/inmuebles/casa-en-condominio-en-venta-aurea-toluca-san-mateo-otzacatipan-mexico-31625643"
     },
     {
       "id_aviso": "31434430",
@@ -1323,6 +1359,18 @@
       "link": "https://propiedades.com/inmuebles/casa-en-condominio-en-venta-av-arenal-tepepan-arenal-tepepan-df-31434431"
     },
     {
+      "id_aviso": "31625650",
+      "cliente_id": "1972496",
+      "ad_id": "120251326162240706",
+      "status": "ACTIVE",
+      "etapa": "evento",
+      "tipo": "Casa",
+      "colonia": "Ocoyotepec (Ocoyotepec Centro)",
+      "ciudad": "Almoloya de Juárez",
+      "precio": "$ 969,252 MXN",
+      "link": "https://propiedades.com/inmuebles/casa-en-venta-priv-luis-j-manzon-0-ocoyotepec-ocoyotepec-centro-mexico-31625650"
+    },
+    {
       "id_aviso": "31638830",
       "cliente_id": "11",
       "ad_id": "120251243805620706",
@@ -1345,6 +1393,18 @@
       "ciudad": "Miguel Hidalgo",
       "precio": "$ 21,000,000 MXN",
       "link": "https://propiedades.com/inmuebles/departamento-en-venta-goldsmith-polanco-iii-seccion-df-31616995"
+    },
+    {
+      "id_aviso": "31307357",
+      "cliente_id": "1972496",
+      "ad_id": "120251326125780706",
+      "status": "ACTIVE",
+      "etapa": "evento",
+      "tipo": "Casa en condominio",
+      "colonia": "Tamanché",
+      "ciudad": "Mérida",
+      "precio": "$ 11,000,000 MXN",
+      "link": "https://propiedades.com/inmuebles/casa-en-condominio-en-venta-carretera-meridaprogreso-km-155-int-km-2-carr-a-chablekal-97310-null-tamanche-yucatan-31307357"
     },
     {
       "id_aviso": "31625311",
