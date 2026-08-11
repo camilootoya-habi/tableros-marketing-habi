@@ -1,7 +1,14 @@
--- Distribución por estado Inmo de los leads HOY calificados MM que nunca calificaron Inmo.
--- Clave para entender la violación MM⊆Inmo: dónde se atascan los leads que "no debería" haber.
--- Output: g, c, f, p, state_id, state_name, n
--- Denominador sugerido en frontend: cal_mm del período.
+-- Estado ACTUAL de los leads que fueron calificados Inmo y ya no lo están.
+-- Alimenta la tabla "Control de calidad": fila 1 = total, y debajo el desglose por estado
+-- actual ordenado de mayor a menor.
+--
+-- Desclasificado Inmo = pasó alguna vez por state_id 20 en el histórico de Inmobiliaria, y su
+-- estado ACTUAL de Inmo (last_state_id_real_estate, en las dos OLTP) ya no es 20.
+-- El histórico de Inmo solo contiene decisiones del backbone (no hay estados de avance del
+-- funnel), así que esta definición es idéntica a "último evento del histórico" — verificado.
+--
+-- Output: g, c, f, p, state_id, state_name, n   (mismo contrato que antifunnel.json)
+-- Cohorte por fecha_creacion, mismos filtros de fuente que query.sql.
 
 WITH
 -- === fuente_detallada: separa WEB/Habímetro en Paid vs Non-Paid y aísla Marketing Loop ===
@@ -46,12 +53,11 @@ base AS (
   END AS fuente_id,
     DATE(tig.fecha_creacion) AS fecha,
     tig.negocio_id AS biz_id,
-    tni.last_state_id_real_estate AS inmo_state,
-    tni.last_estado_id AS mm_state
+    tni.last_state_id_real_estate AS cur_state
   FROM `papyrus-data.habi_wh_bi.tabla_inmuebles_general` tig
-  LEFT JOIN `sellers-main-prod.co_rds_staging.habi_db_tabla_negocio_inmueble` tni ON tni.id = tig.negocio_id
   LEFT JOIN utm_co u ON u.campana_mercadeo_original = tig.campana_mercadeo
   LEFT JOIN loop_nids lp ON lp.nid = tig.nid AND lp.c = 'Colombia'
+  LEFT JOIN `sellers-main-prod.co_rds_staging.habi_db_tabla_negocio_inmueble` tni ON tni.id = tig.negocio_id
   WHERE tig.fecha_creacion IS NOT NULL
     AND DATE(tig.fecha_creacion) < CURRENT_DATE()
     AND tig.fuente_id IN (3, 7, 20, 35, 39, 47)
@@ -72,94 +78,62 @@ base AS (
   END AS fuente_id,
     DATE(tig.fecha_creacion) AS fecha,
     tig.id_negocio AS biz_id,
-    tni.last_state_id_real_estate AS inmo_state,
-    tni.last_state_id AS mm_state
+    tni.last_state_id_real_estate AS cur_state
   FROM `papyrus-data-mx.habi_wh_bi.tabla_inmuebles_general` tig
-  LEFT JOIN `sellers-main-prod.mx_rds_staging.habi_db_property_deal` tni ON tni.id = tig.id_negocio
   LEFT JOIN utm_mx u ON u.campana_mercadeo_original = tig.campana_mercadeo
   LEFT JOIN loop_nids lp ON lp.nid = tig.nid AND lp.c = 'México'
+  LEFT JOIN `sellers-main-prod.mx_rds_staging.habi_db_property_deal` tni ON tni.id = tig.id_negocio
   WHERE tig.fecha_creacion IS NOT NULL
     AND DATE(tig.fecha_creacion) < CURRENT_DATE()
     AND tig.fuente_id IN (3, 7, 35, 39, 46, 47)
 ),
 
-cal_inmo AS (
+-- alguna vez calificado Inmo (histórico del BB de Inmobiliaria)
+cal_mm AS (
   SELECT 'Colombia' AS c, deal_id AS biz_id
   FROM `sellers-main-prod.co_rds_staging.habi_db_history_state_real_estate`
   WHERE state_id = 20 AND deal_id IS NOT NULL
-  GROUP BY c, biz_id
+  GROUP BY deal_id
   UNION ALL
-  SELECT 'México' AS c, deal_id AS biz_id
+  SELECT 'México', deal_id
   FROM `sellers-main-prod.mx_rds_staging.habi_db_history_state_real_estate`
   WHERE state_id = 20 AND deal_id IS NOT NULL
-  GROUP BY c, biz_id
+  GROUP BY deal_id
 ),
 
--- Universo del Error de Buybox, deliberadamente ASIMÉTRICO:
---   MM en PRESENTE  → estado actual IN (20,63): mide el inventario vivo, y así los leads
---                     que después se murieron (sobre todo duplicados) no inflan el error.
---   Inmo en NUNCA   → sin ningún evento de state_id=20 en el histórico de Inmo: la pregunta
---                     es si el buybox de Inmo lo aceptó ALGUNA VEZ.
--- Si Inmo también se midiera en presente, entrarían los que calificaron Inmo y después se
--- desclasificaron — y eso ya lo mide "Error de consistencia Inmo". Se contarían dos veces.
-candidates AS (
-  SELECT b.c, b.fuente_id, b.fecha, b.inmo_state
+desclas AS (
+  SELECT b.c, b.fuente_id, b.fecha, b.cur_state
   FROM base b
-  LEFT JOIN cal_inmo i ON i.c = b.c AND i.biz_id = b.biz_id
-  WHERE b.mm_state IN (20, 63)
-    AND i.biz_id IS NULL
+  JOIN cal_mm m ON m.c = b.c AND m.biz_id = b.biz_id
+  WHERE b.cur_state IS NOT NULL AND b.cur_state <> 20
 ),
+
+-- Solo los últimos 25 períodos de cada granularidad — mismo criterio que antifunnel.sql.
+-- Sin esto el JSON pesa ~9,7 MB: la granularidad diaria × 10 fuentes × 2 países explota.
+day_periods     AS (SELECT DISTINCT fecha FROM desclas ORDER BY fecha DESC LIMIT 25),
+week_periods    AS (SELECT DISTINCT DATE_TRUNC(fecha, ISOWEEK) p FROM desclas ORDER BY p DESC LIMIT 25),
+comm_periods    AS (SELECT DISTINCT DATE_TRUNC(fecha, WEEK(WEDNESDAY)) p FROM desclas ORDER BY p DESC LIMIT 25),
+month_periods   AS (SELECT DISTINCT DATE_TRUNC(fecha, MONTH) p FROM desclas ORDER BY p DESC LIMIT 25),
+quarter_periods AS (SELECT DISTINCT DATE_TRUNC(fecha, QUARTER) p FROM desclas ORDER BY p DESC LIMIT 25),
 
 catalog AS (
   SELECT id, estado FROM `sellers-main-prod.co_rds_staging.habi_db_tabla_estados`
 ),
 
-day_periods AS (SELECT DISTINCT fecha FROM candidates ORDER BY fecha DESC LIMIT 25),
-week_periods AS (SELECT DISTINCT DATE_TRUNC(fecha, ISOWEEK) p FROM candidates ORDER BY p DESC LIMIT 25),
-comm_periods AS (SELECT DISTINCT DATE_TRUNC(fecha, WEEK(WEDNESDAY)) p FROM candidates ORDER BY p DESC LIMIT 25),
-month_periods AS (SELECT DISTINCT DATE_TRUNC(fecha, MONTH) p FROM candidates ORDER BY p DESC LIMIT 25),
-quarter_periods AS (SELECT DISTINCT DATE_TRUNC(fecha, QUARTER) p FROM candidates ORDER BY p DESC LIMIT 25),
-
-daily AS (
-  SELECT 'D' g, c, fuente_id f, CAST(fecha AS STRING) p, inmo_state state_id, COUNT(*) n
-  FROM candidates WHERE fecha IN (SELECT fecha FROM day_periods) GROUP BY c, f, p, state_id
-),
-weekly AS (
-  SELECT 'W' g, c, fuente_id f, CAST(DATE_TRUNC(fecha, ISOWEEK) AS STRING) p, inmo_state state_id, COUNT(*) n
-  FROM candidates WHERE DATE_TRUNC(fecha, ISOWEEK) IN (SELECT p FROM week_periods) GROUP BY c, f, p, state_id
-),
-commercial AS (
-  SELECT 'C' g, c, fuente_id f, CAST(DATE_TRUNC(fecha, WEEK(WEDNESDAY)) AS STRING) p, inmo_state state_id, COUNT(*) n
-  FROM candidates WHERE DATE_TRUNC(fecha, WEEK(WEDNESDAY)) IN (SELECT p FROM comm_periods) GROUP BY c, f, p, state_id
-),
-monthly AS (
-  SELECT 'M' g, c, fuente_id f, FORMAT_DATE('%Y-%m', fecha) p, inmo_state state_id, COUNT(*) n
-  FROM candidates WHERE DATE_TRUNC(fecha, MONTH) IN (SELECT p FROM month_periods) GROUP BY c, f, p, state_id
-),
-quarterly AS (
-  SELECT 'Q' g, c, fuente_id f,
-    CONCAT(CAST(EXTRACT(YEAR FROM fecha) AS STRING), '-Q', CAST(EXTRACT(QUARTER FROM fecha) AS STRING)) p,
-    inmo_state state_id, COUNT(*) n
-  FROM candidates WHERE DATE_TRUNC(fecha, QUARTER) IN (SELECT p FROM quarter_periods) GROUP BY c, f, p, state_id
-),
-yearly AS (
-  SELECT 'Y' g, c, fuente_id f, CAST(EXTRACT(YEAR FROM fecha) AS STRING) p, inmo_state state_id, COUNT(*) n
-  FROM candidates GROUP BY c, f, p, state_id
-),
+daily      AS (SELECT 'D' g, c, fuente_id f, CAST(fecha AS STRING) p, cur_state state_id, COUNT(*) n FROM desclas WHERE fecha IN (SELECT fecha FROM day_periods) GROUP BY 1,2,3,4,5),
+weekly     AS (SELECT 'W' g, c, fuente_id f, CAST(DATE_TRUNC(fecha, ISOWEEK) AS STRING) p, cur_state state_id, COUNT(*) n FROM desclas WHERE DATE_TRUNC(fecha, ISOWEEK) IN (SELECT p FROM week_periods) GROUP BY 1,2,3,4,5),
+commercial AS (SELECT 'C' g, c, fuente_id f, CAST(DATE_TRUNC(fecha, WEEK(WEDNESDAY)) AS STRING) p, cur_state state_id, COUNT(*) n FROM desclas WHERE DATE_TRUNC(fecha, WEEK(WEDNESDAY)) IN (SELECT p FROM comm_periods) GROUP BY 1,2,3,4,5),
+monthly    AS (SELECT 'M' g, c, fuente_id f, FORMAT_DATE('%Y-%m', fecha) p, cur_state state_id, COUNT(*) n FROM desclas WHERE DATE_TRUNC(fecha, MONTH) IN (SELECT p FROM month_periods) GROUP BY 1,2,3,4,5),
+quarterly  AS (SELECT 'Q' g, c, fuente_id f, CONCAT(CAST(EXTRACT(YEAR FROM fecha) AS STRING), '-Q', CAST(EXTRACT(QUARTER FROM fecha) AS STRING)) p, cur_state state_id, COUNT(*) n FROM desclas WHERE DATE_TRUNC(fecha, QUARTER) IN (SELECT p FROM quarter_periods) GROUP BY 1,2,3,4,5),
+yearly     AS (SELECT 'Y' g, c, fuente_id f, CAST(EXTRACT(YEAR FROM fecha) AS STRING) p, cur_state state_id, COUNT(*) n FROM desclas GROUP BY 1,2,3,4,5),
 
 all_rows AS (
-  SELECT * FROM daily
-  UNION ALL SELECT * FROM weekly
-  UNION ALL SELECT * FROM commercial
-  UNION ALL SELECT * FROM monthly
-  UNION ALL SELECT * FROM quarterly
-  UNION ALL SELECT * FROM yearly
+  SELECT * FROM daily UNION ALL SELECT * FROM weekly UNION ALL SELECT * FROM commercial
+  UNION ALL SELECT * FROM monthly UNION ALL SELECT * FROM quarterly UNION ALL SELECT * FROM yearly
 )
 
-SELECT
-  a.g, a.c, a.f, a.p,
-  COALESCE(a.state_id, -1) AS state_id,
-  COALESCE(cat.estado, IF(a.state_id IS NULL, '(sin registro Inmo)', CONCAT('state_', CAST(a.state_id AS STRING)))) AS state_name,
+SELECT a.g, a.c, a.f, a.p, a.state_id,
+  COALESCE(cat.estado, CONCAT('state_', CAST(a.state_id AS STRING))) AS state_name,
   a.n
 FROM all_rows a
 LEFT JOIN catalog cat ON cat.id = a.state_id

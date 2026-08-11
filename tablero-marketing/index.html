@@ -105,7 +105,7 @@
   tbody tr.row-section td.section-title { padding: 8px 14px; background: var(--section-bg); color: var(--accent); font-weight: 700; text-transform: uppercase; font-size: 10px; letter-spacing: 1px; border: none; text-align: left; position: sticky; left: 0; z-index: 2; border-right: 2px solid var(--section-bg); }
   tbody tr.row-section td.section-fill { background: var(--section-bg); border: none; padding: 0; }
 
-  .back-link { display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; background: var(--card); border: 1px solid var(--border); border-radius: 6px; color: var(--text-muted-2); text-decoration: none; font-size: 13px; margin-bottom: 16px; transition: color 0.15s, border-color 0.15s; }
+  .back-link { display: inline-flex; align-items: center; gap: 6px; padding: 8px 15px; background: var(--card); border: 1px solid var(--border); border-radius: 9px; color: var(--text-muted-2); text-decoration: none; font-size: 13.5px; font-weight: 600; white-space: nowrap; height: 37px; transition: color 0.15s, border-color 0.15s; }
   .back-link:hover { color: var(--accent); border-color: var(--accent); }
 
   .help-btn { display: inline-flex; align-items: center; justify-content: center; width: 16px; height: 16px; border-radius: 50%; background: var(--border); color: var(--text-muted-2); border: none; font-size: 11px; font-weight: 700; cursor: pointer; margin-left: 6px; transition: background 0.15s, color 0.15s; vertical-align: middle; padding: 0; line-height: 1; }
@@ -121,16 +121,49 @@
   .quality-charts { display: grid; gap: 10px; margin-top: 10px; }
   .quality-charts.cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .quality-charts.cols-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .quality-charts.cols-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
   .quality-charts.cols-5 { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+  .quality-charts.cols-6 { grid-template-columns: repeat(6, minmax(0, 1fr)); }
+  @media (max-width: 1100px) { .quality-charts.cols-6 { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+  @media (max-width: 700px)  { .quality-charts.cols-6, .quality-charts.cols-5, .quality-charts.cols-4 { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
   .qc-card { background: var(--card); border-radius: 8px; border: 1px solid var(--border); padding: 10px; min-width: 0; }
   .qc-title { font-size: 10px; color: var(--text-muted-2); font-weight: 600; margin-bottom: 6px; line-height: 1.3; min-height: 28px; overflow: hidden; }
   .qc-wrap { position: relative; height: 140px; }
   .section-heading { color: var(--text-title); font-size: 16px; font-weight: 600; margin: 24px 0 10px; }
+
+  /* --- multi-hoja: tabs fijos al hacer scroll (patrón de marketing-loop) --- */
+  .sheet[hidden] { display: none !important; }
+  /* Header fijo: mismo alto siempre, sangra hasta el borde del viewport para tapar
+     el contenido que pasa por debajo (el body tiene 24px de padding). */
+  .tabs { position: sticky; top: 0; z-index: 30; display: flex; gap: 10px; align-items: center;
+    min-height: 61px; background: var(--bg); border-bottom: 1px solid var(--border);
+    padding: 12px 24px; margin: -24px -24px 20px; }
+  .tabnav { flex: 1; display: flex; justify-content: center; gap: 7px; flex-wrap: wrap; align-items: center; }
+  .tab { height: 37px; }
+  @media (max-width: 760px) { .tabs { flex-wrap: wrap; min-height: 0; } }
+  .tab { cursor: pointer; border: 1px solid var(--border); background: var(--card); color: var(--text-muted);
+    border-radius: 9px; padding: 8px 15px; font: inherit; font-size: 13.5px; font-weight: 600; white-space: nowrap;
+    transition: background .12s, color .12s, border-color .12s; }
+  .tab:hover { color: var(--text); border-color: var(--border-strong); }
+  .tab.active { background: var(--accent); color: var(--accent-on); border-color: var(--accent); }
+  .tab:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .tabs .tab, .tabs .back-link { height: 37px; display: inline-flex; align-items: center; }
+  .tab[disabled] { opacity: .5; cursor: not-allowed; }
+  .sheet-empty { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 40px;
+    text-align: center; color: var(--text-muted-2); font-size: 14px; line-height: 1.6; }
 </style>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 </head>
 <body>
-<a href="https://camilootoya-habi.github.io/tableros-marketing-habi/" class="back-link">← Volver al hub</a>
+<!-- ===== Header fijo: Hub (izq) · hojas (centro) ===== -->
+<nav class="tabs">
+  <a href="https://camilootoya-habi.github.io/tableros-marketing-habi/" class="back-link">← Volver al hub</a>
+  <div class="tabnav">
+    <button class="tab active" data-sheet="cal" onclick="goSheet('cal')">Calificación de leads</button>
+    <button class="tab" data-sheet="asg" onclick="goSheet('asg')">Asignación de leads</button>
+  </div>
+</nav>
+
 <div class="header">
   <h1>Funnel Sellers — <span id="countryTitle">México</span></h1>
   <div class="refresh-info">
@@ -166,30 +199,71 @@
   </div>
 </div>
 
+<div class="sheet" id="sheet-cal">
+
+<h2 class="section-heading" style="margin-top:0">Calificación de leads — cosechas por fecha de creación</h2>
 <div class="table-container">
-  <table id="funnelTable"><thead><tr><th>Métrica</th></tr></thead><tbody></tbody></table>
+  <table id="funnelTable"><thead><tr><th>Cosechas de leads</th></tr></thead><tbody></tbody></table>
 </div>
 
-<div class="quality-charts cols-3">
+<div class="quality-charts cols-6">
   <div class="qc-card"><div class="qc-title">% Registros con NID / Registros</div><div class="qc-wrap"><canvas id="qcRegNidPct"></canvas></div></div>
-  <div class="qc-card"><div class="qc-title">% Cal MM / Registros</div><div class="qc-wrap"><canvas id="qcCalMmPct"></canvas></div></div>
   <div class="qc-card"><div class="qc-title">% Cal Inmo / Registros</div><div class="qc-wrap"><canvas id="qcCalInmoPct"></canvas></div></div>
+  <div class="qc-card"><div class="qc-title">% Cal MM / Registros</div><div class="qc-wrap"><canvas id="qcCalMmPct"></canvas></div></div>
+  <div class="qc-card"><div class="qc-title">Error de Buybox<br>(Cal MM sin Inmo / Cal MM)</div><div class="qc-wrap"><canvas id="qcBuybox"></canvas></div></div>
+  <div class="qc-card"><div class="qc-title">Error de consistencia Inmo<br>(desclasificados / Cal Inmo)</div><div class="qc-wrap"><canvas id="qcDesclasInmo"></canvas></div></div>
+  <div class="qc-card"><div class="qc-title">Error de consistencia MM<br>(desclasificados / Cal MM)</div><div class="qc-wrap"><canvas id="qcDesclasMm"></canvas></div></div>
 </div>
 
-<h2 class="section-heading">Control de calidad</h2>
+<h2 class="section-heading">Error de consistencia MM — en qué estado quedaron</h2>
 <div class="table-container">
-  <table id="qualityTable"><thead><tr><th>Métrica</th></tr></thead><tbody></tbody></table>
+  <table id="qualityTable"><thead><tr><th>Cosechas de leads</th></tr></thead><tbody></tbody></table>
 </div>
 
-<div class="quality-charts cols-5">
-  <div class="qc-card"><div class="qc-title">Cal MM sin Inmo (violación MM⊆Inmo)</div><div class="qc-wrap"><canvas id="qcNoInmo"></canvas></div></div>
-  <div class="qc-card"><div class="qc-title">Cal MM → Descarte tardío</div><div class="qc-wrap"><canvas id="qcCalMmDesc"></canvas></div></div>
-  <div class="qc-card"><div class="qc-title">Cal MM → Duplicado</div><div class="qc-wrap"><canvas id="qcCalMmDup"></canvas></div></div>
-  <div class="qc-card"><div class="qc-title">Duplicados total</div><div class="qc-wrap"><canvas id="qcDup"></canvas></div></div>
-  <div class="qc-card"><div class="qc-title">Registros incompletos</div><div class="qc-wrap"><canvas id="qcIncomp"></canvas></div></div>
+<div class="quality-charts cols-6">
+  <div class="qc-card"><div class="qc-title" id="qdsTitle1">—</div><div class="qc-wrap"><canvas id="qds1"></canvas></div></div>
+  <div class="qc-card"><div class="qc-title" id="qdsTitle2">—</div><div class="qc-wrap"><canvas id="qds2"></canvas></div></div>
+  <div class="qc-card"><div class="qc-title" id="qdsTitle3">—</div><div class="qc-wrap"><canvas id="qds3"></canvas></div></div>
+  <div class="qc-card"><div class="qc-title" id="qdsTitle4">—</div><div class="qc-wrap"><canvas id="qds4"></canvas></div></div>
+  <div class="qc-card"><div class="qc-title" id="qdsTitle5">—</div><div class="qc-wrap"><canvas id="qds5"></canvas></div></div>
+  <div class="qc-card"><div class="qc-title" id="qdsTitle6">—</div><div class="qc-wrap"><canvas id="qds6"></canvas></div></div>
 </div>
 
-<h2 class="section-heading">Antifunnel — estados no calificados por fecha de creación</h2>
+<h2 class="section-heading">Error de consistencia Inmo — en qué estado quedaron</h2>
+<div class="table-container">
+  <table id="inmoDesclasTable"><thead><tr><th>Cosechas de leads</th></tr></thead><tbody></tbody></table>
+</div>
+
+<div class="quality-charts cols-6">
+  <div class="qc-card"><div class="qc-title" id="idsTitle1">—</div><div class="qc-wrap"><canvas id="ids1"></canvas></div></div>
+  <div class="qc-card"><div class="qc-title" id="idsTitle2">—</div><div class="qc-wrap"><canvas id="ids2"></canvas></div></div>
+  <div class="qc-card"><div class="qc-title" id="idsTitle3">—</div><div class="qc-wrap"><canvas id="ids3"></canvas></div></div>
+  <div class="qc-card"><div class="qc-title" id="idsTitle4">—</div><div class="qc-wrap"><canvas id="ids4"></canvas></div></div>
+  <div class="qc-card"><div class="qc-title" id="idsTitle5">—</div><div class="qc-wrap"><canvas id="ids5"></canvas></div></div>
+  <div class="qc-card"><div class="qc-title" id="idsTitle6">—</div><div class="qc-wrap"><canvas id="ids6"></canvas></div></div>
+</div>
+
+<h2 class="section-heading">Error de Buybox — en qué estado Inmo quedaron</h2>
+<div class="table-container">
+  <table id="mmSinInmoTable"><thead><tr><th>Cosechas de leads</th></tr></thead><tbody></tbody></table>
+</div>
+
+<div class="quality-charts cols-6">
+  <div class="qc-card"><div class="qc-title" id="bbxTitle1">—</div><div class="qc-wrap"><canvas id="bbx1"></canvas></div></div>
+  <div class="qc-card"><div class="qc-title" id="bbxTitle2">—</div><div class="qc-wrap"><canvas id="bbx2"></canvas></div></div>
+  <div class="qc-card"><div class="qc-title" id="bbxTitle3">—</div><div class="qc-wrap"><canvas id="bbx3"></canvas></div></div>
+  <div class="qc-card"><div class="qc-title" id="bbxTitle4">—</div><div class="qc-wrap"><canvas id="bbx4"></canvas></div></div>
+  <div class="qc-card"><div class="qc-title" id="bbxTitle5">—</div><div class="qc-wrap"><canvas id="bbx5"></canvas></div></div>
+  <div class="qc-card"><div class="qc-title" id="bbxTitle6">—</div><div class="qc-wrap"><canvas id="bbx6"></canvas></div></div>
+</div>
+
+<h2 class="section-heading" style="display:flex;align-items:center;gap:14px;flex-wrap:wrap">
+  <span>Antifunnel <span id="afBbLabel">MM</span> — estados no calificados por fecha de creación</span>
+  <span class="filter-bar" style="gap:6px">
+    <label style="font-size:12px"><input type="radio" name="afbb" value="mm" checked onchange="onUpdate()"> Market Maker</label>
+    <label style="font-size:12px"><input type="radio" name="afbb" value="inmo" onchange="onUpdate()"> Inmobiliaria</label>
+  </span>
+</h2>
 <div class="table-container">
   <table id="antifunnelTable"><thead><tr><th>Estado</th></tr></thead><tbody></tbody></table>
 </div>
@@ -216,10 +290,27 @@
   <div class="qc-card"><div class="qc-title" id="afcTitle15">—</div><div class="qc-wrap"><canvas id="afc15"></canvas></div></div>
 </div>
 
-<h2 class="section-heading">Dónde caen los leads Cal MM sin Inmo</h2>
-<div class="table-container">
-  <table id="mmSinInmoTable"><thead><tr><th>Estado Inmo</th></tr></thead><tbody></tbody></table>
+
+
+</div><!-- /sheet-cal -->
+
+<div class="sheet" id="sheet-asg" hidden>
+  <div class="sheet-empty">
+    Hoja de <strong>Asignación de leads</strong> — pendiente de construir.<br>
+    Acá van las preguntas del flujo calificado → asignado: primera asignación vs. rebote,
+    asignación por producto, Gabi como nodo aparte, y el Sankey del flujo.
+  </div>
 </div>
+
+<dialog id="helpCosecha" class="help-dialog">
+  <h3>Cosechas de leads</h3>
+  <p>Esta tabla y la de Control de calidad son de <strong>cosechas</strong>: cada columna es el período de <strong>creación</strong> del lead (<code>fecha_creacion</code> de <code>tabla_inmuebles_general</code>), y <strong>todas</strong> las filas cuentan leads creados en ese período.</p>
+  <p>Es decir, los Calificados de la columna "jul-26" son leads <strong>creados</strong> en julio que calificaron <em>en cualquier momento</em>, no leads que calificaron en julio. Numerador y denominador comparten cohorte, así que los porcentajes de cada columna son internamente consistentes.</p>
+  <p>Dos consecuencias:</p>
+  <p>· Las cosechas recientes <strong>maduran hacia arriba</strong>: un lead creado en julio que califique en septiembre se sumará a la columna de julio cuando el cron vuelva a correr.</p>
+  <p>· No es comparable con un tablero por <strong>fecha del evento</strong> (ej. asignados por fecha de asignación). Son ejes de tiempo distintos.</p>
+  <button type="button" class="close-btn" onclick="this.closest('dialog').close()">Cerrar</button>
+</dialog>
 
 <dialog id="helpRegistros" class="help-dialog">
   <h3>Registros</h3>
@@ -238,6 +329,7 @@
 <dialog id="helpCalInmo" class="help-dialog">
   <h3>Calificados Inmo</h3>
   <p>Leads que pasaron por el backbone de Inmobiliaria y quedaron calificados. En histórico: primera entrada a <code>state_id = 20</code> (<em>no_gestionado</em>) en <code>habi_db_history_state_real_estate</code>.</p>
+  <p><strong>El estado 20 es terminal</strong>: el backbone no avanza más allá de la calificación. El estado mide solo el paso registro → calificado; el avance del funnel vive en <code>etapa</code> / oportunidad de negocio, no en el estado.</p>
   <p>Leads creados en el período que alguna vez calificaron Inmo (agrupados por <strong>fecha de creación</strong>).</p>
   <p>Este funnel arrancó el <strong>2026-03-12</strong>. Antes de esa fecha el BB Inmo no evaluaba, por eso aparece en ~0%.</p>
   <button type="button" class="close-btn" onclick="this.closest('dialog').close()">Cerrar</button>
@@ -261,10 +353,36 @@
 </dialog>
 
 <dialog id="helpCalMmNoInmo" class="help-dialog">
-  <h3>Cal MM sin Inmo (violación MM⊆Inmo)</h3>
-  <p>Regla del funnel: si un lead califica MM, <strong>debería</strong> calificar también Inmo (el buybox MM está contenido dentro del de Inmo). Esta fila mide las violaciones — leads que califican MM pero NUNCA calificaron Inmo.</p>
-  <p>Denominador: <strong>Calificados MM</strong> del período (no registros totales).</p>
-  <p><strong>Ojo</strong>: pre-2026-03-12 el BB Inmo no corría, por lo que esta fila dará ~100% para períodos antiguos (falso positivo esperable). Post-estabilización debería tender a 0 — cualquier valor sostenido arriba de 1-2% es señal de bug del buybox o de orquestación.</p>
+  <h3>Error de Buybox (Cal MM sin Inmo)</h3>
+  <p>Regla del funnel: si un lead califica MM, <strong>debería</strong> calificar también Inmo — el buybox de MM está contenido dentro del de Inmo. Esta fila cuenta las <strong>violaciones</strong>.</p>
+  <p><strong>Definición (asimétrica a propósito)</strong>: leads que <strong>hoy</strong> están calificados MM (<code>estado actual IN (20, 63)</code>) y que <strong>nunca</strong> calificaron Inmo (sin ningún evento <code>state_id = 20</code> en el histórico de Inmobiliaria).</p>
+  <p>· <strong>MM en presente</strong> porque la pregunta es sobre el inventario vivo. Medirlo en "alguna vez" metía leads que después se murieron — sobre todo <strong>duplicados</strong>, que eran el 81% de la diferencia. Eso inflaba el error un 5% en CO y un 11% en MX.</p>
+  <p>· <strong>Inmo en "nunca"</strong> porque lo que se evalúa es si el buybox de Inmo lo aceptó alguna vez. Si Inmo también se midiera en presente, entrarían los que calificaron Inmo y después se desclasificaron — y eso ya lo mide <strong>Error de consistencia Inmo</strong>, así que se contarían dos veces.</p>
+  <p><strong>Denominador: Calificados MM</strong> del período. Ojo con el matiz: esa fila cuenta "alguna vez calificados MM", así que el denominador es ~1-2,5% más amplio que la base viva del numerador.</p>
+  <p>Heatmap invertido: verde = pocas violaciones. Cualquier valor sostenido arriba de 1-2% es señal de bug del buybox o de orquestación entre los dos backbones.</p>
+  <p><strong>Ojo</strong>: pre-2026-03-12 el BB Inmo no corría, así que los períodos antiguos dan ~100% (falso positivo esperable). Y en el mes en curso pueden aparecer unos pocos leads con estado actual calificado pero sin evento histórico todavía — rezago de replicación, orden de 4 casos.</p>
+  <button type="button" class="close-btn" onclick="this.closest('dialog').close()">Cerrar</button>
+</dialog>
+
+<dialog id="helpDesclas" class="help-dialog">
+  <h3>Error de consistencia Inmo (calificado que ya no lo es)</h3>
+  <p>Leads que <strong>fueron calificados Inmo</strong> (pasaron por <code>state_id = 20</code>, <em>no_gestionado</em>) y cuyo <strong>último estado</strong> en el backbone de Inmobiliaria es un estado de <strong>descarte</strong>. Es decir: el BB los aprobó y después se los quitó.</p>
+  <p><strong>Por qué la medición es limpia.</strong> El estado del backbone <strong>nunca avanza más allá de la calificación</strong>: el <code>20</code> (<em>no_gestionado</em>) es un estado <strong>terminal</strong> que significa "quedó calificado", y es lo último que el BB dice sobre el lead. El avance posterior en el funnel — asignación, contacto, cita, oferta, cierre — <strong>no vive en el estado</strong>, vive en <code>etapa</code> / oportunidad de negocio / dealstage. El estado es únicamente el primer campo del funnel: el que mide el paso <strong>registro → calificado</strong>, la parte más top-of-the-funnel.</p>
+  <p>Por eso la tabla <code>habi_db_history_state_real_estate</code> contiene <strong>solo decisiones del backbone</strong>: <code>20</code> calificado, <code>68</code> backbone (en proceso), y de descarte <code>1</code> duplicado, <code>7</code> incompleto, <code>10</code> fuera de zona, <code>16</code> antigüedad, <code>33</code> precio elevado, <code>34</code> precio bajo, <code>61</code> sin zona mediana, <code>70</code> gravamen, <code>72</code> descartado por fuente, <code>73</code> sin precio automático. "Último estado ≠ 20 y ≠ 68" es entonces desclasificación sin ambigüedad — <strong>nunca</strong> puede ser un lead que simplemente progresó.</p>
+  <p><strong>Denominador: Calificados Inmo</strong> del período. Heatmap invertido: verde = poca desclasificación.</p>
+  <p>Magnitud actual sobre el total histórico: <strong>3,8% en MX</strong> (3.119 de 82.534) y <strong>1,1% en CO</strong> (366 de 32.941).</p>
+  <p>Variante más amplia no usada acá: "tuvo <em>algún</em> evento de descarte después de calificar", que incluye los que se descartaron y volvieron a calificar (5,5% MX / 1,5% CO).</p>
+  <button type="button" class="close-btn" onclick="this.closest('dialog').close()">Cerrar</button>
+</dialog>
+
+<dialog id="helpDesclasMm" class="help-dialog">
+  <h3>Error de consistencia MM (calificado que ya no lo es)</h3>
+  <p>Leads que <strong>fueron calificados MM</strong> (pasaron por <code>20</code> <em>no_gestionado</em> o <code>63</code> <em>sin_pricing_inicial</em>) y cuyo <strong>último estado dentro de la etapa del backbone</strong> es un descarte. El BB los aprobó y después se los quitó.</p>
+  <p><strong>Por qué la lógica es distinta a la de Inmo.</strong> El histórico de MM <strong>sí mezcla</strong> decisiones del backbone con avance comercial (no_interesado, cita agendada, visita, cierre…), así que "último estado ≠ 20/63" contaría como error a cualquier lead que simplemente avanzó. La solución: el catálogo de estados (<code>habi_db_state</code> en MX, <code>habi_db_tabla_estados</code> en CO) agrupa los estados por etapa, y la <strong>etapa 3 es exactamente la del backbone/pricing</strong>, con los mismos ids en los dos países. Filtrando a esa etapa se aísla la decisión del BB del avance comercial (etapas 4-6) y del intake (etapas 1-2).</p>
+  <p>Estados de la etapa 3 — calificado: <code>20</code>, <code>63</code>. Descarte: <code>15</code> precio, <code>16</code> antigüedad, <code>17</code> por inmobiliaria, <code>18</code> sin información, <code>33</code> precio elevado, <code>34</code> precio bajo, <code>35</code> inmobiliaria, <code>36</code> sin datos para comparar, <code>38</code> por inmueble, <code>55</code> último piso sin ascensor, <code>56</code> inmueble no habi, <code>64</code> antigüedad y precio vis.</p>
+  <p><strong>Denominador: Calificados MM</strong> del período. Heatmap invertido: verde = poca desclasificación.</p>
+  <p>Magnitud sobre el histórico completo (2026-08-11): <strong>CO 9,62%</strong> (76.174 de 791.659) y <strong>MX 2,75%</strong> (12.585 de 458.194). Ojo con la diferencia entre países: CO desclasifica MM casi 4 veces más que MX.</p>
+  <p>No confundir con <strong>Cal MM → Descarte tardío</strong> de la tabla de control: esa usa el <em>estado actual</em> del lead con una lista fija de estados que cruza varias etapas; esta usa el histórico restringido a la etapa del BB.</p>
   <button type="button" class="close-btn" onclick="this.closest('dialog').close()">Cerrar</button>
 </dialog>
 
@@ -332,31 +450,46 @@ Object.assign(Chart.defaults.plugins.tooltip, {
 // WEB, Leadforms, Estudio Inmueble, CRM(CO)/Propiedades(MX), Broker, Comercial
 // Los labels se resuelven en runtime leyendo el campo `fn` del primer registro con ese fuente_id
 // (así el nombre viene tal cual está en la tabla, sin hardcodear).
+// fuente_detallada: separa WEB y Habímetro en Paid vs Non-Paid (diccionario UTM) y aísla
+// el Marketing Loop (utm_campaign '%reinteresados%' en HubSpot, gana sobre la fuente original).
+// La clave `id` es el string que emite el SQL; el label vive acá, no en la tabla.
 const FUENTES_BY_COUNTRY = {
   'Colombia': [
-    { id: 3,  color: '#818cf8' },  // WEB
-    { id: 47, color: '#a78bfa' },  // lead_forms
-    { id: 7,  color: '#34d399' },  // Estudio Inmueble
-    { id: 20, color: '#fbbf24' },  // CRM
-    { id: 39, color: '#fb923c' },  // Broker
-    { id: 35, color: '#f87171' }   // comercial
+    { id: 'web_paid',    label: 'WEB Paid',            color: '#818cf8' },
+    { id: 'web_np',      label: 'WEB Non-Paid',        color: '#c7d2fe' },
+    { id: 'habi_paid',   label: 'Habímetro Paid',      color: '#34d399' },
+    { id: 'habi_np',     label: 'Habímetro Non-Paid',  color: '#a7f3d0' },
+    { id: 'leadforms',   label: 'Leadforms Paid',      color: '#a78bfa' },
+    { id: 'crm',         label: 'Ventanas (CRM)',      color: '#fbbf24' },
+    { id: 'brokers',     label: 'Brokers',             color: '#fb923c' },
+    { id: 'comercial',   label: 'Comercial',           color: '#f87171' },
+    { id: 'loop',        label: 'Marketing Loop',      color: '#22d3ee' }
   ],
   'México': [
-    { id: 3,  color: '#818cf8' },  // WEB
-    { id: 47, color: '#a78bfa' },  // Lead Forms
-    { id: 7,  color: '#34d399' },  // Estudio Inmueble
-    { id: 46, color: '#fbbf24' },  // Propiedades
-    { id: 39, color: '#fb923c' },  // Broker
-    { id: 35, color: '#f87171' }   // Comercial
+    { id: 'web_paid',    label: 'WEB Paid',            color: '#818cf8' },
+    { id: 'web_np',      label: 'WEB Non-Paid',        color: '#c7d2fe' },
+    { id: 'habi_paid',   label: 'Habímetro Paid',      color: '#34d399' },
+    { id: 'habi_np',     label: 'Habímetro Non-Paid',  color: '#a7f3d0' },
+    { id: 'leadforms',   label: 'Leadforms Paid',      color: '#a78bfa' },
+    { id: 'propiedades', label: 'Propiedades',         color: '#fbbf24' },
+    { id: 'brokers',     label: 'Brokers',             color: '#fb923c' },
+    { id: 'comercial',   label: 'Comercial',           color: '#f87171' },
+    { id: 'loop',        label: 'Marketing Loop',      color: '#22d3ee' }
   ]
 };
 
+const getAfBb = () => (document.querySelector('input[name="afbb"]:checked') || { value: 'mm' }).value;
 const GRAN_LABELS = { D:'Diario', W:'Semanal', C:'Ciclo comercial', M:'Mensual', Q:'Trimestral', Y:'Anual' };
 const SHOW_COUNT = 20;
 
 let RAW_DATA = [];
 let ANTIFUNNEL_DATA = [];
 let MM_SIN_INMO_DATA = [];
+let MM_DESCLAS_DATA = [];
+const MM_RANK = { states: [] };
+const INMO_RANK = { states: [] };
+const BUYBOX_RANK = { states: [] };
+let INMO_DESCLAS_DATA = [];
 
 function themeColors() {
   const s = getComputedStyle(document.body);
@@ -390,15 +523,14 @@ let LABEL_CACHE = {}; // {"Colombia:3": "WEB", ...}
 
 function getCountry() { return document.querySelector('input[name="country"]:checked').value; }
 function getGran() { return document.getElementById('granSelect').value; }
-function getSelFuentes() { return [...document.querySelectorAll('.fuente-chk:checked')].map(c => +c.value); }
+function getSelFuentes() { return [...document.querySelectorAll('.fuente-chk:checked')].map(c => c.value); }
 
 function labelFor(country, id) {
-  return LABEL_CACHE[`${country}:${id}`] || `ID ${id}`;
+  const f = (FUENTES_BY_COUNTRY[country] || []).find(x => x.id === id);
+  return f ? f.label : id;
 }
 
-function buildLabelCache() {
-  RAW_DATA.forEach(r => { LABEL_CACHE[`${r.c}:${r.f}`] = r.fn; });
-}
+function buildLabelCache() { /* los labels viven en FUENTES_BY_COUNTRY, no en el dato */ }
 
 function buildFuenteCheckboxes() {
   const country = getCountry();
@@ -408,7 +540,7 @@ function buildFuenteCheckboxes() {
     const lbl = document.createElement('label');
     lbl.className = 'fuente-lbl';
     const name = labelFor(country, f.id);
-    lbl.innerHTML = `<input type="checkbox" class="fuente-chk" value="${f.id}" checked onchange="onUpdate()"> ${name} <span class="fuente-tag" style="background:${f.color}30;color:${f.color}">ID ${f.id}</span>`;
+    lbl.innerHTML = `<input type="checkbox" class="fuente-chk" value="${f.id}" checked onchange="onUpdate()"> <span class="fuente-tag" style="background:${f.color}30;color:${f.color}">&nbsp;</span> ${name}`;
     fb.appendChild(lbl);
   });
 }
@@ -468,13 +600,15 @@ function aggregate(gran, country, selIds) {
   const filtered = RAW_DATA.filter(r => r.g === gran && r.c === country && selIds.includes(r.f));
   const periodSet = {};
   filtered.forEach(r => {
-    if (!periodSet[r.p]) periodSet[r.p] = { p: r.p, tr: 0, t: 0, cal_mm: 0, cal_inmo: 0, asg_inmo: 0, cal_mm_no_inmo: 0, cal_mm_dup: 0, cal_mm_desc: 0, incomp: 0, dup: 0, e_cal_mm: 0, e_cal_inmo: 0, e_cal_mm_no_inmo: 0 };
+    if (!periodSet[r.p]) periodSet[r.p] = { p: r.p, tr: 0, t: 0, cal_mm: 0, cal_inmo: 0, asg_inmo: 0, cal_mm_no_inmo: 0, cal_desclas: 0, cal_mm_desclas: 0, cal_mm_dup: 0, cal_mm_desc: 0, incomp: 0, dup: 0, e_cal_mm: 0, e_cal_inmo: 0, e_cal_mm_no_inmo: 0 };
     periodSet[r.p].tr += (r.tr || 0);
     periodSet[r.p].t += (r.t || 0);
     periodSet[r.p].cal_mm += (r.cal_mm || 0);
     periodSet[r.p].cal_inmo += (r.cal_inmo || 0);
     periodSet[r.p].asg_inmo += (r.asg_inmo || 0);
     periodSet[r.p].cal_mm_no_inmo += (r.cal_mm_no_inmo || 0);
+    periodSet[r.p].cal_desclas += (r.cal_desclas || 0);
+    periodSet[r.p].cal_mm_desclas += (r.cal_mm_desclas || 0);
     periodSet[r.p].cal_mm_dup += (r.cal_mm_dup || 0);
     periodSet[r.p].cal_mm_desc += (r.cal_mm_desc || 0);
     periodSet[r.p].incomp += (r.incomp || 0);
@@ -506,8 +640,8 @@ function heatCells(values, denominators, invert) {
   }).join('');
 }
 
-function renderPctRow(label, values, denominators, helpId) {
-  return `<tr class="row-stage">${helpCell(helpId)}<td>${label}</td>${heatCells(values, denominators, false)}</tr>`;
+function renderPctRow(label, values, denominators, helpId, invert) {
+  return `<tr class="row-stage">${helpCell(helpId)}<td>${label}</td>${heatCells(values, denominators, invert === true)}</tr>`;
 }
 
 function fmt(n) { return n.toLocaleString('es-MX'); }
@@ -529,8 +663,9 @@ function renderAntifunnelTop14(periods, gran, denoms) {
   const periodSet = new Set(periods);
 
   const byKey = {};
+  const bb = getAfBb();
   ANTIFUNNEL_DATA.forEach(r => {
-    if (r.g !== gran || r.c !== country || !selIds.includes(r.f) || !periodSet.has(r.p)) return;
+    if (r.bb !== bb || r.g !== gran || r.c !== country || !selIds.includes(r.f) || !periodSet.has(r.p)) return;
     const k = r.state_id + '|' + r.p;
     if (!byKey[k]) byKey[k] = { state_id: r.state_id, state_name: r.state_name, p: r.p, n: 0 };
     byKey[k].n += r.n;
@@ -624,60 +759,49 @@ function renderAntifunnelTop14(periods, gran, denoms) {
   drawOne('afc15', 'afcTitle15', `Otros (${rest.length} estados)`, AF_PALETTE[14], otrosPerP, true);
 }
 
-function renderMmSinInmo(periods, gran, cohortMmVals) {
+// Desglose de los desclasificados MM por estado ACTUAL, ordenado de mayor a menor.
+// El % es sobre el total de desclasificados del período, así que las filas suman 100%.
+function renderDesclasStates(periods, gran, desclasVals, DATA, rankOut) {
   const country = getCountry();
   const selIds = getSelFuentes();
-  const pFmt = p => formatPeriod(p, gran);
   const periodSet = new Set(periods);
 
   const byKey = {};
-  MM_SIN_INMO_DATA.forEach(r => {
+  DATA.forEach(r => {
     if (r.g !== gran || r.c !== country || !selIds.includes(r.f) || !periodSet.has(r.p)) return;
     const k = r.state_id + '|' + r.p;
     if (!byKey[k]) byKey[k] = { state_id: r.state_id, state_name: r.state_name, p: r.p, n: 0 };
     byKey[k].n += r.n;
   });
-
   const byState = {};
   Object.values(byKey).forEach(r => {
     if (!byState[r.state_id]) byState[r.state_id] = { state_id: r.state_id, state_name: r.state_name, total: 0, perP: {} };
     byState[r.state_id].total += r.n;
     byState[r.state_id].perP[r.p] = r.n;
   });
-
   const states = Object.values(byState).sort((a, b) => b.total - a.total);
+  rankOut.states = states;   // ranking que consumen las 6 gráficas
+  if (!states.length) return `<tr><td></td><td colspan="${periods.length + 1}" style="color:#64748b">Sin desclasificados en el rango</td></tr>`;
 
-  const thead = document.querySelector('#mmSinInmoTable thead tr');
-  const tbody = document.querySelector('#mmSinInmoTable tbody');
-
-  if (!states.length) {
-    thead.innerHTML = '<th></th><th>Estado Inmo</th>';
-    tbody.innerHTML = '<tr><td colspan="3" style="text-align:center;padding:40px;color:#64748b">Sin datos</td></tr>';
-    return;
-  }
-
-  thead.innerHTML = '<th></th><th>Estado Inmo</th>' + periods.map(p => {
-    const cls = isCurrentPeriod(p, gran) ? ' class="in-progress"' : '';
-    return `<th${cls}>${pFmt(p)}</th>`;
+  return states.map(st => {
+    const values = periods.map(p => st.perP[p] || 0);
+    const label = `${st.state_name} <span style="opacity:.55;font-size:11px">· ${st.state_id}</span>`;
+    return `<tr class="row-stage"><td></td><td>${label}</td>${heatCells(values, desclasVals, true)}</tr>`;
   }).join('');
-
-  let tb = '';
-  states.forEach(s => {
-    const values = periods.map(p => s.perP[p] || 0);
-    tb += `<tr class="row-stage"><td></td><td>${s.state_name}</td>${heatCells(values, cohortMmVals, true)}</tr>`;
-  });
-  tbody.innerHTML = tb;
 }
 
 function renderAntifunnel(periods, gran, trs) {
+  const lbl = document.getElementById('afBbLabel');
+  if (lbl) lbl.textContent = getAfBb() === 'inmo' ? 'Inmo' : 'MM';
   const country = getCountry();
   const selIds = getSelFuentes();
   const pFmt = p => formatPeriod(p, gran);
   const periodSet = new Set(periods);
 
   const byKey = {};
+  const bb = getAfBb();
   ANTIFUNNEL_DATA.forEach(r => {
-    if (r.g !== gran || r.c !== country || !selIds.includes(r.f) || !periodSet.has(r.p)) return;
+    if (r.bb !== bb || r.g !== gran || r.c !== country || !selIds.includes(r.f) || !periodSet.has(r.p)) return;
     const k = r.state_id + '|' + r.p;
     if (!byKey[k]) byKey[k] = { state_id: r.state_id, state_name: r.state_name, p: r.p, n: 0 };
     byKey[k].n += r.n;
@@ -721,17 +845,43 @@ function renderAntifunnel(periods, gran, trs) {
   return denoms;
 }
 
+// Las 6 gráficas bajo Control de calidad: un estado por tarjeta, los 6 que más leads
+// concentran. Eje Y compartido para que las 6 sean comparables entre sí.
+const DESCLAS_PALETTE = ['#f87171','#fb923c','#fbbf24','#34d399','#60a5fa','#a78bfa'];
+function renderDesclasCharts(periods, gran, desclasVals, rank, prefix) {
+  const labels = periods.map(p => formatPeriod(p, gran));
+  const top = rank.states.slice(0, 6);
+  const pctOf = st => periods.map((p, i) => desclasVals[i] > 0 ? (st.perP[p] || 0) / desclasVals[i] * 100 : 0);
+
+  let yMax = 10;
+  if (top.length) {
+    const hi = Math.max(0, ...pctOf(top[0]));
+    if (hi > 0) yMax = Math.ceil((hi * 1.1) / 5) * 5;
+  }
+  for (let i = 0; i < 6; i++) {
+    const st = top[i];
+    const titleEl = document.getElementById(prefix + 'Title' + (i + 1));
+    const canvasId = prefix + (i + 1);
+    if (QC_CHARTS[canvasId]) { QC_CHARTS[canvasId].destroy(); delete QC_CHARTS[canvasId]; }
+    if (!st) { if (titleEl) { titleEl.textContent = '—'; titleEl.removeAttribute('title'); } continue; }
+    const name = `${st.state_name} · ${st.state_id}`;
+    if (titleEl) { titleEl.textContent = name; titleEl.title = name; }
+    renderQualityChart(canvasId, name, DESCLAS_PALETTE[i], periods.map(p => st.perP[p] || 0), desclasVals, labels, yMax);
+  }
+}
+
 const QC_CHARTS = {};
 function clearQualityCharts() {
   Object.keys(QC_CHARTS).forEach(id => { QC_CHARTS[id].destroy(); delete QC_CHARTS[id]; });
 }
-function renderQualityChart(canvasId, label, color, values, denominators, labels) {
+function renderQualityChart(canvasId, label, color, values, denominators, labels, forceMax) {
   const ctx = document.getElementById(canvasId);
   if (!ctx) return;
   const pcts = values.map((v, i) => denominators[i] > 0 ? v / denominators[i] * 100 : 0);
   const shown = pcts.filter(v => v > 0);
   let yMin = 0, yMax;
-  if (shown.length) {
+  if (forceMax !== undefined) { yMax = forceMax; }
+  else if (shown.length) {
     const lo = Math.min(...shown), hi = Math.max(...shown);
     const range = Math.max(hi - lo, 1);
     const pad = range * 0.25;
@@ -775,7 +925,7 @@ function onUpdate() {
     document.querySelector('#qualityTable tbody').innerHTML = '';
     document.querySelector('#antifunnelTable thead tr').innerHTML = '<th></th><th>Estado</th>';
     document.querySelector('#antifunnelTable tbody').innerHTML = '';
-    document.querySelector('#mmSinInmoTable thead tr').innerHTML = '<th></th><th>Estado Inmo</th>';
+    document.querySelector('#mmSinInmoTable thead tr').innerHTML = '<th>Cosechas de leads</th>';
     document.querySelector('#mmSinInmoTable tbody').innerHTML = '';
     clearAntifunnelCharts();
     clearQualityCharts();
@@ -797,15 +947,15 @@ function render(rows, gran) {
   const qualityTbody = document.querySelector('#qualityTable tbody');
 
   if (!periods.length) {
-    funnelThead.innerHTML = '<th></th><th>Métrica</th>';
+    funnelThead.innerHTML = '<th></th><th>Cosechas de leads</th>';
     funnelTbody.innerHTML = '<tr><td colspan="3" style="text-align:center;padding:40px;color:#64748b">Sin datos para esta combinación</td></tr>';
-    qualityThead.innerHTML = '<th></th><th>Métrica</th>';
+    qualityThead.innerHTML = '<th></th><th>Cosechas de leads</th>';
     qualityTbody.innerHTML = '';
     clearQualityCharts();
     return;
   }
 
-  const headerCells = '<th></th><th>Métrica</th>' + periods.map(p => {
+  const headerCells = `<th></th><th>Cosechas de leads<button type="button" class="help-btn" onclick="document.getElementById(\'helpCosecha\').showModal()">?</button></th>` + periods.map(p => {
     const cls = isCurrentPeriod(p, gran) ? ' class="in-progress"' : '';
     const title = isCurrentPeriod(p, gran) ? ' title="Período en curso — datos parciales"' : '';
     return `<th${cls}${title}>${pFmt(p)}</th>`;
@@ -830,52 +980,96 @@ function render(rows, gran) {
   }).join('') + '</tr>';
   funnelTb += renderPctRow('Registros con NID', sortedRows.map(r => r.t), trs, 'helpRegistrosNid');
   funnelTb += renderPctRow('Calificados Inmo', sortedRows.map(r => r[inmoField]), trs, 'helpCalInmo');
-  funnelTb += renderPctRow('Asignados a Inmo', sortedRows.map(r => r.asg_inmo), trs, 'helpAsgInmo');
   funnelTb += renderPctRow('Calificados MM', sortedRows.map(r => r[mmField]), trs, 'helpCalMm');
+  // Errores del backbone. Denominador propio de cada uno, no Registros:
+  //   Buybox      → sobre Calificados MM (qué % de los MM viola MM⊆Inmo)
+  //   Consistencia→ sobre Calificados Inmo (qué % de los Inmo perdió la calificación)
+  funnelTb += renderPctRow('Error de Buybox (Cal MM sin Inmo)', sortedRows.map(r => r[mmNoInmoField]), mmVals, 'helpCalMmNoInmo', true);
+  funnelTb += renderPctRow('Error de consistencia Inmo (calificado que ya no lo es)', sortedRows.map(r => r.cal_desclas), sortedRows.map(r => r[inmoField]), 'helpDesclas', true);
+  funnelTb += renderPctRow('Error de consistencia MM (calificado que ya no lo es)', sortedRows.map(r => r.cal_mm_desclas), mmVals, 'helpDesclasMm', true);
   funnelTbody.innerHTML = funnelTb;
 
-  // Tabla 2: Control de calidad
+  // Tabla 2: Control de calidad — desclasificados MM y en qué estado quedaron
+  const desclasVals = sortedRows.map(r => r.cal_mm_desclas);
   let qualityTb = '';
-  qualityTb += renderPctRow('Cal MM sin Inmo (violación MM⊆Inmo)', sortedRows.map(r => r[mmNoInmoField]), mmVals, 'helpCalMmNoInmo');
-  qualityTb += renderPctRow('Cal MM → Descarte tardío', sortedRows.map(r => r.cal_mm_desc), cohortMmVals, 'helpCalMmDesc');
-  qualityTb += renderPctRow('Cal MM → Duplicado', sortedRows.map(r => r.cal_mm_dup), cohortMmVals, 'helpCalMmDup');
-  qualityTb += renderPctRow('Duplicados total', sortedRows.map(r => r.dup), trs, 'helpDup');
-  qualityTb += renderPctRow('Registros incompletos', sortedRows.map(r => r.incomp), trs, 'helpIncomp');
+  // Fila 1: el total (mismo número que la fila de Error de consistencia MM de la tabla 1)
+  qualityTb += `<tr class="row-total">${helpCell('helpDesclasMm')}<td>Error de consistencia MM — total</td>`
+             + periods.map((p, i) => `<td>${fmt(desclasVals[i])}</td>`).join('') + '</tr>';
+  qualityTb += `<tr class="row-section"><td class="section-title" colspan="2">Estado actual de los desclasificados</td><td class="section-fill" colspan="${periods.length}"></td></tr>`;
+  // Filas 2+: desglose por estado actual, de mayor a menor
+  qualityTb += renderDesclasStates(periods, gran, desclasVals, MM_DESCLAS_DATA, MM_RANK);
   qualityTbody.innerHTML = qualityTb;
 
   const antifunnelDenoms = renderAntifunnel(periods, gran) || periods.map(() => 0);
   renderAntifunnelTop14(periods, gran, antifunnelDenoms);
-  renderMmSinInmo(periods, gran, cohortMmVals);
 
   // Scroll al extremo derecho en todas las tablas
   document.querySelectorAll('.table-container').forEach(c => { c.scrollLeft = c.scrollWidth; });
 
   // Gráficas de control de calidad (evolución del % por período)
   const chartLabels = periods.map(p => formatPeriod(p, gran));
-  renderQualityChart('qcNoInmo',     'Cal MM sin Inmo',      '#f87171', sortedRows.map(r => r[mmNoInmoField]), mmVals,        chartLabels);
-  renderQualityChart('qcCalMmDesc',  'Cal MM → Descarte',    '#fbbf24', sortedRows.map(r => r.cal_mm_desc),    cohortMmVals, chartLabels);
-  renderQualityChart('qcCalMmDup',   'Cal MM → Duplicado',   '#fb923c', sortedRows.map(r => r.cal_mm_dup),     cohortMmVals, chartLabels);
+  renderQualityChart('qcBuybox',       'Error de Buybox',           '#f87171', sortedRows.map(r => r[mmNoInmoField]), mmVals, chartLabels);
+  renderQualityChart('qcDesclasInmo',  'Error consistencia Inmo',   '#fb7185', sortedRows.map(r => r.cal_desclas),    sortedRows.map(r => r[inmoField]), chartLabels);
+  renderQualityChart('qcDesclasMm',    'Error consistencia MM',     '#c084fc', sortedRows.map(r => r.cal_mm_desclas), mmVals, chartLabels);
+  renderDesclasCharts(periods, gran, sortedRows.map(r => r.cal_mm_desclas), MM_RANK, 'qds');
+
+  // Tabla + 6 gráficas de Error de consistencia Inmo (mismo patrón que MM)
+  const inmoDesclasVals = sortedRows.map(r => r.cal_desclas);
+  let inmoTb = `<tr class="row-total">${helpCell('helpDesclas')}<td>Error de consistencia Inmo — total</td>`
+             + periods.map((p, i) => `<td>${fmt(inmoDesclasVals[i])}</td>`).join('') + '</tr>';
+  inmoTb += `<tr class="row-section"><td class="section-title" colspan="2">Estado actual de los desclasificados</td><td class="section-fill" colspan="${periods.length}"></td></tr>`;
+  inmoTb += renderDesclasStates(periods, gran, inmoDesclasVals, INMO_DESCLAS_DATA, INMO_RANK);
+  document.querySelector('#inmoDesclasTable thead tr').innerHTML = headerCells;
+  document.querySelector('#inmoDesclasTable tbody').innerHTML = inmoTb;
+  renderDesclasCharts(periods, gran, inmoDesclasVals, INMO_RANK, 'ids');
+
+  // Tabla + 6 gráficas de Error de Buybox (Cal MM sin Inmo), mismo patrón.
+  // El desglose es por estado ACTUAL del backbone de INMO: dónde quedaron del lado Inmo
+  // los leads que MM sí calificó. Denominador: el total de Cal MM sin Inmo del período.
+  const buyboxVals = sortedRows.map(r => r[mmNoInmoField]);
+  let bbxTb = `<tr class="row-total">${helpCell('helpCalMmNoInmo')}<td>Error de Buybox — total</td>`
+            + periods.map((p, i) => `<td>${fmt(buyboxVals[i])}</td>`).join('') + '</tr>';
+  bbxTb += `<tr class="row-section"><td class="section-title" colspan="2">Estado Inmo actual de esos leads</td><td class="section-fill" colspan="${periods.length}"></td></tr>`;
+  bbxTb += renderDesclasStates(periods, gran, buyboxVals, MM_SIN_INMO_DATA, BUYBOX_RANK);
+  document.querySelector('#mmSinInmoTable thead tr').innerHTML = headerCells;
+  document.querySelector('#mmSinInmoTable tbody').innerHTML = bbxTb;
+  renderDesclasCharts(periods, gran, buyboxVals, BUYBOX_RANK, 'bbx');
   renderQualityChart('qcRegNidPct',  '% Reg. con NID',       '#38bdf8', sortedRows.map(r => r.t),              trs,           chartLabels);
   renderQualityChart('qcCalMmPct',   '% Cal MM / Registros', '#34d399', sortedRows.map(r => r[mmField]),       trs,           chartLabels);
   renderQualityChart('qcCalInmoPct', '% Cal Inmo / Registros','#60a5fa', sortedRows.map(r => r[inmoField]),     trs,           chartLabels);
-  renderQualityChart('qcDup',        'Duplicados total',     '#818cf8', sortedRows.map(r => r.dup),            trs,           chartLabels);
-  renderQualityChart('qcIncomp',     'Registros incomp.',    '#a78bfa', sortedRows.map(r => r.incomp),         trs,           chartLabels);
+}
+
+// ===== router multi-hoja (tabs) =====
+function goSheet(name) {
+  document.querySelectorAll('.sheet').forEach(el => { el.hidden = (el.id !== 'sheet-' + name); });
+  document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.sheet === name));
+  // los controles (país/temporalidad/fuentes) solo aplican a la hoja de calificación
+  const ctrl = document.querySelector('.controls');
+  if (ctrl) ctrl.hidden = (name !== 'cal');
+  location.hash = name;
+  window.scrollTo(0, 0);
 }
 
 // Init
 Promise.all([
   fetch('data.json').then(r => r.json()),
   fetch('antifunnel.json').then(r => r.json()).catch(() => []),
-  fetch('mm_sin_inmo_states.json').then(r => r.json()).catch(() => [])
-]).then(([data, antifunnel, mmSinInmo]) => {
+  fetch('mm_sin_inmo_states.json').then(r => r.json()).catch(() => []),
+  fetch('mm_desclas_states.json').then(r => r.json()).catch(() => []),
+  fetch('inmo_desclas_states.json').then(r => r.json()).catch(() => [])
+]).then(([data, antifunnel, mmSinInmo, mmDesclas, inmoDesclas]) => {
   RAW_DATA = data;
   ANTIFUNNEL_DATA = antifunnel;
   MM_SIN_INMO_DATA = mmSinInmo;
+  MM_DESCLAS_DATA = mmDesclas;
+  INMO_DESCLAS_DATA = inmoDesclas;
   buildLabelCache();
   buildFuenteCheckboxes();
   document.getElementById('lastUpdate').textContent = `Datos al ${new Date().toLocaleString('es-CO')}`;
   document.getElementById('themeToggle').textContent = document.body.classList.contains('light') ? '☀️' : '🌙';
   onUpdate();
+  const h = (location.hash || '').replace('#', '');
+  if (h === 'asg') goSheet('asg');
 }).catch(() => {
   document.querySelector('#funnelTable tbody').innerHTML = '<tr><td colspan="2" style="padding:40px;color:#f87171;text-align:center">No se encontró data.json</td></tr>';
 });
