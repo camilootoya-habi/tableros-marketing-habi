@@ -271,6 +271,40 @@ def _pool_ab(pais):
             "decidido": d["decided"], "razon": d["reason"], "eta_dias": (0 if d["decided"] else eta),
             "min_brazo": POOL_AB["min_brazo"], "min_dias": POOL_AB["min_dias"], "max_dias": POOL_AB["max_dias"]}
 
+
+def _inventario(pais):
+    """Serie diaria de inventario del pool por nivel (P1-P4) desde Neon (pool_inventario,
+    escrita por el motor). repuesto(d) = stock(d) - stock(d-1) + enviados(d). runway_dias =
+    stock actual / consumo promedio 7d del nivel (None si no se consume)."""
+    import sources_neon as _SN
+    try:
+        rows = _SN._rows("""SELECT fecha::text f, tier, stock, enviados FROM pool_inventario
+                            WHERE country=%s ORDER BY fecha, tier""", (pais,))
+    except Exception:
+        return {"disponible": False}
+    if not rows: return {"disponible": False}
+    from collections import defaultdict
+    hist = defaultdict(dict)
+    for r in rows: hist[r["tier"]][r["f"]] = {"stock": r["stock"], "enviados": r["enviados"]}
+    tiers_out = {}
+    for tier, dias in hist.items():
+        fechas = sorted(dias)
+        serie = []
+        prev = None
+        for f in fechas:
+            d = dias[f]
+            rep = None if prev is None else d["stock"] - prev["stock"] + d["enviados"]
+            serie.append({"fecha": f, "stock": d["stock"], "enviados": d["enviados"], "repuesto": rep})
+            prev = d
+        ult = serie[-1]
+        env7 = [x["enviados"] for x in serie[-7:] if x["enviados"]]
+        consumo = (sum(env7) / len(env7)) if env7 else 0
+        tiers_out[tier] = {"serie": serie[-30:], "stock": ult["stock"], "enviados_hoy": ult["enviados"],
+                           "repuesto_hoy": ult["repuesto"],
+                           "runway_dias": round(ult["stock"] / consumo) if consumo else None}
+    return {"disponible": True, "tiers": tiers_out,
+            "nota": "P1=comité+2025 · P2=recientes 2025+ · P3=comité viejo · P4=resto. Stock=elegibles tras exclusiones. repuesto=Δstock+enviados."}
+
 # --- ensamblado ---
 WIN = 7
 
@@ -386,6 +420,7 @@ data={
   "ab_veredicto": {"MX": _ab_veredicto(mx["ab_templates"], AB_SINCE["MX"]),
                    "CO": _ab_veredicto(co["ab_templates"], AB_SINCE["CO"])},
   "pool_ab": {"MX": _pool_ab("MX"), "CO": _pool_ab("CO")},
+  "inventario": {"MX": _inventario("MX"), "CO": _inventario("CO")},
   "antifunnel": {"MX": mx["antifunnel"], "CO": co["antifunnel"]},
   "contact_status": {"MX": mx["contact_status"], "CO": co["contact_status"]},
   "por_hora": {"MX": mx["por_hora"], "CO": co["por_hora"]},

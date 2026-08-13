@@ -254,6 +254,9 @@
   <div class="tabletitle">A/B de pool — Segmento (comité + lead ≥2025) vs aleatorio</div>
   <div id="poolAB"></div>
 
+  <div class="tabletitle">Inventario del pool · niveles de prioridad</div>
+  <div class="tbl-wrap ftab" id="inventario"></div>
+
   <div class="tabletitle">Comparación por fuente
     <button type="button" class="help-btn" onclick="openHelp('abf')" aria-label="Explicación">?</button>
   </div>
@@ -600,7 +603,7 @@ function renderExplorer(){
   }
   el.innerHTML=parts.join('');
 }
-function selectCountry(c){ country=c; renderStats(); renderImpacto(); renderErrores(); renderAB(); renderPoolAB(); renderABFuente(); renderResp(); renderComparativa(); renderCalidad(); renderDiario(); renderAntifunnel(); renderCompletitud(); renderCohorteOrigen(); renderPorHoraChart(); }
+function selectCountry(c){ country=c; renderStats(); renderImpacto(); renderErrores(); renderAB(); renderPoolAB(); renderInventario(); renderABFuente(); renderResp(); renderComparativa(); renderCalidad(); renderDiario(); renderAntifunnel(); renderCompletitud(); renderCohorteOrigen(); renderPorHoraChart(); }
 // Celdas "valor + %" con heatmap por fila (verde=conversión alta, rojo=baja), copiado del tablero de referencia.
 function heatCells(values, denoms){
   const pcts=values.map((v,i)=> denoms[i]>0 ? v/denoms[i]*100 : null);   // período sin base → null (celda vacía)
@@ -1000,6 +1003,25 @@ function renderPoolAB(){
       ${chip(v.dias>=v.min_dias,`día ${v.dias}/${v.min_dias} mín (${pdias}%) · tope ${v.max_dias}`)}
       · pérdida esperada <b>${v.loss_pp.toFixed(2)} pp</b> · <span class="muted">${v.razon} · desde ${v.since}</span></div>
   </div>`;
+}
+function renderInventario(){
+  const el=document.getElementById('inventario'); if(!el) return;
+  const v=(D.inventario||{})[country];
+  if(!v||!v.disponible){ el.innerHTML='<p class="note" style="padding:8px 13px">Sin snapshots de inventario aún para '+country+' (se generan con el ciclo diario).</p>'; return; }
+  const DEF={P1:'Comité + 2025 (segmento ganador)',P2:'Recientes 2025+',P3:'Comité viejo',P4:'Resto'};
+  const rows=['P1','P2','P3','P4'].filter(t=>v.tiers[t]).map(t=>{
+    const a=v.tiers[t];
+    const rep=a.repuesto_hoy==null?'—':fmt(a.repuesto_hoy);
+    const run=a.runway_dias==null?'—':(a.runway_dias+' días');
+    return `<tr class="row-stage"><td><b>${t}</b> · ${DEF[t]}</td>
+      <td style="text-align:right"><b>${fmt(a.stock)}</b></td>
+      <td style="text-align:right">${fmt(a.enviados_hoy)}</td>
+      <td style="text-align:right">${rep}</td>
+      <td style="text-align:right">${run}</td></tr>`;}).join('');
+  el.innerHTML=`<table><thead><tr><th>Nivel</th><th style="text-align:right">Stock elegible</th>
+    <th style="text-align:right">Enviados hoy</th><th style="text-align:right">Repuestos hoy</th>
+    <th style="text-align:right">Runway</th></tr></thead><tbody>${rows}</tbody></table>
+    <p class="note" style="padding:8px 13px">${v.nota} Runway = stock / consumo promedio 7d del nivel. La reposición diaria son leads que cruzan los 180 días del SLA.</p>`;
 }
 function renderABFuente(){
   const arr=(D.ab_fuentes||{})[country];
