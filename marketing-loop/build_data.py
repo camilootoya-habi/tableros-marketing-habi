@@ -304,6 +304,14 @@ def build_country(pais):
     inbound_phones={p for p,_,_ in parsed if p}
     interesado_phones={p for p,pr,_ in parsed if p and pr["action"]=="INTERESADO"}
     yavendio_phones={p for p,pr,_ in parsed if p and pr["action"]=="YAVENDIO"}   # opt-out por botón «Ya no vendo»
+    # COMPLEMENTO TIEMPO REAL (2026-08-13): el mart llega con días/semanas de lag y estas filas
+    # quedaban en 0 para lo reciente. Neon (contact_status) ya consolida las respuestas del
+    # Sheet del bot (tiempo real) + mart + /logs — misma fuente que opera el motor. Se UNE
+    # (no pisa): cuando el mart cargue, coincide. El read/seen NO tiene fuente RT (solo mart).
+    _neon_resp = N._rows("SELECT phone, state FROM contact_status WHERE country=%s AND responded_at IS NOT NULL", (pais,))
+    inbound_phones    |= {r["phone"] for r in _neon_resp}
+    interesado_phones |= {r["phone"] for r in _neon_resp if r["state"] == "reinteresado"}
+    yavendio_phones   |= {r["phone"] for r in _neon_resp if r["state"] in ("ya_vendio", "baja")}
     # --- REPO VIEJO: envíos de la plantilla vieja (jun–jul) que solo viven en el mart, para la Cosecha ---
     old_sl, old_mbm = M.old_repo_sends(pais)
     for mid, v in old_mbm.items(): mbm.setdefault(mid, v)   # completa delivery/seen de los viejos (no pisa los recientes/​/logs)
