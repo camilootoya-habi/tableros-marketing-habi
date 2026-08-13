@@ -320,6 +320,10 @@ def build_country(pais):
     parsed_wide=[(i["phone"], agg.parse_resp(i["respuesta_cliente"]), i["ts"]) for i in inb_resp]
     inbound_phones_wide={p for p,_,_ in parsed_wide if p}
     interesado_phones_wide={p for p,pr,_ in parsed_wide if p and pr["action"]=="INTERESADO"}
+    # COMPLEMENTO TIEMPO REAL (2026-08-13): mismos sets de Neon que arriba — la COSECHA usa
+    # estos "_wide" y quedaba en 0 para días recientes con el mart cortado (WhatsApp feed roto 3-ago).
+    inbound_phones_wide    |= {r["phone"] for r in _neon_resp}
+    interesado_phones_wide |= {r["phone"] for r in _neon_resp if r["state"] == "reinteresado"}
     # INTERESADOS PENDIENTES POR CREAR: respondieron INTERESADO (nid del payload) pero aún NO se recreó el lead.
     # Refinado (2026-07-21) para NO sobre-contar: solo cuenta si además (a) es lead del LOOP (nid en send_log),
     # y (b) NO está en estado TERMINAL (baja/ya_vendio/respondio_otro = se dio de baja o respondió otra cosa).
