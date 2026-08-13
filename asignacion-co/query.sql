@@ -14,6 +14,9 @@ WITH leads AS (
     COALESCE(NULLIF(TRIM(t.area_metropolitana), ''), '(sin área)')      AS area
   FROM `papyrus-data.habi_wh_bi.tabla_inmuebles_general` t
   WHERE t.nid IS NOT NULL
+    -- Solo las 6 fuentes de marketing de CO (las que generan cierres):
+    -- WEB(3) · Leadforms(47,37,41,42) · Estudio Inmueble/Habimetro(7) · CRM(20) · Broker(39) · Comercial(35)
+    AND t.fuente_id IN (3, 47, 37, 41, 42, 7, 20, 39, 35)
     AND DATE(t.fecha_creacion) >= DATE_SUB(CURRENT_DATE(), INTERVAL 760 DAY)
     AND DATE(t.fecha_creacion) <  CURRENT_DATE()
 )
@@ -27,7 +30,8 @@ WITH leads AS (
       TRIM(tipo_asignacion)                               AS tipo_asignacion,
       COALESCE(NULLIF(TRIM(equipo_inicial), ''), '(sin equipo)') AS equipo
     ) ORDER BY fecha_asignacion LIMIT 1)[OFFSET(0)] AS a1,
-    MIN(IF(LOWER(TRIM(tipo)) = 'gabi', DATE(fecha_asignacion), NULL)) AS d_gabi
+    MIN(IF(LOWER(TRIM(tipo)) = 'gabi', DATE(fecha_asignacion), NULL)) AS d_gabi,
+    MIN(IF(LOWER(TRIM(tipo)) = 'gabi', TIMESTAMP(fecha_asignacion), NULL)) AS ts_gabi
   FROM `sellers-main-prod.bi_co.seguimiento_asignacion_ibuyer_co`
   WHERE fecha_asignacion IS NOT NULL
     AND DATE(fecha_asignacion) >= DATE_SUB(CURRENT_DATE(), INTERVAL 940 DAY)
@@ -94,7 +98,7 @@ WITH leads AS (
     o.d_owner,
     LEAST(COALESCE(a.d_asig, DATE '9999-12-31'),
           COALESCE(o.d_owner, DATE '9999-12-31'))           AS d_primera_asig_raw,
-    a.d_gabi,
+    a.d_gabi, a.ts_gabi,
     a.a1.tipo = 'gabi'                                      AS gabi_flag,
     COALESCE(NULLIF(TRIM(g.product_qualified), ''), '(sin calificar)') AS gabi_producto,
     p.prod_1, p.d_prod_1, p.d_mm, p.d_inmo,
@@ -117,14 +121,25 @@ WITH leads AS (
       WHEN d_asig  IS NULL THEN 'owner'
       WHEN d_asig <= d_owner THEN 'seguimiento'
       ELSE 'owner'
-    END AS senal_primera
+    END AS senal_primera,
+    -- Destino inicial de la asignación: el PRIMERO de los tres en el tiempo.
+    -- Empate -> GABI antes que MM antes que INMO (GABI es upstream por diseño).
+    CASE
+      WHEN d_primera_asig_raw = DATE '9999-12-31' THEN NULL
+      WHEN ts_gabi IS NOT NULL
+           AND ts_gabi <= LEAST(COALESCE(ts_mm,   TIMESTAMP '9999-12-31'),
+                                COALESCE(ts_inmo, TIMESTAMP '9999-12-31')) THEN 'GABI'
+      WHEN ts_mm IS NOT NULL
+           AND ts_mm <= COALESCE(ts_inmo, TIMESTAMP '9999-12-31')          THEN 'MM'
+      WHEN ts_inmo IS NOT NULL                                             THEN 'INMO'
+      WHEN ts_gabi IS NOT NULL                                             THEN 'GABI'
+      ELSE 'PENDIENTE'
+    END AS destino_1
   FROM base
 )
 , dims AS (
   SELECT nid, 'total'  AS dim, 'total' AS dim_val FROM base2
   UNION ALL SELECT nid, 'fuente', fuente FROM base2
-  UNION ALL SELECT nid, 'area',   area   FROM base2
-  UNION ALL SELECT nid, 'equipo', equipo FROM base2
 )
 , lente_a AS (
   SELECT
@@ -133,6 +148,8 @@ WITH leads AS (
     COUNT(DISTINCT IF(b.d_primera_asig IS NOT NULL
                       AND DATE_DIFF(b.d_primera_asig, b.d_creacion, DAY) <= 30, b.nid, NULL)) AS asig_30d,
     COUNT(DISTINCT IF(b.d_primera_asig IS NOT NULL, b.nid, NULL))                             AS asig_ever,
+    -- Asignados según el WBR mart (indicador oficial de marketing), misma cosecha de creación
+    COUNT(DISTINCT IF(b.en_wbr, b.nid, NULL))                                                 AS asig_wbr,
     COUNT(DISTINCT IF(b.gabi_flag
                       AND DATE_DIFF(b.d_asig, b.d_creacion, DAY) <= 30, b.nid, NULL))         AS gabi_30d,
     COUNT(DISTINCT IF(b.d_primera_asig IS NOT NULL AND NOT COALESCE(b.gabi_flag, FALSE)
@@ -142,7 +159,17 @@ WITH leads AS (
     COUNT(DISTINCT IF(b.d_primera_asig IS NOT NULL AND b.prod_1 = 'INMO'
                       AND DATE_DIFF(b.d_primera_asig, b.d_creacion, DAY) <= 30, b.nid, NULL)) AS prod1_inmo,
     COUNT(DISTINCT IF(b.d_primera_asig IS NOT NULL AND b.prod_1 IS NULL
-                      AND DATE_DIFF(b.d_primera_asig, b.d_creacion, DAY) <= 30, b.nid, NULL)) AS sin_producto
+                      AND DATE_DIFF(b.d_primera_asig, b.d_creacion, DAY) <= 30, b.nid, NULL)) AS sin_producto,
+    -- Versiones EVER (sin ventana de 30 d): la lente A las usa para el desglose de primera asignación
+    COUNT(DISTINCT IF(b.gabi_flag, b.nid, NULL))                                              AS gabi_ever,
+    COUNT(DISTINCT IF(b.d_primera_asig IS NOT NULL AND b.prod_1 = 'MM',   b.nid, NULL))       AS prod1_mm_ever,
+    COUNT(DISTINCT IF(b.d_primera_asig IS NOT NULL AND b.prod_1 = 'INMO', b.nid, NULL))       AS prod1_inmo_ever,
+    COUNT(DISTINCT IF(b.d_primera_asig IS NOT NULL AND b.prod_1 IS NULL,  b.nid, NULL))       AS sin_producto_ever,
+    -- Destino INICIAL de la asignación: estos 4 particionan asig_ever exactamente
+    COUNT(DISTINCT IF(b.destino_1 = 'GABI',      b.nid, NULL)) AS dest_gabi,
+    COUNT(DISTINCT IF(b.destino_1 = 'MM',        b.nid, NULL)) AS dest_mm,
+    COUNT(DISTINCT IF(b.destino_1 = 'INMO',      b.nid, NULL)) AS dest_inmo,
+    COUNT(DISTINCT IF(b.destino_1 = 'PENDIENTE', b.nid, NULL)) AS dest_pendiente
   FROM base2 b
   JOIN dims x USING (nid)
   GROUP BY d, dim, dim_val
@@ -208,7 +235,9 @@ WITH leads AS (
 SELECT 'count' AS kind, 'A' AS lente, CAST(d AS STRING) AS d, dim, dim_val, metrica, CAST(n AS STRING) AS n
 FROM lente_a
 UNPIVOT (n FOR metrica IN (
-  creados, asig_30d, asig_ever, gabi_30d, directo_30d, prod1_mm, prod1_inmo, sin_producto
+  creados, asig_30d, asig_ever, asig_wbr, gabi_30d, directo_30d, prod1_mm, prod1_inmo, sin_producto,
+  gabi_ever, prod1_mm_ever, prod1_inmo_ever, sin_producto_ever,
+  dest_gabi, dest_mm, dest_inmo, dest_pendiente
 ))
 WHERE n > 0
 UNION ALL

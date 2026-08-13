@@ -14,6 +14,7 @@
     --text: #e2e8f0; --text-title: #f8fafc;
     --text-muted: #cbd5e1; --text-muted-2: #94a3b8; --text-muted-3: #64748b;
     --accent: #818cf8; --accent-on: #f8fafc;
+    --row-total: rgba(129,140,248,.12); --ok: #34d399; --sky: #38bdf8; --warn: #fbbf24;
   }
   body.light {
     --bg: #f5f7fa; --card: #ffffff; --card-hover: #f1f5f9;
@@ -21,6 +22,7 @@
     --text: #334155; --text-title: #0f172a;
     --text-muted: #475569; --text-muted-2: #64748b; --text-muted-3: #94a3b8;
     --accent: #6366f1; --accent-on: #ffffff;
+    --row-total: rgba(99,102,241,.10); --ok: #059669; --sky: #0284c7; --warn: #b45309;
   }
 
   * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -35,6 +37,41 @@
   .theme-btn { background: var(--card); border: 1px solid var(--border); color: var(--text-muted-2); border-radius: 6px; padding: 4px 10px; font-size: 14px; cursor: pointer; transition: background 0.15s, color 0.15s; }
   .theme-btn:hover { background: var(--card-hover); color: var(--accent); }
 
+
+  /* Formato de tabla con períodos en columnas — copiado de marketing-loop (tabla "Impacto en asignados") */
+  .ftab{background:var(--card);border:1px solid var(--border);border-radius:10px;overflow-x:auto;margin-bottom:8px}
+  .ftab table{width:100%;border-collapse:separate;border-spacing:0;font-size:13px}
+  .ftab thead th{background:var(--border);color:var(--text-muted);font-weight:600;text-transform:uppercase;font-size:11px;letter-spacing:.5px;padding:11px 13px;text-align:right;position:sticky;top:0;z-index:2;white-space:nowrap;border:none}
+  .ftab thead th:first-child{text-align:left;width:264px;min-width:264px;max-width:264px;white-space:normal;vertical-align:middle;position:sticky;left:0;z-index:3;background:var(--border);border-right:2px solid var(--border-strong)}
+  .ftab thead th.cur{font-style:italic;color:var(--warn)}
+  .ftab thead th.cur::after{content:'*';margin-left:3px}
+  .ftab tbody td{padding:10px 13px;text-align:right;border-top:1px solid var(--border);white-space:nowrap}
+  .ftab tbody td:first-child{text-align:left;font-weight:500;color:var(--text-muted);white-space:normal;width:264px;min-width:264px;max-width:264px;position:sticky;left:0;z-index:1;background:var(--card);border-right:2px solid var(--border-strong)}
+  .ftab tbody tr:hover td{background:var(--card-hover)}
+  .ftab tbody tr:hover td:first-child{background:var(--card-hover)}
+  .ftab tbody tr.row-total td{font-weight:700;color:var(--text-title);font-size:14px;background:var(--row-total)}
+  .ftab tbody tr.row-loop td{background:rgba(52,211,153,.14);color:var(--ok);font-weight:700}
+  .ftab tbody tr.row-loop td:first-child{background:rgba(52,211,153,.14);border-left:3px solid var(--ok)}
+  .ftab tbody tr.row-blue td{background:rgba(56,189,248,.14);color:var(--sky);font-weight:700}
+  .ftab tbody tr.row-blue td:first-child{background:rgba(56,189,248,.14);border-left:3px solid var(--sky)}
+  .ftab tbody tr.row-stage td{color:var(--text-muted-2);font-size:12px}
+  .ftab td.na{color:var(--text-muted-3)}
+
+  /* Columna de títulos fija: los valores deben pasar por DEBAJO, nunca encima del texto */
+  .ftab thead th:first-child{z-index:6;box-shadow:2px 0 0 0 var(--border-strong)}
+  .ftab tbody tr td:first-child{z-index:5;background:var(--card);background-clip:padding-box;box-shadow:2px 0 0 0 var(--border-strong)}
+  .ftab tbody tr:hover td:first-child{background:var(--card-hover)}
+  /* sólidos, NO rgba: con transparencia las celdas que hacen scroll se ven a través */
+  .ftab tbody tr.row-total td:first-child{background:#26304a}
+  body.light .ftab tbody tr.row-total td:first-child{background:#ececfb}
+  .ftab tbody tr.row-loop  td:first-child{background:#123a2e}
+  .ftab tbody tr.row-blue  td:first-child{background:#0e3347}
+  .ftab tbody tr.row-stage td:first-child{background:var(--card)}
+  body.light .ftab tbody tr.row-loop td:first-child{background:#d9f2e8}
+  body.light .ftab tbody tr.row-blue td:first-child{background:#dceefb}
+  .ftab tbody td{position:relative;z-index:0}
+  .sel{background:var(--card);color:var(--text);border:1px solid var(--border-strong);border-radius:8px;padding:7px 10px;font-size:13px;font-family:inherit;cursor:pointer}
+  .sel:focus{outline:2px solid var(--accent);outline-offset:1px}
   .table-container { background: var(--card); border-radius: 10px; border: 1px solid var(--border); overflow-x: auto; }
   table { width: 100%; border-collapse: separate; border-spacing: 0; font-size: 13px; }
   thead th { background: var(--border); color: var(--text-muted-2); font-weight: 600; text-transform: uppercase; font-size: 11px; letter-spacing: 0.5px; padding: 12px 14px; text-align: left; white-space: nowrap; }
@@ -240,7 +277,7 @@
     const INMO_PIPELINE_DESDE = new Date('2025-10-02T00:00:00Z');
 
     // ── Estado global ────────────────────────────────────────────────────
-    let granActual = 'mes';
+    let granActual = 'semana';
     let filtro = { dim: 'total', dimVal: 'total' };
     const aggCache = new Map(); // cachea agrega() por combinación lente|gran|dim|dimVal
 
@@ -256,36 +293,40 @@
     const valores = valoresPorDim(rows);
 
     // ── Selectores globales ─────────────────────────────────────────────
-    function renderSelectors() {
-      const granChips = ['semana', 'mes', 'ciclo'].map(g => {
-        const label = g === 'semana' ? 'Semana' : g === 'mes' ? 'Mes' : 'Ciclo mié-mar';
-        return `<button class="chip ${granActual === g ? 'active' : ''}" data-gran="${g}">${label}</button>`;
-      }).join('');
+    // Orden y etiquetas de las 6 fuentes de marketing de CO (el valor es el de la tabla, la etiqueta es la bonita)
+    const FUENTES_ORDEN = [
+      ['WEB', 'WEB'],
+      ['Estudio Inmueble', 'Estudio Inmueble'],
+      ['lead_forms', 'Leadforms'],
+      ['CRM', 'CRM'],
+      ['Broker', 'Broker'],
+      ['comercial', 'Comercial'],
+    ];
+    function fuentesOrdenadas() {
+      const presentes = new Set(valores.fuente || []);
+      const enOrden = FUENTES_ORDEN.filter(([v]) => presentes.has(v));
+      const extras = [...presentes].filter(v => !FUENTES_ORDEN.some(([o]) => o === v)).sort().map(v => [v, v]);
+      return [...enOrden, ...extras];
+    }
 
-      const filtroGroups = Object.entries(valores).map(([dim, vals]) => {
-        const chips = vals.map(v =>
-          `<button class="chip ${filtro.dim === dim && filtro.dimVal === v ? 'active' : ''}" data-dim="${dim}" data-dimval="${v}">${v}</button>`
-        ).join('');
-        return `<div class="selector-group"><label>${dimLabels[dim]}</label>${chips}</div>`;
-      }).join('');
+    function renderSelectors() {
+      const granOpts = [['semana', 'Semana (Lun→Dom)'], ['mes', 'Mes'], ['ciclo', 'Ciclo comercial (Mié→Mar)']]
+        .map(([v, l]) => `<option value="${v}"${granActual === v ? ' selected' : ''}>${l}</option>`).join('');
+      const granSel = `<select class="sel" id="granSel">${granOpts}</select>`;
 
       return `
         <div class="selectors">
-          <div class="selector-group"><label>Granularidad</label>${granChips}</div>
-          <div class="selector-group"><label>Filtro</label>
-            <button class="chip ${filtro.dim === 'total' ? 'active' : ''}" data-dim="total" data-dimval="total">Todos</button>
+          <div class="selector-group"><label>Granularidad</label>${granSel}</div>
+          <div class="selector-group"><label>Fuente</label>
+            <button class="chip ${filtro.dim === 'total' ? 'active' : ''}" data-dim="total" data-dimval="total">Todas</button>
+            ${fuentesOrdenadas().map(([v, l]) => `<button class="chip ${filtro.dim === 'fuente' && filtro.dimVal === v ? 'active' : ''}" data-dim="fuente" data-dimval="${v}">${l}</button>`).join('')}
           </div>
-          ${filtroGroups}
         </div>`;
     }
 
     function wireSelectors() {
-      document.querySelectorAll('.chip[data-gran]').forEach(el => {
-        el.addEventListener('click', () => {
-          granActual = el.dataset.gran;
-          render();
-        });
-      });
+      const gs = document.getElementById('granSel');
+      if (gs) gs.onchange = e => { granActual = e.target.value; render(); };
       document.querySelectorAll('.chip[data-dim]').forEach(el => {
         el.addEventListener('click', () => {
           filtro = { dim: el.dataset.dim, dimVal: el.dataset.dimval };
@@ -316,82 +357,91 @@
       return `rgba(${r},${g},${b},0.28)`;
     }
 
+    // Etiqueta corta de período para las cabeceras (estilo marketing-loop)
+    const MESES_CORTOS = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+    function labelPeriodo(p, gran) {
+      if (gran === 'mes')  return MESES_CORTOS[+p.slice(5, 7) - 1] + ' ' + p.slice(2, 4);
+      if (gran === 'ciclo') return p.slice(5);           // MM-DD del miércoles de inicio
+      return p.slice(5);                                  // W## de la semana ISO
+    }
+
     function renderLenteA() {
       const map = aggregaCached('A');
       const periodos = ultimosPeriodos(rows.filter(r => r.kind === 'count' && r.lente === 'A'), granActual, 20);
 
-      // valores por columna (para heatmap min/max de %)
-      const pctPorCol = {};
-      COLS_A.forEach(c => { pctPorCol[c.key] = []; });
-
-      const filas = periodos.map(p => {
+      const cols = periodos.map(p => {
         const m = map.get(p) || new Map();
-        const creados = Number(m.get('creados') || 0);
-        const asig30 = Number(m.get('asig_30d') || 0);
         const cobertura = finDePeriodo(p, granActual);
-        const inmaduro = esInmaduro(p, granActual, 30);
-        const celdas = COLS_A.map(c => {
-          const sinCobertura = c.producto && (
-            (c.key === 'prod1_mm' && cobertura < MM_PIPELINE_DESDE) ||
-            (c.key === 'prod1_inmo' && cobertura < INMO_PIPELINE_DESDE) ||
-            (c.key === 'sin_producto' && cobertura < INMO_PIPELINE_DESDE)
-          );
-          if (sinCobertura) {
-            pctPorCol[c.key].push(null);
-            return { na: true };
-          }
-          const n = Number(m.get(c.key) || 0);
-          const den = c.den ? Number(m.get(c.den) || 0) : null;
-          const pct = den ? (n / den * 100) : null;
-          pctPorCol[c.key].push(pct);
-          return { n, pct };
-        });
-        return { p, creados, asig30, inmaduro, celdas };
+        const g = k => Number(m.get(k) || 0);
+        return {
+          p,
+          creados:   g('creados'),
+          asigEver:  g('asig_ever'),
+          asigWbr:   g('asig_wbr'),
+          gabi:      g('dest_gabi'),
+          mm:        g('dest_mm'),
+          inmo:      g('dest_inmo'),
+          pend:      g('dest_pendiente'),
+          coberturaMM:   cobertura >= MM_PIPELINE_DESDE,
+          coberturaInmo: cobertura >= INMO_PIPELINE_DESDE,
+        };
       });
 
-      const minmax = {};
-      COLS_A.forEach(c => {
-        const vals = pctPorCol[c.key].filter(v => v != null && isFinite(v));
-        minmax[c.key] = vals.length ? { min: Math.min(...vals), max: Math.max(...vals) } : { min: 0, max: 0 };
-      });
+      const last = cols.length - 1;
+      const cur = i => i === last ? ' class="cur"' : '';
+      const fmt = n => n.toLocaleString('es-CO');
+      const th = cols.map((c, i) => `<th${cur(i)}>${labelPeriodo(c.p, granActual)}</th>`).join('');
 
-      const thead = `<thead><tr><th>Cosecha</th>${COLS_A.map(c => `<th>${c.label}</th>`).join('')}</tr></thead>`;
-      const tbody = filas.map(f => {
-        const tds = f.celdas.map((cel, i) => {
-          const c = COLS_A[i];
-          if (cel.na) return `<td class="na" title="los pipelines MM/INMO no existían aún">—</td>`;
-          const bg = c.den ? heatColor(cel.pct, minmax[c.key].min, minmax[c.key].max) : 'transparent';
-          const pctStr = cel.pct != null ? ` <span class="pct">(${cel.pct.toFixed(1)}%)</span>` : '';
-          return `<td class="metric-cell" style="background:${bg}">${cel.n.toLocaleString('es-CO')}${pctStr}</td>`;
-        }).join('');
-        const label = f.inmaduro ? `${f.p}<span class="lbl-inmadura">inmadura</span>` : f.p;
-        return `<tr class="${f.inmaduro ? 'inmadura' : ''}"><td>${label}</td>${tds}</tr>`;
-      }).join('');
+      // fila de conteos; `cob` decide si la celda tiene cobertura de pipeline
+      const filaN = (label, get, cls = '', cob = null) => `<tr class="${cls}"><td>${label}</td>` + cols.map((c, i) => {
+        if (cob && !cob(c)) return `<td${cur(i)} class="na" title="los pipelines MM/INMO no existían aún">—</td>`;
+        return `<td${cur(i)}>${fmt(get(c))}</td>`;
+      }).join('') + '</tr>';
 
-      const chartLabels = filas.map(f => f.p);
-      const pctAsig = filas.map(f => f.creados ? (f.asig30 / f.creados * 100) : null);
-      const pctMM = filas.map(f => {
-        const cel = f.celdas[COLS_A.findIndex(c => c.key === 'prod1_mm')];
-        return cel && !cel.na ? cel.pct : null;
-      });
-      const pctInmo = filas.map(f => {
-        const cel = f.celdas[COLS_A.findIndex(c => c.key === 'prod1_inmo')];
-        return cel && !cel.na ? cel.pct : null;
-      });
+      // fila de % con denominador explícito
+      const filaPctSobre = (label, get, getDen, cls = '', cob = null) => `<tr class="${cls}"><td>${label}</td>` + cols.map((c, i) => {
+        if (cob && !cob(c)) return `<td${cur(i)} class="na">—</td>`;
+        const den = getDen(c);
+        const pct = den ? (get(c) / den * 100) : null;
+        return `<td${cur(i)}>${pct == null ? '<span class="na">·</span>' : pct.toFixed(1) + '%'}</td>`;
+      }).join('') + '</tr>';
+      // atajo: % sobre ever asignados
+      const filaPct = (label, get, cls = '', cob = null) => filaPctSobre(label, get, c => c.asigEver, cls, cob);
 
-      chartADataPending = { chartLabels, pctAsig, pctMM, pctInmo };
+      const hcol = { semana: 'Semana (ISO)', mes: 'Mes', ciclo: 'Ciclo (inicia mié)' }[granActual] || 'Período';
+
+      const tabla = `<table><thead><tr><th>${hcol}</th>${th}</tr></thead><tbody>
+        ${filaN('Leads creados', c => c.creados, 'row-total')}
+        ${filaN('<b>Ever asignados</b>', c => c.asigEver, 'row-loop')}
+        ${filaN('Asignados WBR mart', c => c.asigWbr)}
+        ${filaPctSobre('% ever asignado / creados', c => c.asigEver, c => c.creados, 'row-stage')}
+        ${filaPctSobre('% WBR mart / ever asignado', c => c.asigWbr, c => c.asigEver, 'row-stage')}
+        ${filaN('1ª asignación · GABI', c => c.gabi, 'row-blue')}
+        ${filaN('1ª asignación · MM', c => c.mm, '', c => c.coberturaMM)}
+        ${filaN('1ª asignación · Inmo', c => c.inmo, '', c => c.coberturaInmo)}
+        ${filaN('1ª asignación · sin destino aún', c => c.pend)}
+        ${filaPct('% GABI', c => c.gabi, 'row-stage')}
+        ${filaPct('% MM', c => c.mm, 'row-stage', c => c.coberturaMM)}
+        ${filaPct('% Inmo', c => c.inmo, 'row-stage', c => c.coberturaInmo)}
+      </tbody></table>`;
+
+      chartADataPending = {
+        chartLabels: cols.map(c => labelPeriodo(c.p, granActual)),
+        pctAsig: cols.map(c => c.creados ? (c.asigEver / c.creados * 100) : null),
+        pctMM:   cols.map(c => c.coberturaMM   && c.asigEver ? (c.mm   / c.asigEver * 100) : null),
+        pctGabi: cols.map(c => c.asigEver ? (c.gabi / c.asigEver * 100) : null),
+        pctInmo: cols.map(c => c.coberturaInmo && c.asigEver ? (c.inmo / c.asigEver * 100) : null),
+      };
 
       return `
         <div class="lente-block">
           <h2>Lente A — Cosechas por fecha de creación</h2>
-          <div class="subt">Ancla: fecha de creación del lead. Denominador de los %: asignados ≤30d.</div>
-          <div class="table-container">
-            <table class="tbl-lente">${thead}<tbody>${tbody}</tbody></table>
-          </div>
-          <div class="nota">Las columnas de producto arrancan en sep-2025, cuando se crearon los pipelines MM e INMO en HubSpot.</div>
+          <div class="subt">Ancla: <strong>fecha de creación del lead</strong>. Base: <strong>ever asignado</strong> (sin ventana de maduración). Los % van sobre ever asignados; el más reciente está a la derecha y va marcado con *.</div>
+          <div class="ftab" id="tablaLenteA">${tabla}</div>
+          <div class="nota"><strong>Las tres filas de 1ª asignación suman los ever asignados.</strong> Cada lead cuenta una sola vez, en el destino al que llegó <em>primero</em> en el tiempo: GABI (el bot), MM o Inmo. Si un lead entró a GABI y después pasó a MM, cuenta en GABI, porque esa fue su primera asignación. "Sin destino aún" son leads con señal de asignación pero que todavía no aparecen en ninguno de los tres (unos pocos por período, casi todos del período en curso). Las filas de MM e Inmo van con <span class="na">—</span> antes de sep-2025 y oct-2025, cuando se crearon esos pipelines en HubSpot.</div>
           <div class="charts-grid">
             <div class="panel">
-              <h3>% asig_30d/creados · % prod1_mm/asig_30d · % prod1_inmo/asig_30d</h3>
+              <h3>% ever asignado sobre creados · % MM y % Inmo sobre ever asignados</h3>
               <div class="ch"><canvas id="chartLenteA"></canvas></div>
             </div>
           </div>
@@ -737,6 +787,8 @@
       wireSelectors();
       drawChartA();
       drawChartGap();
+      // las tablas con períodos en columnas arrancan mostrando el período más reciente (a la derecha)
+      document.querySelectorAll('.ftab').forEach(el => { el.scrollLeft = el.scrollWidth; });
     }
 
     render();
