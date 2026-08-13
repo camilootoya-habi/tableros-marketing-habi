@@ -672,9 +672,12 @@ function renderAntifunnelTop14(periods, gran, denoms) {
   });
   const byState = {};
   Object.values(byKey).forEach(r => {
-    if (!byState[r.state_id]) byState[r.state_id] = { state_id: r.state_id, state_name: r.state_name, total: 0, perP: {} };
-    byState[r.state_id].total += r.n;
-    byState[r.state_id].perP[r.p] = r.n;
+    // Clave compuesta: en la dimensión de calificación TODOS los state_id son -1,
+    // agrupar solo por state_id colapsaría las categorías en una sola fila.
+    const sk = r.state_id + '|' + r.state_name;
+    if (!byState[sk]) byState[sk] = { state_id: r.state_id, state_name: r.state_name, total: 0, perP: {} };
+    byState[sk].total += r.n;
+    byState[sk].perP[r.p] = (byState[sk].perP[r.p] || 0) + r.n;
   });
   const allStates = Object.values(byState).sort((a, b) => b.total - a.total);
   const top14 = allStates.slice(0, 14);
@@ -761,7 +764,7 @@ function renderAntifunnelTop14(periods, gran, denoms) {
 
 // Desglose de los desclasificados MM por estado ACTUAL, ordenado de mayor a menor.
 // El % es sobre el total de desclasificados del período, así que las filas suman 100%.
-function renderDesclasStates(periods, gran, desclasVals, DATA, rankOut) {
+function renderDesclasStates(periods, gran, desclasVals, DATA, rankOut, dim) {
   const country = getCountry();
   const selIds = getSelFuentes();
   const periodSet = new Set(periods);
@@ -769,15 +772,19 @@ function renderDesclasStates(periods, gran, desclasVals, DATA, rankOut) {
   const byKey = {};
   DATA.forEach(r => {
     if (r.g !== gran || r.c !== country || !selIds.includes(r.f) || !periodSet.has(r.p)) return;
-    const k = r.state_id + '|' + r.p;
+    if (dim !== undefined && r.dim !== dim) return;   // mm_sin_inmo trae 2 dimensiones
+    const k = r.state_id + '|' + r.state_name + '|' + r.p;
     if (!byKey[k]) byKey[k] = { state_id: r.state_id, state_name: r.state_name, p: r.p, n: 0 };
     byKey[k].n += r.n;
   });
   const byState = {};
   Object.values(byKey).forEach(r => {
-    if (!byState[r.state_id]) byState[r.state_id] = { state_id: r.state_id, state_name: r.state_name, total: 0, perP: {} };
-    byState[r.state_id].total += r.n;
-    byState[r.state_id].perP[r.p] = r.n;
+    // Clave compuesta: en la dimensión de calificación TODOS los state_id son -1,
+    // agrupar solo por state_id colapsaría las categorías en una sola fila.
+    const sk = r.state_id + '|' + r.state_name;
+    if (!byState[sk]) byState[sk] = { state_id: r.state_id, state_name: r.state_name, total: 0, perP: {} };
+    byState[sk].total += r.n;
+    byState[sk].perP[r.p] = (byState[sk].perP[r.p] || 0) + r.n;
   });
   const states = Object.values(byState).sort((a, b) => b.total - a.total);
   rankOut.states = states;   // ranking que consumen las 6 gráficas
@@ -785,7 +792,9 @@ function renderDesclasStates(periods, gran, desclasVals, DATA, rankOut) {
 
   return states.map(st => {
     const values = periods.map(p => st.perP[p] || 0);
-    const label = `${st.state_name} <span style="opacity:.55;font-size:11px">· ${st.state_id}</span>`;
+    const label = st.state_id >= 0
+      ? `${st.state_name} <span style="opacity:.55;font-size:11px">· ${st.state_id}</span>`
+      : st.state_name;
     return `<tr class="row-stage"><td></td><td>${label}</td>${heatCells(values, desclasVals, true)}</tr>`;
   }).join('');
 }
@@ -809,9 +818,12 @@ function renderAntifunnel(periods, gran, trs) {
 
   const byState = {};
   Object.values(byKey).forEach(r => {
-    if (!byState[r.state_id]) byState[r.state_id] = { state_id: r.state_id, state_name: r.state_name, total: 0, perP: {} };
-    byState[r.state_id].total += r.n;
-    byState[r.state_id].perP[r.p] = r.n;
+    // Clave compuesta: en la dimensión de calificación TODOS los state_id son -1,
+    // agrupar solo por state_id colapsaría las categorías en una sola fila.
+    const sk = r.state_id + '|' + r.state_name;
+    if (!byState[sk]) byState[sk] = { state_id: r.state_id, state_name: r.state_name, total: 0, perP: {} };
+    byState[sk].total += r.n;
+    byState[sk].perP[r.p] = (byState[sk].perP[r.p] || 0) + r.n;
   });
 
   const states = Object.values(byState).sort((a, b) => b.total - a.total);
@@ -1029,8 +1041,10 @@ function render(rows, gran) {
   const buyboxVals = sortedRows.map(r => r[mmNoInmoField]);
   let bbxTb = `<tr class="row-total">${helpCell('helpCalMmNoInmo')}<td>Error de Buybox — total</td>`
             + periods.map((p, i) => `<td>${fmt(buyboxVals[i])}</td>`).join('') + '</tr>';
+  bbxTb += `<tr class="row-section"><td class="section-title" colspan="2">Calificación del lead (v2) · HubSpot</td><td class="section-fill" colspan="${periods.length}"></td></tr>`;
+  bbxTb += renderDesclasStates(periods, gran, buyboxVals, MM_SIN_INMO_DATA, { states: [] }, 'cal2');
   bbxTb += `<tr class="row-section"><td class="section-title" colspan="2">Estado Inmo actual de esos leads</td><td class="section-fill" colspan="${periods.length}"></td></tr>`;
-  bbxTb += renderDesclasStates(periods, gran, buyboxVals, MM_SIN_INMO_DATA, BUYBOX_RANK);
+  bbxTb += renderDesclasStates(periods, gran, buyboxVals, MM_SIN_INMO_DATA, BUYBOX_RANK, 'state');
   document.querySelector('#mmSinInmoTable thead tr').innerHTML = headerCells;
   document.querySelector('#mmSinInmoTable tbody').innerHTML = bbxTb;
   renderDesclasCharts(periods, gran, buyboxVals, BUYBOX_RANK, 'bbx');
