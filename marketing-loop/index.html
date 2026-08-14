@@ -295,6 +295,7 @@
     <section class="panel"><h3 class="sm">Conversión respuesta → interesado <span class="help" title="De los que respondieron ese día, % que eligió 'Interesado'. Tooltip muestra n de respuestas.">?</span></h3><div class="ch"><canvas id="c_ci"></canvas></div></section>
     <section class="panel"><h3 class="sm">Conversión interesado → creado <span class="help" title="Leads recreados ÷ interesados (%). Recreados = negocios creados ese día en el backbone (Neon recreation).">?</span></h3><div class="ch"><canvas id="c_ic"></canvas></div></section>
     <section class="panel"><h3 class="sm">Conversión creado → calificado MM <span class="help" title="Calificados MM (backbone 20/63) ÷ recreados ese día (%), por fecha de creación.">?</span></h3><div class="ch"><canvas id="c_cc"></canvas></div></section>
+    <section class="panel"><h3 class="sm">Reasignados por el agente IA <span class="help" title="Sellers reasignados al equipo comercial gracias al agente SDR de IA: respondieron con texto libre y el agente confirmó su interés (directo o durante la conversación) y recreó el lead en el backbone. Cuenta teléfonos únicos por día con acción BACKBONE en agent_thread (Neon). Solo países con el agente EN VIVO — los turnos en shadow no cuentan.">?</span></h3><div class="ch"><canvas id="c_agente"></canvas></div></section>
     <section class="panel"><h3 class="sm">Base enviada · prom. móvil 7d <span class="help" title="Promedio móvil de 7 días de los mensajes enviados por día.">?</span></h3><div class="ch"><canvas id="c_env_ma"></canvas></div></section>
     <section class="panel"><h3 class="sm">Conversión a respuesta · prom. móvil 7d <span class="help" title="Promedio móvil de 7 días de respuestas ÷ enviados.">?</span></h3><div class="ch"><canvas id="c_cr_ma"></canvas></div></section>
     <section class="panel"><h3 class="sm">Conversión resp → interesado · prom. móvil 7d <span class="help" title="Promedio móvil de 7 días de interesados ÷ respuestas.">?</span></h3><div class="ch"><canvas id="c_ci_ma"></canvas></div></section>
@@ -850,6 +851,8 @@ function renderDiario(){
   mkChart('c_ci',labels,ci,{type:'bar',pct:true,num:inter,den:resp});
   mkChart('c_ic',labels,ic,{type:'bar',pct:true,num:crea,den:inter});
   mkChart('c_cc',labels,cc,{type:'bar',pct:true,num:cal,den:crea});
+  const ag=(D.agente_ia||{})[country]||[];
+  mkChart('c_agente',ag.map(r=>r.fecha.slice(5)),ag.map(r=>+r.reasignados),{type:'bar'});
   mkChart('c_env_ma',labels,movavg(env,7));
   mkChart('c_cr_ma',labels,movavg(cr,7),{pct:true});
   mkChart('c_ci_ma',labels,movavg(ci,7),{pct:true});

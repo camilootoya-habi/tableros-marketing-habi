@@ -403,6 +403,22 @@ def build_country(pais):
                    "mart_msgids":len(mbm), "infobip":len(ibm), "neon_delivery": len(nbm), "inbound":len(inb)},
     }
 
+
+def agente_ia(pais):
+    """Usuarios reasignados por el agente SDR de IA (conversacional, texto libre): sellers cuyo
+    hilo con el agente terminó en BACKBONE — respuesta positiva directa o movido a interesado
+    durante la conversación — y el lead se recreó en el backbone. Por día local del país.
+    Fuente: Neon agent_thread (turnos del agente EN VIVO; los SHADOW no cuentan)."""
+    rows = N._rows("""
+        SELECT (ts AT TIME ZONE %s)::date::text AS fecha,
+               count(DISTINCT phone) FILTER (WHERE action_taken IN ('BACKBONE','BACKBONE_SANITIZED')) AS reasignados,
+               count(DISTINCT phone) AS conversaciones
+        FROM agent_thread
+        WHERE country=%s AND role='assistant'
+        GROUP BY 1 ORDER BY 1""", (N.TZ[pais], pais))
+    return [{"fecha": r["fecha"], "reasignados": int(r["reasignados"] or 0),
+             "conversaciones": int(r["conversaciones"] or 0)} for r in rows]
+
 COMP = q("query_completitud.sql")
 RECRE = q("query_recreados.sql")   # recreados (UTM reinteresados) con estado real del backbone → Recreación + Antifunnel
 mx = build_country("MX")
@@ -435,6 +451,7 @@ data={
   "cohorte_origen": {"MX": mx["cohorte_origen"], "CO": co["cohorte_origen"]},
   "diario": {"MX": mx["diario"], "CO": co["diario"]},
   "asignados": q("query_asignados.sql"),
+  "agente_ia": {"MX": agente_ia("MX"), "CO": agente_ia("CO")},
 }
 open(os.path.join(HERE,"data.json"),"w").write(json.dumps(data, ensure_ascii=False, separators=(",",":")))
 print("data.json OK |",
