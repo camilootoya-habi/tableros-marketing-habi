@@ -2,7 +2,11 @@ name: Actualizar datos BigQuery
 
 on:
   schedule:
-    - cron: '0 */4 * * *'  # Cada 4h UTC — cubre lunes en la mañana para tableros semanales
+    - cron: '0 13 * * *'  # 1x/día (13:00 UTC = 8am CDMX). Bajado de 4h el 19-ago-26:
+    # cada build baja send_log+contact_status completos de Neon (~15MB) y el mart que
+    # alimenta esas secciones tiene lag de 24-48h, así que 6 builds/día solo quemaban
+    # la cuota de transferencia (2.5GB/mes -> 0.4GB). run_daily.sh también reconstruye
+    # y pushea el tablero al final del ciclo, así que quedan 2 refrescos diarios.
   workflow_dispatch:  # Permite ejecutar manualmente desde GitHub
 
 jobs:
