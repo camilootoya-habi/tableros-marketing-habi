@@ -380,6 +380,25 @@ def build_country(pais):
         "AND action_taken IS NOT NULL AND action_taken NOT LIKE 'SHADOW%%' "
         "AND action_taken <> 'NOT_IN_SAMPLE'", (pais,))}
     sl_agente = [r for r in sl_cosecha if r.get("phone") in agente_phones]
+    # USUARIOS CONTACTADOS DE VERDAD: teléfonos ÚNICOS con al menos un mensaje ENTREGADO.
+    # No son "enviados": un mensaje que rebota (no entregable, bloqueado, freq cap) no contactó
+    # a nadie, y contarlo infla la base de todo el funnel. Ventanas acumuladas por fecha de envío.
+    _hoy_l = datetime.date.today()
+    _desde = {"mtd": _hoy_l.replace(day=1).isoformat(),
+              "wtd": (_hoy_l - datetime.timedelta(days=_hoy_l.weekday())).isoformat(),
+              "ytd": _hoy_l.replace(month=1, day=1).isoformat()}
+    _cont = {k: set() for k in _desde}
+    for r in sl_cosecha:
+        m = mbm.get(r.get("message_id") or "")
+        if not (m and m.get("status") == "delivered"):
+            continue
+        f = (r.get("attempted_at") or "")[:10]; ph = r.get("phone")
+        if not f or not ph:
+            continue
+        for k, ini in _desde.items():
+            if f >= ini:
+                _cont[k].add(ph)
+    contactados = {k: len(v) for k, v in _cont.items()}
     # recreados/calificados por old_nid
     recreated_oldnids={r["old_nid"] for r in rec if r.get("success")}
     qualified_oldnids={r["old_nid"] for r in rec if r.get("state_at_creation") in (20,63)}
@@ -401,6 +420,7 @@ def build_country(pais):
         "respuestas": {t: agg.respuestas_serie(inb_resp, t) for t in ("dia","semana","mes")},
         "cosecha": {t: agg.cosecha_serie(sl_cosecha, mbm, inbound_phones_wide, interesado_phones_wide, interesado_nocreado_phones, t, n=40) for t in ("dia","semana","mes")},
         "pendientes_crear": pendientes_crear,
+        "contactados": contactados,
         "cosecha_agente": {t: agg.cosecha_serie(sl_agente, mbm, inbound_phones_wide, interesado_phones_wide, interesado_nocreado_phones, t, n=40) for t in ("dia","semana","mes")},
         "agente_conversaciones": len(agente_phones),
         "ab_templates": _ab(sl,mbm,inbound_phones,interesado_phones,yavendio_phones),
@@ -462,6 +482,10 @@ data={
   "cohorte_origen": {"MX": mx["cohorte_origen"], "CO": co["cohorte_origen"]},
   "diario": {"MX": mx["diario"], "CO": co["diario"]},
   "asignados": q("query_asignados.sql"),
+  # KPIs de cabecera: contactados sale de Neon (entrega real) y el resto de BQ, cada
+  # métrica por su propia fecha (creado / cita / cierre). Ver query_kpis.sql.
+  "contactados": {"MX": mx["contactados"], "CO": co["contactados"]},
+  "kpis": {r["pais"]: r for r in q("query_kpis.sql")},
   "cosecha_agente": {"MX": mx["cosecha_agente"], "CO": co["cosecha_agente"]},
   "agente_conversaciones": {"MX": mx["agente_conversaciones"], "CO": co["agente_conversaciones"]},
   # Cierres por closedate de los últimos 7d (NO por createdate: el ciclo de compra no cabe en una semana).

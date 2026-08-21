@@ -42,7 +42,10 @@
   .pill{cursor:pointer;border:1px solid var(--border);background:var(--card);color:var(--text);border-radius:999px;padding:7px 16px;font:inherit;font-size:14px;font-weight:600}
   .pill.on{background:var(--accent);color:#fff;border-color:var(--accent)}
   .eyebrow{font-size:11px;text-transform:uppercase;letter-spacing:.8px;color:var(--text-muted);font-weight:700;margin:22px 0 8px;display:flex;align-items:center;gap:6px}
-  .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px}
+  .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:12px}
+  .kpi3{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin:8px 0 2px}
+  .kpi3 .kl{display:block;font-size:9.5px;letter-spacing:.7px;text-transform:uppercase;color:var(--text-muted);font-weight:800}
+  .kpi3 .kv{display:block;font-size:21px;font-weight:800;color:var(--text-title);line-height:1.15;font-variant-numeric:tabular-nums}
   .stat{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:15px 16px}
   .stat.key{border:1.5px solid var(--warn);background:rgba(251,191,36,.12);box-shadow:0 0 0 3px rgba(251,191,36,.08)}
   .stat.key .v{color:var(--warn)}
@@ -694,6 +697,10 @@ const CARD_HELP={
   resp_int:{t:'Interesado',b:'<p>Respondieron con el botón <b>«Estoy interesado»</b> (INTERESADO).</p>'},
   resp_baja:{t:'Ya no vendo',b:'<p>Respondieron con el botón <b>«Ya no vendo»</b> (YAVENDIÓ / baja).</p>'},
   resp_bajatxt:{t:'Baja',b:'<p>Respondieron con <b>texto libre</b> que dice «baja» (escribieron «baja / darme de baja» en vez de tocar el botón «Ya no vendo»).</p>'},
+  kpi_contactados:{t:'Usuarios contactados',b:'<p><b>Personas únicas</b> a las que el mensaje les <b>llegó de verdad</b>: teléfonos distintos con al menos un WhatsApp en estado <b>entregado</b>. No son envíos.</p><p>Un mensaje que rebota —número no entregable, bloqueado, tope de frecuencia de Meta— no contactó a nadie, y contarlo infla la base de todo el funnel. Por eso se excluyen. Fuente: <code>send_log</code> + confirmación de entrega del mart y de Infobip.</p><p><b>MTD</b> = del 1 del mes a hoy · <b>WTD</b> = del lunes a hoy · <b>YTD</b> = del 1 de enero a hoy. Se bucketea por <b>fecha de envío</b>.</p>'},
+  kpi_leads:{t:'Leads cerrados',b:'<p>Negocios del loop <b>creados en el backbone</b> (<code>hubspot.deals</code> con la UTM de reinteresados), contados por <code>createdate</code>. Incluye los que crea el ciclo diario y los que crea el agente SDR cuando alguien contesta que sí.</p>'},
+  kpi_citas:{t:'Citas agendadas',b:'<p>Leads del loop con <b>visita agendada</b>, contados por <code>fecha_de_visita</code> — no por la fecha en que se creó el lead. Un lead de marzo con cita en agosto cuenta en agosto, que es cuando pasó el evento.</p>'},
+  kpi_cierres:{t:'Cierres',b:'<p>Negocios del loop <b>comprados</b>, contados por <code>closedate</code>. Ojo con la escala: son pocos por definición y el ciclo de compra tarda semanas, así que un cero en una semana puntual no dice nada; la serie sí.</p>'},
   creados_sem:{t:'Leads creados esta semana',b:'<p>Negocios del loop creados en el backbone en los <b>últimos 7 días</b>, contados por <code>createdate</code> en <code>hubspot.deals</code> con la UTM de reinteresados. Incluye tanto los que crea el ciclo diario como los que crea el agente SDR cuando alguien contesta que sí.</p>'},
   cierres_sem:{t:'Cierres de la semana',b:'<p>Negocios del loop que <b>se cerraron</b> (comprados) en los últimos 7 días, contados por <code>closedate</code> — no por fecha de creación: un lead creado esta semana no alcanza a cerrarse esta semana.</p><p>Ojo con la escala: son pocos por definición. El ciclo de compra tarda semanas, así que un cero en una semana puntual no dice nada; la serie sí.</p>'},
   cos_agente:{t:'Cosecha de envío · solo agente SDR',b:'<p>Los mismos números de la cosecha, pero <b>restringidos a los envíos cuyo destinatario terminó conversando con el agente SDR</b>. Sirve para comparar el desenlace de una conversación atendida por el agente contra el promedio de la campaña.</p><p>Se excluyen a propósito los turnos en <b>shadow</b> y los que quedan fuera del muestreo del piloto: ahí el agente propone la respuesta pero <b>no la manda</b>, así que el desenlace no es mérito suyo.</p>'},
@@ -708,27 +715,31 @@ function openHelp(k){const h=CARD_HELP[k]; if(!h) return;
 const _hb=k=>`<button type="button" class="help-btn" onclick="openHelp('${k}')" aria-label="Explicación">?</button>`;
 
 function renderStats(){
+  const K=(D.kpis||{})[country]||{}, C=(D.contactados||{})[country]||{};
   const l=(D.linea||{})[country]||{};
-  const qc={HIGH:'var(--ok)',MEDIUM:'var(--warn)',LOW:'var(--bad)',UNKNOWN:'var(--text-muted)'}[l.quality]||'var(--text-muted)';
-  const tip = l.quality==='LOW'?'⚠ Calidad baja: reducir volumen, targetear solo leads tibios y revisar contenido; considerar rotar de línea.'
-    : l.quality==='MEDIUM'?'Calidad media: cuidar el ritmo y priorizar a quien más probablemente responda para que suba.'
-    : l.quality==='HIGH'?'Calidad alta: la línea está sana.'
-    : 'Sin histórico de calidad reciente.';
-  // tier / estado / revisión viajan como subtítulo de la tarjeta de calidad: son la misma
-  // pregunta ("¿puedo enviar hoy?") y así el tablero abre con 4 números, no con 6.
-  const det=[ l.tier?('tier '+String(l.tier).replace('LIMIT_','')):null,
-              l.status?(l.status==='CONNECTED'?'conectada':l.status):null,
-              l.review?(l.review==='APPROVED'?'aprobada':l.review):null,
-              l.sender||null ].filter(Boolean).join(' · ');
+  // MTD / WTD / YTD: acumulados del mes, de la semana (lunes→hoy) y del año en curso.
+  // Van en el orden que pidió el equipo, no en orden de tamaño.
+  const tri=(mtd,wtd,ytd)=>`<div class="kpi3">
+      <div><span class="kl">MTD</span><span class="kv">${fmt(+mtd||0)}</span></div>
+      <div><span class="kl">WTD</span><span class="kv">${fmt(+wtd||0)}</span></div>
+      <div><span class="kl">YTD</span><span class="kv">${fmt(+ytd||0)}</span></div>
+    </div>`;
   const cards=[
-    ['Leads creados esta semana '+_hb('creados_sem'), fmt((D.creados_semana||{})[country]||0), 'UTM del loop · últimos 7 días', 'key-blue'],
-    ['Interesados pendientes por crear '+_hb('pendientes'), fmt((D.pendientes_crear||{})[country]||0), 'respondieron INTERESADO · sin recrear', 'key'],
-    ['Calidad de línea '+_hb('quality'), `<span class="chip" style="background:${qc}">${l.quality||'—'}</span>`, det||tip],
-    ['Cierres de la semana '+_hb('cierres_sem'), fmt((D.cierres_semana||{})[country]||0), 'negocios comprados · cerrados en los últimos 7 días', 'key'],
+    ['Usuarios contactados '+_hb('kpi_contactados'), tri(C.mtd,C.wtd,C.ytd), 'personas únicas con mensaje ENTREGADO · excluye rebotes', 'key-blue'],
+    ['Leads cerrados '+_hb('kpi_leads'),             tri(K.creados_mtd,K.creados_wtd,K.creados_ytd), 'negocios del loop creados en el backbone', 'key'],
+    ['Citas agendadas '+_hb('kpi_citas'),            tri(K.citas_mtd,K.citas_wtd,K.citas_ytd), 'por fecha de la visita', ''],
+    ['Cierres '+_hb('kpi_cierres'),                  tri(K.cierres_mtd,K.cierres_wtd,K.cierres_ytd), 'negocios comprados · por fecha de cierre', 'key'],
   ];
   document.getElementById('stats').innerHTML=cards.map(([lab,v,s,cls])=>
-    `<div class="stat${cls?' '+cls:''}"><div class="l">${lab}</div><div class="v">${v}</div><div class="s">${s||''}</div></div>`).join('');
-  const lt=document.getElementById('lineaTip'); if(lt) lt.textContent=tip;
+    `<div class="stat${cls?' '+cls:''}"><div class="l">${lab}</div>${v}<div class="s">${s||''}</div></div>`).join('');
+  // La salud de la línea deja de ser tarjeta pero no se pierde: es una línea de estado.
+  const est=[ l.quality?('calidad '+l.quality):null,
+              l.tier?('tier '+String(l.tier).replace('LIMIT_','')):null,
+              l.status?(l.status==='CONNECTED'?'conectada':l.status):null,
+              l.review?(l.review==='APPROVED'?'revisión aprobada':('revisión '+l.review)):null,
+              l.sender?('línea '+l.sender):null ].filter(Boolean).join(' · ');
+  const lt=document.getElementById('lineaTip');
+  if(lt) lt.textContent = est ? ('Salud de la línea: '+est) : 'Sin datos de salud de la línea (Meta no respondió).';
 }
 
 function renderResp(){
