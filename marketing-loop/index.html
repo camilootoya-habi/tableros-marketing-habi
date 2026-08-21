@@ -700,7 +700,7 @@ const CARD_HELP={
   kpi_contactados:{t:'Usuarios contactados',b:'<p><b>Personas únicas</b> a las que el mensaje les <b>llegó de verdad</b>: teléfonos distintos con al menos un WhatsApp en estado <b>entregado</b>. No son envíos.</p><p>Un mensaje que rebota —número no entregable, bloqueado, tope de frecuencia de Meta— no contactó a nadie, y contarlo infla la base de todo el funnel. Por eso se excluyen. Fuente: <code>send_log</code> + confirmación de entrega del mart y de Infobip.</p><p><b>MTD</b> = del 1 del mes a hoy · <b>WTD</b> = del lunes a hoy · <b>YTD</b> = del 1 de enero a hoy. Se bucketea por <b>fecha de envío</b>.</p>'},
   kpi_leads:{t:'Leads cerrados',b:'<p>Negocios del loop <b>creados en el backbone</b> (<code>hubspot.deals</code> con la UTM de reinteresados), contados por <code>createdate</code>. Incluye los que crea el ciclo diario y los que crea el agente SDR cuando alguien contesta que sí.</p>'},
   kpi_citas:{t:'Citas agendadas',b:'<p>Leads del loop con <b>visita agendada</b>, contados por <code>fecha_de_visita</code> — no por la fecha en que se creó el lead. Un lead de marzo con cita en agosto cuenta en agosto, que es cuando pasó el evento.</p>'},
-  kpi_cierres:{t:'Cierres',b:'<p>Negocios del loop <b>comprados</b>, contados por <code>closedate</code>. Ojo con la escala: son pocos por definición y el ciclo de compra tarda semanas, así que un cero en una semana puntual no dice nada; la serie sí.</p>'},
+  kpi_cierres:{t:'Cierres',b:'<p>Suma de las <b>dos líneas de negocio</b>, que en HubSpot viven en campos distintos:</p><ul><li><b>Compra directa (Market Maker)</b>: <code>oportunidad_del_negocio = \'Cierre - Comprado\'</code>, fechado por <code>closedate</code>.</li><li><b>Inmobiliaria (red de aliados)</b>: <code>oportunidad_inmobiliaria = \'Contrato firmado\'</code>, fechado por <code>fecha_captacion_inmobiliaria</code>.</li></ul><p>Contar solo la primera —como hacía este tablero hasta el 21-ago— dejaba fuera la mayoría de los cierres del loop: en CO son 29 contratos de inmobiliaria contra 9 compras directas en el año.</p><p><code>fecha_de_firma</code> no sirve para fechar nada: está vacía en toda la tabla.</p>'},
   creados_sem:{t:'Leads creados esta semana',b:'<p>Negocios del loop creados en el backbone en los <b>últimos 7 días</b>, contados por <code>createdate</code> en <code>hubspot.deals</code> con la UTM de reinteresados. Incluye tanto los que crea el ciclo diario como los que crea el agente SDR cuando alguien contesta que sí.</p>'},
   cierres_sem:{t:'Cierres de la semana',b:'<p>Negocios del loop que <b>se cerraron</b> (comprados) en los últimos 7 días, contados por <code>closedate</code> — no por fecha de creación: un lead creado esta semana no alcanza a cerrarse esta semana.</p><p>Ojo con la escala: son pocos por definición. El ciclo de compra tarda semanas, así que un cero en una semana puntual no dice nada; la serie sí.</p>'},
   cos_agente:{t:'Cosecha de envío · solo agente SDR',b:'<p>Los mismos números de la cosecha, pero <b>restringidos a los envíos cuyo destinatario terminó conversando con el agente SDR</b>. Sirve para comparar el desenlace de una conversación atendida por el agente contra el promedio de la campaña.</p><p>Se excluyen a propósito los turnos en <b>shadow</b> y los que quedan fuera del muestreo del piloto: ahí el agente propone la respuesta pero <b>no la manda</b>, así que el desenlace no es mérito suyo.</p>'},
@@ -728,7 +728,8 @@ function renderStats(){
     ['Usuarios contactados '+_hb('kpi_contactados'), tri(C.mtd,C.wtd,C.ytd), 'personas únicas con mensaje ENTREGADO · excluye rebotes', 'key-blue'],
     ['Leads cerrados '+_hb('kpi_leads'),             tri(K.creados_mtd,K.creados_wtd,K.creados_ytd), 'negocios del loop creados en el backbone', 'key'],
     ['Citas agendadas '+_hb('kpi_citas'),            tri(K.citas_mtd,K.citas_wtd,K.citas_ytd), 'por fecha de la visita', ''],
-    ['Cierres '+_hb('kpi_cierres'),                  tri(K.cierres_mtd,K.cierres_wtd,K.cierres_ytd), 'negocios comprados · por fecha de cierre', 'key'],
+    ['Cierres '+_hb('kpi_cierres'),                  tri(K.cierres_mtd,K.cierres_wtd,K.cierres_ytd),
+      `YTD: ${fmt(+K.cierres_mm_ytd||0)} compra directa + ${fmt(+K.cierres_inmo_ytd||0)} inmobiliaria`, 'key'],
   ];
   document.getElementById('stats').innerHTML=cards.map(([lab,v,s,cls])=>
     `<div class="stat${cls?' '+cls:''}"><div class="l">${lab}</div>${v}<div class="s">${s||''}</div></div>`).join('');
@@ -791,25 +792,29 @@ function renderComparativa(){
       <td style="text-align:right">${celda(r,'asignado_pct','asignado_n')}</td>
       <td style="text-align:right">${celda(r,'cita_pct','cita_n')}</td>
       <td style="text-align:right">${ac(r)}</td>
+      <td style="text-align:right">${celda(r,'cierre_mm_pct','cierres_mm')}</td>
+      <td style="text-align:right">${celda(r,'cierre_inmo_pct','cierres_inmo')}</td>
       <td style="text-align:right">${celda(r,'cierre_pct','cierres')}</td></tr>`;
   let cuerpo='';
   ordenes.forEach(o=>{
     const R=rows.find(x=>x.orden===o&&x.cohorte==='Reinteresados');
     const N=rows.find(x=>x.orden===o&&x.cohorte==='WEB nuevo');
     const edad=((R||N)||{}).edad||'';
-    cuerpo+=`<tr class="row-total"><td colspan="7">Leads creados hace ${escx(edad)}</td></tr>`
+    cuerpo+=`<tr class="row-total"><td colspan="9">Leads creados hace ${escx(edad)}</td></tr>`
           + fila(R,'🔁 Reinteresados','row-loop')
           + fila(N,'🌐 WEB nuevo','row-stage');
   });
   el.innerHTML=`<div class="tbl-wrap ftab"><table>
       <thead><tr><th>Cohorte</th><th style="text-align:right">Leads</th><th style="text-align:right">Calificado</th>
       <th style="text-align:right">Asignado</th><th style="text-align:right">Cita</th>
-      <th style="text-align:right">Asig→Cita</th><th style="text-align:right">Cierre</th></tr></thead>
+      <th style="text-align:right">Asig→Cita</th><th style="text-align:right">Cierre MM</th>
+      <th style="text-align:right">Cierre Inmo</th><th style="text-align:right">Cierre total</th></tr></thead>
       <tbody>${cuerpo}</tbody></table></div>
     <p class="note">Cada bloque es una <b>cohorte de creación</b> y sus cuatro etapas sobre su propia base; cada celda trae el % y el conteo.
     Se lee <b>hacia abajo</b>: así se ve madurar cada etapa en vez de fijar una ventana que siempre miente en algún lado — a 14 días el cierre da 0 % porque el ciclo de compra no cabe ahí.
     <b>Ojo:</b> acá los cierres son los de <b>esa cohorte</b>, ocurridos cuando haya sido; los KPIs de arriba cuentan los cierres <b>ocurridos</b> en el mes, la semana o el año. Son preguntas distintas y por eso no coinciden.
-    WEB nuevo = fuente WEB sin la UTM del loop.</p>`;
+    <b>Dos líneas de negocio:</b> <b>MM</b> = compra directa (Market Maker) e <b>Inmo</b> = contrato firmado con la red de aliados. Viven en campos distintos de HubSpot y hay que sumarlas: contar solo MM se deja por fuera la mayoría de los cierres.
+    WEB nuevo = leads del sitio sin la UTM del loop. La cohorte del loop NO se filtra por fuente: la UTM ya la identifica.</p>`;
 }
 function renderCalidad(){
   const el=document.getElementById('c_cohorte'); if(!el||!window.Chart) return;

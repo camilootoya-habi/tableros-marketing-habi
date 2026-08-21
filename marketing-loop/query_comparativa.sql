@@ -21,9 +21,16 @@ d AS (
     IF(estado IN ('No gestionado','Sin pricing incial'),1,0) AS calif,
     IF(fecha_de_visita IS NOT NULL,1,0) AS cita,
     -- OJO: cierre = iBuyer (este campo) + Inmobiliaria (oportunidad_inmobiliaria). Ver marketing-loop/METRICAS.md
-    IF(oportunidad_del_negocio='Cierre - Comprado',1,0) AS cierre
+    -- DOS líneas de negocio: Market Maker (compra directa) e Inmobiliaria (red de aliados).
+    -- oportunidad_del_negocio es SOLO el campo de Market Maker; el mundo inmobiliaria vive
+    -- en oportunidad_inmobiliaria y antes se perdía entero.
+    IF(oportunidad_del_negocio='Cierre - Comprado',1,0) AS cierre_mm,
+    IF(oportunidad_inmobiliaria='Contrato firmado',1,0) AS cierre_inmo
   FROM `sellers-main-prod.hubspot.deals`
-  WHERE country IN ('México','Colombia') AND fuente='WEB'
+  -- La cohorte del loop la define su UTM, no la fuente: filtrar por fuente='WEB' dejaba
+  -- fuera 419 leads propios. El baseline sí es WEB (leads nuevos del sitio sin esa UTM).
+  WHERE country IN ('México','Colombia')
+    AND (utm_campaign LIKE '%reinteresados%' OR fuente='WEB')
     AND CAST(createdate AS DATE) >= DATE_SUB(CURRENT_DATE(), INTERVAL 365 DAY)
   QUALIFY ROW_NUMBER() OVER (PARTITION BY nid ORDER BY createdate DESC)=1
 )
@@ -43,7 +50,10 @@ SELECT
   SUM(d.calif) AS calif_n,                                  ROUND(AVG(d.calif)*100,1) AS calif_pct,
   SUM(IF(m.nid IS NOT NULL,1,0)) AS asignado_n,             ROUND(AVG(IF(m.nid IS NOT NULL,1,0))*100,1) AS asignado_pct,
   SUM(d.cita) AS cita_n,                                    ROUND(AVG(d.cita)*100,1) AS cita_pct,
-  SUM(d.cierre) AS cierres,                                 ROUND(AVG(d.cierre)*100,2) AS cierre_pct
+  SUM(d.cierre_mm) AS cierres_mm,                           ROUND(AVG(d.cierre_mm)*100,2) AS cierre_mm_pct,
+  SUM(d.cierre_inmo) AS cierres_inmo,                       ROUND(AVG(d.cierre_inmo)*100,2) AS cierre_inmo_pct,
+  SUM(d.cierre_mm) + SUM(d.cierre_inmo) AS cierres,
+  ROUND(AVG(IF(d.cierre_mm=1 OR d.cierre_inmo=1,1,0))*100,2) AS cierre_pct
 FROM d
 LEFT JOIN mart m ON m.nid=d.nid AND m.pais = CASE d.country WHEN 'México' THEN 'mexico' WHEN 'Colombia' THEN 'colombia' END
 GROUP BY d.pais, d.cohorte, orden, edad

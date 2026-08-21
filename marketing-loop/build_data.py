@@ -488,9 +488,6 @@ data={
   "kpis": {r["pais"]: r for r in q("query_kpis.sql")},
   "cosecha_agente": {"MX": mx["cosecha_agente"], "CO": co["cosecha_agente"]},
   "agente_conversaciones": {"MX": mx["agente_conversaciones"], "CO": co["agente_conversaciones"]},
-  # Cierres por closedate de los últimos 7d (NO por createdate: el ciclo de compra no cabe en una semana).
-  "cierres_semana": {r["pais"]: int(r.get("cierres") or 0) for r in q("query_cierres.sql")},
-  "creados_semana": {r["pais"]: int(r.get("creados") or 0) for r in q("query_creados_semana.sql")},
   "agente_ia": {"MX": agente_ia("MX"), "CO": agente_ia("CO")},
 }
 open(os.path.join(HERE,"data.json"),"w").write(json.dumps(data, ensure_ascii=False, separators=(",",":")))
