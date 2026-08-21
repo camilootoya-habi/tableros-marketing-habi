@@ -202,6 +202,8 @@
       <button class="tab" data-tab="exco"  onclick="go('exp','CO')">🇨🇴 Base</button>
       <button class="tab" data-tab="tbco"  onclick="go('tablas','CO')">🇨🇴 Tablas</button>
       <button class="tab" data-tab="docco" onclick="go('docs','CO')">🇨🇴 Documentación</button>
+      <span class="navsep"></span>
+      <button class="tab" data-tab="inbox" onclick="go('inbox')">💬 Inbox</button>
     </div>
     <label class="granwrap">Temporalidad
       <select class="sel" id="granSel"><option value="dia" selected>Diario</option><option value="semana">Semana (Lun→Dom)</option><option value="mes">Mes</option></select>
@@ -225,7 +227,7 @@
   </dialog>
   <p class="note" id="lineaTip"></p>
 
-  <div class="tabletitle">Funnel comparativo · reinteresados vs WEB nuevo · últimos 14 días (leads creados en ese lapso)
+  <div class="tabletitle">Funnel comparativo · reinteresados vs WEB nuevo
     <button type="button" class="help-btn" onclick="openHelp('comparativa')" aria-label="Explicación">?</button>
   </div>
   <section class="panel"><div id="comparativa"></div></section>
@@ -240,44 +242,20 @@
   </div>
   <div class="tbl-wrap ftab" id="cohorteTab"></div>
 
+  <div class="tabletitle">Cosecha de envío · solo agente SDR
+    <button type="button" class="help-btn" onclick="openHelp('cos_agente')" aria-label="Explicación">?</button>
+  </div>
+  <div class="tbl-wrap ftab" id="cosechaAgente"></div>
+
   <div class="tabletitle">Errores de entrega
     <button type="button" class="help-btn" onclick="openHelp('err')" aria-label="Explicación">?</button>
   </div>
   <div class="tbl-wrap ftab" id="errores"></div>
 
-  <div class="tabletitle">A/B de plantillas
-    <button type="button" class="help-btn" onclick="openHelp('ab')" aria-label="Explicación">?</button>
-  </div>
-  <div id="abVeredicto"></div>
-  <div class="tbl-wrap ftab" id="ab"></div>
-
-  <div class="tabletitle">A/B de pool — Segmento (comité + lead ≥2025) vs aleatorio</div>
-  <div id="poolAB"></div>
-
   <div class="tabletitle">Inventario del pool · niveles de prioridad</div>
   <div class="tbl-wrap ftab" id="inventario"></div>
 
-  <div class="tabletitle">Comparación por fuente
-    <button type="button" class="help-btn" onclick="openHelp('abf')" aria-label="Explicación">?</button>
-  </div>
-  <div class="tbl-wrap ftab" id="ab_fuente"></div>
-
-  <div class="tabletitle">Respuestas por período
-    <button type="button" class="help-btn" onclick="openHelp('resp')" aria-label="Explicación">?</button>
-  </div>
-  <div class="tbl-wrap ftab" id="resp"></div>
-
-  <div class="tabletitle">Calidad por antigüedad del lead original
-    <button type="button" class="help-btn" onclick="openHelp('calidad')" aria-label="Explicación">?</button>
-  </div>
-  <div class="grid">
-    <section class="panel" style="grid-column:1 / -1">
-      <div style="position:relative;height:300px"><canvas id="c_cohorte"></canvas></div>
-      <p class="note">Cada punto/barra = un <b>trimestre de creación del lead original</b> que contactamos. ¿Los leads más viejos responden mejor o peor, y con qué calidad (% interesados)? Solo cohorte con <code>nid</code> resuelto a trimestre.</p>
-    </section>
-  </div>
-
-  <div class="tabletitle">Mejor hora de envío · plantilla ganadora v2 <span class="help" title="Igual que la gráfica de arriba pero el eje X es la HORA de envío del mensaje (hora real del mart de Infobip), no el trimestre de creación del lead. Mide read rate y respond rate por hora del día en que salió el mensaje. Se muestran las 24 horas del día (0-23); las horas sin envíos salen con volumen 0. Hora CDMX (UTC-6, verificado vs Neon). Solo envíos de CAMPAÑA (con plantilla); excluye mensajes de sesión/conversación (template NULL) que inflaban el respond rate a ~100% en horas de bajo volumen. NO mostramos delivery rate por hora (estaba contaminado por la línea quemada/plantilla disabled); read y respond son comportamiento del destinatario, más limpios.">?</span>
+  <div class="tabletitle">Mejor hora de envío · plantilla ganadora v2 <span class="help" title="Read rate y respond rate por HORA de envío del mensaje (hora real del mart de Infobip). Se muestran las 24 horas (0-23); las horas sin envíos salen con volumen 0. Hora CDMX (UTC-6, verificado vs Neon). Solo envíos de CAMPAÑA (con plantilla); excluye mensajes de sesión/conversación (template NULL) que inflaban el respond rate a ~100% en horas de bajo volumen. NO mostramos delivery rate por hora (estaba contaminado por la línea quemada/plantilla disabled); read y respond son comportamiento del destinatario, más limpios.">?</span>
   </div>
   <div class="grid">
     <section class="panel" style="grid-column:1 / -1">
@@ -286,47 +264,6 @@
     </section>
   </div>
 
-  <div class="tabletitle">Evolución diaria
-    <button type="button" class="help-btn" onclick="openHelp('diario')" aria-label="Explicación">?</button>
-  </div>
-  <div class="grid g5">
-    <section class="panel"><h3 class="sm">Base enviada (WhatsApp) <span class="help" title="Mensajes de reactivación enviados por WhatsApp por día (send_log, fecha de envío CDMX).">?</span></h3><div class="ch"><canvas id="c_env"></canvas></div></section>
-    <section class="panel"><h3 class="sm">Conversión a respuesta <span class="help" title="Respuestas recibidas ÷ mensajes enviados ese día (%). Aproximado: las respuestas llegan con rezago respecto al envío.">?</span></h3><div class="ch"><canvas id="c_cr"></canvas></div></section>
-    <section class="panel"><h3 class="sm">Conversión respuesta → interesado <span class="help" title="De los que respondieron ese día, % que eligió 'Interesado'. Tooltip muestra n de respuestas.">?</span></h3><div class="ch"><canvas id="c_ci"></canvas></div></section>
-    <section class="panel"><h3 class="sm">Conversión interesado → creado <span class="help" title="Leads recreados ÷ interesados (%). Recreados = negocios creados ese día en el backbone (Neon recreation).">?</span></h3><div class="ch"><canvas id="c_ic"></canvas></div></section>
-    <section class="panel"><h3 class="sm">Conversión creado → calificado MM <span class="help" title="Calificados MM (backbone 20/63) ÷ recreados ese día (%), por fecha de creación.">?</span></h3><div class="ch"><canvas id="c_cc"></canvas></div></section>
-    <section class="panel"><h3 class="sm">Reasignados por el agente IA <span class="help" title="Sellers reasignados al equipo comercial gracias al agente SDR de IA: respondieron con texto libre y el agente confirmó su interés (directo o durante la conversación) y recreó el lead en el backbone. Cuenta teléfonos únicos por día con acción BACKBONE en agent_thread (Neon). Solo países con el agente EN VIVO — los turnos en shadow no cuentan.">?</span></h3><div class="ch"><canvas id="c_agente"></canvas></div></section>
-    <section class="panel"><h3 class="sm">Base enviada · prom. móvil 7d <span class="help" title="Promedio móvil de 7 días de los mensajes enviados por día.">?</span></h3><div class="ch"><canvas id="c_env_ma"></canvas></div></section>
-    <section class="panel"><h3 class="sm">Conversión a respuesta · prom. móvil 7d <span class="help" title="Promedio móvil de 7 días de respuestas ÷ enviados.">?</span></h3><div class="ch"><canvas id="c_cr_ma"></canvas></div></section>
-    <section class="panel"><h3 class="sm">Conversión resp → interesado · prom. móvil 7d <span class="help" title="Promedio móvil de 7 días de interesados ÷ respuestas.">?</span></h3><div class="ch"><canvas id="c_ci_ma"></canvas></div></section>
-    <section class="panel"><h3 class="sm">Conversión interesado → creado · prom. móvil 7d <span class="help" title="Promedio móvil de 7 días de recreados ÷ interesados.">?</span></h3><div class="ch"><canvas id="c_ic_ma"></canvas></div></section>
-    <section class="panel"><h3 class="sm">Conversión creado → calificado MM · prom. móvil 7d <span class="help" title="Promedio móvil de 7 días de calificados MM ÷ recreados.">?</span></h3><div class="ch"><canvas id="c_cc_ma"></canvas></div></section>
-  </div>
-
-  <div class="tabletitle">Antifunnel · en qué estados quedan los leads creados
-    <button type="button" class="help-btn" onclick="document.getElementById('helpAnti').showModal()" aria-label="Explicación">?</button>
-  </div>
-  <div class="tbl-wrap ftab" id="antifunnel"></div>
-  <dialog id="helpAnti" class="help-dialog">
-    <h3>Antifunnel — estado actual de los leads recreados</h3>
-    <p>Distribución por <b>estado actual del backbone</b> (<code>id_last_state</code> de <code>tabla_inmuebles_general</code>, hoy) de los leads que recreamos (UTM reinteresados), bucketeados por su <b>fecha de creación</b> según la <b>Temporalidad</b> seleccionada. Cada columna = un período; cada celda = cuántos leads creados en ese período están hoy en ese estado (y su % del total creado del período).</p>
-    <p><b>«Sin estado»</b> = el deal recreado aún no se encontró en <code>tabla_inmuebles_general</code> (recién creado / pendiente de replicación). Los demás estados aparecen aún como su <b>código numérico</b> (<code>id_last_state</code>) — la traducción al catálogo de labels (No gestionado, Duplicado, Fuera de zona, etc.) queda pendiente para una siguiente vuelta.</p>
-    <p>La fila <b>Total creados</b> = todos los leads WEB recreados del período. Se <b>excluye Web Scraping</b> (<code>fuente_id=4</code>): recreaciones legacy del compañero en fuente equivocada, ajenas al programa vigente. Solo cuenta fuente WEB/LeadForms.</p>
-    <p>Sujeta al filtro de <b>País</b> y <b>Temporalidad</b> de arriba; últimos 20 períodos. El <code>*</code> marca el período en curso.</p>
-    <button class="close-btn" onclick="document.getElementById('helpAnti').close()">Cerrar</button>
-  </dialog>
-
-  <div class="tabletitle">Completitud de datos · con qué creamos los leads
-    <button type="button" class="help-btn" onclick="document.getElementById('helpComp').showModal()" aria-label="Explicación">?</button>
-  </div>
-  <div class="tbl-wrap ftab" id="completitud"></div>
-  <dialog id="helpComp" class="help-dialog">
-    <h3>Completitud de datos — con qué datos estamos creando los leads</h3>
-    <p>Para los leads recreados (UTM reinteresados) creados en cada período: fila 1 = <b>total creados</b>; cada fila siguiente = un <b>campo del payload</b> y cuántos leads quedaron con ese campo <b>poblado</b> en el backbone (conteo + % del total, con heatmap por fila).</p>
-    <p>«Poblado»: texto no vacío; geo no nula; numéricos &gt; 0. Bucketeo por <b>fecha de creación</b> según la <b>Temporalidad</b>; últimos 20 períodos; sujeto al filtro de <b>País</b> (los campos que no aplican al país no se muestran).</p>
-    <p>Mide la <b>calidad de lo que creamos</b>. La fidelidad al lead original será otro indicador aparte.</p>
-    <button class="close-btn" onclick="document.getElementById('helpComp').close()">Cerrar</button>
-  </dialog>
   </div><!-- /sheet-dash -->
 
   <!-- ===== HOJA 3/4: EXPLORADOR DE LA BASE ===== -->
@@ -344,6 +281,16 @@
     <div class="sheet-head"><h2 id="tablasTitle">Tablas de Neon · CO</h2></div>
     <p class="note" style="max-width:80ch">Últimos <b>5 registros</b> de cada tabla de <b>Neon</b> (Postgres — el único estado propio del loop) con <b>todas sus columnas</b>, filtrados por país. A modo de explicación de qué guarda el sistema.</p>
     <div id="tablasBody"></div>
+  </div>
+
+  <!-- ===== HOJA: INBOX (conversaciones del agente SDR) ===== -->
+  <div id="sheet-inbox" class="sheet" hidden>
+    <div class="sheet-head"><h2>Inbox · conversaciones del agente SDR</h2></div>
+    <p class="note" style="max-width:80ch">Conversaciones reales de WhatsApp entre los sellers y el agente SDR, en vivo desde
+      <code>agente-sdr-ten.vercel.app</code>. Este tablero es un sitio <b>público</b>, así que el token de acceso
+      <b>no vive en el código</b>: se pide una vez y queda guardado solo en este navegador.</p>
+    <div id="inboxGate"></div>
+    <div id="inboxFrame"></div>
   </div>
 
   <!-- ===== HOJA 5: DOCUMENTACIÓN ===== -->
@@ -425,13 +372,13 @@ async function load(){
     : '';
   try{ AUDIT=await (await fetch('audit.json?t='+Date.now())).json(); }catch(e){ AUDIT=null; }
   document.querySelectorAll('input[name=pais]').forEach(r=>r.onchange=()=>selectCountry(r.value));
-  document.getElementById('granSel').onchange=e=>{cicloTipo=e.target.value;renderAntifunnel();renderCompletitud();renderImpacto();renderCohorteOrigen();renderErrores();renderResp();};
+  document.getElementById('granSel').onchange=e=>{cicloTipo=e.target.value;renderImpacto();renderCohorteOrigen();renderCosechaAgente();renderErrores();};
   go('dash','MX');
 }
 
 // ===== router multi-hoja (tabs) =====
 function go(sheet, c){
-  const map={dash:'sheet-dash', exp:'sheet-exp', tablas:'sheet-tablas', docs:'sheet-docs'};
+  const map={dash:'sheet-dash', exp:'sheet-exp', tablas:'sheet-tablas', docs:'sheet-docs', inbox:'sheet-inbox'};
   const id=map[sheet]||'sheet-dash';
   document.querySelectorAll('.sheet').forEach(s=>{ s.hidden = (s.id!==id); });
   let tab='co';
@@ -441,6 +388,7 @@ function go(sheet, c){
   else if(sheet==='exp'){ tab='ex'+(c||'CO').toLowerCase(); setExp(c||'CO'); }
   else if(sheet==='tablas'){ tab='tb'+(c||'CO').toLowerCase(); setTablas(c||'CO'); }
   else if(sheet==='docs'){ tab='doc'+(c||'MX').toLowerCase(); setDocs(c||'MX'); }
+  else if(sheet==='inbox'){ tab='inbox'; renderInbox(); }
   document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('active', t.dataset.tab===tab));
   window.scrollTo(0,0);
 }
@@ -583,6 +531,30 @@ const EXPMETA={
   "09.descarte_MM":["Descarte MM","excluye duras (mantiene 'Ya no quiere vender')"],
   "10.descarte_Inmo":["Descarte Inmo","excluye duras (mantiene 'Ya no quiere vender')"],
 };
+const INBOX_BASE='https://agente-sdr-ten.vercel.app/inbox';
+function renderInbox(){
+  const gate=document.getElementById('inboxGate'), frame=document.getElementById('inboxFrame');
+  if(!gate||!frame) return;
+  let tok=''; try{ tok=localStorage.getItem('ml-inbox-token')||''; }catch(e){}
+  if(!tok){
+    frame.innerHTML='';
+    gate.innerHTML=`<section class="panel" style="max-width:620px">
+      <h3 class="sm">Pega el token del inbox</h3>
+      <p class="note">Es el <code>INBOX_TOKEN</code> del agente SDR. Queda guardado solo en este navegador; no se manda a ningún lado ni queda en el repositorio.</p>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px">
+        <input id="inboxTok" type="password" class="sel" style="flex:1;min-width:240px" placeholder="token" autocomplete="off">
+        <button class="tab" type="button" onclick="saveInboxToken()">Abrir inbox</button>
+      </div></section>`;
+    return;
+  }
+  const url=INBOX_BASE+'?token='+encodeURIComponent(tok);
+  gate.innerHTML=`<p class="note"><a href="${url}" target="_blank" rel="noopener">Abrir en pestaña nueva ↗</a> · <a href="#" onclick="clearInboxToken();return false">Olvidar el token de este navegador</a></p>`;
+  frame.innerHTML=`<iframe src="${url}" title="Inbox del agente SDR" style="width:100%;height:78vh;border:1px solid rgba(128,128,128,.35);border-radius:10px;background:#fff"></iframe>`;
+}
+function saveInboxToken(){ const i=document.getElementById('inboxTok'); const v=(i&&i.value||'').trim(); if(!v) return;
+  try{ localStorage.setItem('ml-inbox-token',v); }catch(e){} renderInbox(); }
+function clearInboxToken(){ try{ localStorage.removeItem('ml-inbox-token'); }catch(e){} renderInbox(); }
+
 function renderExplorer(){
   const d=(AUDIT||{})[expC], el=document.getElementById('expBody');
   document.getElementById('expUpd').textContent = (AUDIT&&AUDIT.updated) ? 'datos: '+fmtUpdated(AUDIT.updated) : '';
@@ -604,7 +576,7 @@ function renderExplorer(){
   }
   el.innerHTML=parts.join('');
 }
-function selectCountry(c){ country=c; renderStats(); renderImpacto(); renderErrores(); renderAB(); renderPoolAB(); renderInventario(); renderABFuente(); renderResp(); renderComparativa(); renderCalidad(); renderDiario(); renderAntifunnel(); renderCompletitud(); renderCohorteOrigen(); renderPorHoraChart(); }
+function selectCountry(c){ country=c; renderStats(); renderComparativa(); renderImpacto(); renderCohorteOrigen(); renderCosechaAgente(); renderErrores(); renderInventario(); renderPorHoraChart(); }
 // Celdas "valor + %" con heatmap por fila (verde=conversión alta, rojo=baja), copiado del tablero de referencia.
 function heatCells(values, denoms){
   const pcts=values.map((v,i)=> denoms[i]>0 ? v/denoms[i]*100 : null);   // período sin base → null (celda vacía)
@@ -722,6 +694,9 @@ const CARD_HELP={
   resp_int:{t:'Interesado',b:'<p>Respondieron con el botón <b>«Estoy interesado»</b> (INTERESADO).</p>'},
   resp_baja:{t:'Ya no vendo',b:'<p>Respondieron con el botón <b>«Ya no vendo»</b> (YAVENDIÓ / baja).</p>'},
   resp_bajatxt:{t:'Baja',b:'<p>Respondieron con <b>texto libre</b> que dice «baja» (escribieron «baja / darme de baja» en vez de tocar el botón «Ya no vendo»).</p>'},
+  creados_sem:{t:'Leads creados esta semana',b:'<p>Negocios del loop creados en el backbone en los <b>últimos 7 días</b>, contados por <code>createdate</code> en <code>hubspot.deals</code> con la UTM de reinteresados. Incluye tanto los que crea el ciclo diario como los que crea el agente SDR cuando alguien contesta que sí.</p>'},
+  cierres_sem:{t:'Cierres de la semana',b:'<p>Negocios del loop que <b>se cerraron</b> (comprados) en los últimos 7 días, contados por <code>closedate</code> — no por fecha de creación: un lead creado esta semana no alcanza a cerrarse esta semana.</p><p>Ojo con la escala: son pocos por definición. El ciclo de compra tarda semanas, así que un cero en una semana puntual no dice nada; la serie sí.</p>'},
+  cos_agente:{t:'Cosecha de envío · solo agente SDR',b:'<p>Los mismos números de la cosecha, pero <b>restringidos a los envíos cuyo destinatario terminó conversando con el agente SDR</b>. Sirve para comparar el desenlace de una conversación atendida por el agente contra el promedio de la campaña.</p><p>Se excluyen a propósito los turnos en <b>shadow</b> y los que quedan fuera del muestreo del piloto: ahí el agente propone la respuesta pero <b>no la manda</b>, así que el desenlace no es mérito suyo.</p>'},
   comparativa:{t:'Funnel comparativo · reinteresados vs WEB nuevo',b:'<p>Dos funnels lado a lado: la cohorte <b>Reinteresados</b> (UTM del loop) vs <b>WEB nuevo</b> (fuente WEB sin esa UTM). Cada barra = % de conversión sobre la base de su cohorte: Calificado → Asignado → Cita → Cierre.</p><p>El recuadro resalta la conversión <b>asignado → cita</b> (citas ÷ asignados). Fuente: <code>hubspot.deals</code> + WBR asignados mart. <b>Ventana: leads creados en los últimos 14 días</b> (por <code>createdate</code>).</p>'},
   calidad:{t:'Calidad por antigüedad del lead original',b:'<p>Bucketea los envíos por el <b>trimestre en que se creó el lead original</b> (no la fecha de envío) y mide por trimestre: <b>Respond rate</b> (barras = respondieron ÷ enviados) y <b>% Interesados</b> (línea = de los que respondieron, cuántos eligieron «Interesado»).</p><p><b>Solo mensajes nuevos del log de Neon</b> (motor actual): enlace envío→trimestre por <code>nid</code> (directo y confiable), respuesta por teléfono (inbound del mart). NO incluye los envíos del repo viejo (esos no traen nid y unirlos por teléfono no daba confianza). La tabla se irá poblando a medida que se acumulen envíos nuevos.</p>'},
   diario:{t:'Evolución diaria',b:'<p>Serie diaria del embudo: fila 1 = valor absoluto/tasa por día (barras); fila 2 = <b>promedio móvil de 7 días</b> (línea). Enviados → Conversión a respuesta → resp→interesado → interesado→creado → creado→calificado MM.</p><p>Fuente en vivo: <code>send_log</code> (Neon) · inbound (mart) · <code>recreation</code> (Neon). ⚠ Las recreaciones son por evento, así que creados/calificados pueden verse planos hasta que haya más volumen.</p>'},
@@ -739,18 +714,21 @@ function renderStats(){
     : l.quality==='MEDIUM'?'Calidad media: cuidar el ritmo y priorizar a quien más probablemente responda para que suba.'
     : l.quality==='HIGH'?'Calidad alta: la línea está sana.'
     : 'Sin histórico de calidad reciente.';
-  const FLUJO={MX:150,CO:150};
+  // tier / estado / revisión viajan como subtítulo de la tarjeta de calidad: son la misma
+  // pregunta ("¿puedo enviar hoy?") y así el tablero abre con 4 números, no con 6.
+  const det=[ l.tier?('tier '+String(l.tier).replace('LIMIT_','')):null,
+              l.status?(l.status==='CONNECTED'?'conectada':l.status):null,
+              l.review?(l.review==='APPROVED'?'aprobada':l.review):null,
+              l.sender||null ].filter(Boolean).join(' · ');
   const cards=[
-    ['Leads creados hoy '+_hb('hoy'), fmt((D.hoy||{})[country]||0), 'hubspot.deals · hoy', 'key-blue'],
+    ['Leads creados esta semana '+_hb('creados_sem'), fmt((D.creados_semana||{})[country]||0), 'UTM del loop · últimos 7 días', 'key-blue'],
     ['Interesados pendientes por crear '+_hb('pendientes'), fmt((D.pendientes_crear||{})[country]||0), 'respondieron INTERESADO · sin recrear', 'key'],
-    ['Calidad de línea '+_hb('quality'), `<span class="chip" style="background:${qc}">${l.quality||'—'}</span>`, tip+' · fuente: Meta'],
-    ['Tier (24h) '+_hb('tier'), (l.tier||'—').replace('LIMIT_',''), 'límite · '+(l.tier_source==='infobip'?'Infobip':'Meta')],
-    ['Estado '+_hb('estado'), `<span style="font-size:19px;font-weight:700">${l.status==='CONNECTED'?'Conectada':(l.status||'—')}</span>`, (l.sender||'')+(l.throughput?' · throughput '+l.throughput:'')],
-    ['Revisión cuenta '+_hb('review'), `<span style="font-size:19px;font-weight:700">${l.review==='APPROVED'?'Aprobada':(l.review||'—')}</span>`, 'account_review · Meta'],
+    ['Calidad de línea '+_hb('quality'), `<span class="chip" style="background:${qc}">${l.quality||'—'}</span>`, det||tip],
+    ['Cierres de la semana '+_hb('cierres_sem'), fmt((D.cierres_semana||{})[country]||0), 'negocios comprados · cerrados en los últimos 7 días', 'key'],
   ];
   document.getElementById('stats').innerHTML=cards.map(([lab,v,s,cls])=>
     `<div class="stat${cls?' '+cls:''}"><div class="l">${lab}</div><div class="v">${v}</div><div class="s">${s||''}</div></div>`).join('');
-  document.getElementById('lineaTip').textContent='';
+  const lt=document.getElementById('lineaTip'); if(lt) lt.textContent=tip;
 }
 
 function renderResp(){
@@ -793,7 +771,7 @@ function renderComparativa(){
   const miniFunnel=(titulo,C,color,leads)=>`
     <div style="flex:1;min-width:185px">
       <div style="font-size:13px;font-weight:700;color:var(--text-title);margin-bottom:2px">${titulo}</div>
-      <div class="muted" style="font-size:12px;margin-bottom:12px">${fmt(leads)} leads · % de su base</div>
+      <div class="muted" style="font-size:12px;margin-bottom:12px">${fmt(leads)} leads (14d) · cierre sobre ${fmt(C.leads_maduros)} maduros → <b>${fmt(C.cierres)}</b></div>
       ${mets.map(([n,k])=>{const v=+C[k]||0; return `<div class="rowline">
         <div class="lab" style="width:82px">${n}</div>
         <div class="bar"><div style="width:${Math.max(0.5,v).toFixed(1)}%;background:${color}"></div></div>
@@ -809,7 +787,8 @@ function renderComparativa(){
     <div style="font-size:11.5px;text-transform:uppercase;letter-spacing:.5px;color:var(--warn);font-weight:800;margin-bottom:8px">Conversión asignado → cita agendada</div>
     <div style="font-size:20px;font-weight:800;color:var(--text-title)">🔁 Reinteresados <span style="color:var(--accent)">${pct(acR)}</span> &nbsp;·&nbsp; 🌐 WEB nuevo <span style="color:var(--text-muted)">${pct(acN)}</span></div>
   </div>
-  <p class="note">Dos funnels lado a lado (cada barra = % de conversión sobre la base de su cohorte). Asignado→cita = citas ÷ asignados. WEB nuevo = fuente WEB sin UTM reinteresados. Ventana: últimos 14 días.</p>`;
+  <p class="note">Dos funnels lado a lado (cada barra = % de conversión sobre la base de su cohorte). Asignado→cita = citas ÷ asignados. WEB nuevo = fuente WEB sin UTM reinteresados.
+  <b>Dos ventanas a propósito:</b> Calificado / Asignado / Cita miden la cohorte de los <b>últimos 14 días</b>; <b>Cierre</b> mide una cohorte <b>madura de 31 a 90 días</b>. Con 14 días el cierre daba 0,0 % siempre — no porque faltara el dato, sino porque el ciclo de compra es más largo que la ventana.</p>`;
 }
 function renderCalidad(){
   const el=document.getElementById('c_cohorte'); if(!el||!window.Chart) return;
@@ -1034,7 +1013,7 @@ function renderABFuente(){
 }
 
 function renderPorHoraChart(){
-  const el=document.getElementById('c_porhora'); if(!el||!window.Chart) return;
+  const el=document.getElementById('c_porhora'); if(!el||!window.Chart||!D) return;
   const ph=(D.por_hora||{})[country]||{};
   const serie=ph.serie||[];
   const note=document.getElementById('porhoraNote');
@@ -1072,10 +1051,12 @@ function renderPorHoraChart(){
   if(note) note.textContent=ph.nota||'';
 }
 
-function renderCohorteOrigen(){
-  const el=document.getElementById('cohorteTab'); if(!el) return;
-  const raw=((D.cosecha||{})[country]||{})[cicloTipo]||[];
-  if(!raw.length){ el.innerHTML='<p class="note">Sin datos de cosecha para '+country+' (aún no disponible).</p>'; return; }
+function renderCohorteOrigen(){ renderCosechaTabla('cohorteTab','cosecha','Sin datos de cosecha para '+country+' (aún no disponible).'); }
+function renderCosechaAgente(){ renderCosechaTabla('cosechaAgente','cosecha_agente','El agente aún no ha atendido conversaciones en '+country+' fuera de shadow, así que no hay cosecha propia que mostrar.'); }
+function renderCosechaTabla(elId, srcKey, vacio){
+  const el=document.getElementById(elId); if(!el) return;
+  const raw=((D[srcKey]||{})[country]||{})[cicloTipo]||[];
+  if(!raw.length){ el.innerHTML='<p class="note">'+vacio+'</p>'; return; }
   const byB={}; raw.forEach(r=>byB[r.bucket]=r);
   const arr=lastPeriods(cicloTipo,20).map(b=>byB[b]||{bucket:b,enviados:0,entregados:0,leidos:0,respondidos:0,interesados:0,interesados_no_creados:0});  // 20 períodos más recientes (rellena vacíos)
   const MES=['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
@@ -1114,7 +1095,7 @@ function renderCohorteOrigen(){
 
 function applyTheme(t){const light=t==='light';document.body.classList.toggle('light',light);
   document.getElementById('themeBtn').textContent=light?'🌙 Oscuro':'☀️ Claro';
-  if(window.Chart&&diaCharts.length){ renderResp(); renderCohorteOrigen(); }}
+  if(window.Chart && D){ renderPorHoraChart(); }}
 document.getElementById('themeBtn').onclick=()=>{const n=document.body.classList.contains('light')?'dark':'light';try{localStorage.setItem('ml-theme',n);}catch(e){}applyTheme(n);};
 applyTheme((()=>{try{return localStorage.getItem('ml-theme')||'dark';}catch(e){return 'dark';}})());
 load();

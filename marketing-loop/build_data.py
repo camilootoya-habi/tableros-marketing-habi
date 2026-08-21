@@ -371,6 +371,15 @@ def build_country(pais):
           if nid not in recreated_nids and nid in loop_nids and p not in terminal_phones]
     pendientes_crear=len({nid for _,nid in pend})
     interesado_nocreado_phones={p for p,_ in pend}
+    # COSECHA SOLO AGENTE SDR (2026-08-21): mismos números de la cosecha, pero restringidos a los
+    # envíos cuyo destinatario terminó conversando con el agente EN VIVO. Se excluyen SHADOW y
+    # NOT_IN_SAMPLE a propósito: ahí el agente propone una respuesta pero NO la manda, así que el
+    # desenlace de esa conversación no es suyo y mezclarlo inflaría su cosecha con mérito ajeno.
+    agente_phones = {r["phone"] for r in N._rows(
+        "SELECT DISTINCT phone FROM agent_thread WHERE country=%s AND role='assistant' "
+        "AND action_taken IS NOT NULL AND action_taken NOT LIKE 'SHADOW%%' "
+        "AND action_taken <> 'NOT_IN_SAMPLE'", (pais,))}
+    sl_agente = [r for r in sl_cosecha if r.get("phone") in agente_phones]
     # recreados/calificados por old_nid
     recreated_oldnids={r["old_nid"] for r in rec if r.get("success")}
     qualified_oldnids={r["old_nid"] for r in rec if r.get("state_at_creation") in (20,63)}
@@ -392,6 +401,8 @@ def build_country(pais):
         "respuestas": {t: agg.respuestas_serie(inb_resp, t) for t in ("dia","semana","mes")},
         "cosecha": {t: agg.cosecha_serie(sl_cosecha, mbm, inbound_phones_wide, interesado_phones_wide, interesado_nocreado_phones, t, n=40) for t in ("dia","semana","mes")},
         "pendientes_crear": pendientes_crear,
+        "cosecha_agente": {t: agg.cosecha_serie(sl_agente, mbm, inbound_phones_wide, interesado_phones_wide, interesado_nocreado_phones, t, n=40) for t in ("dia","semana","mes")},
+        "agente_conversaciones": len(agente_phones),
         "ab_templates": _ab(sl,mbm,inbound_phones,interesado_phones,yavendio_phones),
         "ab_fuentes": _ab(sl,mbm,inbound_phones,interesado_phones,yavendio_phones,keyfield="fuente_lead"),
         "antifunnel": {t: agg.antifunnel_serie(recreados,t) for t in ("dia","semana","mes")},
@@ -451,6 +462,11 @@ data={
   "cohorte_origen": {"MX": mx["cohorte_origen"], "CO": co["cohorte_origen"]},
   "diario": {"MX": mx["diario"], "CO": co["diario"]},
   "asignados": q("query_asignados.sql"),
+  "cosecha_agente": {"MX": mx["cosecha_agente"], "CO": co["cosecha_agente"]},
+  "agente_conversaciones": {"MX": mx["agente_conversaciones"], "CO": co["agente_conversaciones"]},
+  # Cierres por closedate de los últimos 7d (NO por createdate: el ciclo de compra no cabe en una semana).
+  "cierres_semana": {r["pais"]: int(r.get("cierres") or 0) for r in q("query_cierres.sql")},
+  "creados_semana": {r["pais"]: int(r.get("creados") or 0) for r in q("query_creados_semana.sql")},
   "agente_ia": {"MX": agente_ia("MX"), "CO": agente_ia("CO")},
 }
 open(os.path.join(HERE,"data.json"),"w").write(json.dumps(data, ensure_ascii=False, separators=(",",":")))
