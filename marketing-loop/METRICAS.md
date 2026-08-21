@@ -3,43 +3,96 @@
 Este archivo existe porque el cierre se contó mal durante meses y el error es fácil de repetir:
 la métrica *parece* correcta, la query corre sin fallar, y el número que sale es plausible.
 
-## Cierre: SIEMPRE son DOS líneas de negocio
+Estado: el bug **ya está corregido** en las queries (commit `1f619b03`, 2026-08-21). Este doc
+describe la definición vigente y por qué es así.
+
+## 1. Cierre: SIEMPRE son DOS líneas de negocio
 
 Habi vende por dos vías y **cada una guarda su cierre en un campo distinto** de
 `sellers-main-prod.hubspot.deals`:
 
-| Línea | Campo | Valores que son cierre |
+| Línea | Campo y valor de cierre | Fecha con la que se fecha |
 |---|---|---|
-| iBuyer / Market Maker | `oportunidad_del_negocio` | `'Cierre - Comprado'` |
-| Inmobiliaria | `oportunidad_inmobiliaria` | `'Contrato firmado'`, `'Ya vendio'` |
+| Market Maker / compra directa | `oportunidad_del_negocio = 'Cierre - Comprado'` | `closedate` |
+| Inmobiliaria / red de aliados | `oportunidad_inmobiliaria = 'Contrato firmado'` | `fecha_captacion_inmobiliaria` |
 
-**Contar solo `oportunidad_del_negocio` subregistra los cierres del loop 2.5x.** Medido el
-2026-08-21 sobre la población del loop (`utm_campaign LIKE '%reinteresados%'`, deduplicado por
-nid, 4.468 deals):
+Contar solo `oportunidad_del_negocio` mide compra directa y **tira a la basura la línea de
+aliados**. Medido el 2026-08-21 sobre la población del loop (`utm_campaign LIKE
+'%reinteresados%'`, deduplicado por nid):
 
-| País | iBuyer | Inmobiliaria | Unión (correcto) |
+| País | Compra directa | Inmobiliaria | Unión (correcto) |
 |---|---|---|---|
 | Colombia | 9 | 29 | **38** |
 | México | 10 | 0 | **10** |
 | **Total** | **19** | **29** | **48** |
 
-El solapamiento entre las dos líneas es **cero**, así que la unión es la suma. En Colombia el
-error es brutal: contando solo iBuyer se reportan 9 de 38 cierres reales. En México no se nota
-porque la línea inmobiliaria aún no tiene cierres del loop — eso hace que el bug pase
-desapercibido si solo se mira MX.
+Solapamiento entre líneas: **cero**. En Colombia el error reportaba 9 de 38. En México es
+**invisible** porque la línea inmobiliaria no opera allá dentro del loop — por eso el bug
+sobrevivió meses: quien validaba mirando MX veía números correctos.
 
-### La forma correcta
+`'Ya vendio'` también es un estado de `oportunidad_inmobiliaria`, pero hoy tiene **0 deals** en
+esta población y su semántica es ambigua (¿vendió con la red, o vendió por su cuenta?). Las
+queries usan solo `'Contrato firmado'`. Si algún día aparece con volumen, hay que decidirlo
+antes de sumarlo.
 
-```sql
--- Cierre = cualquiera de las dos líneas. NO uses solo oportunidad_del_negocio.
-IF(oportunidad_del_negocio = 'Cierre - Comprado'
-   OR oportunidad_inmobiliaria IN ('Contrato firmado','Ya vendio'), 1, 0) AS cierre
-```
+## 2. ⚠️ Los dos cierres NO son el mismo evento económico
 
-### Cómo verificar en 30 segundos
+Esto es lo más importante al reportar el número hacia afuera:
 
-Si tocas cualquier query de cierres, corre esto y compara: si tu número se parece a la columna
-`ibuyer` en vez de a `union_ambas`, te falta la línea inmobiliaria.
+- **Compra directa** = Habi compró el inmueble. Es una transacción cerrada.
+- **Inmobiliaria "Contrato firmado"** = el vendedor firmó el mandato de venta con la red. Es una
+  **captación**, no una venta. De hecho `fecha_captacion_inmobiliaria` es la fecha que lo fecha,
+  y el nombre no es casualidad.
+
+Verificado el 2026-08-21 sobre los 29 contratos del loop:
+
+| | Contratos inmobiliaria |
+|---|---|
+| Total | 29 |
+| Con `fecha_publicacion_inmobiliaria` | **0** |
+| Con `fecha_venta_inmobiliaria` | **0** |
+
+Ninguno se ha publicado ni vendido todavía. Así que **"38 cierres en Colombia" no significa 38
+casas vendidas**: son 9 compras cerradas + 29 mandatos firmados que aún no han producido venta.
+
+El tablero muestra las columnas separadas (Cierre MM · Cierre Inmo · Cierre total) justamente
+para que la mezcla esté a la vista. **Al presentar el número afuera —sobre todo en cálculos de
+ahorro o de costo por cierre— hay que decir la composición**, o se está sobrevendiendo: el valor
+económico de una compra cerrada y de un mandato de captación no es el mismo.
+
+## 3. Población: la UTM define la cohorte, NO la fuente
+
+Un lead es del Marketing Loop si su `utm_campaign` contiene `reinteresados`. Deduplicar con
+`QUALIFY ROW_NUMBER() OVER (PARTITION BY nid ORDER BY createdate DESC) = 1`.
+
+**No filtres la cohorte del loop por `fuente='WEB'`.** El loop también trae leads de Web
+Scraping (352), Estudio Inmueble (48) y Leadforms (19): ese filtro recortaba **419 leads
+propios**, un 9% de la población (4.049 en vez de 4.468), y con eso los leads creados YTD de MX
+pasaban de 2.485 a 2.133. Afecta poco al conteo de cierres (1 por línea) pero mucho a
+denominadores y tasas.
+
+El filtro **sí** es correcto para el baseline "WEB nuevo", que por definición son leads del
+sitio sin la UTM del loop.
+
+Atribución conservadora: solo cuenta a quien el loop recreó. Si alguien recibió el mensaje y
+volvió por otro canal, no aparece. Está bien que sea así — pero decirlo al presentar.
+
+## 4. Fechas
+
+`fecha_de_firma` **no sirve para nada**: está vacía en toda la tabla (0 de 3.287 cierres).
+
+- Compra directa → `closedate` (poblado en los 19, ninguno nulo).
+- Inmobiliaria → `fecha_captacion_inmobiliaria` (poblada en los 29; coincide ±1 día con
+  `fecha_oportunidad_inmobiliaria` y `closedate`, así que la elección es semántica, no numérica).
+- **KPI de cabecera** (MTD/WTD/YTD): filtra por esas fechas de cierre.
+- **Funnel por cohorte**: NO filtra por fecha de cierre; agrupa por antigüedad de `createdate` y
+  cuenta los cierres de esa gente, ocurran cuando ocurran. Los dos números son distintos **por
+  diseño**; no intentes hacerlos coincidir.
+
+## 5. Cómo verificar en 30 segundos
+
+Si tocas cualquier query de cierres, corre esto. Si tu número se parece a `compra_directa` en
+vez de a `union_ambas`, te falta la línea inmobiliaria.
 
 ```sql
 WITH d AS (
@@ -49,54 +102,29 @@ WITH d AS (
   QUALIFY ROW_NUMBER() OVER (PARTITION BY nid ORDER BY createdate DESC) = 1
 )
 SELECT country,
-  COUNTIF(op_mm = 'Cierre - Comprado') AS ibuyer,
-  COUNTIF(op_in IN ('Contrato firmado','Ya vendio')) AS inmobiliaria,
+  COUNTIF(op_mm = 'Cierre - Comprado')          AS compra_directa,
+  COUNTIF(op_in = 'Contrato firmado')           AS inmobiliaria,
   COUNTIF(op_mm = 'Cierre - Comprado'
-          OR op_in IN ('Contrato firmado','Ya vendio')) AS union_ambas
+          OR op_in = 'Contrato firmado')        AS union_ambas
 FROM d GROUP BY 1 ORDER BY 1
 ```
 
-## Fecha del cierre: usa `closedate`
+## 6. Tres fuentes, tres números: cuál usar
 
-`fecha_de_firma` está **vacía en toda la tabla** (0 de 3.287 cierres la traen). `closedate` sí
-está poblada: los 19 cierres iBuyer del loop la tienen, ninguno nulo.
+El mismo concepto da distinto según de dónde se lea, y esto ya causó confusión real:
 
-- **KPI de cabecera** (MTD/WTD/YTD): filtra por `closedate`.
-- **Funnel por cohorte**: NO filtra por fecha de cierre; agrupa por antigüedad de `createdate`
-  y cuenta los cierres de esa gente, hayan ocurrido cuando hayan ocurrido. Los dos números son
-  distintos **por diseño** y ambos son correctos; no intentes hacerlos coincidir.
-
-## Atribución al loop: `utm_campaign`
-
-Un lead es del Marketing Loop si su `utm_campaign` contiene `reinteresados`
-(`col-sellers-paid-experiments-web-without-leads-retargeting-national-reinteresados` y su
-equivalente `mex-`). Deduplicar con `QUALIFY ROW_NUMBER() OVER (PARTITION BY nid ORDER BY
-createdate DESC) = 1`: un deal por nid, el más reciente.
-
-Es atribución **conservadora**: solo cuenta a quien el loop recreó en el backbone. Si alguien
-recibió el mensaje y volvió por su cuenta por otro canal, no aparece. Está bien que sea así —
-pero al presentar el número, decirlo.
-
-## Filtro `fuente='WEB'`: casi inocuo, pero es un filtro
-
-Descarta 1 cierre en cada línea (18 de 19 en iBuyer, 28 de 29 en inmobiliaria). No es la causa
-de ninguna discrepancia grande, pero si buscas cuadrar números al detalle, ahí está.
-
-## Tres fuentes, tres números: cuál usar
-
-El mismo concepto da distinto según de dónde se lea, y esto ha causado confusión real:
-
-| Fuente | Cierres del loop | Nota |
+| Fuente | Cierres del loop | Estado |
 |---|---|---|
-| HubSpot, solo iBuyer | 19 | **Incorrecto** — es el bug que documenta este archivo |
-| HubSpot, unión de las dos líneas | 48 | Lo que deben reportar las queries de este repo |
-| Tablas operativas de funnel | 61 | Medido el 2026-08-11 en un análisis ad-hoc |
+| HubSpot, solo compra directa | 19 | **Incorrecto** — el bug que corrigió `1f619b03` |
+| HubSpot, unión de las dos líneas | 48 | **Lo que reporta el tablero hoy** |
+| Tablas operativas de funnel | 61 | Análisis ad-hoc del 2026-08-11, no versionado |
 
 Las cuatro tablas operativas son `sellers-main-prod.bi_mx.seguimiento_funnel_mex`,
-`papyrus-data.habi_wh_bi.funnel_diarios_col`, `sellers-main-prod.bi_co.seguimiento_inmobiliaria_col`
-y `sellers-main-prod.bi_mx.seguimiento_inmobiliaria_mex_copia`. Dan más cierres porque HubSpot
-es un espejo con rezago y con criterios propios.
+`papyrus-data.habi_wh_bi.funnel_diarios_col`,
+`sellers-main-prod.bi_co.seguimiento_inmobiliaria_col` y
+`sellers-main-prod.bi_mx.seguimiento_inmobiliaria_mex_copia`. Dan más porque HubSpot es un
+espejo con rezago y criterios propios. **Ninguna está referenciada en el código**: cualquier
+cálculo desde ellas es ad-hoc y no reproducible con un comando.
 
-**Regla operativa:** el tablero reporta desde HubSpot con la unión de las dos líneas (48). Si
-alguien presenta un número distinto hacia afuera, tiene que decir de qué fuente salió. No
-mezclar fuentes en la misma tabla.
+**Regla operativa:** el tablero es la fuente oficial (HubSpot, dos líneas). Quien presente otro
+número dice de qué fuente salió, y no se mezclan fuentes en la misma tabla.

@@ -20,7 +20,8 @@ d AS (
     nid, country,
     IF(estado IN ('No gestionado','Sin pricing incial'),1,0) AS calif,
     IF(fecha_de_visita IS NOT NULL,1,0) AS cita,
-    -- OJO: cierre = iBuyer (este campo) + Inmobiliaria (oportunidad_inmobiliaria). Ver marketing-loop/METRICAS.md
+    -- OJO: cierre = compra directa (este campo) + inmobiliaria ('Contrato firmado', que es una CAPTACION,
+    -- no una venta). Ver marketing-loop/METRICAS.md antes de tocar esta linea.
     -- DOS líneas de negocio: Market Maker (compra directa) e Inmobiliaria (red de aliados).
     -- oportunidad_del_negocio es SOLO el campo de Market Maker; el mundo inmobiliaria vive
     -- en oportunidad_inmobiliaria y antes se perdía entero.
