@@ -704,7 +704,7 @@ const CARD_HELP={
   creados_sem:{t:'Leads creados esta semana',b:'<p>Negocios del loop creados en el backbone en los <b>últimos 7 días</b>, contados por <code>createdate</code> en <code>hubspot.deals</code> con la UTM de reinteresados. Incluye tanto los que crea el ciclo diario como los que crea el agente SDR cuando alguien contesta que sí.</p>'},
   cierres_sem:{t:'Cierres de la semana',b:'<p>Negocios del loop que <b>se cerraron</b> (comprados) en los últimos 7 días, contados por <code>closedate</code> — no por fecha de creación: un lead creado esta semana no alcanza a cerrarse esta semana.</p><p>Ojo con la escala: son pocos por definición. El ciclo de compra tarda semanas, así que un cero en una semana puntual no dice nada; la serie sí.</p>'},
   cos_agente:{t:'Cosecha de envío · solo agente SDR',b:'<p>Los mismos números de la cosecha, pero <b>restringidos a los envíos cuyo destinatario terminó conversando con el agente SDR</b>. Sirve para comparar el desenlace de una conversación atendida por el agente contra el promedio de la campaña.</p><p>Se excluyen a propósito los turnos en <b>shadow</b> y los que quedan fuera del muestreo del piloto: ahí el agente propone la respuesta pero <b>no la manda</b>, así que el desenlace no es mérito suyo.</p>'},
-  comparativa:{t:'Funnel comparativo · reinteresados vs WEB nuevo',b:'<p>Dos funnels lado a lado: la cohorte <b>Reinteresados</b> (UTM del loop) vs <b>WEB nuevo</b> (fuente WEB sin esa UTM). Cada barra = % de conversión sobre la base de su cohorte: Calificado → Asignado → Cita → Cierre.</p><p>El recuadro resalta la conversión <b>asignado → cita</b> (citas ÷ asignados). Fuente: <code>hubspot.deals</code> + WBR asignados mart. <b>Ventana: leads creados en los últimos 14 días</b> (por <code>createdate</code>).</p>'},
+  comparativa:{t:'Funnel comparativo por cohorte',b:'<p>Compara <b>Reinteresados</b> (UTM del loop) contra <b>WEB nuevo</b> (fuente WEB sin esa UTM), abierto por <b>cohorte de creación</b> del lead: 0-14 días, 15-30, 31-90, 91-180 y más de 180.</p><p>Cada celda es el % sobre la base de esa cohorte y el conteo absoluto. <b>Asig→Cita</b> = citas ÷ asignados. Fuente: <code>hubspot.deals</code> + WBR asignados mart.</p><p><b>Por qué por cohorte y no por ventana fija:</b> una sola ventana siempre miente en alguna etapa. A 14 días el cierre da 0 % porque el ciclo de compra es más largo; a 90 días el calificado ya no dice nada de esta semana. Abierto por cohorte, la maduración se lee hacia abajo.</p><p><b>No confundir con los KPIs de cabecera:</b> acá los cierres son los de esa cohorte, ocurridos cuando haya sido; arriba son los cierres ocurridos en el mes / semana / año.</p>'},
   calidad:{t:'Calidad por antigüedad del lead original',b:'<p>Bucketea los envíos por el <b>trimestre en que se creó el lead original</b> (no la fecha de envío) y mide por trimestre: <b>Respond rate</b> (barras = respondieron ÷ enviados) y <b>% Interesados</b> (línea = de los que respondieron, cuántos eligieron «Interesado»).</p><p><b>Solo mensajes nuevos del log de Neon</b> (motor actual): enlace envío→trimestre por <code>nid</code> (directo y confiable), respuesta por teléfono (inbound del mart). NO incluye los envíos del repo viejo (esos no traen nid y unirlos por teléfono no daba confianza). La tabla se irá poblando a medida que se acumulen envíos nuevos.</p>'},
   diario:{t:'Evolución diaria',b:'<p>Serie diaria del embudo: fila 1 = valor absoluto/tasa por día (barras); fila 2 = <b>promedio móvil de 7 días</b> (línea). Enviados → Conversión a respuesta → resp→interesado → interesado→creado → creado→calificado MM.</p><p>Fuente en vivo: <code>send_log</code> (Neon) · inbound (mart) · <code>recreation</code> (Neon). ⚠ Las recreaciones son por evento, así que creados/calificados pueden verse planos hasta que haya más volumen.</p>'},
 };
@@ -774,34 +774,42 @@ function toggleAbiertas(){
   const btn=document.getElementById('respToggleBtn'); if(btn) btn.textContent=open?'▾':'▸';
 }
 function renderComparativa(){
-  const rows=(D.comparativa||[]).filter(x=>x.pais===country);
   const el=document.getElementById('comparativa'); if(!el) return;
+  const rows=(D.comparativa||[]).filter(x=>x.pais===country);
   if(!rows.length){ el.innerHTML='<p class="muted">Sin datos.</p>'; return; }
-  const R=rows.find(x=>x.cohorte==='Reinteresados')||{}, N=rows.find(x=>x.cohorte==='WEB nuevo')||{};
-  // [etiqueta, % , conteo absoluto]. El % solo no dice el tamaño: 58,7% sobre 172 leads y
-  // sobre 2.947 se leen muy distinto, y en cierre la diferencia es entre 8 casos y 105.
-  const mets=[['Calificado','calif_pct','calif_n'],['Asignado','asignado_pct','asignado_n'],['Cita','cita_pct','cita_n'],['Cierre','cierre_pct','cierres']];
-  const miniFunnel=(titulo,C,color,leads)=>`
-    <div style="flex:1;min-width:185px">
-      <div style="font-size:13px;font-weight:700;color:var(--text-title);margin-bottom:2px">${titulo}</div>
-      <div class="muted" style="font-size:12px;margin-bottom:12px">${fmt(leads)} leads (14d) · cierre medido sobre ${fmt(C.leads_maduros)} maduros (31-90d)</div>
-      ${mets.map(([n,k,nk])=>{const v=+C[k]||0, cnt=+C[nk]||0; return `<div class="rowline">
-        <div class="lab" style="width:82px">${n}</div>
-        <div class="bar"><div style="width:${Math.max(0.5,v).toFixed(1)}%;background:${color}"></div></div>
-        <div class="val" style="width:108px;text-align:right"><b>${pct(v)}</b> <span class="muted" style="font-weight:400">${fmt(cnt)}</span></div></div>`;}).join('')}
-    </div>`;
-  const acR=(+R.asignado_pct>0)?(+R.cita_pct/+R.asignado_pct*100):0;
-  const acN=(+N.asignado_pct>0)?(+N.cita_pct/+N.asignado_pct*100):0;
-  el.innerHTML=`<div style="display:flex;gap:16px;flex-wrap:wrap">
-    ${miniFunnel('🔁 Reinteresados', R, 'var(--accent)', R.leads)}
-    ${miniFunnel('🌐 WEB nuevo', N, 'var(--text-muted)', N.leads)}
-  </div>
-  <div style="margin-top:16px;background:rgba(251,191,36,.14);border:1px solid var(--warn);border-radius:10px;padding:14px 16px">
-    <div style="font-size:11.5px;text-transform:uppercase;letter-spacing:.5px;color:var(--warn);font-weight:800;margin-bottom:8px">Conversión asignado → cita agendada</div>
-    <div style="font-size:20px;font-weight:800;color:var(--text-title)">🔁 Reinteresados <span style="color:var(--accent)">${pct(acR)}</span> &nbsp;·&nbsp; 🌐 WEB nuevo <span style="color:var(--text-muted)">${pct(acN)}</span></div>
-  </div>
-  <p class="note">Dos funnels lado a lado (cada barra = % de conversión sobre la base de su cohorte). Asignado→cita = citas ÷ asignados. WEB nuevo = fuente WEB sin UTM reinteresados.
-  <b>Dos ventanas a propósito:</b> Calificado / Asignado / Cita miden la cohorte de los <b>últimos 14 días</b>; <b>Cierre</b> mide una cohorte <b>madura de 31 a 90 días</b>. Con 14 días el cierre daba 0,0 % siempre — no porque faltara el dato, sino porque el ciclo de compra es más largo que la ventana.</p>`;
+  // Una fila por cohorte de creación y grupo. La maduración se lee HACIA ABAJO: la misma
+  // etapa sube conforme la cohorte envejece, que es justo lo que una ventana fija esconde.
+  const ordenes=[...new Set(rows.map(r=>r.orden))].sort();
+  const celda=(r,pk,nk)=> r ? `<b>${pct(+r[pk]||0)}</b> <span class="muted" style="font-weight:400">${fmt(+r[nk]||0)}</span>`
+                            : '<span class="muted">·</span>';
+  const ac=r=>{ if(!r) return '<span class="muted">·</span>';
+    const a=+r.asignado_n||0, c=+r.cita_n||0; return a>0 ? `<b>${pct(c/a*100)}</b>` : '<span class="muted">·</span>'; };
+  const fila=(r,lab,cls)=>`<tr class="${cls}">
+      <td>${lab}</td>
+      <td style="text-align:right">${r?fmt(+r.leads||0):'·'}</td>
+      <td style="text-align:right">${celda(r,'calif_pct','calif_n')}</td>
+      <td style="text-align:right">${celda(r,'asignado_pct','asignado_n')}</td>
+      <td style="text-align:right">${celda(r,'cita_pct','cita_n')}</td>
+      <td style="text-align:right">${ac(r)}</td>
+      <td style="text-align:right">${celda(r,'cierre_pct','cierres')}</td></tr>`;
+  let cuerpo='';
+  ordenes.forEach(o=>{
+    const R=rows.find(x=>x.orden===o&&x.cohorte==='Reinteresados');
+    const N=rows.find(x=>x.orden===o&&x.cohorte==='WEB nuevo');
+    const edad=((R||N)||{}).edad||'';
+    cuerpo+=`<tr class="row-total"><td colspan="7">Leads creados hace ${escx(edad)}</td></tr>`
+          + fila(R,'🔁 Reinteresados','row-loop')
+          + fila(N,'🌐 WEB nuevo','row-stage');
+  });
+  el.innerHTML=`<div class="tbl-wrap ftab"><table>
+      <thead><tr><th>Cohorte</th><th style="text-align:right">Leads</th><th style="text-align:right">Calificado</th>
+      <th style="text-align:right">Asignado</th><th style="text-align:right">Cita</th>
+      <th style="text-align:right">Asig→Cita</th><th style="text-align:right">Cierre</th></tr></thead>
+      <tbody>${cuerpo}</tbody></table></div>
+    <p class="note">Cada bloque es una <b>cohorte de creación</b> y sus cuatro etapas sobre su propia base; cada celda trae el % y el conteo.
+    Se lee <b>hacia abajo</b>: así se ve madurar cada etapa en vez de fijar una ventana que siempre miente en algún lado — a 14 días el cierre da 0 % porque el ciclo de compra no cabe ahí.
+    <b>Ojo:</b> acá los cierres son los de <b>esa cohorte</b>, ocurridos cuando haya sido; los KPIs de arriba cuentan los cierres <b>ocurridos</b> en el mes, la semana o el año. Son preguntas distintas y por eso no coinciden.
+    WEB nuevo = fuente WEB sin la UTM del loop.</p>`;
 }
 function renderCalidad(){
   const el=document.getElementById('c_cohorte'); if(!el||!window.Chart) return;
