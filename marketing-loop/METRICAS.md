@@ -32,11 +32,13 @@ Datos que sostienen esto (medido 2026-08-21, población del loop deduplicada por
 | País | Compra directa | Inmobiliaria | Total correcto | Lo que reporta el tablero hoy |
 |---|---|---|---|---|
 | Colombia | 9 | 29 | **38** | 38 ✅ |
-| México | 10 | **31** | **41** | 10 ❌ (le faltan 31) |
-| **Total** | **19** | **60** | **79** | 48 |
+| México | 10 | **31** | **41** | 41 ✅ |
+| **Total** | **19** | **60** | **79** | 79 ✅ |
 
 El fix de `1f619b03` resolvió la línea inmobiliaria de Colombia y dejó la de México intacta,
-porque cada país la guarda distinto. Ese es el patrón a recordar: **cuando un número cuadra en
+porque cada país la guarda distinto. **Cerrado el 2026-08-21**: el `COALESCE` de las dos fechas
+quedó aplicado en `query_kpis.sql`, `query_comparativa.sql` y `query_funnel.sql`, y el tablero
+reporta los 79. Ese es el patrón a recordar: **cuando un número cuadra en
 un país y no en el otro, sospecha del vocabulario, no del dato.**
 
 ### La forma correcta, en una sola expresión

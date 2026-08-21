@@ -2,7 +2,7 @@
 --
 -- DOS LÍNEAS DE NEGOCIO, no una (corregido 2026-08-21):
 --   · Market Maker / compra directa  -> oportunidad_del_negocio = 'Cierre - Comprado', por closedate
---   · Inmobiliaria / red de aliados  -> oportunidad_inmobiliaria = 'Contrato firmado',  por fecha_captacion_inmobiliaria
+--   · Inmobiliaria / red de aliados  -> COALESCE(fecha_captacion_inmobiliaria, fecha_de_contrato_firmado_mx)
 -- Antes solo se contaba la primera y se perdía TODA la línea inmobiliaria: son 29 contratos
 -- firmados del loop contra 18 compras directas, o sea que faltaba el 62 % de los cierres.
 -- `fecha_de_firma` no sirve para fechar: está vacía en toda la tabla.
@@ -16,7 +16,12 @@ WITH d AS (
     CAST(createdate AS DATE) AS f_creado,
     CAST(fecha_de_visita AS DATE) AS f_cita,
     IF(oportunidad_del_negocio='Cierre - Comprado', CAST(closedate AS DATE), NULL) AS f_cierre_mm,
-    IF(oportunidad_inmobiliaria='Contrato firmado', CAST(fecha_captacion_inmobiliaria AS DATE), NULL) AS f_cierre_inmo
+    -- Señal de cierre de INMOBILIARIA: la FECHA, no la etapa. La etapa se mueve ('Publicado',
+    -- 'Captado') y borra la evidencia de la firma; la fecha queda. Los campos son DISJUNTOS por
+    -- país —CO usa fecha_captacion_inmobiliaria (29 deals, 0 del campo MX) y MX usa
+    -- fecha_de_contrato_firmado_mx (31, 0 del campo CO)—, así que basta un COALESCE, sin CASE.
+    -- Cero solapamiento con compra directa, verificado 2026-08-21.
+    CAST(COALESCE(fecha_captacion_inmobiliaria, fecha_de_contrato_firmado_mx) AS DATE) AS f_cierre_inmo
   FROM `sellers-main-prod.hubspot.deals`
   WHERE country IN ('México','Colombia')
     AND utm_campaign LIKE '%reinteresados%'

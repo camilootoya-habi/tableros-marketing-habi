@@ -26,7 +26,9 @@ d AS (
     -- oportunidad_del_negocio es SOLO el campo de Market Maker; el mundo inmobiliaria vive
     -- en oportunidad_inmobiliaria y antes se perdía entero.
     IF(oportunidad_del_negocio='Cierre - Comprado',1,0) AS cierre_mm,
-    IF(oportunidad_inmobiliaria='Contrato firmado',1,0) AS cierre_inmo
+    -- La FECHA es la señal, no la etapa: la etapa se mueve ('Publicado', 'Captado') y borra la
+    -- evidencia de la firma. Campos disjuntos por país (CO / MX), por eso alcanza un COALESCE.
+    IF(COALESCE(fecha_captacion_inmobiliaria, fecha_de_contrato_firmado_mx) IS NOT NULL,1,0) AS cierre_inmo
   FROM `sellers-main-prod.hubspot.deals`
   -- La cohorte del loop la define su UTM, no la fuente: filtrar por fuente='WEB' dejaba
   -- fuera 419 leads propios. El baseline sí es WEB (leads nuevos del sitio sin esa UTM).
