@@ -10,6 +10,7 @@ d AS (
     nid, country,
     IF(estado IN ('No gestionado','Sin pricing incial'),1,0) AS calif,
     IF(fecha_de_visita IS NOT NULL,1,0) AS cita,
+    -- OJO: cierre = iBuyer (este campo) + Inmobiliaria (oportunidad_inmobiliaria). Ver marketing-loop/METRICAS.md
     IF(oportunidad_del_negocio='Cierre - Comprado',1,0) AS cierre
   FROM `sellers-main-prod.hubspot.deals`
   WHERE country IN ('México','Colombia') AND utm_campaign LIKE '%reinteresados%'

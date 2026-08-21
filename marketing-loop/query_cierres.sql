@@ -9,6 +9,7 @@ FROM `sellers-main-prod.hubspot.deals`
 WHERE country IN ('México','Colombia')
   AND fuente='WEB'
   AND utm_campaign LIKE '%reinteresados%'
+  -- OJO: cierre = iBuyer (este campo) + Inmobiliaria (oportunidad_inmobiliaria). Ver marketing-loop/METRICAS.md
   AND oportunidad_del_negocio='Cierre - Comprado'
   AND CAST(closedate AS DATE) >= DATE_SUB(CURRENT_DATE(), INTERVAL 7 DAY)
 GROUP BY 1

@@ -9,6 +9,7 @@ WITH d AS (
     nid,
     CAST(createdate AS DATE) AS f_creado,
     CAST(fecha_de_visita AS DATE) AS f_cita,
+    -- OJO: cierre = iBuyer (este campo) + Inmobiliaria (oportunidad_inmobiliaria). Ver marketing-loop/METRICAS.md
     IF(oportunidad_del_negocio='Cierre - Comprado', CAST(closedate AS DATE), NULL) AS f_cierre
   FROM `sellers-main-prod.hubspot.deals`
   WHERE country IN ('México','Colombia')
