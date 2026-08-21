@@ -767,15 +767,17 @@ function renderComparativa(){
   const el=document.getElementById('comparativa'); if(!el) return;
   if(!rows.length){ el.innerHTML='<p class="muted">Sin datos.</p>'; return; }
   const R=rows.find(x=>x.cohorte==='Reinteresados')||{}, N=rows.find(x=>x.cohorte==='WEB nuevo')||{};
-  const mets=[['Calificado','calif_pct'],['Asignado','asignado_pct'],['Cita','cita_pct'],['Cierre','cierre_pct']];
+  // [etiqueta, % , conteo absoluto]. El % solo no dice el tamaño: 58,7% sobre 172 leads y
+  // sobre 2.947 se leen muy distinto, y en cierre la diferencia es entre 8 casos y 105.
+  const mets=[['Calificado','calif_pct','calif_n'],['Asignado','asignado_pct','asignado_n'],['Cita','cita_pct','cita_n'],['Cierre','cierre_pct','cierres']];
   const miniFunnel=(titulo,C,color,leads)=>`
     <div style="flex:1;min-width:185px">
       <div style="font-size:13px;font-weight:700;color:var(--text-title);margin-bottom:2px">${titulo}</div>
-      <div class="muted" style="font-size:12px;margin-bottom:12px">${fmt(leads)} leads (14d) · cierre sobre ${fmt(C.leads_maduros)} maduros → <b>${fmt(C.cierres)}</b></div>
-      ${mets.map(([n,k])=>{const v=+C[k]||0; return `<div class="rowline">
+      <div class="muted" style="font-size:12px;margin-bottom:12px">${fmt(leads)} leads (14d) · cierre medido sobre ${fmt(C.leads_maduros)} maduros (31-90d)</div>
+      ${mets.map(([n,k,nk])=>{const v=+C[k]||0, cnt=+C[nk]||0; return `<div class="rowline">
         <div class="lab" style="width:82px">${n}</div>
         <div class="bar"><div style="width:${Math.max(0.5,v).toFixed(1)}%;background:${color}"></div></div>
-        <div class="val" style="width:56px"><b>${pct(v)}</b></div></div>`;}).join('')}
+        <div class="val" style="width:108px;text-align:right"><b>${pct(v)}</b> <span class="muted" style="font-weight:400">${fmt(cnt)}</span></div></div>`;}).join('')}
     </div>`;
   const acR=(+R.asignado_pct>0)?(+R.cita_pct/+R.asignado_pct*100):0;
   const acN=(+N.asignado_pct>0)?(+N.cita_pct/+N.asignado_pct*100):0;

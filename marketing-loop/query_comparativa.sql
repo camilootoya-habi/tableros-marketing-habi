@@ -27,6 +27,10 @@ d AS (
 SELECT
   d.pais, d.cohorte,
   COUNTIF(d.antiguedad <= 14) AS leads,
+  -- conteos absolutos además del %: un 58,7% sobre 172 leads y sobre 2.947 no se leen igual
+  COUNTIF(d.antiguedad <= 14 AND d.calif = 1) AS calif_n,
+  COUNTIF(d.antiguedad <= 14 AND m.nid IS NOT NULL) AS asignado_n,
+  COUNTIF(d.antiguedad <= 14 AND d.cita = 1) AS cita_n,
   ROUND(AVG(IF(d.antiguedad <= 14, d.calif, NULL))*100,1) AS calif_pct,
   ROUND(AVG(IF(d.antiguedad <= 14, IF(m.nid IS NOT NULL,1,0), NULL))*100,1) AS asignado_pct,
   ROUND(AVG(IF(d.antiguedad <= 14, d.cita, NULL))*100,1) AS cita_pct,
