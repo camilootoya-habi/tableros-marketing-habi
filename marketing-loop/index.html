@@ -804,9 +804,7 @@ function renderVentanas(){
   let tok=''; try{ tok=localStorage.getItem('ml-inbox-token')||''; }catch(e){}
   if(!tok){
     frame.innerHTML='';
-    gate.innerHTML='<section class="card-sec" style="max-width:620px"><h3 class="sm">Falta el token</h3>'
-      +'<p class="note">Ventanas usa el mismo token que el inbox. Ábrelo una vez en <b>Inbox</b> y esta vista queda lista.</p>'
-      +'<button class="winbtn active" type="button" onclick="irVista(\'inbox\')">Ir al Inbox</button></section>';
+    pedirToken('ventanasGate', renderVentanas);
     return;
   }
   const url=VENTANAS_BASE+'?token='+encodeURIComponent(tok);
@@ -958,6 +956,26 @@ function renderAgentePanel(){
   </tbody></table>`;
 }
 
+// Puerta del token, reutilizable. Antes cada pantalla que lo necesitaba mandaba al Inbox a
+// buscarlo: una indirección tonta, porque el token es el mismo para todas.
+function pedirToken(contenedorId, alGuardar){
+  const el=document.getElementById(contenedorId); if(!el) return;
+  window._trasToken=alGuardar;
+  el.innerHTML=`<section class="card-sec" style="max-width:620px">
+      <div class="tabletitle">Pega el token</div>
+      <span class="sub">Es el <code>INBOX_TOKEN</code> del agente. Se guarda solo en este navegador y sirve para inbox, plantillas y envío.</span>
+      <div class="sendrow">
+        <input id="gateTok" class="sel" type="password" placeholder="token" autocomplete="off">
+        <button class="winbtn active" type="button" onclick="guardarToken()">Guardar</button>
+      </div></section>`;
+}
+function guardarToken(){
+  const i=document.getElementById('gateTok'); const v=(i&&i.value||'').trim();
+  if(!v) return;
+  try{ localStorage.setItem('ml-inbox-token', v); }catch(e){}
+  if(typeof window._trasToken==='function') window._trasToken();
+}
+
 // ===== ENVÍO: perilla por país =====
 // La perilla es un arco de 270° (de 7:30 a 4:30 del reloj). El salto de 25 no es estético:
 // afinar de a 1 con el mouse invita a errores de un dígito, y acá un dígito de más son
@@ -1018,7 +1036,7 @@ async function cargarEnvio(){
   const hoy=document.getElementById('envioHoy'), per=document.getElementById('envioPerillas');
   if(!hoy||!per) return;
   let tok=''; try{ tok=localStorage.getItem('ml-inbox-token')||''; }catch(e){}
-  if(!tok){ hoy.innerHTML=''; per.innerHTML='<section class="card-sec"><p class="note">Falta el token. Ábrelo una vez en <a href="#" onclick="irVista(\'inbox\');return false">Inbox</a>.</p></section>'; return; }
+  if(!tok){ hoy.innerHTML=''; pedirToken('envioPerillas', cargarEnvio); return; }
   hoy.innerHTML='<div class="note">Cargando…</div>';
   try{
     const r=await fetch(API_BASE+'/api/envio/estado?token='+encodeURIComponent(tok));
@@ -1074,7 +1092,7 @@ async function enviarPrueba(tpl){
   const msg=document.getElementById('tplSendMsg'), inp=document.getElementById('tplTel');
   if(!msg||!inp) return;
   let tok=''; try{ tok=localStorage.getItem('ml-inbox-token')||''; }catch(e){}
-  if(!tok){ msg.innerHTML='Falta el token. Ábrelo una vez en <a href="#" onclick="irVista(\'inbox\');return false">Inbox</a> y vuelve.'; return; }
+  if(!tok){ pedirToken('tplSendMsg', ()=>{ renderPlantillas(); }); return; }
   const to=(inp.value||'').replace(/\D/g,'');
   if(to.length<10){ msg.textContent='Escribe el número completo con indicativo (ej. 573001234567).'; return; }
   msg.textContent='Enviando…';
