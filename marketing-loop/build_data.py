@@ -420,8 +420,9 @@ def build_country(pais):
                 for dst in (panel[cn][k], panel["agregado"][k]):
                     dst["enviados"] += 1
                     if entregado: dst["entregados"] += 1
-    # Leads re-asignados: los que el loop volvió a crear en el backbone. Ventanas no crea leads
-    # (su atribución propia todavía no está configurada), así que su columna es 0 de verdad.
+    # Leads re-asignados por canal. El loop los crea vía `recreation`; ventanas NO pasa por ahí
+    # —su lead lo dispara el agente— así que se cuentan sus BACKBONE en agent_thread. Darlos por
+    # 0, como estaba antes, escondía que la campaña ya está generando leads.
     for rr in rec:
         f = str(rr.get("created_at") or "")[:10]
         if not f: continue
@@ -429,6 +430,15 @@ def build_country(pais):
             if f >= _desde(nd):
                 panel["web"][k]["reasignados"] += 1
                 panel["agregado"][k]["reasignados"] += 1
+    _vent = N._rows(
+        "SELECT (ts AT TIME ZONE %s)::date::text AS f, count(DISTINCT phone) AS n "
+        "FROM agent_thread WHERE country=%s AND campaign='ventanas' "
+        "  AND action_taken IN ('BACKBONE','BACKBONE_SANITIZED') GROUP BY 1", (N.TZ[pais], pais))
+    for r in _vent:
+        for k, nd in _rangos.items():
+            if r["f"] >= _desde(nd):
+                panel["ventanas"][k]["reasignados"] += int(r["n"] or 0)
+                panel["agregado"][k]["reasignados"] += int(r["n"] or 0)
     # Serie del loop y del agente por día, para las dos tablas del panel
     _rec_dia = {}
     for rr in rec:

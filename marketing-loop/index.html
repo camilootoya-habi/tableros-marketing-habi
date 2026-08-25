@@ -826,7 +826,13 @@ function renderInbox(){
       </div></section>`;
     return;
   }
-  const url=INBOX_BASE+'?token='+encodeURIComponent(tok);
+  // El inbox hereda los selectores del tablero: si estás mirando Ventanas en CO, las
+  // conversaciones que se abren son las de esa campaña y ese país, no todas.
+  const filtro=(canalSel==='ventanas'?'&campaign=ventanas':(canalSel==='web'?'&campaign=reactivacion':''))
+    +'&country='+encodeURIComponent(country);
+  const url=INBOX_BASE+'?token='+encodeURIComponent(tok)+filtro;
+  const fc=document.getElementById('inboxFiltro');
+  if(fc) fc.textContent=_PAIS_LBL[country]+' · '+_CANAL_LBL[canalSel];
   gate.innerHTML=`<p class="note"><a href="${url}" target="_blank" rel="noopener">Abrir en pestaña nueva ↗</a> · <a href="#" onclick="clearInboxToken();return false">Olvidar el token de este navegador</a></p>`;
   frame.innerHTML=`<iframe src="${url}" title="Inbox del agente SDR" style="width:100%;height:78vh;border:1px solid rgba(128,128,128,.35);border-radius:10px;background:#fff"></iframe>`;
 }
