@@ -321,6 +321,26 @@
   .grid2 .card-sec{margin-bottom:0}
   .akpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:14px;margin-bottom:18px}
   .akpis .fval{font-size:26px}
+
+  .tplcard{cursor:pointer;transition:border-color .12s,box-shadow .12s}
+  .tplcard:hover{border-color:var(--border-strong)}
+  .tplcard.sel{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-wash)}
+  .tplhead{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:10px}
+  .tplhead code{font-size:13.5px;font-weight:600;color:var(--text-title);background:none;padding:0}
+  .tplpais{margin-left:auto;font-size:12px;color:var(--text-muted)}
+  .chip2{font-size:11.5px;font-weight:500;color:var(--text-muted);background:var(--barbg);
+    border-radius:9999px;padding:2px 9px;white-space:nowrap}
+  .chip2.ok{color:var(--ok);background:var(--ok-wash)}
+  .tplbody{font-size:13.5px;color:var(--text);margin:0 0 10px;line-height:1.55}
+  .tplmet{font-size:12.5px;color:var(--text-muted);font-variant-numeric:tabular-nums}
+  .tplprev{background:var(--barbg);border:1px solid var(--border);border-radius:12px;
+    padding:16px 18px;font-size:14px;line-height:1.6;white-space:pre-wrap}
+  .tplvars{font-size:12.5px;color:var(--text-muted);margin-top:12px}
+  .tplwarn{margin-top:18px;background:var(--bad-wash);border-left:3px solid var(--bad);
+    border-radius:8px;padding:14px 16px;font-size:13px;line-height:1.6}
+  .cmd{font-family:var(--font-mono);font-size:11.5px;background:var(--card);border:1px solid var(--border);
+    border-radius:6px;padding:8px 10px;margin-top:8px;overflow-x:auto;white-space:pre}
+  .abver{font-size:15px;font-weight:600;color:var(--text-title)}
 </style>
 </head>
 <body>
@@ -439,11 +459,16 @@
   <div id="sheet-plantillas" class="sheet" hidden>
     <div class="pagehead"><div><h1>Plantillas</h1>
       <div class="who"><span id="plantLabel"></span></div></div></div>
-    <section class="card-sec"><div class="tabletitle">Experimento A/B</div>
-      <span class="sub">veredicto del experimento de plantillas y desempeño por variante</span>
-      <div id="plantVeredicto"></div>
-      <div class="tbl-wrap ftab" id="plantTab"></div>
-    </section>
+    <div class="grid2">
+      <div>
+        <div id="plantLista"></div>
+        <section class="card-sec"><div class="tabletitle">Experimento A/B</div>
+          <span class="sub" id="abSub"></span>
+          <div id="plantAB"></div>
+        </section>
+      </div>
+      <section class="card-sec" id="plantDetalle"></section>
+    </div>
   </div>
 
   <!-- ===== HOJA: AGENTE IA ===== -->
@@ -899,20 +924,64 @@ function renderAgentePanel(){
   </tbody></table>`;
 }
 
+let tplSel=0;
+function selTpl(i){ tplSel=i; renderPlantillas(); }
+function _canalTpl(n){ if(n.startsWith('ventanas')) return 'Ventanas'; if(n.startsWith('brokermatch')) return 'Brokermatch'; if(n.startsWith('hs_')) return 'HubSpot'; return 'Web'; }
 function renderPlantillas(){
-  const el=document.getElementById('plantTab'), ver=document.getElementById('plantVeredicto');
-  const lb=document.getElementById('plantLabel'); if(lb) lb.textContent=_PAIS_LBL[country]+' · '+_CANAL_LBL[canalSel];
-  if(!el) return;
-  const rows=((D.ab_templates||{})[country]||[]);
+  const lb=document.getElementById('plantLabel');
+  const lista=document.getElementById('plantLista'), det=document.getElementById('plantDetalle');
+  if(!lista||!det) return;
+  let tpls=((D.plantillas||{})[country]||[]);
+  if(canalSel!=='agregado'){
+    const q = canalSel==='ventanas' ? 'Ventanas' : 'Web';
+    const f = tpls.filter(x=>_canalTpl(x.nombre)===q);
+    if(f.length) tpls=f;
+  }
+  if(lb) lb.textContent=`${tpls.length} plantillas · experimentos A/B · ${_CANAL_LBL[canalSel]}`;
+  if(!tpls.length){ lista.innerHTML='<p class="note">Sin plantillas con envíos en '+country+'.</p>'; det.innerHTML=''; return; }
+  if(tplSel>=tpls.length) tplSel=0;
+  const p100=(n,d)=> d>0 ? pct(n/d*100) : '·';
+  lista.innerHTML=tpls.map((x,i)=>`<section class="card-sec tplcard${i===tplSel?' sel':''}" onclick="selTpl(${i})">
+      <div class="tplhead">
+        <code>${escx(x.nombre)}</code>
+        <span class="chip2 ${x.en_uso?'ok':''}">${x.en_uso?'En uso':'Disponible'}</span>
+        <span class="chip2">${_canalTpl(x.nombre)}</span>
+        <span class="tplpais">${country}</span>
+      </div>
+      <p class="tplbody">${escx((x.body||'(sin copy en la línea)').slice(0,180))}</p>
+      <div class="tplmet">${fmt(x.enviados)} envíos · ${p100(x.clics,x.entregados)} clics a botón · ${p100(x.bajas,x.entregados)} bajas</div>
+    </section>`).join('');
+  const x=tpls[tplSel];
+  const vars=[...new Set((x.body||'').match(/\{\{\d+\}\}/g)||[])];
+  det.innerHTML=`<div class="cardhead"><div><div class="tabletitle">Vista previa</div>
+      <span class="sub">${escx(x.nombre)} · ${escx(x.estado)}${x.categoria?' · '+escx(x.categoria):''}</span></div></div>
+    <div class="tplprev">${escx(x.body||'(esta plantilla ya no está en la línea; solo queda su histórico de envíos)')}</div>
+    <div class="tplvars">${vars.length?('Variables: '+vars.map(v=>`<code>${escx(v)}</code>`).join(' ')):'Sin variables'}
+      · ${(x.body||'').length} caracteres${x.botones?' · '+x.botones+' botones':''}</div>
+    <div class="tplwarn">
+      <b>Crear plantilla, enviar prueba y declarar ganadora no se pueden hacer desde acá.</b>
+      Este tablero es un sitio estático en GitHub Pages: sirve archivos, no ejecuta nada ni guarda secretos.
+      Esas tres acciones escriben (mandan WhatsApp, someten copy a Meta, cambian el reparto del experimento)
+      y necesitan el backend del agente. Hoy se hacen por consola:
+      <div class="cmd">.venv/bin/python -c "from actions.whatsapp import send_template; send_template('573001234567', 'TEST', template='${escx(x.nombre)}', country=__import__('countries').get('${country}'))"</div>
+      <div class="cmd">.venv/bin/python -m tools.infobip_templates ${country}   # catálogo y estado en Meta</div>
+    </div>`;
+  // Experimento A/B, con lo que realmente hay configurado
+  const ab=document.getElementById('plantAB'), abs=document.getElementById('abSub');
   const v=((D.ab_veredicto||{})[country]||{});
-  if(ver) ver.innerHTML = v.disponible
-    ? `<div class="vd-main" style="margin-bottom:16px">${v.decidido?'DECIDIDO':'en curso'} — ganadora <b>${escx(v.ganador||'')}</b> · P(mejor) <b>${pct((v.prob||0)*100)}</b> · ${v.dias||0} días</div>`
-    : '<p class="note">Sin experimento activo.</p>';
-  if(!rows.length){ el.innerHTML='<p class="note">Sin datos de plantillas para '+country+'.</p>'; return; }
-  const k=Object.keys(rows[0]);
-  el.innerHTML=`<table><thead><tr>${k.map(c=>`<th${c===k[0]?'':' style="text-align:right"'}>${escx(c)}</th>`).join('')}</tr></thead>
-    <tbody>${rows.map(r=>`<tr>${k.map(c=>`<td${c===k[0]?'':' style="text-align:right"'}>${escx(r[c]===null?'·':r[c])}</td>`).join('')}</tr>`).join('')}</tbody></table>`;
+  const rows=((D.ab_templates||{})[country]||[]);
+  if(abs) abs.textContent = v.disponible ? `${v.decidido?'cerrado':'en curso'} · ${v.dias||0} días` : 'sin experimento activo';
+  if(ab) ab.innerHTML = !v.disponible ? '<p class="note">No hay experimento de plantillas corriendo en '+country+'.</p>'
+    : `<div class="abver">${v.decidido?'DECIDIDO':'EN CURSO'} — gana <b>${escx(v.ganador||'')}</b>
+         · P(mejor) <b>${pct((v.prob||0)*100)}</b> · pérdida esperada ${v.loss_pp}pp</div>
+       ${rows.length?`<div class="tbl-wrap ftab" style="margin-top:14px"><table><thead><tr>
+         ${Object.keys(rows[0]).map((c,i)=>`<th${i?' style="text-align:right"':''}>${escx(c)}</th>`).join('')}</tr></thead>
+         <tbody>${rows.map(r=>`<tr>${Object.keys(rows[0]).map((c,i)=>`<td${i?' style="text-align:right"':''}>${escx(r[c]===null?'·':r[c])}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`:''}
+       <p class="note">El reparto del experimento vive en <code>config.py</code> / <code>countries/</code>, o sea en código:
+       declarar ganadora es un commit y un deploy, no un botón. Para que fuera un botón habría que mover esa
+       configuración a la base.</p>`;
 }
+
 function renderAgenteScreen(){
   const el=document.getElementById('agAcciones'), ro=document.getElementById('agRollout');
   const lb=document.getElementById('agLabel'); if(lb) lb.textContent=_PAIS_LBL[country]+' · '+_CANAL_LBL[canalSel];

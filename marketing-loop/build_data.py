@@ -456,6 +456,7 @@ def build_country(pais):
         "cosecha": {t: agg.cosecha_serie(sl_cosecha, mbm, inbound_phones_wide, interesado_phones_wide, interesado_nocreado_phones, t, n=40) for t in ("dia","semana","mes")},
         "pendientes_crear": pendientes_crear,
         "contactados": contactados,
+        "plantillas": plantillas(pais, sl, mbm, interesado_phones, yavendio_phones),
         "panel": panel,
         "reasignados_dia": _rec_dia,
         "cosecha_agente": {t: agg.cosecha_serie(sl_agente, mbm, inbound_phones_wide, interesado_phones_wide, interesado_nocreado_phones, t, n=40) for t in ("dia","semana","mes")},
@@ -470,6 +471,82 @@ def build_country(pais):
         "_debug": {"send_log":len(sl), "sl7":len(sl7), "recreation":len(rec), "contact_status":len(cst),
                    "mart_msgids":len(mbm), "infobip":len(ibm), "neon_delivery": len(nbm), "inbound":len(inb)},
     }
+
+
+
+def plantillas(pais, sl, mbm, interesado_phones, yavendio_phones):
+    """Catálogo VIVO de plantillas de la línea + su desempeño real.
+
+    El catálogo sale de Infobip (estado de aprobación de Meta, placeholders, botones, copy);
+    el desempeño de nuestro propio send_log cruzado con las respuestas. Se listan solo las
+    plantillas CON envíos o las que están en uso: la línea acumula plantillas viejas de otros
+    equipos y mostrarlas todas convierte la pantalla en un basurero.
+    """
+    from collections import defaultdict
+    met = defaultdict(lambda: {"enviados": 0, "entregados": 0, "clics": 0, "bajas": 0})
+    vistos = defaultdict(set)
+    for r in sl:
+        tpl = r.get("template")
+        if not tpl:
+            continue
+        m = met[tpl]
+        m["enviados"] += 1
+        d = mbm.get(r.get("message_id") or "")
+        if d and d.get("status") == "delivered":
+            m["entregados"] += 1
+        ph = r.get("phone")
+        if ph and ph not in vistos[tpl]:
+            vistos[tpl].add(ph)
+            if ph in interesado_phones: m["clics"] += 1
+            if ph in yavendio_phones:   m["bajas"] += 1
+
+    base = os.environ.get("INFOBIP_BASE_URL", "https://xrwqpl.api.infobip.com")
+    key = os.environ.get(f"INFOBIP_{pais}_API_KEY")
+    cat = {}
+    if key:
+        try:
+            import requests as _rq
+            r = _rq.get(f"{base}/whatsapp/2/senders/{SENDER[pais]}/templates",
+                        headers={"Authorization": f"App {key}", "Accept": "application/json"}, timeout=60)
+            if r.status_code == 200:
+                for tp in (r.json() or {}).get("templates", []):
+                    st = (tp.get("structure") or {})
+                    body = (st.get("body") or {})
+                    cat[tp.get("name")] = {
+                        "estado": tp.get("status"),
+                        "idioma": tp.get("language"),
+                        "categoria": tp.get("category"),
+                        "body": (body.get("text") if isinstance(body, dict) else body) or "",
+                        "botones": len((st.get("buttons") or [])),
+                    }
+            else:
+                print(f"WARN plantillas {pais}: Infobip {r.status_code}")
+        except Exception as e:
+            print(f"WARN plantillas {pais}: {str(e)[:120]}")
+
+    en_uso = set()
+    try:
+        import sys as _sys
+        _sys.path.insert(0, os.path.expanduser("~/habi/marketing-loop-sellers"))
+        from countries import get as _get
+        c = _get(pais)
+        en_uso.add(c.template)
+        for v in (getattr(c, "template_experiment", None) or {}).values():
+            if isinstance(v, str): en_uso.add(v)
+    except Exception:
+        pass
+
+    nombres = set(met) | en_uso
+    out = []
+    for n in sorted(nombres):
+        m = met.get(n, {"enviados": 0, "entregados": 0, "clics": 0, "bajas": 0})
+        c = cat.get(n, {})
+        out.append({"nombre": n, "en_uso": n in en_uso,
+                    "estado": c.get("estado") or "(no está en la línea)",
+                    "categoria": c.get("categoria"), "botones": c.get("botones"),
+                    "body": (c.get("body") or "")[:400], **m})
+    out.sort(key=lambda x: (not x["en_uso"], -x["enviados"]))
+    return out
 
 
 def agente_acciones(pais, dias=30):
@@ -538,6 +615,7 @@ data={
   # métrica por su propia fecha (creado / cita / cierre). Ver query_kpis.sql.
   "contactados": {"MX": mx["contactados"], "CO": co["contactados"]},
   "panel": {"MX": mx["panel"], "CO": co["panel"]},
+  "plantillas": {"MX": mx["plantillas"], "CO": co["plantillas"]},
   "reasignados_dia": {"MX": mx["reasignados_dia"], "CO": co["reasignados_dia"]},
   # citas y cierres por rango, indexados pais -> rango
   "panel_bq": (lambda rows: {p: {str(r["dias"]): {k: int(r[k] or 0) for k in ("citas","cierres_mm","cierres_inmo")}
