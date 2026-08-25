@@ -6,6 +6,9 @@
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🔁</text></svg>">
 <title>Marketing Loop — Reinterés de leads</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Montserrat:wght@600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap">
 <style>
   :root{
     --bg:#0f172a;--card:#1e293b;--border:#334155;--border-strong:#475569;
@@ -43,6 +46,8 @@
   .pill.on{background:var(--accent);color:#fff;border-color:var(--accent)}
   .eyebrow{font-size:11px;text-transform:uppercase;letter-spacing:.8px;color:var(--text-muted);font-weight:700;margin:22px 0 8px;display:flex;align-items:center;gap:6px}
   .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:12px}
+  .stat{min-width:0}
+  .stat .s{overflow-wrap:anywhere}
   .kpi3{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin:8px 0 2px}
   .kpi3 .kl{display:block;font-size:9.5px;letter-spacing:.7px;text-transform:uppercase;color:var(--text-muted);font-weight:800}
   .kpi3 .kv{display:block;font-size:21px;font-weight:800;color:var(--text-title);line-height:1.15;font-variant-numeric:tabular-nums}
@@ -191,34 +196,127 @@
   .docs .docfilters{margin:8px 0 10px 4px;padding-left:22px}
   .docs .docfilters li{font-size:13.5px;line-height:1.55;color:var(--text-muted);margin-bottom:7px}
   .docs .docfilters li b{color:var(--text)}
+
+  /* ==========================================================================
+     UI de Habi Loop (Claude Design · "Habi Loop General v2"). Va como capa al
+     final a propósito: el tablero ya era 100% token-based, así que retematizar
+     es cambiar valores y no reescribir 1.100 líneas que funcionan.
+     Claro es el tema por defecto porque el diseño es claro; el oscuro queda
+     como contraparte fiel (mismo morado, mismos roles).
+     ========================================================================== */
+  :root{
+    --bg:#FAFAFA;--card:#fff;--border:#E5E5E5;--border-strong:#D4D4D4;
+    --text:#404040;--text-title:#171717;--text-muted:#737373;
+    --accent:#7E22CE;--accent-on:#fff;--accent-wash:#FAF5FF;--accent-line:#E9D5FF;
+    --ok:#15803D;--ok-wash:#F0FDF4;--bad:#B91C1C;--bad-wash:#FEF2F2;
+    --sky:#1D4ED8;--sky-wash:#EFF6FF;--warn:#B45309;
+    --barbg:#F5F5F5;--card-hover:#F5F5F5;--row-total:#FAF5FF;
+    --backdrop:rgba(23,23,23,.35);--shadow:0 1px 3px rgba(23,23,23,.06);
+    --shadow-pop:0 12px 24px rgba(23,23,23,.16);
+    --font:'Inter',system-ui,sans-serif;--font-title:'Montserrat',system-ui,sans-serif;
+    --font-mono:'JetBrains Mono',ui-monospace,monospace;
+  }
+  body.dark{
+    --bg:#141118;--card:#1C1820;--border:#2E2836;--border-strong:#453D50;
+    --text:#D6D0DD;--text-title:#F7F5F9;--text-muted:#9A92A5;
+    --accent:#C084FC;--accent-on:#1C1820;--accent-wash:#241C2E;--accent-line:#3D2F4D;
+    --ok:#4ADE80;--ok-wash:#16251C;--bad:#F87171;--bad-wash:#2A1719;
+    --sky:#60A5FA;--sky-wash:#151E2E;--warn:#FBBF24;
+    --barbg:#221D29;--card-hover:#252030;--row-total:#241C2E;
+    --backdrop:rgba(10,8,12,.7);--shadow:0 1px 3px rgba(0,0,0,.4);
+    --shadow-pop:0 12px 24px rgba(0,0,0,.5);
+  }
+
+  body{font-family:var(--font);font-size:14px;color:var(--text);background:var(--bg);padding:0}
+  h1,h2,h3,.tabletitle,.sheet-head h2{font-family:var(--font-title);letter-spacing:-0.015em}
+  .tabletitle{font-size:17px;font-weight:600;color:var(--text-title);margin:0 0 4px}
+  .sheet-head h2{font-size:28px;font-weight:700;letter-spacing:-0.42px}
+  code,.kv,td.num,.exbar,.n{font-family:var(--font-mono)}
+
+  /* Sección = tarjeta blanca con encabezado, el patrón del diseño */
+  .card-sec{background:var(--card);border:1px solid var(--border);border-radius:12px;
+    padding:24px;box-shadow:var(--shadow);margin-bottom:20px}
+  .card-sec > .tabletitle{margin-top:0}
+  .card-sec .sub{font-size:13px;color:var(--text-muted);display:block;margin-bottom:16px}
+  .panel{background:transparent;border:0;box-shadow:none;padding:0}
+  .tbl-wrap{border-radius:8px;border:1px solid var(--border)}
+  .stat{background:var(--card);border:1px solid var(--border);border-radius:12px;
+    padding:18px 20px;box-shadow:var(--shadow)}
+  .stat .l{font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--text-muted)}
+  .stat .s{font-size:12px;color:var(--text-muted);margin-top:2px}
+  .kpi3 .kv{font-size:22px;font-weight:600;color:var(--text-title)}
+  .kpi3 .kl{font-size:10px;color:var(--text-muted)}
+
+  /* Controles segmentados (ventana del funnel, temporalidad) */
+  .winbtn{border-radius:6px;padding:8px 16px;font-size:13px;font-weight:500;
+    border:0;background:transparent;color:var(--text-muted)}
+  .winbtn:hover{background:var(--card-hover);color:var(--text)}
+  .winbtn.active{background:var(--accent);color:var(--accent-on)}
+  .seg{display:inline-flex;background:var(--card);border:1px solid var(--border);
+    border-radius:8px;padding:3px;gap:2px}
+  .sel{border-radius:8px;border:1px solid var(--border);background:var(--card);color:var(--text);padding:7px 10px}
+
+  /* Navegación lateral */
+  .side{position:fixed;top:0;left:0;bottom:0;width:232px;background:var(--card);
+    border-right:1px solid var(--border);padding:20px 14px;display:flex;flex-direction:column;gap:4px;z-index:40;overflow-y:auto}
+  .side .brand{display:flex;align-items:center;gap:10px;padding:0 6px 18px}
+  .side .brand svg{width:34px;height:34px;flex:none}
+  .side .brand b{font-family:var(--font-title);font-weight:700;font-size:15px;color:var(--text-title);line-height:1.15;display:block}
+  .side .brand span{font-size:11.5px;color:var(--text-muted)}
+  .side .grp{font-size:10.5px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;
+    color:var(--text-muted);padding:14px 8px 6px}
+  .navit{display:flex;align-items:center;gap:9px;width:100%;text-align:left;cursor:pointer;
+    border:0;background:transparent;color:var(--text-muted);font:inherit;font-size:13.5px;font-weight:500;
+    padding:9px 10px;border-radius:8px}
+  .navit:hover{background:var(--card-hover);color:var(--text)}
+  .navit.active{background:var(--accent-wash);color:var(--accent);font-weight:600}
+  body.dark .navit.active{background:var(--accent-wash)}
+  .wrap{margin-left:232px;padding:28px 32px 90px;width:auto;max-width:none;min-width:0}
+  .pagehead{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:24px}
+  .pagehead h1{font-size:28px;font-weight:700;letter-spacing:-0.42px;margin:0;color:var(--text-title)}
+  .pagehead .who{font-size:14px;color:var(--text);margin-top:4px}
+  @media(max-width:920px){
+    .side{position:static;width:auto;flex-direction:row;flex-wrap:wrap;align-items:center;border-right:0;border-bottom:1px solid var(--border)}
+    .side .grp{display:none}
+    .wrap{margin-left:0;padding:16px 16px 90px;width:auto}
+  }
+
+  /* Realces de fila: el diseño usa washes OPACOS. Los rgba(...,.14) del tema viejo dejaban
+     ver el contenido que pasa por debajo de la primera columna sticky — invisible en oscuro,
+     evidente sobre blanco (se leía "M13rketing loop"). */
+  .ftab thead th, .ftab thead th:first-child{background:var(--barbg);color:var(--text-muted)}
+  .ftab tbody td:first-child{background:var(--card)}
+  .ftab tbody tr.row-total td, .ftab tbody tr.row-total td:first-child{background:var(--row-total)}
+  .ftab tbody tr.row-loop td, .ftab tbody tr.row-loop td:first-child{background:var(--ok-wash);color:var(--ok)}
+  .ftab tbody tr.row-blue td, .ftab tbody tr.row-blue td:first-child{background:var(--sky-wash);color:var(--sky)}
+  .ftab tbody tr.row-orange td, .ftab tbody tr.row-orange td:first-child{background:var(--bad-wash);color:var(--bad)}
+  .ftab tbody tr.row-loop td:first-child{border-left:3px solid var(--ok)}
+  .ftab tbody tr.row-blue td:first-child{border-left:3px solid var(--sky)}
+  .ftab tbody tr.row-orange td:first-child{border-left:3px solid var(--bad)}
+  .bar{background:var(--barbg);border-radius:9999px}
+  .bar>div{border-radius:9999px}
 </style>
 </head>
 <body>
-<div class="wrap">
-  <button class="theme-btn" id="themeBtn">☀️ Claro</button>
-  <h1>Marketing Loop · Reinterés de leads</h1>
-  <div class="sub">Reinterés de leads · CO + MX. <span id="upd"></span></div>
-
-  <!-- ===== TABS (header fijo): Hub (izq) · navegación (centro) · granularidad (der) ===== -->
-  <nav class="tabs">
-    <a href="https://camilootoya-habi.github.io/tableros-marketing-habi/" class="back">← Volver al Hub</a>
-    <div class="tabnav">
-      <button class="tab" data-tab="mx"    onclick="go('dash','MX')">🇲🇽 Tablero</button>
-      <button class="tab" data-tab="exmx"  onclick="go('exp','MX')">🇲🇽 Base</button>
-      <button class="tab" data-tab="tbmx"  onclick="go('tablas','MX')">🇲🇽 Tablas</button>
-      <button class="tab" data-tab="docmx" onclick="go('docs','MX')">🇲🇽 Documentación</button>
-      <span class="navsep"></span>
-      <button class="tab" data-tab="co"    onclick="go('dash','CO')">🇨🇴 Tablero</button>
-      <button class="tab" data-tab="exco"  onclick="go('exp','CO')">🇨🇴 Base</button>
-      <button class="tab" data-tab="tbco"  onclick="go('tablas','CO')">🇨🇴 Tablas</button>
-      <button class="tab" data-tab="docco" onclick="go('docs','CO')">🇨🇴 Documentación</button>
-      <span class="navsep"></span>
-      <button class="tab" data-tab="inbox" onclick="go('inbox')">💬 Inbox</button>
+<aside class="side">
+    <div class="brand"><svg viewBox="0 0 56 56" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M50 42.5612V28.8696C50 27.1357 49.3107 25.4758 48.0783 24.2599L32.4334 8.82379C29.9687 6.39207 26.0313 6.39207 23.5666 8.82379L7.92167 24.2599C6.6893 25.4758 6 27.1357 6 28.8696V42.5612C6 46.1137 8.84073 49 12.3603 49H43.6501C47.1593 49 50 46.1242 50 42.5612Z" fill="#7E22CE"></path><path d="M25.0986 32.8932C26.1939 32.8932 26.9494 33.264 27.3535 33.8903L27.5127 33.0729H30.2031V40.7477H27.5547L27.4277 39.9196C26.7684 40.6625 25.7471 40.9278 24.8857 40.8854C22.6316 40.7473 21.3662 39.1444 21.3662 36.9049C21.3662 34.6335 22.8656 32.8933 25.0986 32.8932ZM34.7432 33.7204H34.7539C35.1793 33.2111 35.9029 32.8932 36.8916 32.8932C39.135 32.8934 40.624 34.5594 40.624 36.9049C40.624 39.3249 39.3579 40.7474 37.1035 40.8854C36.2423 40.9278 35.2217 40.6623 34.5625 39.9196L34.4346 40.7477H31.8828V29.8678H34.7432V33.7204ZM44.7812 33.1901V40.7477H41.9004V33.1901H44.7812ZM15.1562 33.8903C15.6985 33.19 16.2938 32.8933 17.208 32.8932C18.7605 32.8932 20.2284 33.9011 20.2285 36.4801V40.737H17.3779V36.4909C17.346 35.6207 16.9101 35.3551 16.3359 35.3551C15.7724 35.3553 15.156 35.7801 15.1348 36.6715V40.7262H12.2529V29.8678H15.1562V33.8903ZM36.2314 35.2174C35.2215 35.2176 34.6904 36.056 34.6904 36.9899C34.6904 37.7964 35.264 38.5922 36.2314 38.5924C37.0928 38.5924 37.7734 37.9877 37.7734 36.9157C37.7734 35.8436 37.0928 35.2174 36.2314 35.2174ZM25.7686 35.2067C24.9179 35.2173 24.2266 35.8329 24.2266 36.9049C24.2266 37.9769 24.9073 38.5816 25.7686 38.5817C26.7362 38.5817 27.3535 37.8071 27.3535 36.9049C27.3535 35.8753 26.7788 35.2067 25.7686 35.2067Z" fill="white"></path><path d="M43.3883 15.6027C44.5746 15.6027 45.5363 14.6428 45.5363 13.4587C45.5363 12.2745 44.5746 11.3146 43.3883 11.3146C42.2019 11.3146 41.2402 12.2745 41.2402 13.4587C41.2402 14.6428 42.2019 15.6027 43.3883 15.6027Z" fill="#F45201"></path></svg><div><b>habi</b><span>loop general</span></div></div>
+    <div class="seg" id="paisSeg" style="width:100%;margin-bottom:14px">
+      <button type="button" class="winbtn" data-pais="MX" onclick="irPais('MX')" style="flex:1">🇲🇽 MX</button>
+      <button type="button" class="winbtn" data-pais="CO" onclick="irPais('CO')" style="flex:1">🇨🇴 CO</button>
     </div>
-    <label class="granwrap">Temporalidad
-      <select class="sel" id="granSel"><option value="dia" selected>Diario</option><option value="semana">Semana (Lun→Dom)</option><option value="mes">Mes</option></select>
-    </label>
-  </nav>
+    <button class="navit" data-nav="dash"   onclick="irVista('dash')">📊 Panel general</button>
+    <button class="navit" data-nav="inbox"  onclick="irVista('inbox')">💬 Inbox</button>
+    <button class="navit" data-nav="ventanas" onclick="irVista('ventanas')">🪟 Ventanas</button>
+    <div class="grp">Datos</div>
+    <button class="navit" data-nav="exp"    onclick="irVista('exp')">🔎 Base</button>
+    <button class="navit" data-nav="tablas" onclick="irVista('tablas')">🗄️ Tablas</button>
+    <button class="navit" data-nav="docs"   onclick="irVista('docs')">📄 Documentación</button>
+    <div style="margin-top:auto;padding-top:18px">
+      <a class="navit" href="https://camilootoya-habi.github.io/tableros-marketing-habi/">← Volver al Hub</a>
+      <button class="navit" id="themeBtn" type="button">🌙 Oscuro</button>
+    </div>
+  </aside>
+<div class="wrap">
 
   <!-- ===== HOJA 1/2: TABLERO ===== -->
   <div id="sheet-dash" class="sheet" hidden>
@@ -228,51 +326,68 @@
     <input type="radio" name="pais" value="CO">
   </div>
 
-  <div class="tabletitle">Indicadores de salud</div>
+  <div class="pagehead">
+    <div>
+      <h1>Marketing loop general</h1>
+      <div class="who"><span id="paisLabel">México · reactivación</span> <span class="muted" id="upd"></span></div>
+    </div>
+    <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+      <label class="granwrap" style="font-size:12px;color:var(--text-muted)">Temporalidad
+        <select class="sel" id="granSel"><option value="dia" selected>Diario</option><option value="semana">Semana (Lun→Dom)</option><option value="mes">Mes</option></select>
+      </label>
+    </div>
+  </div>
+
   <div class="stats" id="stats"></div>
+  <p class="note" id="lineaTip" style="margin:10px 0 24px"></p>
   <dialog id="helpCard" class="help-dialog">
     <h3 id="helpCardT"></h3>
     <div id="helpCardB"></div>
     <button class="close-btn" onclick="document.getElementById('helpCard').close()">Cerrar</button>
   </dialog>
-  <p class="note" id="lineaTip"></p>
 
-  <div class="tabletitle">Funnel comparativo · reinteresados vs WEB nuevo
-    <button type="button" class="help-btn" onclick="openHelp('comparativa')" aria-label="Explicación">?</button>
-  </div>
-  <section class="panel"><div id="comparativa"></div></section>
+  <section class="card-sec">
+    <div class="tabletitle">Funnel comparativo <button type="button" class="help-btn" onclick="openHelp('comparativa')" aria-label="Explicación">?</button></div>
+    <span class="sub">reinteresados vs WEB nuevo · de calificado a cierre</span>
+    <div id="comparativa"></div>
+  </section>
 
-  <div class="tabletitle">Impacto en asignados
-    <button type="button" class="help-btn" onclick="openHelp('imp')" aria-label="Explicación">?</button>
-  </div>
-  <div class="tbl-wrap ftab" id="impacto"></div>
+  <section class="card-sec">
+    <div class="tabletitle">Impacto en asignados <button type="button" class="help-btn" onclick="openHelp('imp')" aria-label="Explicación">?</button></div>
+    <span class="sub">qué parte de los asignados del período trae el loop</span>
+    <div class="tbl-wrap ftab" id="impacto"></div>
+  </section>
 
-  <div class="tabletitle">Cosecha de envío · avance por período
-    <button type="button" class="help-btn" onclick="openHelp('cos')" aria-label="Explicación">?</button>
-  </div>
-  <div class="tbl-wrap ftab" id="cohorteTab"></div>
+  <section class="card-sec">
+    <div class="tabletitle">Cosecha de envío <button type="button" class="help-btn" onclick="openHelp('cos')" aria-label="Explicación">?</button></div>
+    <span class="sub">avance por período de envío · entrega, lectura, respuesta e interés</span>
+    <div class="tbl-wrap ftab" id="cohorteTab"></div>
+  </section>
 
-  <div class="tabletitle">Cosecha de envío · solo agente SDR
-    <button type="button" class="help-btn" onclick="openHelp('cos_agente')" aria-label="Explicación">?</button>
-  </div>
-  <div class="tbl-wrap ftab" id="cosechaAgente"></div>
+  <section class="card-sec">
+    <div class="tabletitle">Solo agente IA <button type="button" class="help-btn" onclick="openHelp('cos_agente')" aria-label="Explicación">?</button></div>
+    <span class="sub">la misma cosecha, restringida a quien conversó con el agente</span>
+    <div class="tbl-wrap ftab" id="cosechaAgente"></div>
+  </section>
 
-  <div class="tabletitle">Errores de entrega
-    <button type="button" class="help-btn" onclick="openHelp('err')" aria-label="Explicación">?</button>
-  </div>
-  <div class="tbl-wrap ftab" id="errores"></div>
+  <section class="card-sec">
+    <div class="tabletitle">Errores de entrega <button type="button" class="help-btn" onclick="openHelp('err')" aria-label="Explicación">?</button></div>
+    <span class="sub">no entregados por período, desglosados por tipo de error</span>
+    <div class="tbl-wrap ftab" id="errores"></div>
+  </section>
 
-  <div class="tabletitle">Inventario del pool · niveles de prioridad</div>
-  <div class="tbl-wrap ftab" id="inventario"></div>
+  <section class="card-sec">
+    <div class="tabletitle">Inventario del pool </div>
+    <span class="sub">niveles de prioridad P1-P4 · stock y consumo diario</span>
+    <div class="tbl-wrap ftab" id="inventario"></div>
+  </section>
 
-  <div class="tabletitle">Mejor hora de envío · plantilla ganadora v2 <span class="help" title="Read rate y respond rate por HORA de envío del mensaje (hora real del mart de Infobip). Se muestran las 24 horas (0-23); las horas sin envíos salen con volumen 0. Hora CDMX (UTC-6, verificado vs Neon). Solo envíos de CAMPAÑA (con plantilla); excluye mensajes de sesión/conversación (template NULL) que inflaban el respond rate a ~100% en horas de bajo volumen. NO mostramos delivery rate por hora (estaba contaminado por la línea quemada/plantilla disabled); read y respond son comportamiento del destinatario, más limpios.">?</span>
-  </div>
-  <div class="grid">
-    <section class="panel" style="grid-column:1 / -1">
-      <div style="position:relative;height:300px"><canvas id="c_porhora"></canvas></div>
-      <p class="note" id="porhoraNote"></p>
-    </section>
-  </div>
+  <section class="card-sec">
+    <div class="tabletitle">Mejor hora de envío <span class="help" title="Read rate y respond rate por HORA de envío del mensaje (hora real del mart de Infobip). Se muestran las 24 horas (0-23); las horas sin envíos salen con volumen 0. Hora CDMX (UTC-6, verificado vs Neon). Solo envíos de CAMPAÑA (con plantilla); excluye mensajes de sesión/conversación (template NULL) que inflaban el respond rate a ~100% en horas de bajo volumen. NO mostramos delivery rate por hora (estaba contaminado por la línea quemada/plantilla disabled); read y respond son comportamiento del destinatario, más limpios.">?</span></div>
+    <span class="sub">read rate y respond rate por hora del día · plantilla ganadora v2</span>
+    <div style="position:relative;height:300px"><canvas id="c_porhora"></canvas></div>
+    <p class="note" id="porhoraNote"></p>
+  </section>
 
   </div><!-- /sheet-dash -->
 
@@ -291,6 +406,20 @@
     <div class="sheet-head"><h2 id="tablasTitle">Tablas de Neon · CO</h2></div>
     <p class="note" style="max-width:80ch">Últimos <b>5 registros</b> de cada tabla de <b>Neon</b> (Postgres — el único estado propio del loop) con <b>todas sus columnas</b>, filtrados por país. A modo de explicación de qué guarda el sistema.</p>
     <div id="tablasBody"></div>
+  </div>
+
+  <!-- ===== HOJA: VENTANAS (tablero del otro programa de la misma línea) ===== -->
+  <div id="sheet-ventanas" class="sheet" hidden>
+    <div class="sheet-head"><h2>Ventanas</h2></div>
+    <p class="note" style="max-width:80ch">Tablero del programa <b>Ventanas</b> (outbound frío a dueños con letrero), servido por el
+      agente en <code>agente-sdr-ten.vercel.app/ventanas</code>. Comparte la línea de WhatsApp de Colombia con reactivación,
+      por eso vive en esta misma navegación. Usa el <b>mismo token</b> que el inbox.</p>
+    <p class="note" style="max-width:80ch;border-left:3px solid var(--bad);background:var(--bad-wash);padding:12px 16px;border-radius:8px">
+      <b>Hoy responde 404.</b> El deploy vigente del agente salió del worktree que no incluye <code>ventanas/</code>,
+      así que la ruta no existe en producción. En cuanto la sesión de Ventanas redespliegue, esta vista carga sola —
+      no hay nada que cambiar acá.</p>
+    <div id="ventanasGate"></div>
+    <div id="ventanasFrame"></div>
   </div>
 
   <!-- ===== HOJA: INBOX (conversaciones del agente SDR) ===== -->
@@ -387,19 +516,30 @@ async function load(){
 }
 
 // ===== router multi-hoja (tabs) =====
+let vista='dash', paisSel='MX';
+const _PAIS_LBL={MX:'México',CO:'Colombia'};
+function irVista(v){ vista=v; go(v, paisSel); }
+function irPais(c){ paisSel=c; go(vista, c); }
 function go(sheet, c){
-  const map={dash:'sheet-dash', exp:'sheet-exp', tablas:'sheet-tablas', docs:'sheet-docs', inbox:'sheet-inbox'};
+  const map={dash:'sheet-dash', exp:'sheet-exp', tablas:'sheet-tablas', docs:'sheet-docs', inbox:'sheet-inbox', ventanas:'sheet-ventanas'};
   const id=map[sheet]||'sheet-dash';
+  vista=sheet; if(c) paisSel=c;
   document.querySelectorAll('.sheet').forEach(s=>{ s.hidden = (s.id!==id); });
-  let tab='co';
-  if(sheet==='dash'){ tab=(c||'CO').toLowerCase();
-    const r=document.querySelector('input[name=pais][value='+(c||'CO')+']'); if(r) r.checked=true;
-    selectCountry(c||'CO'); }
-  else if(sheet==='exp'){ tab='ex'+(c||'CO').toLowerCase(); setExp(c||'CO'); }
-  else if(sheet==='tablas'){ tab='tb'+(c||'CO').toLowerCase(); setTablas(c||'CO'); }
-  else if(sheet==='docs'){ tab='doc'+(c||'MX').toLowerCase(); setDocs(c||'MX'); }
-  else if(sheet==='inbox'){ tab='inbox'; renderInbox(); }
-  document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('active', t.dataset.tab===tab));
+  if(sheet==='dash'){
+    const r=document.querySelector('input[name=pais][value='+paisSel+']'); if(r) r.checked=true;
+    selectCountry(paisSel);
+    const pl=document.getElementById('paisLabel');
+    if(pl) pl.textContent=_PAIS_LBL[paisSel]+' · reactivación';
+  }
+  else if(sheet==='exp'){ setExp(paisSel); }
+  else if(sheet==='tablas'){ setTablas(paisSel); }
+  else if(sheet==='docs'){ setDocs(paisSel); }
+  else if(sheet==='inbox'){ renderInbox(); }
+  else if(sheet==='ventanas'){ renderVentanas(); }
+  // La barra lateral marca la VISTA y el segmentado marca el PAÍS: son ejes distintos, a
+  // diferencia de las pestañas viejas que multiplicaban vista × país en ocho botones.
+  document.querySelectorAll('.navit[data-nav]').forEach(b=>b.classList.toggle('active', b.dataset.nav===sheet));
+  document.querySelectorAll('#paisSeg [data-pais]').forEach(b=>b.classList.toggle('active', b.dataset.pais===paisSel));
   window.scrollTo(0,0);
 }
 function setExp(c){ expC=c; const t=document.getElementById('expTitle'); if(t) t.textContent='Explorador de la base · '+c; renderExplorer(); }
@@ -542,13 +682,31 @@ const EXPMETA={
   "10.descarte_Inmo":["Descarte Inmo","excluye duras (mantiene 'Ya no quiere vender')"],
 };
 const INBOX_BASE='https://agente-sdr-ten.vercel.app/inbox';
+const VENTANAS_BASE='https://agente-sdr-ten.vercel.app/ventanas';
+// Ventanas usa el MISMO token que el inbox (los dos los sirve el agente y validan INBOX_TOKEN),
+// así que no se pide dos veces: si ya está guardado, la vista abre directo.
+function renderVentanas(){
+  const gate=document.getElementById('ventanasGate'), frame=document.getElementById('ventanasFrame');
+  if(!gate||!frame) return;
+  let tok=''; try{ tok=localStorage.getItem('ml-inbox-token')||''; }catch(e){}
+  if(!tok){
+    frame.innerHTML='';
+    gate.innerHTML='<section class="card-sec" style="max-width:620px"><h3 class="sm">Falta el token</h3>'
+      +'<p class="note">Ventanas usa el mismo token que el inbox. Ábrelo una vez en <b>Inbox</b> y esta vista queda lista.</p>'
+      +'<button class="winbtn active" type="button" onclick="irVista(\'inbox\')">Ir al Inbox</button></section>';
+    return;
+  }
+  const url=VENTANAS_BASE+'?token='+encodeURIComponent(tok);
+  gate.innerHTML='<p class="note"><a href="'+url+'" target="_blank" rel="noopener">Abrir en pestaña nueva ↗</a></p>';
+  frame.innerHTML='<iframe src="'+url+'" title="Tablero de Ventanas" style="width:100%;height:78vh;border:1px solid var(--border);border-radius:12px;background:#fff"></iframe>';
+}
 function renderInbox(){
   const gate=document.getElementById('inboxGate'), frame=document.getElementById('inboxFrame');
   if(!gate||!frame) return;
   let tok=''; try{ tok=localStorage.getItem('ml-inbox-token')||''; }catch(e){}
   if(!tok){
     frame.innerHTML='';
-    gate.innerHTML=`<section class="panel" style="max-width:620px">
+    gate.innerHTML=`<section class="card-sec" style="max-width:620px">
       <h3 class="sm">Pega el token del inbox</h3>
       <p class="note">Es el <code>INBOX_TOKEN</code> del agente SDR. Queda guardado solo en este navegador; no se manda a ningún lado ni queda en el repositorio.</p>
       <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px">
@@ -1122,11 +1280,11 @@ function renderCosechaTabla(elId, srcKey, vacio){
   el.scrollLeft=el.scrollWidth;
 }
 
-function applyTheme(t){const light=t==='light';document.body.classList.toggle('light',light);
-  document.getElementById('themeBtn').textContent=light?'🌙 Oscuro':'☀️ Claro';
+function applyTheme(t){const dark=t==='dark';document.body.classList.toggle('dark',dark);
+  document.getElementById('themeBtn').textContent=dark?'☀️ Claro':'🌙 Oscuro';
   if(window.Chart && D){ renderPorHoraChart(); }}
-document.getElementById('themeBtn').onclick=()=>{const n=document.body.classList.contains('light')?'dark':'light';try{localStorage.setItem('ml-theme',n);}catch(e){}applyTheme(n);};
-applyTheme((()=>{try{return localStorage.getItem('ml-theme')||'dark';}catch(e){return 'dark';}})());
+document.getElementById('themeBtn').onclick=()=>{const n=document.body.classList.contains('dark')?'light':'dark';try{localStorage.setItem('ml-theme',n);}catch(e){}applyTheme(n);};
+applyTheme((()=>{try{return localStorage.getItem('ml-theme')||'light';}catch(e){return 'light';}})());
 load();
 </script>
 </body>
