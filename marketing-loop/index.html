@@ -820,10 +820,11 @@ function renderInbox(){
     gate.innerHTML=`<section class="card-sec" style="max-width:620px">
       <h3 class="sm">Pega el token del inbox</h3>
       <p class="note">Es el <code>INBOX_TOKEN</code> del agente SDR. Queda guardado solo en este navegador; no se manda a ningún lado ni queda en el repositorio.</p>
-      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px">
-        <input id="inboxTok" type="password" class="sel" style="flex:1;min-width:240px" placeholder="token" autocomplete="off">
-        <button class="tab" type="button" onclick="saveInboxToken()">Abrir inbox</button>
-      </div></section>`;
+      <form style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px" onsubmit="return saveInboxToken(event)">
+        <input id="inboxTok" type="text" class="sel" style="flex:1;min-width:240px" placeholder="token"
+               autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" data-1p-ignore data-lpignore="true">
+        <button class="winbtn active" type="submit">Abrir inbox</button>
+      </form></section>`;
     return;
   }
   // El inbox hereda los selectores del tablero: si estás mirando Ventanas en CO, las
@@ -836,8 +837,9 @@ function renderInbox(){
   gate.innerHTML=`<p class="note"><a href="${url}" target="_blank" rel="noopener">Abrir en pestaña nueva ↗</a> · <a href="#" onclick="clearInboxToken();return false">Olvidar el token de este navegador</a></p>`;
   frame.innerHTML=`<iframe src="${url}" title="Inbox del agente SDR" style="width:100%;height:78vh;border:1px solid rgba(128,128,128,.35);border-radius:10px;background:#fff"></iframe>`;
 }
-function saveInboxToken(){ const i=document.getElementById('inboxTok'); const v=(i&&i.value||'').trim(); if(!v) return;
-  try{ localStorage.setItem('ml-inbox-token',v); }catch(e){} renderInbox(); }
+function saveInboxToken(ev){ if(ev) ev.preventDefault();
+  const i=document.getElementById('inboxTok'); const v=(i&&i.value||'').trim(); if(!v) return false;
+  try{ localStorage.setItem('ml-inbox-token',v); }catch(e){} renderInbox(); return false; }
 function clearInboxToken(){ try{ localStorage.removeItem('ml-inbox-token'); }catch(e){} renderInbox(); }
 
 function renderExplorer(){
@@ -967,19 +969,35 @@ function renderAgentePanel(){
 function pedirToken(contenedorId, alGuardar){
   const el=document.getElementById(contenedorId); if(!el) return;
   window._trasToken=alGuardar;
+  // Formulario de verdad (no un input suelto): así Enter guarda. Y type=text, no password:
+  // con password el gestor de contraseñas del sistema se monta encima del campo y estorba.
   el.innerHTML=`<section class="card-sec" style="max-width:620px">
       <div class="tabletitle">Pega el token</div>
       <span class="sub">Es el <code>INBOX_TOKEN</code> del agente. Se guarda solo en este navegador y sirve para inbox, plantillas y envío.</span>
-      <div class="sendrow">
-        <input id="gateTok" class="sel" type="password" placeholder="token" autocomplete="off">
-        <button class="winbtn active" type="button" onclick="guardarToken()">Guardar</button>
-      </div></section>`;
+      <form class="sendrow" onsubmit="return guardarToken(event)">
+        <input id="gateTok" class="sel" type="text" placeholder="token" autocomplete="off"
+               autocapitalize="off" autocorrect="off" spellcheck="false" data-1p-ignore data-lpignore="true">
+        <button class="winbtn active" type="submit">Guardar</button>
+      </form>
+      <div id="gateMsg" class="note"></div></section>`;
+  const i=document.getElementById('gateTok'); if(i) i.focus();
 }
-function guardarToken(){
+function guardarToken(ev){
+  if(ev) ev.preventDefault();
   const i=document.getElementById('gateTok'); const v=(i&&i.value||'').trim();
-  if(!v) return;
-  try{ localStorage.setItem('ml-inbox-token', v); }catch(e){}
+  const m=document.getElementById('gateMsg');
+  if(!v){ if(m) m.textContent='Pega el token antes de guardar.'; return false; }
+  let ok=false;
+  try{ localStorage.setItem('ml-inbox-token', v); ok = localStorage.getItem('ml-inbox-token')===v; }catch(e){}
+  if(!ok){
+    // Pasa en modo incógnito o con el almacenamiento bloqueado: mejor decirlo que dejar al
+    // usuario pegando el token una y otra vez sin entender por qué no se queda.
+    if(m) m.textContent='Tu navegador no dejó guardarlo (¿ventana de incógnito o almacenamiento bloqueado?). Sin eso hay que pegarlo en cada recarga.';
+    return false;
+  }
+  if(m) m.textContent='Token guardado en este navegador.';
   if(typeof window._trasToken==='function') window._trasToken();
+  return false;
 }
 
 // ===== ENVÍO: perilla por país =====
