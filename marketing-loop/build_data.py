@@ -399,6 +399,41 @@ def build_country(pais):
             if f >= ini:
                 _cont[k].add(ph)
     contactados = {k: len(v) for k, v in _cont.items()}
+    # ---- PANEL (diseño Habi Loop): embudo por RANGO y por CANAL ----
+    # Canal: el loop entra por WEB y ventanas se marca en send_log.campaign. Las filas viejas
+    # traen campaign NULL (el sender del loop todavía no la escribe), así que "web" = todo lo
+    # que NO es ventanas — que es exactamente lo que significa hoy.
+    _rangos = {"hoy": 0, "7": 6, "30": 29, "90": 89}
+    def _desde(nd):
+        return (_hoy_l - datetime.timedelta(days=nd)).isoformat()
+    _canal_de = lambda r: "ventanas" if (r.get("campaign") == "ventanas") else "web"
+    panel = {c: {k: {"entregados": 0, "enviados": 0, "reasignados": 0} for k in _rangos}
+             for c in ("agregado", "web", "ventanas")}
+    for r in sl_cosecha:
+        f = (r.get("attempted_at") or "")[:10]
+        if not f: continue
+        m = mbm.get(r.get("message_id") or "")
+        entregado = bool(m and m.get("status") == "delivered")
+        cn = _canal_de(r)
+        for k, nd in _rangos.items():
+            if f >= _desde(nd):
+                for dst in (panel[cn][k], panel["agregado"][k]):
+                    dst["enviados"] += 1
+                    if entregado: dst["entregados"] += 1
+    # Leads re-asignados: los que el loop volvió a crear en el backbone. Ventanas no crea leads
+    # (su atribución propia todavía no está configurada), así que su columna es 0 de verdad.
+    for rr in rec:
+        f = str(rr.get("created_at") or "")[:10]
+        if not f: continue
+        for k, nd in _rangos.items():
+            if f >= _desde(nd):
+                panel["web"][k]["reasignados"] += 1
+                panel["agregado"][k]["reasignados"] += 1
+    # Serie del loop y del agente por día, para las dos tablas del panel
+    _rec_dia = {}
+    for rr in rec:
+        f = str(rr.get("created_at") or "")[:10]
+        if f: _rec_dia[f] = _rec_dia.get(f, 0) + 1
     # recreados/calificados por old_nid
     recreated_oldnids={r["old_nid"] for r in rec if r.get("success")}
     qualified_oldnids={r["old_nid"] for r in rec if r.get("state_at_creation") in (20,63)}
@@ -421,6 +456,8 @@ def build_country(pais):
         "cosecha": {t: agg.cosecha_serie(sl_cosecha, mbm, inbound_phones_wide, interesado_phones_wide, interesado_nocreado_phones, t, n=40) for t in ("dia","semana","mes")},
         "pendientes_crear": pendientes_crear,
         "contactados": contactados,
+        "panel": panel,
+        "reasignados_dia": _rec_dia,
         "cosecha_agente": {t: agg.cosecha_serie(sl_agente, mbm, inbound_phones_wide, interesado_phones_wide, interesado_nocreado_phones, t, n=40) for t in ("dia","semana","mes")},
         "agente_conversaciones": len(agente_phones),
         "ab_templates": _ab(sl,mbm,inbound_phones,interesado_phones,yavendio_phones),
@@ -435,6 +472,19 @@ def build_country(pais):
     }
 
 
+def agente_acciones(pais, dias=30):
+    """Desenlace de los turnos del agente (últimos `dias`): qué hizo con cada conversación.
+    Alimenta la pantalla Agente IA del panel. SHADOW y NOT_IN_SAMPLE se muestran aparte
+    porque ahí el agente propone pero NO manda: no son desenlaces suyos."""
+    rows = N._rows(
+        "SELECT coalesce(action_taken,'(sin accion)') AS accion, count(*) AS n, "
+        "       count(DISTINCT phone) AS telefonos "
+        "FROM agent_thread WHERE country=%s AND role='assistant' "
+        "  AND ts > now() - make_interval(days => %s) GROUP BY 1 ORDER BY 2 DESC",
+        (pais, int(dias)))
+    return [{"accion": r["accion"], "n": int(r["n"]), "telefonos": int(r["telefonos"])} for r in rows]
+
+
 def agente_ia(pais):
     """Usuarios reasignados por el agente SDR de IA (conversacional, texto libre): sellers cuyo
     hilo con el agente terminó en BACKBONE — respuesta positiva directa o movido a interesado
@@ -443,11 +493,13 @@ def agente_ia(pais):
     rows = N._rows("""
         SELECT (ts AT TIME ZONE %s)::date::text AS fecha,
                count(DISTINCT phone) FILTER (WHERE action_taken IN ('BACKBONE','BACKBONE_SANITIZED')) AS reasignados,
+               count(DISTINCT phone) FILTER (WHERE intent='INTERESTED') AS interesados,
                count(DISTINCT phone) AS conversaciones
         FROM agent_thread
         WHERE country=%s AND role='assistant'
         GROUP BY 1 ORDER BY 1""", (N.TZ[pais], pais))
     return [{"fecha": r["fecha"], "reasignados": int(r["reasignados"] or 0),
+             "interesados": int(r["interesados"] or 0),
              "conversaciones": int(r["conversaciones"] or 0)} for r in rows]
 
 COMP = q("query_completitud.sql")
@@ -485,10 +537,17 @@ data={
   # KPIs de cabecera: contactados sale de Neon (entrega real) y el resto de BQ, cada
   # métrica por su propia fecha (creado / cita / cierre). Ver query_kpis.sql.
   "contactados": {"MX": mx["contactados"], "CO": co["contactados"]},
+  "panel": {"MX": mx["panel"], "CO": co["panel"]},
+  "reasignados_dia": {"MX": mx["reasignados_dia"], "CO": co["reasignados_dia"]},
+  # citas y cierres por rango, indexados pais -> rango
+  "panel_bq": (lambda rows: {p: {str(r["dias"]): {k: int(r[k] or 0) for k in ("citas","cierres_mm","cierres_inmo")}
+                                 for r in rows if r["pais"] == p}
+                             for p in ("MX","CO")})(q("query_panel.sql")),
   "kpis": {r["pais"]: r for r in q("query_kpis.sql")},
   "cosecha_agente": {"MX": mx["cosecha_agente"], "CO": co["cosecha_agente"]},
   "agente_conversaciones": {"MX": mx["agente_conversaciones"], "CO": co["agente_conversaciones"]},
   "agente_ia": {"MX": agente_ia("MX"), "CO": agente_ia("CO")},
+  "agente_acciones": {"MX": agente_acciones("MX"), "CO": agente_acciones("CO")},
 }
 open(os.path.join(HERE,"data.json"),"w").write(json.dumps(data, ensure_ascii=False, separators=(",",":")))
 print("data.json OK |",

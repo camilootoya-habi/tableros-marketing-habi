@@ -42,7 +42,9 @@ def tabla_muestra(tabla, order_col, country=None, n=5):
 def send_log_rows(days=None, country=None):
     # attempted_at convertido a tz local del país (country=None -> comportamiento actual: sin filtro, tz Mexico_City).
     tz = TZ.get(country, "America/Mexico_City")
-    q=f"SELECT nid,deal_id,phone,line,template,message_id,api_http_code,accepted,(attempted_at AT TIME ZONE '{tz}')::text AS attempted_at FROM send_log"
+    # `campaign` distingue el canal (ventanas vs el loop) y la comparte la línea de CO:
+    # sin ella el panel no puede separar los dos programas.
+    q=f"SELECT nid,deal_id,phone,line,template,message_id,api_http_code,accepted,campaign,(attempted_at AT TIME ZONE '{tz}')::text AS attempted_at FROM send_log"
     where=[]; args=[]
     if country: where.append("country=%s"); args.append(country)
     if days: where.append(f"attempted_at >= now() - make_interval(days => {int(days)})")
