@@ -362,6 +362,7 @@
   .knobside{flex:1;min-width:170px;display:flex;flex-direction:column;gap:10px}
   .presets{display:flex;gap:6px;flex-wrap:wrap}
   #envioMsg{margin-top:18px}
+  .simchk{display:flex;align-items:center;gap:7px;font-size:12.5px;color:var(--text-muted);cursor:pointer}
 </style>
 </head>
 <body>
@@ -1082,6 +1083,7 @@ async function cargarEnvio(){
         <div class="knobside">
           <div class="presets">${[100,200,300,600].map(n=>`<button type="button" class="winbtn sm" onclick="_setVal('${p}',${n})">${n}</button>`).join('')}</div>
           <button class="winbtn active" style="width:100%" type="button" onclick="dispararEnvio('${p}')">Enviar en ${_PAIS_LBL[p]}</button>
+          <label class="simchk"><input type="checkbox" id="dry-${p}"> Solo simular (no manda nada)</label>
         </div>
       </div>
     </section>`).join('');
@@ -1095,16 +1097,18 @@ async function dispararEnvio(pais){
   const n=envioVal[pais];
   if(n<1){ msg.textContent='Sube la perilla: 0 no manda nada.'; return; }
   const ya=((envioEstado||{}).hoy||{})[pais]||{total:0};
-  if(!confirm(`Vas a mandar ${n} WhatsApps reales en ${_PAIS_LBL[pais]}.\n\nHoy ya salieron ${ya.total}. ¿Seguimos?`)) return;
+  const chk=document.getElementById('dry-'+pais);
+  const simular=!!(chk&&chk.checked);
+  if(!simular && !confirm(`Vas a mandar ${n} WhatsApps reales en ${_PAIS_LBL[pais]}.\n\nHoy ya salieron ${ya.total}. ¿Seguimos?`)) return;
   let tok=''; try{ tok=localStorage.getItem('ml-inbox-token')||''; }catch(e){}
   msg.textContent='Disparando la tanda…';
   try{
     const r=await fetch(API_BASE+'/api/envio?token='+encodeURIComponent(tok),{
       method:'POST', headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({country:pais, cantidad:n})});
+      body:JSON.stringify({country:pais, cantidad:n, dry:simular})});
     const d=await r.json();
     msg.innerHTML = (r.ok&&d.ok)
-      ? `✅ Tanda de <b>${fmt(n)}</b> disparada en ${_PAIS_LBL[pais]}. Corre en GitHub Actions porque el pool vive en BigQuery — <a href="${escx(d.seguimiento)}" target="_blank" rel="noopener">seguir la corrida ↗</a>. Tarda unos minutos en aparecer en el conteo.`
+      ? `${d.dry?'🧪 <b>Simulación</b>':'✅ Tanda'} de <b>${fmt(n)}</b> ${d.dry?'armada':'disparada'} en ${_PAIS_LBL[pais]}. Corre en GitHub Actions porque el pool vive en BigQuery — <a href="${escx(d.seguimiento)}" target="_blank" rel="noopener">seguir la corrida ↗</a>. Tarda unos minutos en aparecer en el conteo.`
       : '⚠ No se disparó: '+escx(String(d.error||d.detail||('HTTP '+r.status)));
   }catch(e){ msg.textContent='No se pudo hablar con el backend: '+String(e).slice(0,120); }
 }
