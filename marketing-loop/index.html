@@ -935,7 +935,7 @@ function renderSerie(){
   const raw=((D.cosecha||{})[country]||{})[cicloTipo]||[];
   const rec=(D.reasignados_dia||{})[country]||{};
   const sub=document.getElementById('serieSub');
-  if(sub) sub.textContent='Envíos, entregas y conversión · '+({dia:'Diario',semana:'Semanal',mes:'Mensual'}[cicloTipo])+' · '+_CANAL_LBL[canalSel];
+  if(sub) sub.textContent='Envíos, entregas y conversión · '+({dia:'Diario',semana:'Semanal',mes:'Mensual'}[cicloTipo])+' · solo reactivación';
   if(!raw.length){ el.innerHTML='<p class="note">Sin datos.</p>'; return; }
   const arr=raw.slice(-14);
   el.innerHTML=`<table><thead><tr><th>Día</th><th style="text-align:right">Envíos</th><th style="text-align:right">Entregados</th>
@@ -953,7 +953,7 @@ function renderAgentePanel(){
   if(!tab||!kpi) return;
   const serie=((D.agente_ia||{})[country]||[]);
   const sub=document.getElementById('agenteSub');
-  if(sub) sub.textContent='Respuestas de texto libre · '+({dia:'Diario',semana:'Semanal',mes:'Mensual'}[cicloTipo])+' · '+_CANAL_LBL[canalSel];
+  if(sub) sub.textContent='Respuestas de texto libre · '+({dia:'Diario',semana:'Semanal',mes:'Mensual'}[cicloTipo])+' · todas las campañas';
   const tot=serie.reduce((a,r)=>({at:a.at+(+r.conversaciones||0), in:a.in+(+r.interesados||0), re:a.re+(+r.reasignados||0)}),{at:0,in:0,re:0});
   const conv=tot.at>0?pct(tot.re/tot.at*100):'·';
   kpi.innerHTML=`<div class="akpis">
