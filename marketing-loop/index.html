@@ -409,7 +409,7 @@
 
   <div class="pagehead">
     <div>
-      <h1>Marketing loop general</h1>
+      <h1 id="dashTitulo">Marketing loop general</h1>
       <div class="who"><span id="paisLabel">Colombia · Web + Ventanas (agregado)</span> <span class="muted" id="upd"></span></div>
     </div>
     <div class="seg" id="granSeg">
@@ -424,6 +424,7 @@
     <button class="close-btn" onclick="document.getElementById('helpCard').close()">Cerrar</button>
   </dialog>
 
+  <div id="panelLoop">
   <section class="card-sec" id="embudoCard"></section>
 
   <div class="grid2">
@@ -458,6 +459,13 @@
     <div style="position:relative;height:300px"><canvas id="c_porhora"></canvas></div>
     <p class="note" id="porhoraNote"></p>
   </section>
+
+  </div>
+
+  <!-- Ventanas no comparte semántica con el loop: su embudo empieza en un lead de HubSpot,
+       no en un envío, y no tiene pool ni plantilla ganadora. Por eso es otra vista, no un
+       filtro sobre la misma. -->
+  <div id="panelVentanas" hidden></div>
 
   </div><!-- /sheet-dash -->
 
@@ -1001,6 +1009,94 @@ function guardarToken(ev){
   return false;
 }
 
+let rangoVent='7';
+const _RANGO_VENT={hoy:'Hoy','7':'Últimos 7 días','30':'Últimos 30 días'};
+function setRangoVent(r){ rangoVent=r; renderVentanasPanel(); }
+// Ventanas es SOLO CO (así lo dice su propia sesión): un panel por país acá no agrega nada
+// y puede mezclar líneas, así que con MX seleccionado se dice y no se inventan cifras.
+function renderVentanasPanel(){
+  const el=document.getElementById('panelVentanas'); if(!el) return;
+  const V=D.ventanas||{};
+  if(country!=='CO'){
+    el.innerHTML='<section class="card-sec"><div class="tabletitle">Ventanas opera solo en Colombia</div>'
+      +'<span class="sub">no hay programa de ventanas en México: cambia el país arriba para ver sus métricas</span></section>';
+    return;
+  }
+  const R=(V.rangos||{})[rangoVent]||{};
+  const tabs=['hoy','7','30'].map(r=>`<button type="button" class="winbtn sm${r===rangoVent?' active':''}" onclick="setRangoVent('${r}')">${r==='hoy'?'Hoy':r+' d'}</button>`).join('');
+  const pasos=[
+    {lab:'Leads recibidos', k:'recibidos', color:'var(--accent)', pie:'POST del workflow de HubSpot'},
+    {lab:'Plantillas enviadas', k:'enviadas', color:'#A855F7', pie:'Infobip las aceptó — no es entrega'},
+    {lab:'Respondieron', k:'respondieron', color:'#2DD4BF', pie:'botón + texto libre'},
+    {lab:'Atendidos por el agente', k:'atendidos', color:'#0EA5E9', pie:'personas, no turnos'},
+    {lab:'Deal creado', k:'deal_creado', color:'var(--ok)', pie:(+R.deal_fallo||0)+' fallaron'},
+  ];
+  const base=+R[pasos[0].k]||1;
+  const emb=pasos.map((s,i)=>{
+    const v=+R[s.k]||0, sig=pasos[i+1];
+    const conv=sig ? ((v>0)?pct((+R[sig.k]||0)/v*100):'·') : null;
+    return `<div class="fstep"><div class="fbody">
+        <div class="flab">${s.lab}</div>
+        <div class="fval">${fmt(v)}</div>
+        <div class="fbar"><div style="width:${Math.max(2,Math.round(v/base*100))}%;background:${s.color}"></div></div>
+        <div class="fsplit">${s.pie}</div></div>
+      ${conv!==null?`<div class="fconv">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"></path></svg>
+        <span class="fpill">${conv}</span></div>`:''}</div>`;}).join('');
+
+  const A=(V.acciones||[]);
+  const clase={ok:'row-loop',problema:'row-orange',guarda:'row-stage',otro:'row-stage'};
+  const glosa={SENT:'plantilla enviada', DEDUP:'ya se le escribió hace menos de 7 días',
+    TERMINAL:'está en baja o ya vendió — nunca recontactar', SIN_DIRECCION:'el payload no trajo dirección',
+    SEND_FAIL:'Infobip rechazó el envío', NO_TEMPLATE:'falta la variable de plantilla',
+    TEMPLATE_NO_VENTANAS:'la plantilla no lleva el prefijo ventanas', PROGRAMA_AJENO:'el payload declaró otro programa',
+    BAD_PHONE:'teléfono inválido'};
+  const I=V.intake||{}, S=V.supresion||[];
+  el.innerHTML=`
+  <section class="card-sec">
+    <div class="cardhead"><div>
+      <div class="tabletitle">Embudo de Ventanas</div>
+      <span class="sub">de lead de HubSpot a deal · ${_RANGO_VENT[rangoVent]} · Colombia</span></div>
+      <div class="seg">${tabs}</div></div>
+    <div class="funnel">${emb}</div>
+    <p class="note">La campaña se atribuye por el <b>prefijo de la plantilla</b>, la misma regla con la que el agente decide qué guion usar.
+    <b>Enviadas</b> significa que Infobip aceptó el mensaje, no que llegó: la entrega real vive en el mart de BigQuery, fuera de esta base.
+    <b>Respondieron</b> une los clics de botón (que procesa el bot y nunca llegan al agente) con el texto libre; medido con una sola fuente, el porcentaje llegó a dar 733%.
+    La ventana cuenta por <b>cuándo respondió</b>, no por cuándo se le escribió: es actividad, no tasa por cohorte.</p>
+  </section>
+
+  <div class="grid2">
+    <section class="card-sec">
+      <div class="tabletitle">Desenlace de los leads de HubSpot</div>
+      <span class="sub">qué pasó con cada POST del workflow · pruebas en seco excluidas</span>
+      <div class="tbl-wrap ftab"><table><thead><tr><th>Desenlace</th><th style="text-align:right">Leads</th></tr></thead>
+        <tbody>${A.length?A.map(a=>`<tr class="${clase[a.tipo]||''}"><td>${escx(a.action)}<span class="muted" style="font-weight:400"> — ${escx(glosa[a.action]||'')}</span></td>
+          <td style="text-align:right">${fmt(a.n)}</td></tr>`).join(''):'<tr><td colspan="2">Sin leads todavía.</td></tr>'}</tbody></table></div>
+      <p class="note"><b>DEDUP</b> y <b>TERMINAL</b> no son fallas: son las guardas funcionando. En rojo solo lo que es configuración rota o rechazo real.</p>
+    </section>
+
+    <section class="card-sec">
+      <div class="tabletitle">Entrevista</div>
+      <span class="sub">captura conversacional del inmueble · desde el 25 de agosto</span>
+      <div class="akpis">
+        <div><div class="flab">Esperando consentimiento</div><div class="fval">${fmt(I.esperando_consent||0)}</div></div>
+        <div><div class="flab">En entrevista</div><div class="fval">${fmt(I.en_entrevista||0)}</div></div>
+        <div><div class="flab">Completadas</div><div class="fval">${fmt(I.completadas||0)}</div></div>
+        <div><div class="flab">Con deal</div><div class="fval">${fmt(I.con_deal||0)}</div></div>
+      </div>
+      <p class="note">Las <b>${fmt(I.cerradas_sin_deal||0)}</b> cerradas sin deal incluyen a quien no autorizó el tratamiento de datos: sin consentimiento no se crea lead, y eso es cumplimiento de la Ley 1581, no una falla.
+      Reenganchadas: ${fmt(I.reenganchadas||0)}.</p>
+    </section>
+  </div>
+
+  <section class="card-sec">
+    <div class="tabletitle">A quién no se le escribe</div>
+    <span class="sub">supresión antes de enviar · por motivo</span>
+    <div class="tbl-wrap ftab"><table><thead><tr><th>Motivo</th><th style="text-align:right">Contactos</th></tr></thead>
+      <tbody>${S.map(s=>`<tr><td>${escx(s.motivo)}</td><td style="text-align:right">${fmt(s.n)}</td></tr>`).join('')}</tbody></table></div>
+  </section>`;
+}
+
 // ===== ENVÍO: perilla por país =====
 // La perilla es un arco de 270° (de 7:30 a 4:30 del reloj). El salto de 25 no es estético:
 // afinar de a 1 con el mouse invita a errores de un dígito, y acá un dígito de más son
@@ -1224,7 +1320,23 @@ function renderAgenteScreen(){
   }
 }
 
-function selectCountry(c){ country=c; renderEmbudo(); renderSerie(); renderAgentePanel(); renderErrores(); renderInventario(); renderPorHoraChart();
+function selectCountry(c){ country=c;
+  // Canal Ventanas cambia de VISTA, no de filtro: su embudo empieza en un lead de HubSpot y
+  // no tiene pool, plantilla ganadora ni serie del loop. Mostrar esas tarjetas vacías sería
+  // peor que no mostrarlas.
+  const esVent = canalSel==='ventanas';
+  const pl=document.getElementById('panelLoop'), pv=document.getElementById('panelVentanas');
+  if(pl) pl.hidden = esVent;
+  if(pv) pv.hidden = !esVent;
+  const h1=document.getElementById('dashTitulo'), gs=document.getElementById('granSeg');
+  if(h1) h1.textContent = esVent ? 'Ventanas' : 'Marketing loop general';
+  // La temporalidad es del loop (cosecha, errores). La vista de ventanas tiene su propio
+  // selector de rango, así que mostrar los dos confunde sobre cuál manda.
+  if(gs) gs.hidden = esVent;
+  if(esVent){ renderVentanasPanel();
+    document.querySelectorAll('#canalSeg [data-canal]').forEach(b=>b.classList.toggle('active', b.dataset.canal===canalSel));
+    return; }
+  renderEmbudo(); renderSerie(); renderAgentePanel(); renderErrores(); renderInventario(); renderPorHoraChart();
   document.querySelectorAll('#canalSeg [data-canal]').forEach(b=>b.classList.toggle('active', b.dataset.canal===canalSel));
   document.querySelectorAll('#granSeg [data-gran]').forEach(b=>b.classList.toggle('active', b.dataset.gran===cicloTipo)); }
 // Celdas "valor + %" con heatmap por fila (verde=conversión alta, rojo=baja), copiado del tablero de referencia.

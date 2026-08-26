@@ -8,6 +8,11 @@ bq autenticado y opcionalmente META_ACCESS_TOKEN / INFOBIP_*_API_KEY como respal
 import json, os, subprocess, datetime, re
 import agg, sources_neon as N, sources_mart as M, sources_infobip as I
 
+def _SNC():
+    """Conexión cruda a la misma base del tablero (para queries con CTEs y FILTER)."""
+    import psycopg
+    return psycopg.connect(N._db_url())
+
 HERE = os.path.dirname(os.path.abspath(__file__))
 
 # Proyecto que FACTURA los jobs de BQ (las tablas se leen cross-project). No se hereda del
@@ -559,6 +564,101 @@ def plantillas(pais, sl, mbm, interesado_phones, yavendio_phones):
     return out
 
 
+
+def ventanas_metricas():
+    """Embudo del programa VENTANAS, según el spec de esa sesión (26-ago-2026).
+
+    Ventanas es SOLO CO y no comparte semántica con el loop, así que no se puede medir con
+    las mismas piezas:
+      · La atribución de campaña es por PREFIJO DEL TEMPLATE ('ventanas%'), la misma regla que
+        usa el agente para enrutar la respuesta. Si el tablero usara otra, mostraría una
+        campaña mientras el agente contesta con otra.
+      · `accepted` significa "Infobip aceptó", NO "llegó al teléfono": la entrega real vive en
+        el mart de BigQuery. Por eso acá se rotula "enviadas" y nunca "entregadas".
+      · "Respondieron" necesita UNIR contact_status (clicks de botón, que procesa el bot y
+        nunca llegan a agent_thread) con agent_thread (texto libre, tiempo real). Medido con
+        una sola fuente, el porcentaje anidado llegó a dar 733%.
+      · `ventanas_hs_inbound.action LIKE 'DRY:%'` son pruebas en seco: se excluyen SIEMPRE.
+      · El día es calendario de America/Bogota, no UTC.
+    """
+    TZ = "America/Bogota"
+    ventanas_dias = {"hoy": 0, "7": 7, "30": 30}
+    out = {"rangos": {}, "acciones": [], "intake": {}, "supresion": [], "pais": "CO"}
+
+    def _desde(sql_col, dias):
+        if dias == 0:
+            return f"({sql_col} AT TIME ZONE '{TZ}')::date = (now() AT TIME ZONE '{TZ}')::date"
+        return f"{sql_col} > now() - interval '{int(dias)} days'"
+
+    with _SNC() as c:
+        for k, d in ventanas_dias.items():
+            recibidos = list(c.execute(
+                "SELECT count(*) FROM ventanas_hs_inbound "
+                "WHERE action NOT LIKE 'DRY:%%' AND " + _desde("received_at", d)))[0][0]
+            enviadas = list(c.execute(
+                "SELECT count(*) FROM send_log "
+                "WHERE template LIKE 'ventanas%%' AND accepted AND " + _desde("attempted_at", d)))[0][0]
+            # Respondieron = clicks de botón (contact_status) UNIDO a texto libre (agent_thread).
+            respondieron = list(c.execute(
+                "WITH ultimo_envio AS ("
+                "  SELECT DISTINCT ON (phone) phone,"
+                "         CASE WHEN template LIKE 'ventanas%%' THEN 'ventanas' ELSE 'otra' END AS campania"
+                "  FROM send_log WHERE accepted ORDER BY phone, attempted_at DESC),"
+                "por_boton AS ("
+                "  SELECT cs.phone, u.campania, cs.responded_at AS cuando"
+                "  FROM contact_status cs JOIN ultimo_envio u ON u.phone = cs.phone"
+                "  WHERE cs.responded_at IS NOT NULL),"
+                "por_texto AS ("
+                "  SELECT phone, 'ventanas' AS campania, ts AS cuando"
+                "  FROM agent_thread WHERE campaign = 'ventanas' AND role = 'user')"
+                "SELECT count(DISTINCT phone) FROM ("
+                "  SELECT * FROM por_boton UNION SELECT * FROM por_texto) t "
+                "WHERE campania = 'ventanas' AND " + _desde("cuando", d)))[0][0]
+            atendidos = list(c.execute(
+                "SELECT count(DISTINCT phone) FROM agent_thread "
+                "WHERE campaign='ventanas' AND role='user' AND " + _desde("ts", d)))[0][0]
+            deal_ok = list(c.execute(
+                "SELECT count(DISTINCT phone) FROM agent_thread "
+                "WHERE campaign='ventanas' AND action_taken IN ('BACKBONE','BACKBONE_SANITIZED') "
+                "AND " + _desde("ts", d)))[0][0]
+            deal_no = list(c.execute(
+                "SELECT count(DISTINCT phone) FROM agent_thread "
+                "WHERE campaign='ventanas' AND action_taken='BACKBONE_FAILED' "
+                "AND " + _desde("ts", d)))[0][0]
+            out["rangos"][k] = {"recibidos": recibidos, "enviadas": enviadas,
+                                "respondieron": respondieron, "atendidos": atendidos,
+                                "deal_creado": deal_ok, "deal_fallo": deal_no}
+
+        # Desenlace de cada POST del webhook. TERMINAL y DEDUP son GUARDAS funcionando, no
+        # fallas: van glosadas, no en rojo. Rojo solo lo que es config rota o rechazo real.
+        PROBLEMA = {"SEND_FAIL", "NO_TEMPLATE", "TEMPLATE_NO_VENTANAS", "SIN_DIRECCION", "BAD_PHONE"}
+        GUARDA = {"DEDUP", "TERMINAL", "PROGRAMA_AJENO"}
+        for r in c.execute(
+                "SELECT action, count(*) FROM ventanas_hs_inbound "
+                "WHERE action NOT LIKE 'DRY:%%' GROUP BY 1 ORDER BY 2 DESC"):
+            a = r[0] or "(sin action)"
+            out["acciones"].append({"action": a, "n": r[1],
+                                    "tipo": "ok" if a == "SENT" else
+                                            ("problema" if a in PROBLEMA else
+                                             ("guarda" if a in GUARDA else "otro"))})
+
+        fila = list(c.execute(
+            "SELECT count(*) FILTER (WHERE step='consent') AS esperando_consent,"
+            "       count(*) FILTER (WHERE consent AND step IS NOT NULL AND completed_at IS NULL) AS en_entrevista,"
+            "       count(*) FILTER (WHERE completed_at IS NOT NULL) AS completadas,"
+            "       count(*) FILTER (WHERE lead_fired_at IS NOT NULL) AS con_deal,"
+            "       count(*) FILTER (WHERE completed_at IS NOT NULL AND lead_fired_at IS NULL) AS cerradas_sin_deal,"
+            "       count(*) FILTER (WHERE reengage_count > 0) AS reenganchadas "
+            "FROM ventanas_intake WHERE country='CO'"))[0]
+        out["intake"] = dict(zip(("esperando_consent", "en_entrevista", "completadas",
+                                  "con_deal", "cerradas_sin_deal", "reenganchadas"), map(int, fila)))
+
+        for r in c.execute("SELECT motivo, count(*) FROM ventanas_supresion "
+                           "WHERE country='CO' GROUP BY 1 ORDER BY 2 DESC LIMIT 10"):
+            out["supresion"].append({"motivo": r[0] or "(sin motivo)", "n": r[1]})
+    return out
+
+
 def agente_acciones(pais, dias=30):
     """Desenlace de los turnos del agente (últimos `dias`): qué hizo con cada conversación.
     Alimenta la pantalla Agente IA del panel. SHADOW y NOT_IN_SAMPLE se muestran aparte
@@ -625,6 +725,7 @@ data={
   # métrica por su propia fecha (creado / cita / cierre). Ver query_kpis.sql.
   "contactados": {"MX": mx["contactados"], "CO": co["contactados"]},
   "panel": {"MX": mx["panel"], "CO": co["panel"]},
+  "ventanas": ventanas_metricas(),
   "plantillas": {"MX": mx["plantillas"], "CO": co["plantillas"]},
   "reasignados_dia": {"MX": mx["reasignados_dia"], "CO": co["reasignados_dia"]},
   # citas y cierres por rango, indexados pais -> rango
