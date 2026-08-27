@@ -658,6 +658,7 @@ function go(sheet, c){
   const map={dash:'sheet-dash', exp:'sheet-exp', tablas:'sheet-tablas', docs:'sheet-docs', inbox:'sheet-inbox', ventanas:'sheet-ventanas', plantillas:'sheet-plantillas', agente:'sheet-agente', envio:'sheet-envio'};
   const id=map[sheet]||'sheet-dash';
   vista=sheet; if(c) paisSel=c;
+  country = paisSel;   // una sola fuente de verdad para todas las vistas
   document.querySelectorAll('.sheet').forEach(s=>{ s.hidden = (s.id!==id); });
   if(sheet==='dash'){
     const r=document.querySelector('input[name=pais][value='+paisSel+']'); if(r) r.checked=true;
