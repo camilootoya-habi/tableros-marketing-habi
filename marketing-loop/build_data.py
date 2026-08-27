@@ -565,6 +565,95 @@ def plantillas(pais, sl, mbm, interesado_phones, yavendio_phones):
 
 
 
+
+def ventanas_ejecuciones(dias=30):
+    """Una fila por LEAD con el estado de cada nodo del pipeline (vista estilo n8n).
+
+    Devuelve datos crudos y deja el semáforo al cliente: así los filtros (rango, solo
+    errores, estado final) no obligan a reconstruir el JSON ni a volver a la base.
+
+    ⚠ El nodo "plantilla enviada" se evalúa SIEMPRE desde send_log y NUNCA se deriva del
+    `action` del webhook: las tandas de recuperación mandan por fuera del receptor, así que
+    hay leads con envío real y sin fila SENT. Derivarlo los mostraría como no enviados.
+    """
+    sql = """
+    WITH llegada AS (
+      SELECT DISTINCT ON (phone) phone, received_at, nombre, nid, gestion, direccion, action
+      FROM ventanas_hs_inbound
+      WHERE action NOT LIKE 'DRY:%%' AND received_at > now() - make_interval(days => %s)
+      ORDER BY phone, received_at DESC
+    ),
+    envio AS (
+      SELECT DISTINCT ON (phone) phone, attempted_at, template, accepted
+      FROM send_log WHERE template LIKE 'ventanas%%'
+      ORDER BY phone, attempted_at DESC
+    ),
+    respuesta AS (
+      SELECT phone, min(ts) AS primera_respuesta
+      FROM agent_thread WHERE campaign='ventanas' AND role='user' GROUP BY phone
+    ),
+    cierre AS (
+      SELECT DISTINCT ON (phone) phone, action_taken
+      FROM agent_thread WHERE campaign='ventanas' AND role='assistant'
+        AND action_taken IN ('BACKBONE','BACKBONE_FAILED','CLOSE_OPT_OUT',
+                             'CLOSE_YA_CON_HABI','CLOSE_NO_CONSENT')
+      ORDER BY phone, ts DESC
+    )
+    SELECT l.phone, to_char(l.received_at AT TIME ZONE 'America/Bogota','MM-DD HH24:MI') AS llegada,
+           l.received_at, l.nombre, l.nid, l.gestion, l.direccion, l.action,
+           e.template, e.accepted,
+           to_char(e.attempted_at AT TIME ZONE 'America/Bogota','MM-DD HH24:MI') AS envio_hora,
+           to_char(r.primera_respuesta AT TIME ZONE 'America/Bogota','MM-DD HH24:MI') AS respuesta_hora,
+           i.consent, i.step, i.completed_at, i.lead_fired_at,
+           c.action_taken AS cierre, rec.new_deal_id
+    FROM llegada l
+    LEFT JOIN envio e     ON e.phone = l.phone
+    LEFT JOIN respuesta r ON r.phone = l.phone
+    LEFT JOIN ventanas_intake i ON i.phone = l.phone AND i.country = 'CO'
+    LEFT JOIN cierre c    ON c.phone = l.phone
+    LEFT JOIN recreation rec ON rec.old_nid = l.nid
+    ORDER BY l.received_at DESC
+    """
+    filas = N._rows(sql, (int(dias),))
+    out = []
+    for r in filas:
+        out.append({
+            "phone": r["phone"], "llegada": r["llegada"],
+            "recibido": str(r["received_at"]),
+            "nombre": r["nombre"], "nid": r["nid"], "gestion": r["gestion"],
+            "direccion": bool(r["direccion"]), "action": r["action"],
+            "template": r["template"], "accepted": r["accepted"], "envio_hora": r["envio_hora"],
+            "respuesta_hora": r["respuesta_hora"],
+            "consent": r["consent"], "step": r["step"],
+            "completada": r["completed_at"] is not None,
+            "lead_disparado": r["lead_fired_at"] is not None,
+            "cierre": r["cierre"], "deal_id": r["new_deal_id"],
+        })
+    return out
+
+
+def ventanas_serie(dias=14):
+    """Llegadas, enviadas, respuestas y deals por día (calendario de Bogotá)."""
+    TZ = "America/Bogota"
+    def _serie(sql):
+        return {r["d"]: int(r["n"]) for r in N._rows(sql, (int(dias),))}
+    lleg = _serie(f"SELECT (received_at AT TIME ZONE '{TZ}')::date::text d, count(*) n "
+                  "FROM ventanas_hs_inbound WHERE action NOT LIKE 'DRY:%%' "
+                  "AND received_at > now() - make_interval(days => %s) GROUP BY 1")
+    env = _serie(f"SELECT (attempted_at AT TIME ZONE '{TZ}')::date::text d, count(*) n "
+                 "FROM send_log WHERE template LIKE 'ventanas%%' AND accepted "
+                 "AND attempted_at > now() - make_interval(days => %s) GROUP BY 1")
+    resp = _serie(f"SELECT (ts AT TIME ZONE '{TZ}')::date::text d, count(DISTINCT phone) n "
+                  "FROM agent_thread WHERE campaign='ventanas' AND role='user' "
+                  "AND ts > now() - make_interval(days => %s) GROUP BY 1")
+    deal = _serie(f"SELECT (ts AT TIME ZONE '{TZ}')::date::text d, count(DISTINCT phone) n "
+                  "FROM agent_thread WHERE campaign='ventanas' AND action_taken='BACKBONE' "
+                  "AND ts > now() - make_interval(days => %s) GROUP BY 1")
+    dias_set = sorted(set(lleg) | set(env) | set(resp) | set(deal))
+    return [{"fecha": d, "llegadas": lleg.get(d, 0), "enviadas": env.get(d, 0),
+             "respuestas": resp.get(d, 0), "deals": deal.get(d, 0)} for d in dias_set]
+
+
 def ventanas_metricas():
     """Embudo del programa VENTANAS, según el spec de esa sesión (26-ago-2026).
 
@@ -725,7 +814,9 @@ data={
   # métrica por su propia fecha (creado / cita / cierre). Ver query_kpis.sql.
   "contactados": {"MX": mx["contactados"], "CO": co["contactados"]},
   "panel": {"MX": mx["panel"], "CO": co["panel"]},
-  "ventanas": ventanas_metricas(),
+  # OJO: acá NO va `ejecuciones` (nombre, nid, teléfono). data.json es público y se
+  # descarga sin auth; esos datos los sirve /api/ventanas/ejecuciones detrás del token.
+  "ventanas": {**ventanas_metricas(), "serie": ventanas_serie()},
   "plantillas": {"MX": mx["plantillas"], "CO": co["plantillas"]},
   "reasignados_dia": {"MX": mx["reasignados_dia"], "CO": co["reasignados_dia"]},
   # citas y cierres por rango, indexados pais -> rango

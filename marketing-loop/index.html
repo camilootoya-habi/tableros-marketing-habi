@@ -363,6 +363,21 @@
   .presets{display:flex;gap:6px;flex-wrap:wrap}
   #envioMsg{margin-top:18px}
   .simchk{display:flex;align-items:center;gap:7px;font-size:12.5px;color:var(--text-muted);cursor:pointer}
+
+  /* Chips de nodo del pipeline (vista de ejecuciones) */
+  .nchip{display:inline-block;font-size:11.5px;font-weight:600;padding:3px 9px;border-radius:9999px;
+    white-space:nowrap;max-width:150px;overflow:hidden;text-overflow:ellipsis;vertical-align:middle;cursor:help}
+  .n-ok{background:var(--ok-wash);color:var(--ok)}
+  .n-error{background:var(--bad-wash);color:var(--bad)}
+  .n-guarda{background:var(--barbg);color:var(--text-muted)}
+  .n-espera{background:transparent;color:var(--text-muted);border:1px dashed var(--border-strong);font-weight:500}
+  .n-info{background:var(--accent-wash);color:var(--accent)}
+  .n-fin{background:var(--barbg);color:var(--text);border:1px solid var(--border-strong)}
+  .pulso{display:flex;gap:18px;align-items:center;flex-wrap:wrap;font-size:13px;color:var(--text-muted);
+    background:var(--barbg);border-radius:8px;padding:10px 14px;margin-bottom:16px}
+  .pulso b{color:var(--text-title);font-variant-numeric:tabular-nums}
+  .pulso .malo b{color:var(--bad)}
+  .ftab td .nchip{margin:0}
 </style>
 </head>
 <body>
@@ -1009,6 +1024,133 @@ function guardarToken(ev){
   return false;
 }
 
+// ===== VENTANAS · vista B: ejecuciones por lead (estilo n8n) =====
+let ventVista='funnel', ventRango='7', ventSoloErr=false, ventCierre='';
+const NODOS=['Webhook','Receptor','Plantilla','Respondió','Consintió','Entrevista','Deal'];
+const GUARDA=new Set(['DEDUP','TERMINAL','CAP_DIARIO','PROGRAMA_AJENO']);
+const ERROR_RX=new Set(['SEND_FAIL','SIN_DIRECCION','NO_TEMPLATE','TEMPLATE_NO_VENTANAS','BAD_PHONE']);
+const SALIDA={CLOSE_OPT_OUT:'baja / ya vendió', CLOSE_YA_CON_HABI:'ya está con un asesor',
+              CLOSE_NO_CONSENT:'no autorizó sus datos'};
+function setVentVista(v){ ventVista=v; renderVentanasPanel(); }
+function setVentRango(r){ ventRango=r; renderVentanasPanel(); }
+function toggleSoloErr(){ ventSoloErr=!ventSoloErr; renderVentanasPanel(); }
+function setVentCierre(v){ ventCierre=v; renderVentanasPanel(); }
+
+// El estado de cada nodo. Nota deliberada: el nodo "Plantilla" se lee SIEMPRE de send_log y
+// nunca del `action` del webhook — las tandas de recuperación mandan por fuera del receptor,
+// así que derivarlo mostraría como "no enviado" a quien sí recibió el mensaje.
+function _nodos(r){
+  const n=[];
+  n.push(r.action==='RECUPERADO_26AGO'
+    ? {e:'info', t:'recuperado', d:'backfill del incidente del 26-ago'}
+    : {e:'ok', t:'llegó', d:'POST del workflow · '+(r.llegada||'')});
+  if(r.action==='SENT')                 n.push({e:'ok', t:'enviar', d:'el receptor decidió enviar'});
+  else if(r.action==='RECUPERADO_26AGO')n.push({e:'info', t:'fuera del receptor', d:'entró por la tanda de recuperación'});
+  else if(GUARDA.has(r.action))         n.push({e:'guarda', t:r.action, d:'guarda funcionando, no es falla'});
+  else if(ERROR_RX.has(r.action))       n.push({e:'error', t:r.action, d:'el receptor no pudo enviar'});
+  else                                  n.push({e:'espera', t:r.action||'—', d:''});
+  if(r.accepted===true)       n.push({e:'ok', t:(r.template||'').replace(/^ventanas_/,'')||'enviada', d:'Infobip aceptó · '+(r.envio_hora||'')});
+  else if(r.accepted===false) n.push({e:'error', t:'rechazada', d:'Infobip rechazó el envío'});
+  else                        n.push({e:'espera', t:'sin envío', d:'no hay fila en send_log'});
+  n.push(r.respuesta_hora ? {e:'ok', t:r.respuesta_hora, d:'primera respuesta'}
+                          : {e:'espera', t:'sin respuesta', d:'todavía no escribe — no es error'});
+  if(r.consent===true)                    n.push({e:'ok', t:'consintió', d:'autorizó el tratamiento de datos'});
+  else if(r.cierre==='CLOSE_NO_CONSENT')  n.push({e:'guarda', t:'no autorizó', d:'Ley 1581: sin permiso no se crea lead'});
+  else if(r.step==='consent')             n.push({e:'espera', t:'preguntado', d:'esperando la autorización'});
+  else                                    n.push({e:'espera', t:'—', d:''});
+  if(r.completada)      n.push({e:'ok', t:'completa', d:'entrevista terminada'});
+  else if(r.step && r.step!=='consent') n.push({e:'espera', t:'paso '+r.step, d:'entrevista en curso'});
+  else                  n.push({e:'espera', t:'—', d:''});
+  if(r.deal_id)                    n.push({e:'ok', t:'#'+r.deal_id, d:'negocio creado en backbone'});
+  else if(r.cierre==='BACKBONE')   n.push({e:'ok', t:'creado', d:'el agente lo creó'});
+  else if(r.lead_disparado)        n.push({e:'ok', t:'disparado', d:'lead enviado al backbone'});
+  else if(r.cierre==='BACKBONE_FAILED') n.push({e:'error', t:'falló', d:'prometió asesor y el deal no se creó'});
+  else if(SALIDA[r.cierre])        n.push({e:'fin', t:SALIDA[r.cierre], d:'salida lateral, no es error'});
+  else                             n.push({e:'espera', t:'—', d:''});
+  return n;
+}
+function _dentroRango(r){
+  if(!r.recibido) return true;
+  const d=new Date(r.recibido.replace(' ','T'));
+  const ms=Date.now()-d.getTime();
+  return ventRango==='hoy' ? (new Date().toDateString()===d.toDateString())
+       : ms <= (+ventRango)*86400000;
+}
+let ventEjec=null, ventEjecCargando=false;
+async function cargarEjecuciones(){
+  let tok=''; try{ tok=localStorage.getItem('ml-inbox-token')||''; }catch(e){}
+  if(!tok) return 'sin-token';
+  ventEjecCargando=true;
+  try{
+    const r=await fetch(API_BASE+'/api/ventanas/ejecuciones?dias=30&token='+encodeURIComponent(tok));
+    const d=await r.json();
+    ventEjec = d.ejecuciones||[];
+    return 'ok';
+  }catch(e){ return 'error'; }
+  finally{ ventEjecCargando=false; }
+}
+function renderEjecuciones(){
+  if(ventEjec===null){
+    if(!ventEjecCargando) cargarEjecuciones().then(res=>{
+      if(res==='sin-token'){ pedirToken('panelVentanas', ()=>{ ventEjec=null; renderVentanasPanel(); }); return; }
+      renderVentanasPanel();
+    });
+    return `<section class="card-sec"><p class="note">Cargando ejecuciones…</p></section>`;
+  }
+  const E=ventEjec.filter(_dentroRango);
+  const conNodos=E.map(r=>({r, n:_nodos(r)}));
+  const filtrados=conNodos.filter(x=>{
+    if(ventSoloErr && !x.n.some(k=>k.e==='error')) return false;
+    if(ventCierre && (x.r.cierre||'')!==ventCierre) return false;
+    return true;
+  });
+  const hoy=E.filter(r=>{const d=new Date(r.recibido.replace(' ','T')); return new Date().toDateString()===d.toDateString();});
+  const errHoy=hoy.filter(r=>_nodos(r).some(k=>k.e==='error')).length;
+  const ult=E[0] ? Math.round((Date.now()-new Date(E[0].recibido.replace(' ','T')).getTime())/60000) : null;
+  const cierres=[...new Set(E.map(r=>r.cierre).filter(Boolean))];
+  const chip=(k,i)=>`<span class="nchip n-${k.e}" title="${escx(NODOS[i]+(k.d?' — '+k.d:''))}">${escx(k.t)}</span>`;
+  return `<section class="card-sec">
+    <div class="cardhead"><div>
+      <div class="tabletitle">Ejecuciones por lead</div>
+      <span class="sub">cada llegada al webhook es una fila; cada etapa, un nodo · pasa el cursor por un chip para ver qué significa</span></div>
+      <div class="seg">${['hoy','7','30'].map(r=>`<button type="button" class="winbtn sm${r===ventRango?' active':''}" onclick="setVentRango('${r}')">${r==='hoy'?'Hoy':r+' d'}</button>`).join('')}</div>
+    </div>
+    <div class="pulso">
+      <span><b>${ult===null?'—':(ult<60?ult+' min':Math.round(ult/60)+' h')}</b> desde la última llegada</span>
+      <span><b>${fmt(hoy.length)}</b> llegadas hoy</span>
+      <span class="${errHoy?'malo':''}"><b>${fmt(errHoy)}</b> con error hoy</span>
+      <span style="margin-left:auto;display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+        <label class="simchk"><input type="checkbox" ${ventSoloErr?'checked':''} onchange="toggleSoloErr()"> Solo errores</label>
+        <select class="sel" onchange="setVentCierre(this.value)">
+          <option value="">Todos los desenlaces</option>
+          ${cierres.map(c=>`<option value="${escx(c)}" ${c===ventCierre?'selected':''}>${escx(c)}</option>`).join('')}
+        </select></span>
+    </div>
+    <div class="tbl-wrap ftab"><table><thead><tr>
+      <th>Lead</th>${NODOS.map(x=>`<th>${x}</th>`).join('')}</tr></thead>
+      <tbody>${filtrados.length?filtrados.slice(0,200).map(({r,n})=>`<tr>
+        <td><b>${escx(r.nombre||'(sin nombre)')}</b><br>
+          <span class="muted">${escx(r.llegada||'')} · ${escx((r.phone||'').slice(-4).padStart(7,'·'))} · nid ${escx(r.nid||'—')}</span></td>
+        ${n.map((k,i)=>`<td>${chip(k,i)}</td>`).join('')}</tr>`).join('')
+        :'<tr><td colspan="8">Ninguna ejecución con esos filtros.</td></tr>'}</tbody></table></div>
+    <p class="note">${fmt(filtrados.length)} de ${fmt(E.length)} ejecuciones en el rango${filtrados.length>200?' (se listan las 200 más recientes)':''}.
+    Estas filas <b>no salen del tablero</b> sino de la API del agente, con tu token: traen nombre y teléfono de personas reales y este sitio es público.
+    El nodo <b>Plantilla</b> se lee siempre de <code>send_log</code>, nunca del desenlace del receptor: las tandas de recuperación mandan por fuera del webhook y derivarlo mostraría como "no enviado" a quien sí recibió el mensaje.
+    ⏳ gris no es error: es una etapa que todavía no ocurrió.</p>
+  </section>`;
+}
+function renderSerieVentanas(){
+  const S=((D.ventanas||{}).serie||[]).slice(-14);
+  if(!S.length) return '';
+  return `<section class="card-sec">
+    <div class="tabletitle">Serie diaria</div><span class="sub">últimos 14 días · día calendario de Bogotá</span>
+    <div class="tbl-wrap ftab"><table><thead><tr><th>Día</th>${S.map(s=>`<th style="text-align:right">${escx(s.fecha.slice(5))}</th>`).join('')}</tr></thead>
+      <tbody>
+      ${[['Llegadas','llegadas','row-total'],['Enviadas','enviadas',''],['Respuestas','respuestas',''],['Deals','deals','row-loop']]
+        .map(([lab,k,cls])=>`<tr class="${cls}"><td>${lab}</td>${S.map(s=>`<td style="text-align:right">${fmt(s[k])}</td>`).join('')}</tr>`).join('')}
+      </tbody></table></div></section>`;
+}
+
 let rangoVent='7';
 const _RANGO_VENT={hoy:'Hoy','7':'Últimos 7 días','30':'Últimos 30 días'};
 function setRangoVent(r){ rangoVent=r; renderVentanasPanel(); }
@@ -1052,7 +1194,12 @@ function renderVentanasPanel(){
     TEMPLATE_NO_VENTANAS:'la plantilla no lleva el prefijo ventanas', PROGRAMA_AJENO:'el payload declaró otro programa',
     BAD_PHONE:'teléfono inválido'};
   const I=V.intake||{}, S=V.supresion||[];
-  el.innerHTML=`
+  const selVista=`<div class="seg" style="margin-bottom:20px">
+      <button type="button" class="winbtn${ventVista==='funnel'?' active':''}" onclick="setVentVista('funnel')">Funnel</button>
+      <button type="button" class="winbtn${ventVista==='ejec'?' active':''}" onclick="setVentVista('ejec')">Ejecuciones</button>
+    </div>`;
+  if(ventVista==='ejec'){ el.innerHTML=selVista+renderEjecuciones(); return; }
+  el.innerHTML=selVista+`
   <section class="card-sec">
     <div class="cardhead"><div>
       <div class="tabletitle">Embudo de Ventanas</div>
@@ -1088,6 +1235,8 @@ function renderVentanasPanel(){
       Reenganchadas: ${fmt(I.reenganchadas||0)}.</p>
     </section>
   </div>
+
+  ${renderSerieVentanas()}
 
   <section class="card-sec">
     <div class="tabletitle">A quién no se le escribe</div>
@@ -1880,6 +2029,12 @@ function applyTheme(t){const dark=t==='dark';document.body.classList.toggle('dar
   if(window.Chart && D){ renderPorHoraChart(); }}
 document.getElementById('themeBtn').onclick=()=>{const n=document.body.classList.contains('dark')?'light':'dark';try{localStorage.setItem('ml-theme',n);}catch(e){}applyTheme(n);};
 applyTheme((()=>{try{return localStorage.getItem('ml-theme')||'light';}catch(e){return 'light';}})());
+// Auto-refresco: el tablero se reconstruye cada 10 min (cron del repo), así que re-pedir
+// data.json cada 60s mantiene la vista de ejecuciones cerca de lo que está pasando.
+setInterval(async ()=>{
+  if(vista!=='dash' || canalSel!=='ventanas' || ventVista!=='ejec') return;
+  if(await cargarEjecuciones()==='ok') renderVentanasPanel();
+}, 60000);
 load();
 </script>
 </body>
