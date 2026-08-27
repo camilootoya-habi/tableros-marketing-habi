@@ -378,6 +378,17 @@
   .pulso b{color:var(--text-title);font-variant-numeric:tabular-nums}
   .pulso .malo b{color:var(--bad)}
   .ftab td .nchip{margin:0}
+
+  /* Franja de alertas de Ventanas */
+  .alerta{display:flex;gap:11px;align-items:flex-start;border-radius:10px;padding:12px 16px;
+    margin-bottom:10px;font-size:13.5px;line-height:1.5;border:1px solid}
+  .alerta .apunto{font-size:14px;line-height:1.4;flex:none}
+  .alerta.roja{background:var(--bad-wash);border-color:var(--bad);color:var(--bad)}
+  .alerta.ambar{background:#FFF7ED;border-color:#B45309;color:#B45309}
+  body.dark .alerta.ambar{background:#2A2114;border-color:#FBBF24;color:#FBBF24}
+  .alerta.ok{background:var(--ok-wash);border-color:var(--ok);color:var(--ok)}
+  .alerta b{color:inherit}
+  .alerta .muted{color:inherit;opacity:.78;font-weight:400}
 </style>
 </head>
 <body>
@@ -1029,6 +1040,46 @@ function guardarToken(ev){
   return false;
 }
 
+// ===== VENTANAS · franja de alertas =====
+// Se piden a la API (no a data.json) porque el tablero se reconstruye cada 10 minutos y una
+// alerta que llega con ese retraso no sirve para reaccionar. Se refrescan cada 60s.
+let ventAlertas=null, ventAlertasCargando=false;
+function _hace(iso){
+  if(!iso) return 'nunca';
+  const m=Math.round((Date.now()-new Date(iso).getTime())/60000);
+  if(m<1) return 'recién'; if(m<60) return 'hace '+m+' min';
+  const h=Math.round(m/60); return h<48 ? 'hace '+h+' h' : 'hace '+Math.round(h/24)+' días';
+}
+async function cargarAlertas(){
+  let tok=''; try{ tok=localStorage.getItem('ml-inbox-token')||''; }catch(e){}
+  if(!tok) return 'sin-token';
+  ventAlertasCargando=true;
+  try{
+    const r=await fetch(API_BASE+'/api/ventanas/alertas?token='+encodeURIComponent(tok));
+    ventAlertas=(await r.json()).alertas||[];
+    return 'ok';
+  }catch(e){ return 'error'; } finally{ ventAlertasCargando=false; }
+}
+function renderAlertas(){
+  if(ventAlertas===null){
+    if(!ventAlertasCargando) cargarAlertas().then(res=>{ if(res==='ok') renderVentanasPanel(); });
+    return '';
+  }
+  const act=ventAlertas.filter(a=>a.activa);
+  if(!act.length){
+    // Decirlo explícito importa: un panel que solo habla cuando algo falla no distingue
+    // "todo bien" de "no llegué a medir".
+    return `<div class="alerta ok"><span class="apunto">✓</span>
+      <div><b>Sin alertas.</b> Las 6 condiciones evaluadas en las últimas 24h (silencio, 48h) están en cero.</div></div>`;
+  }
+  return act.map(a=>`<div class="alerta ${a.nivel==='rojo'?'roja':'ambar'}">
+      <span class="apunto">${a.nivel==='rojo'?'▲':'●'}</span>
+      <div><b>${escx(a.titulo)}</b>${a.id!=='silencio'?` · <b>${fmt(a.n)}</b> en 24h`:''}
+        <span class="muted">· último evento ${_hace(a.ultimo)}</span>
+        <div class="muted" style="margin-top:2px">${escx(a.detalle)}</div></div>
+    </div>`).join('');
+}
+
 // ===== VENTANAS · vista B: ejecuciones por lead (estilo n8n) =====
 let ventVista='funnel', ventRango='7', ventSoloErr=false, ventCierre='';
 const NODOS=['Webhook','Receptor','Plantilla','Respondió','Consintió','Entrevista','Deal'];
@@ -1203,8 +1254,9 @@ function renderVentanasPanel(){
       <button type="button" class="winbtn${ventVista==='funnel'?' active':''}" onclick="setVentVista('funnel')">Funnel</button>
       <button type="button" class="winbtn${ventVista==='ejec'?' active':''}" onclick="setVentVista('ejec')">Ejecuciones</button>
     </div>`;
-  if(ventVista==='ejec'){ el.innerHTML=selVista+renderEjecuciones(); return; }
-  el.innerHTML=selVista+`
+  const franja=renderAlertas();
+  if(ventVista==='ejec'){ el.innerHTML=franja+selVista+renderEjecuciones(); return; }
+  el.innerHTML=franja+selVista+`
   <section class="card-sec">
     <div class="cardhead"><div>
       <div class="tabletitle">Embudo de Ventanas</div>
@@ -2034,8 +2086,10 @@ applyTheme((()=>{try{return localStorage.getItem('ml-theme')||'light';}catch(e){
 // Auto-refresco: el tablero se reconstruye cada 10 min (cron del repo), así que re-pedir
 // data.json cada 60s mantiene la vista de ejecuciones cerca de lo que está pasando.
 setInterval(async ()=>{
-  if(vista!=='dash' || canalSel!=='ventanas' || ventVista!=='ejec') return;
-  if(await cargarEjecuciones()==='ok') renderVentanasPanel();
+  if(vista!=='dash' || canalSel!=='ventanas') return;
+  const a=await cargarAlertas();
+  if(ventVista==='ejec') await cargarEjecuciones();
+  if(a==='ok') renderVentanasPanel();
 }, 60000);
 load();
 </script>
