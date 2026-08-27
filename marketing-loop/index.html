@@ -677,6 +677,7 @@ function go(sheet, c){
   // diferencia de las pestañas viejas que multiplicaban vista × país en ocho botones.
   document.querySelectorAll('.navit[data-nav]').forEach(b=>b.classList.toggle('active', b.dataset.nav===sheet));
   document.querySelectorAll('#paisSeg [data-pais]').forEach(b=>b.classList.toggle('active', b.dataset.pais===paisSel));
+  document.querySelectorAll('#canalSeg [data-canal]').forEach(b=>b.classList.toggle('active', b.dataset.canal===canalSel));
   window.scrollTo(0,0);
 }
 function setExp(c){ expC=c; const t=document.getElementById('expTitle'); if(t) t.textContent='Explorador de la base · '+c; renderExplorer(); }
@@ -857,7 +858,10 @@ function renderInbox(){
     +'&country='+encodeURIComponent(country);
   const url=INBOX_BASE+'?token='+encodeURIComponent(tok)+filtro;
   const fc=document.getElementById('inboxFiltro');
-  if(fc) fc.textContent=_PAIS_LBL[country]+' · '+_CANAL_LBL[canalSel];
+  if(fc){ fc.textContent=_PAIS_LBL[country]+' · '+_CANAL_LBL[canalSel];
+    // Ventanas solo existe en CO: con MX el inbox saldría vacío y parecería roto.
+    if(canalSel==='ventanas' && country!=='CO') fc.textContent += ' — ventanas solo opera en Colombia';
+  }
   gate.innerHTML=`<p class="note"><a href="${url}" target="_blank" rel="noopener">Abrir en pestaña nueva ↗</a> · <a href="#" onclick="clearInboxToken();return false">Olvidar el token de este navegador</a></p>`;
   frame.innerHTML=`<iframe src="${url}" title="Inbox del agente SDR" style="width:100%;height:78vh;border:1px solid rgba(128,128,128,.35);border-radius:10px;background:#fff"></iframe>`;
 }
@@ -1482,11 +1486,8 @@ function selectCountry(c){ country=c;
   // La temporalidad es del loop (cosecha, errores). La vista de ventanas tiene su propio
   // selector de rango, así que mostrar los dos confunde sobre cuál manda.
   if(gs) gs.hidden = esVent;
-  if(esVent){ renderVentanasPanel();
-    document.querySelectorAll('#canalSeg [data-canal]').forEach(b=>b.classList.toggle('active', b.dataset.canal===canalSel));
-    return; }
+  if(esVent){ renderVentanasPanel(); return; }
   renderEmbudo(); renderSerie(); renderAgentePanel(); renderErrores(); renderInventario(); renderPorHoraChart();
-  document.querySelectorAll('#canalSeg [data-canal]').forEach(b=>b.classList.toggle('active', b.dataset.canal===canalSel));
   document.querySelectorAll('#granSeg [data-gran]').forEach(b=>b.classList.toggle('active', b.dataset.gran===cicloTipo)); }
 // Celdas "valor + %" con heatmap por fila (verde=conversión alta, rojo=baja), copiado del tablero de referencia.
 function heatCells(values, denoms){
