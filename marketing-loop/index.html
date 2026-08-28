@@ -1040,6 +1040,77 @@ function guardarToken(ev){
   return false;
 }
 
+// ===== VENTANAS · conversaciones por sub-flujo =====
+// El sub-flujo NO es una columna: se deriva por teléfono en el backend con una precedencia
+// fija (compra_wa gana sobre el camino llamada; SV: es pool frío). Acá solo se pinta.
+const SUBF=[['todo','Agregado'],['ventanas','Ventanas'],['ventanas_direct','Ventanas Direct'],['web','Web']];
+const SUBF_LBL={ventanas:'Ventanas', ventanas_direct:'Direct', web:'Web'};
+const SUBF_PIE={
+  ventanas:'camino llamada · llegó por HubSpot ("NO CONTACTABLE 3" / "Contactar por WhatsApp")',
+  ventanas_direct:'camino nuevo compra_wa · primer contacto por WhatsApp',
+  web:'pool frío del CSV ingestado'};
+let subflujoSel='todo', ventConv=null, ventConvCargando=false;
+function setSubflujo(s){ subflujoSel=s; renderVentanasPanel(); }
+async function cargarConversaciones(){
+  let tok=''; try{ tok=localStorage.getItem('ml-inbox-token')||''; }catch(e){}
+  if(!tok) return 'sin-token';
+  ventConvCargando=true;
+  try{
+    const r=await fetch(API_BASE+'/api/ventanas/conversaciones?dias=30&token='+encodeURIComponent(tok));
+    ventConv=(await r.json()).conversaciones||[];
+    return 'ok';
+  }catch(e){ return 'error'; } finally{ ventConvCargando=false; }
+}
+function renderConversaciones(){
+  if(ventConv===null){
+    if(!ventConvCargando) cargarConversaciones().then(res=>{
+      if(res==='sin-token'){ return; }
+      renderVentanasPanel();
+    });
+    return `<section class="card-sec"><div class="tabletitle">Conversaciones</div>
+      <p class="note">Cargando…</p></section>`;
+  }
+  const todas=ventConv;
+  const cuenta=s=> s==='todo' ? todas.length : todas.filter(h=>h.subflujo===s).length;
+  const lista=(subflujoSel==='todo'?todas:todas.filter(h=>h.subflujo===subflujoSel));
+  const respondieron=lista.filter(h=>h.respondio).length;
+  const tabs=SUBF.map(([k,lab])=>`<button type="button" class="winbtn sm${k===subflujoSel?' active':''}"
+      onclick="setSubflujo('${k}')">${lab} <span class="muted">${cuenta(k)}</span></button>`).join('');
+  const desglose = subflujoSel==='todo'
+    ? `<span class="muted"> · ${cuenta('ventanas')} ventanas / ${cuenta('ventanas_direct')} direct / ${cuenta('web')} web</span>` : '';
+  let cuerpo;
+  if(!lista.length){
+    // La pestaña Web vacía es CORRECTA hoy: el pool frío del CSV todavía no ha enviado nada.
+    // Ocultarla haría creer que ese camino no existe, y existe: solo no ha arrancado.
+    cuerpo = subflujoSel==='web'
+      ? `<p class="note">Sin conversaciones todavía. El pool frío del CSV aún no ha enviado
+         (<code>ventanas_contact</code> está sin envíos), así que esta pestaña vacía es el estado correcto,
+         no un error.</p>`
+      : `<p class="note">Sin conversaciones en este sub-flujo.</p>`;
+  } else {
+    cuerpo = `<div class="tbl-wrap ftab"><table><thead><tr>
+        <th>Conversación</th><th>Sub-flujo</th><th style="text-align:right">Turnos</th>
+        <th>Última</th><th>Desenlace</th></tr></thead><tbody>
+      ${lista.map(h=>`<tr>
+        <td><b>${escx(h.nombre||'(sin nombre)')}</b>
+          <div class="muted" style="font-size:12px">···${escx((h.phone||'').slice(-4))} · ${escx(h.ultimo_texto||'')}</div></td>
+        <td><span class="nchip ${h.subflujo==='ventanas_direct'?'n-info':(h.subflujo==='web'?'n-guarda':'n-ok')}"
+             title="${escx(SUBF_PIE[h.subflujo]||'')}">${escx(SUBF_LBL[h.subflujo]||h.subflujo)}</span></td>
+        <td style="text-align:right">${fmt(h.turnos)}</td>
+        <td>${escx(h.ultima||'—')}</td>
+        <td>${h.desenlace?`<span class="nchip ${h.desenlace==='BACKBONE'?'n-ok':(h.desenlace==='BACKBONE_FAILED'?'n-error':'n-guarda')}">${escx(h.desenlace)}</span>`:'<span class="muted">—</span>'}</td>
+      </tr>`).join('')}</tbody></table></div>`;
+  }
+  return `<section class="card-sec">
+    <div class="cardhead"><div>
+      <div class="tabletitle">Conversaciones</div>
+      <span class="sub"><b>${fmt(lista.length)}</b> conversaciones · <b>${fmt(respondieron)}</b> respondieron${desglose}</span>
+    </div><div class="seg">${tabs}</div></div>
+    ${cuerpo}
+    <p class="note">El sub-flujo se deriva por teléfono, no es una columna: gana <b>Direct</b> si alguna llegada del teléfono fue <code>compra_wa</code> o si su último envío fue la plantilla de compra; si no, <b>Ventanas</b> cuando vino por HubSpot y <b>Web</b> cuando el envío trae procedencia <code>SV:</code> del pool frío. Los <code>RE:</code> son re-enganches y heredan el sub-flujo del teléfono, no lo definen.</p>
+  </section>`;
+}
+
 // ===== VENTANAS · franja de alertas =====
 // Se piden a la API (no a data.json) porque el tablero se reconstruye cada 10 minutos y una
 // alerta que llega con ese retraso no sirve para reaccionar. Se refrescan cada 60s.
@@ -1255,7 +1326,7 @@ function renderVentanasPanel(){
       <button type="button" class="winbtn${ventVista==='ejec'?' active':''}" onclick="setVentVista('ejec')">Ejecuciones</button>
     </div>`;
   const franja=renderAlertas();
-  if(ventVista==='ejec'){ el.innerHTML=franja+selVista+renderEjecuciones(); return; }
+  if(ventVista==='ejec'){ el.innerHTML=franja+selVista+renderEjecuciones()+renderConversaciones(); return; }
   el.innerHTML=franja+selVista+`
   <section class="card-sec">
     <div class="cardhead"><div>
@@ -1294,6 +1365,8 @@ function renderVentanasPanel(){
   </div>
 
   ${renderSerieVentanas()}
+
+  ${renderConversaciones()}
 
   <section class="card-sec">
     <div class="tabletitle">A quién no se le escribe</div>
@@ -2088,6 +2161,7 @@ applyTheme((()=>{try{return localStorage.getItem('ml-theme')||'light';}catch(e){
 setInterval(async ()=>{
   if(vista!=='dash' || canalSel!=='ventanas') return;
   const a=await cargarAlertas();
+  await cargarConversaciones();
   if(ventVista==='ejec') await cargarEjecuciones();
   if(a==='ok') renderVentanasPanel();
 }, 60000);
