@@ -573,6 +573,7 @@
     <p class="note" style="max-width:80ch">Conversaciones reales de WhatsApp entre los sellers y el agente SDR, en vivo desde
       <code>agente-sdr-ten.vercel.app</code>. Este tablero es un sitio <b>público</b>, así que el token de acceso
       <b>no vive en el código</b>: se pide una vez y queda guardado solo en este navegador.</p>
+    <div id="inboxSub"></div>
     <div id="inboxGate"></div>
     <div id="inboxFrame"></div>
   </div>
@@ -831,6 +832,8 @@ const EXPMETA={
   "09.descarte_MM":["Descarte MM","excluye duras (mantiene 'Ya no quiere vender')"],
   "10.descarte_Inmo":["Descarte Inmo","excluye duras (mantiene 'Ya no quiere vender')"],
 };
+let subflujoInbox='todo';
+function setSubflujoInbox(s){ subflujoInbox=s; renderInbox(); }
 const INBOX_BASE='https://agente-sdr-ten.vercel.app/inbox';
 const VENTANAS_BASE='https://agente-sdr-ten.vercel.app/ventanas';
 // Ventanas usa el MISMO token que el inbox (los dos los sirve el agente y validan INBOX_TOKEN),
@@ -867,7 +870,14 @@ function renderInbox(){
   // El inbox hereda los selectores del tablero: si estás mirando Ventanas en CO, las
   // conversaciones que se abren son las de esa campaña y ese país, no todas.
   const filtro=(canalSel==='ventanas'?'&campaign=ventanas':(canalSel==='web'?'&campaign=reactivacion':''))
-    +'&country='+encodeURIComponent(country);
+    +'&country='+encodeURIComponent(country)
+    +(canalSel==='ventanas' && subflujoInbox!=='todo' ? '&subflujo='+encodeURIComponent(subflujoInbox) : '');
+  // Las pestañas de sub-flujo solo tienen sentido dentro de ventanas: en reactivación no hay
+  // caminos que separar, y mostrarlas ahí sería ofrecer un filtro que no filtra nada.
+  const sb=document.getElementById('inboxSub');
+  if(sb) sb.innerHTML = canalSel!=='ventanas' ? '' :
+    '<div class="seg" style="margin:12px 0">'+SUBF.map(([k,lab])=>
+      `<button type="button" class="winbtn sm${k===subflujoInbox?' active':''}" onclick="setSubflujoInbox('${k}')">${lab}</button>`).join('')+'</div>';
   const url=INBOX_BASE+'?token='+encodeURIComponent(tok)+filtro;
   const fc=document.getElementById('inboxFiltro');
   if(fc){ fc.textContent=_PAIS_LBL[country]+' · '+_CANAL_LBL[canalSel];
