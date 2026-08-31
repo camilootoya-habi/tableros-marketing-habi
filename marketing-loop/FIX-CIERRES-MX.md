@@ -1,9 +1,30 @@
 # Encargo: falta la línea inmobiliaria de MÉXICO en los cierres
 
-**Estado:** pendiente. El fix de `1f619b03` (2026-08-21) corrigió la línea inmobiliaria de
+**Estado: ✅ HECHO** (código en `a617d38b` el 2026-08-21; verificado y cerrado el 2026-08-31).
+El COALESCE de las dos fechas quedó aplicado en `query_kpis.sql`, `query_comparativa.sql`,
+`query_funnel.sql` (y `query_panel.sql`), y el tablero reproduce la definición canónica.
+
+**Verificación del 2026-08-31** (query canónica de abajo, corrida contra
+`sellers-main-prod.hubspot.deals`, y la misma cifra ±0 en la query del tablero y en `data.json`):
+
+| País | Compra directa | Inmobiliaria | Total |
+|---|---|---|---|
+| CO | 11 | 35 | **46** |
+| MX | 13 | 35 | **48** |
+| **Total** | **24** | **70** | **94** |
+
+⚠️ Al reportar hacia afuera, decir la composición: los 94 son **24 compras cerradas + 70
+mandatos de captación inmobiliaria firmados** (no ventas). Tratarlos igual en cálculos de
+ahorro o costo por cierre sobrevende — ver advertencia 1 al final.
+
+---
+
+Lo que sigue es el encargo original, conservado como contexto.
+
+**Estado (histórico):** pendiente. El fix de `1f619b03` (2026-08-21) corrigió la línea inmobiliaria de
 **Colombia** y dejó la de **México** afuera, porque cada país la guarda en campos distintos.
 
-**Impacto:** el tablero reporta 10 cierres de MX cuando son **41**. Faltan 31.
+**Impacto:** el tablero reportaba 10 cierres de MX cuando eran **41** (al corte 2026-08-21). Faltaban 31.
 
 ## Dónde mirar en México
 
