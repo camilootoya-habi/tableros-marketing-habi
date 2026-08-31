@@ -88,6 +88,10 @@
   .panel .cap { font-size: 11px; color: var(--text-muted-3); margin-bottom: 8px; }
   .ch { position: relative; height: 200px; }
   .ch.alto { height: 270px; }
+  /* Variante de 3 gráficas: rejilla FIJA de 3 para que las tres variables del indicador queden
+     alineadas columna a columna entre filas. Con auto-fit una fila podría acomodar 2 y otra 3. */
+  .tres-vars { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+  @media (max-width: 1000px) { .tres-vars { grid-template-columns: 1fr; } }
   .legend { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 8px; }
   .legend span { font-size: 11px; color: var(--text-muted-2); display: inline-flex; align-items: center; gap: 5px; }
   .legend i { width: 10px; height: 10px; border-radius: 2px; display: inline-block; }
@@ -154,7 +158,9 @@ function mkMulti(id, labels, datasets, o = {}) {
   const usaDerecha = datasets.some(d => d.eje === 'y1');
   const scales = {
     x: { ticks: { color: tick, maxTicksLimit: 8 }, grid: { display: false } },
-    y: { beginAtZero: izq !== 'pts', stacked: false,
+    // `o.max` fuerza el techo del eje. Se usa para que dos paneles hermanos compartan escala:
+    // sin eso cada uno autoescala y dos series de niveles distintos se ven del mismo tamaño.
+    y: { beginAtZero: izq !== 'pts', stacked: false, max: o.max,
          ticks: { color: tick, callback: FMT_EJE[izq] }, grid: { color: grid } },
   };
   if (usaDerecha) {
@@ -240,7 +246,7 @@ const meses = s => [...new Set(s.map(r => r.month))].sort();
 const legend = items => `<div class="legend">${items.map(([c, t]) =>
   `<span><i style="background:${c}"></i>${t}</span>`).join('')}</div>`;
 
-let DATA = null, PAIS = 'MX', PLAZA = 'Todas';
+let DATA = null, PAIS = 'MX', PLAZA = 'Todas', VISTA_BL = '1 gráfica';
 
 // ── El corazón del tablero: cada métrica se dibuja según su `status`, no según si su
 // serie viene vacía. Un `not_available` explica qué fuente falta; jamás pinta un chart
@@ -296,43 +302,80 @@ function drawBrandLift(host, serie) {
     ? ` · <strong>${[...parciales].join(', ')} en curso</strong>, el estudio no ha cerrado`
     : '';
 
-  // Una FILA por indicador, UNA sola gráfica a lo ancho. Las columnas de expuestos y no
-  // expuestos ya llevan el lift en la línea del eje derecho, así que un panel aparte solo con
-  // el lift repetía el mismo dato en otra forma. El encabezado se queda con lo que ese panel
-  // aportaba de verdad: el lift del último mes y el máximo histórico.
+  // Una FILA por indicador. Dos formas de dibujarla, para poder decidir con la vista cuál se
+  // queda:
+  //   "1 gráfica"  — columnas de expuestos y no expuestos + el lift en la línea del eje derecho.
+  //                  Todo junto: la comparación se lee de un golpe, a costa de un eje doble.
+  //   "3 gráficas" — una variable por gráfica. Cada serie respira, pero comparar expuesto contra
+  //                  no expuesto pasa a ser un salto de ojo entre dos paneles.
+  // ⚠ En la variante de 3, los dos paneles de tasas COMPARTEN escala a la fuerza. Si cada uno
+  // autoescalara, dos series con niveles muy distintos se verían del mismo tamaño y el lector
+  // concluiría que no hay diferencia — justo lo contrario del dato.
+  const tresVars = VISTA_BL === '3 gráficas';
+
   host.innerHTML = preguntas.map((q, i) => {
     const s = serie.filter(r => r.question === q);
     const ult = s[s.length - 1] || {};
     const lift = 100 * (ult.lift || 0);
     const pico = s.reduce((a, b) => (b.lift ?? -9) > (a.lift ?? -9) ? b : a, s[0] || {});
-    const esPrimeraSinId = q === 'sin_identificar_alta';
-    return `${esPrimeraSinId ? `<div class="nota-hueco">${NOTA_SIN_ID}</div>` : ''}
-      <div class="fila${q.startsWith('sin_identificar') ? ' dudosa' : ''}">
-      <div class="fila-h">
+    const cabeza = `<div class="fila-h">
         <span class="n">${q.startsWith('sin_identificar') ? '?' : i + 1}</span>
         <h4>${NOMBRE_PREGUNTA[q] || q}</h4>
         <span class="q">${(PREGUNTA_TEXTO[PAIS] || {})[q] || ''}</span>
         ${AVISO_PREGUNTA[q] ? `<span class="aviso">⚠ ${AVISO_PREGUNTA[q]}</span>` : ''}
-      </div>
-      <div class="panel">
-        <div class="cap"><strong>${ult.month || '—'}</strong>:
+      </div>`;
+    const resumen = `<strong>${ult.month || '—'}</strong>:
           ${(100 * (ult.exposed || 0)).toFixed(1)}% con exposición vs
           ${(100 * (ult.control || 0)).toFixed(1)}% sin exposición →
           <strong>${lift >= 0 ? '+' : ''}${lift.toFixed(1)} pts de lift</strong>
-          · máximo ${(100 * (pico.lift || 0)).toFixed(1)} pts en ${pico.month || '—'}${notaParcial}</div>
+          · máximo ${(100 * (pico.lift || 0)).toFixed(1)} pts en ${pico.month || '—'}${notaParcial}`;
+
+    const cuerpo = tresVars ? `<div class="tres-vars">
+        <div class="panel"><h3>No expuestos</h3>
+          <div class="cap">Grupo de control: misma audiencia, sin ver los anuncios. Escala compartida con el panel de al lado.</div>
+          <div class="ch"><canvas id="bl-c-${i}"></canvas></div>${legend([[C.gris, 'No expuestos']])}</div>
+        <div class="panel"><h3>Expuestos</h3>
+          <div class="cap">Quienes sí vieron la pauta. Escala compartida con el panel anterior.</div>
+          <div class="ch"><canvas id="bl-e-${i}"></canvas></div>${legend([[C.azul, 'Expuestos']])}</div>
+        <div class="panel"><h3>Lift</h3>
+          <div class="cap">La diferencia neta entre los dos: lo que la pauta causó, en puntos.</div>
+          <div class="ch"><canvas id="bl-l-${i}"></canvas></div>${legend([[C.ambar, 'Lift en puntos']])}</div>
+      </div>`
+      : `<div class="panel">
+        <div class="cap">${resumen}</div>
         <div class="ch alto"><canvas id="bl-d-${i}"></canvas></div>
-        ${legend([[C.gris, 'No expuestos'], [C.azul, 'Expuestos'], [C.ambar, 'Lift (eje derecho)']])}</div>
+        ${legend([[C.gris, 'No expuestos'], [C.azul, 'Expuestos'], [C.ambar, 'Lift (eje derecho)']])}</div>`;
+
+    return `<div class="fila${q.startsWith('sin_identificar') ? ' dudosa' : ''}">
+      ${cabeza}
+      ${tresVars ? `<p class="hint" style="margin:-2px 0 8px">${resumen}</p>` : ''}
+      ${cuerpo}
     </div>`;
   }).join('');
 
   preguntas.forEach((q, i) => {
     const s = serie.filter(r => r.question === q);
+    const col = k => L.map(m => dato(s, m, k));
+    if (tresVars) {
+      // Techo común a las dos tasas: la escala no puede depender de qué panel se mira.
+      const tope = Math.max(...[...col('exposed'), ...col('control')].filter(v => v != null), 0);
+      mkMulti(`bl-c-${i}`, L, [
+        { type: 'bar', label: 'No expuestos', color: conParcial(C.gris + '88', '33'), data: col('control') },
+      ], { fmt: 'pct', max: tope });
+      mkMulti(`bl-e-${i}`, L, [
+        { type: 'bar', label: 'Expuestos', color: conParcial(C.azul), data: col('exposed') },
+      ], { fmt: 'pct', max: tope });
+      mkMulti(`bl-l-${i}`, L, [
+        { type: 'bar', label: 'Lift', color: conParcial(C.ambar), data: col('lift') },
+      ], { fmt: 'pts' });
+      return;
+    }
     // Doble eje: el lift son unos pocos puntos y quedaría pegado al suelo si compartiera
     // escala con tasas de 15-35%.
     mkMulti(`bl-d-${i}`, L, [
-      { type: 'bar', label: 'No expuestos', color: conParcial(C.gris + '88', '33'), data: L.map(m => dato(s, m, 'control')) },
-      { type: 'bar', label: 'Expuestos', color: conParcial(C.azul), data: L.map(m => dato(s, m, 'exposed')) },
-      { type: 'line', label: 'Lift', color: C.ambar, eje: 'y1', data: L.map(m => dato(s, m, 'lift')) },
+      { type: 'bar', label: 'No expuestos', color: conParcial(C.gris + '88', '33'), data: col('control') },
+      { type: 'bar', label: 'Expuestos', color: conParcial(C.azul), data: col('exposed') },
+      { type: 'line', label: 'Lift', color: C.ambar, eje: 'y1', data: col('lift') },
     ], { fmt: 'pct', fmtDerecha: 'pts' });
   });
 }
@@ -441,7 +484,8 @@ function render() {
   document.getElementById('paisTitulo').textContent = PAIS === 'MX' ? 'México' : 'Colombia';
   document.getElementById('filtros').innerHTML =
     chips('País', ['MX', 'CO'], PAIS, 'pais') +
-    chips('Plaza · aplica a tráfico y exit poll', ['Todas', 'MTY', 'GDL', 'CDMX', 'Resto'], PLAZA, 'plaza');
+    chips('Plaza · aplica a tráfico y exit poll', ['Todas', 'MTY', 'GDL', 'CDMX', 'Resto'], PLAZA, 'plaza') +
+    chips('Vista · Brand Lift', ['1 gráfica', '3 gráficas'], VISTA_BL, 'vista');
 
   destroyCharts();
   const app = document.getElementById('app');
@@ -472,18 +516,22 @@ window.rerender = render;
 // La vista queda en la URL: así se puede mandar "el tablero de Colombia" por Slack en vez de
 // "abre el tablero y dale click a CO".
 function syncURL() {
-  const q = new URLSearchParams({ pais: PAIS, plaza: PLAZA });
+  const q = new URLSearchParams({ pais: PAIS, plaza: PLAZA,
+                                 vista: VISTA_BL === '3 gráficas' ? '3' : '1' });
   history.replaceState(null, '', `?${q}`);
 }
 function readURL() {
   const q = new URLSearchParams(location.search);
   if (['MX', 'CO'].includes(q.get('pais'))) PAIS = q.get('pais');
   if (['Todas', 'MTY', 'GDL', 'CDMX', 'Resto'].includes(q.get('plaza'))) PLAZA = q.get('plaza');
+  if (['1', '3'].includes(q.get('vista'))) VISTA_BL = q.get('vista') === '3' ? '3 gráficas' : '1 gráfica';
 }
 
 document.addEventListener('click', e => {
   const b = e.target.closest('.chip'); if (!b) return;
-  if (b.dataset.pick === 'pais') PAIS = b.dataset.val; else PLAZA = b.dataset.val;
+  if (b.dataset.pick === 'pais') PAIS = b.dataset.val;
+  else if (b.dataset.pick === 'vista') VISTA_BL = b.dataset.val;
+  else PLAZA = b.dataset.val;
   syncURL();
   render();
 });
