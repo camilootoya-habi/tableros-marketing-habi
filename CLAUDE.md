@@ -10,6 +10,20 @@ Live: https://camilootoya-habi.github.io/tableros-marketing-habi/
 3. No toques los pipelines a-medida del cron en `.github/workflows/update-data.yml` salvo que sepas exactamente lo que haces.
 4. **El cierre son SIEMPRE dos líneas de negocio, y NO son el mismo evento.** `oportunidad_del_negocio='Cierre - Comprado'` es compra directa (transacción cerrada); `oportunidad_inmobiliaria='Contrato firmado'` es una **captación** de la red de aliados (mandato firmado, no venta: de los 29 del loop, 0 tienen fecha de publicación o de venta). Hay que sumarlas —contar solo la primera reportaba 9 de 38 cierres en Colombia— pero al presentar el número afuera hay que decir la composición. Antes de escribir o editar cualquier query de cierres, lee `marketing-loop/METRICAS.md`.
 
+## marketing-loop/ — frontera con el repo marketing-loop-sellers (31-ago)
+
+- `marketing-loop/data.json` y `audit.json` los escribe SOLO el ciclo diario del LOOP
+  (`run_daily.sh` del repo marketing-loop-sellers, 9:30am) y el workflow de respaldo de
+  este repo. No se editan a mano ni desde otras sesiones.
+- `marketing-loop/index.html` consume la API del Vercel de marketing-loop-sellers
+  (`/api/ventanas/*`, `/api/envio*`, `/api/plantillas/prueba`, iframes `/inbox` y
+  `/ventanas`). Los campos que lee son un CONTRATO versionado en
+  `tests/test_tablero_contract.py` de AQUEL repo: si necesitas un campo nuevo, el cambio
+  va en los dos repos y se avisa en ambos commits.
+- Antes de tocar números de cierres: `marketing-loop/METRICAS.md` (regla de oro 4).
+- Prompt de arranque para la sesión TABLERO: `docs/prompts-sesiones.md` del repo
+  marketing-loop-sellers.
+
 ## Estructura
 
 - `<slug>/` (en la raíz) = tableros **generales** de Camilo (dueño `general`).
