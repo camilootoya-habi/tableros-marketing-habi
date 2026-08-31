@@ -14,7 +14,7 @@
     --text-muted: #cbd5e1; --text-muted-2: #94a3b8; --text-muted-3: #64748b;
     --accent: #818cf8; --accent-on: #f8fafc;
     --warn-bg: #78350f; --warn-fg: #fde68a;
-    --banda: rgba(251, 191, 36, .13);
+    --banda-tv: rgba(251, 191, 36, .13); --banda-uber: rgba(52, 211, 153, .13);
   }
   body.light {
     --bg: #f5f7fa; --card: #ffffff; --card-hover: #f1f5f9;
@@ -23,10 +23,15 @@
     --text-muted: #475569; --text-muted-2: #64748b; --text-muted-3: #94a3b8;
     --accent: #6366f1; --accent-on: #ffffff;
     --warn-bg: #fef3c7; --warn-fg: #92400e;
-    --banda: rgba(217, 119, 6, .11);
+    --banda-tv: rgba(217, 119, 6, .11); --banda-uber: rgba(5, 150, 105, .12);
   }
 
   * { margin: 0; padding: 0; box-sizing: border-box; }
+  /* El desborde se arregla en la causa, no escondiéndolo: las rejillas usan `minmax(0, 1fr)` y
+     sus hijos `min-width: 0`. Una columna `1fr` no baja de su contenido mínimo, así que un título
+     largo o un canvas ensanchaban la columna y la rejilla se salía de la pantalla. Nada de
+     `overflow-x: hidden` acá: recortaría en silencio si algo volviera a desbordarse. */
+  html, body { max-width: 100%; }
   body { font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; background: var(--bg); color: var(--text); padding: 24px; transition: background .2s, color .2s; }
 
   .back-link { display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; background: var(--card); border: 1px solid var(--border); border-radius: 6px; color: var(--text-muted-2); text-decoration: none; font-size: 13px; margin-bottom: 16px; transition: color .15s, border-color .15s; }
@@ -57,8 +62,11 @@
   .leyenda-tv { display: flex; align-items: center; gap: 9px; flex-wrap: wrap; font-size: 12px;
                 color: var(--text-muted-2); background: var(--card); border: 1px solid var(--border);
                 border-radius: 8px; padding: 9px 13px; margin-bottom: 18px; }
-  .leyenda-tv .muestra { width: 26px; height: 14px; border-radius: 3px; background: var(--banda);
-                         border: 1px solid var(--border-strong); flex: none; }
+  .leyenda-tv .muestra { width: 22px; height: 13px; border-radius: 3px; display: inline-block;
+                         border: 1px solid var(--border-strong); flex: none; vertical-align: -2px; }
+  .leyenda-tv .camp { display: inline-flex; align-items: center; gap: 6px; }
+  .leyenda-tv .camp em { color: var(--text-muted-3); font-style: normal; }
+  .leyenda-tv .nota { flex-basis: 100%; font-size: 11.5px; color: var(--text-muted-3); line-height: 1.5; }
   .bloque { border-top: 2px solid var(--accent); padding-top: 10px; margin: 4px 0 14px; }
   .bloque-h { font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 1.4px; color: var(--accent); }
   .bloque-p { font-size: 12.5px; color: var(--text-muted-2); margin-top: 3px; }
@@ -71,6 +79,7 @@
   .src { font-size: 10.5px; color: var(--text-muted-3); font-weight: 400; text-transform: none; letter-spacing: 0; }
 
   .charts-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 14px; }
+  .charts-grid > *, .opciones-grid > *, .tres-vars > * { min-width: 0; }
   /* Brand Lift va en rejilla fija de 3 para que las dos filas queden alineadas columna a columna:
      arriba el valor del indicador, abajo su descomposición. Si no fuera fija, el auto-fit podría
      acomodar 2 y 4 y se perdería la correspondencia vertical, que es todo el punto del layout. */
@@ -83,13 +92,14 @@
      repetía el mismo dato en otra forma. */
   /* Exit poll: una gráfica por opción, 5 por fila. Rejilla FIJA de 5 —no auto-fit— para que las
      filas queden alineadas columna a columna y el orden por volumen se lea en zigzag limpio. */
-  .opciones-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; }
-  @media (max-width: 1300px) { .opciones-grid { grid-template-columns: repeat(3, 1fr); } }
+  .opciones-grid { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 10px; }
+  @media (max-width: 1300px) { .opciones-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
   @media (max-width: 800px)  { .opciones-grid { grid-template-columns: 1fr; } }
   .panel.mini { padding: 10px 11px 9px; }
-  .panel.mini h3 { font-size: 11.5px; line-height: 1.3; }
+  .panel.mini h3 { font-size: 11.5px; line-height: 1.3; overflow-wrap: anywhere; }
   .ch.chico { height: 125px; }
 
+  .ch.alto { height: 260px; }
   .fila { margin-bottom: 18px; }
   .fila:last-child { margin-bottom: 0; }
   .fila > .fila-h { display: flex; align-items: baseline; gap: 9px; margin-bottom: 7px; flex-wrap: wrap; }
@@ -108,7 +118,7 @@
   .ch { position: relative; height: 200px; }
   /* Variante de 3 gráficas: rejilla FIJA de 3 para que las tres variables del indicador queden
      alineadas columna a columna entre filas. Con auto-fit una fila podría acomodar 2 y otra 3. */
-  .tres-vars { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+  .tres-vars { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
   @media (max-width: 1000px) { .tres-vars { grid-template-columns: 1fr; } }
   .legend { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 8px; }
   .legend span { font-size: 11px; color: var(--text-muted-2); display: inline-flex; align-items: center; gap: 5px; }
@@ -155,24 +165,27 @@ if (localStorage.getItem('tablero-theme') === 'light') {
 
 const cssv = n => getComputedStyle(document.body).getPropertyValue(n).trim();
 
-// ── Campañas de TV ────────────────────────────────────────────────────────────
-// Solo México ha tenido TV. Se pintan como banda de fondo en TODAS las gráficas mensuales para
-// poder leer cualquier indicador contra el periodo de campaña sin cruzar dos pantallas.
-// Las tres están confirmadas por el exit poll salvo la de 2023, que es anterior a que la
-// encuesta tuviera volumen: el share de "Televisión" pasa de una base de 5-6% a 22.6% en
-// ago-2024 y a 20.9% en dic-2025.
-const CAMPANAS_TV = {
+// ── Campañas con banda de fondo ───────────────────────────────────────────────
+// Se pintan como banda en TODAS las gráficas mensuales para poder leer cualquier indicador
+// contra el periodo de campaña sin cruzar dos pantallas.
+// `hasta: null` = la campaña sigue abierta: la banda llega hasta el último mes de la ventana y
+// se redibuja sola cuando entren meses nuevos, sin tener que acordarse de actualizar la fecha.
+const CAMPANAS = {
   MX: [
-    { desde: '2023-02', hasta: '2023-04', nombre: 'Campaña de TV 2023' },
-    { desde: '2024-06', hasta: '2024-09', nombre: 'Campaña de TV 2024' },
-    { desde: '2025-10', hasta: '2025-12', nombre: 'Campaña de TV 2025' },
+    { desde: '2023-02', hasta: '2023-04', nombre: 'TV 2023', color: 'tv' },
+    { desde: '2024-06', hasta: '2024-09', nombre: 'TV 2024', color: 'tv' },
+    { desde: '2025-10', hasta: '2025-12', nombre: 'TV 2025', color: 'tv' },
+    { desde: '2025-12', hasta: null, nombre: 'Uber brandeado', color: 'uber' },
   ],
   CO: [],
 };
+const COLOR_CAMPANA = { tv: '--banda-tv', uber: '--banda-uber' };
 
 // Dibuja las bandas DEBAJO de las series (`beforeDatasetsDraw`): son contexto, no un dato más, y
 // encima taparían las barras. Los bordes se recortan contra el área del chart, así que una
 // campaña que empieza antes de la ventana se ve cortada en el borde en vez de desbordarse.
+// Dos campañas solapadas (TV 2025 y Uber comparten diciembre) se superponen a propósito: los
+// colores son translúcidos, así que el solape se ve más oscuro y eso ES la información.
 const bandasTV = {
   id: 'bandasTV',
   beforeDatasetsDraw(chart) {
@@ -182,13 +195,15 @@ const bandasTV = {
     const x = chart.scales.x, a = chart.chartArea;
     if (!x || !a || !labels.length) return;
     const medio = (x.width / labels.length) / 2;
+    const fin = labels[labels.length - 1];
     chart.ctx.save();
-    chart.ctx.fillStyle = cssv('--banda');
     bandas.forEach(b => {
+      const hasta = b.hasta || fin;      // campaña abierta: hasta donde llegue la serie
       const i0 = labels.findIndex(m => m >= b.desde);
       let i1 = -1;
-      labels.forEach((m, i) => { if (m <= b.hasta) i1 = i; });
-      if (i0 < 0 || i1 < i0) return;   // la campaña cae fuera de la ventana visible
+      labels.forEach((m, i) => { if (m <= hasta) i1 = i; });
+      if (i0 < 0 || i1 < i0) return;     // la campaña cae fuera de la ventana visible
+      chart.ctx.fillStyle = cssv(COLOR_CAMPANA[b.color] || '--banda-tv');
       const xa = Math.max(a.left, x.getPixelForValue(i0) - medio);
       const xb = Math.min(a.right, x.getPixelForValue(i1) + medio);
       chart.ctx.fillRect(xa, a.top, xb - xa, a.bottom - a.top);
@@ -238,14 +253,14 @@ function mkMulti(id, labels, datasets, o = {}) {
       borderColor: d.color, backgroundColor: d.fill || d.color,
       borderDash: d.dash || [], tension: .35, pointRadius: d.type === 'line' ? 2 : 0,
       borderWidth: 2, borderRadius: 3,
-      // spanGaps: false a propósito — un cpv nulo debe dejar HUECO, no unir la línea por encima
-      // de un mes sin medición. Ver el contrato de data.json.
+      // spanGaps: false a propósito — un mes sin medición debe dejar HUECO, no unir la línea
+      // por encima. Ver el contrato de data.json.
       spanGaps: false })) },
     options: {
       responsive: true, maintainAspectRatio: false,
       interaction: { mode: 'index', intersect: false },
       plugins: { legend: { display: false },
-        bandasTV: { bandas: o.sinBandas ? [] : (CAMPANAS_TV[PAIS] || []) },
+        bandasTV: { bandas: o.sinBandas ? [] : (CAMPANAS[PAIS] || []) },
         tooltip: { callbacks: { label: ctx => {
         const y = ctx.parsed.y;
         if (y == null) return `${ctx.dataset.label}: sin dato`;
@@ -504,7 +519,7 @@ function drawBrandLift(host, serie) {
   });
 }
 
-// ── Tráfico y CPV ─────────────────────────────────────────────────────────────
+// ── Tráfico ──────────────────────────────────────────────────────────────────
 const porPlaza = (serie, campo) => {
   if (PLAZA !== 'Todas') return serie.filter(r => r.plaza === PLAZA);
   const acc = {};
@@ -514,7 +529,7 @@ const porPlaza = (serie, campo) => {
     if (r.spend != null) a.spend = (a.spend || 0) + r.spend;
   });
   return Object.values(acc).sort((x, y) => x.month.localeCompare(y.month))
-    .map(a => ({ ...a, cpv: (a.spend != null && a.users) ? a.spend / a.users : null }));
+    .map(a => ({ ...a }));
 };
 
 function drawTraffic(host, serie) {
@@ -522,18 +537,11 @@ function drawTraffic(host, serie) {
   const L = recortar(todo.map(r => r.month), MESES);
   const visible = new Set(L);
   const s = todo.filter(r => visible.has(r.month));
-  const conCpv = s.filter(r => r.cpv != null).length;
-  host.innerHTML = `<div class="charts-grid">
-    <div class="panel"><h3>Usuarios activos</h3>
+  host.innerHTML = `<div class="panel"><h3>Usuarios activos</h3>
       <div class="cap">GA4, usuarios únicos por mes${PLAZA !== 'Todas' ? ' en ' + PLAZA : ' (todas las plazas)'}. Desvía ±25% de la UI de GA4.</div>
-      <div class="ch"><canvas id="tr-users"></canvas></div>${legend([[C.azul, 'Usuarios activos']])}</div>
-    <div class="panel"><h3>Costo por visita (CPV)</h3>
-      <div class="cap">Inversión de la plaza ÷ usuarios activos. Mensual por diseño: la tabla de inversión no tiene granularidad diaria.
-        ${conCpv < s.length ? `<br><strong>${s.length - conCpv} de ${s.length} meses sin inversión registrada</strong> — la línea deja hueco, no cero.` : ''}</div>
-      <div class="ch"><canvas id="tr-cpv"></canvas></div>${legend([[C.ambar, 'CPV']])}</div></div>`;
+      <div class="ch alto"><canvas id="tr-users"></canvas></div>${legend([[C.azul, 'Usuarios activos']])}</div>`;
   const val = k => L.map(m => { const r = s.find(x => x.month === m); return r ? r[k] : null; });
   mkMulti('tr-users', L, [{ label: 'Usuarios activos', color: C.azul, data: val('users') }], { fmt: 'num' });
-  mkMulti('tr-cpv', L, [{ label: 'CPV', color: C.ambar, data: val('cpv') }], { fmt: 'money' });
 }
 
 // ── Exit poll ─────────────────────────────────────────────────────────────────
@@ -582,12 +590,20 @@ function drawExitPoll(host, serie) {
   const ult = s[s.length - 1] || { opciones: {} };
   const totalResp = s.reduce((a, r) => a + r.respuestas, 0);
 
-  host.innerHTML = `<div class="panel">
+  host.innerHTML = `<div class="charts-grid">
+      <div class="panel">
       <h3>Tasa de respuesta</h3>
       <div class="cap">Quién contesta "¿dónde nos conociste?" sobre registros WEB. Último mes: ${(100 * (ult.tasa || 0)).toFixed(1)}%.
         Serie desde ${desde}${recortado ? ` (ventana de ${MESES.toLowerCase()})` : ''}${omitidos ? ` · la encuesta existe desde 2022 pero hasta abr-2024 casi nadie la respondía: se omiten ${omitidos} ${omitidos === 1 ? 'mes' : 'meses'} con menos de ${PISO_RESPUESTAS} respuestas` : ''}.
         Es el denominador de todo lo de abajo: si cae, los shares se vuelven menos comparables.</div>
       <div class="ch"><canvas id="ep-tasa"></canvas></div>${legend([[C.gris, 'Tasa de respuesta']])}</div>
+      <div class="panel">
+        <h3>Todos los canales juntos</h3>
+        <div class="cap">Las ${mostrar.length} opciones en una sola escala, para comparar tamaños
+          entre sí. Abajo cada una por separado, donde sí se lee la tendencia de las pequeñas.</div>
+        <div class="ch"><canvas id="ep-todas"></canvas></div>
+        ${legend(mostrar.map((k, i) => [PALETA[i % PALETA.length], k]))}</div>
+    </div>
 
     <p class="hint" style="margin:14px 0 8px">Share de cada canal declarado sobre el total de
       respuestas del mes, de mayor a menor. Es <strong>selección múltiple</strong>: una persona
@@ -609,6 +625,9 @@ function drawExitPoll(host, serie) {
   const fila = m => s.find(r => r.month === m);
   mkMulti('ep-tasa', L, [{ label: 'Tasa de respuesta', color: C.gris,
     data: L.map(m => (fila(m) || {}).tasa ?? null) }], { fmt: 'pct' });
+  mkMulti('ep-todas', L, mostrar.map((k, i) => ({
+    label: k, color: PALETA[i % PALETA.length],
+    data: L.map(m => { const r = fila(m); return r ? share(r, k) : null; }) })), { fmt: 'pct' });
   mostrar.forEach((k, i) => {
     mkMulti(`ep-o-${i}`, L, [{ type: 'bar', label: k, color: PALETA[i % PALETA.length],
       data: L.map(m => { const r = fila(m); return r ? share(r, k) : null; }) }], { fmt: 'pct' });
@@ -632,14 +651,16 @@ function render() {
 
   // La leyenda solo aparece donde hay campañas: en CO no hay TV, así que tampoco banda que
   // explicar.
-  const tv = CAMPANAS_TV[PAIS] || [];
-  document.getElementById('leyendaTV').innerHTML = tv.length ? `<div class="leyenda-tv">
-    <span class="muestra"></span>
-    <span>Las franjas sombreadas de todas las gráficas marcan las
-    <strong>campañas de TV</strong>: ${tv.map(c => `${c.desde} a ${c.hasta}`).join(' · ')}.
-    Solo México ha tenido TV. El exit poll respalda las dos últimas — el share de "Televisión"
-    pasa de una base de 5-6% a <strong>22.6%</strong> en ago-2024 y <strong>20.9%</strong> en
-    dic-2025; la de 2023 es anterior a que la encuesta tuviera volumen.</span></div>` : '';
+  const camps = CAMPANAS[PAIS] || [];
+  const rotulo = c => `${c.desde} a ${c.hasta || 'hoy'}`;
+  document.getElementById('leyendaTV').innerHTML = camps.length ? `<div class="leyenda-tv">
+    <span>Las franjas sombreadas de todas las gráficas marcan campañas:</span>
+    ${camps.map(c => `<span class="camp"><i class="muestra" style="background:var(${
+      COLOR_CAMPANA[c.color]})"></i>${c.nombre} <em>(${rotulo(c)})</em></span>`).join('')}
+    <span class="nota">Solo México. El exit poll respalda las dos últimas de TV — el share de
+    "Televisión" pasa de una base de 5-6% a <strong>22.6%</strong> en ago-2024 y
+    <strong>20.9%</strong> en dic-2025; la de 2023 es anterior a que la encuesta tuviera
+    volumen.</span></div>` : '';
 
   destroyCharts();
   const app = document.getElementById('app');
@@ -653,8 +674,8 @@ function render() {
     ['encuestador', 'Agente encuestador de marca',
      'Un agente que contactará gente por WhatsApp mes a mes con tres preguntas: <strong>¿nos conocen?</strong>, <strong>¿con qué atributo nos relacionan?</strong> y <strong>¿nos ven como comprador directo, como inmobiliaria o como varias cosas?</strong> Es el único indicador de este tablero que preguntaría a gente que <em>no</em> ha interactuado con nosotros — todos los demás miden sobre audiencia ya alcanzada por la pauta o ya registrada.',
      null],
-    ['traffic', 'Tráfico y costo por visita por plaza',
-     'Si la marca funciona, el tráfico sube y el costo por visita baja. La marca es la pólvora; el performance, la mecha.',
+    ['traffic', 'Tráfico por plaza',
+     'Usuarios únicos que llegan al sitio, por plaza. Si la marca funciona, el tráfico sube sin que suba la inversión.',
      drawTraffic, ['Demanda', 'Cuánta gente llega al sitio. Es comportamiento, no opinión.']],
   ];
 
