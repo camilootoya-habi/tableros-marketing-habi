@@ -257,10 +257,30 @@ const meses = s => [...new Set(s.map(r => r.month))].sort();
 // La ventana se cuenta sobre los meses QUE HAY, no sobre el calendario: un mes sin estudio (o sin
 // respuestas suficientes en el exit poll) no debe consumir un lugar de la ventana.
 const VENTANAS = ['12 meses', '24 meses', 'Todo'];
-const recortar = (L, ventana) => {
-  const n = parseInt(ventana, 10);
-  return Number.isNaN(n) ? L : L.slice(-n);
+
+// La ventana se cuenta en MESES DE CALENDARIO, no en meses con dato. Contar los que hay parece
+// más limpio pero miente: MX no tuvo estudio de Brand Lift entre abr-2024 y mar-2025, así que
+// "24 meses" empaquetaba 24 estudios repartidos en 39 meses reales y el eje se veía continuo
+// cuando no lo era. Los meses sin dato entran como hueco: `spanGaps: false` en mkMulti los deja
+// vacíos en vez de unir la línea por encima, y una barra ausente se lee como ausencia.
+const mesSiguiente = m => {
+  let [y, n] = m.split('-').map(Number);
+  return ++n > 12 ? `${y + 1}-01` : `${y}-${String(n).padStart(2, '0')}`;
 };
+const rangoCalendario = (desde, hasta) => {
+  const out = [];
+  for (let m = desde; m <= hasta; m = mesSiguiente(m)) out.push(m);
+  return out;
+};
+// `hasta` es el último mes CON DATO, no el mes actual: no tiene sentido dibujar meses futuros ni
+// arrastrar una cola vacía cuando la fuente todavía no publicó el mes en curso.
+const recortar = (L, ventana) => {
+  if (!L.length) return L;
+  const completo = rangoCalendario(L[0], L[L.length - 1]);
+  const n = parseInt(ventana, 10);
+  return Number.isNaN(n) ? completo : completo.slice(-n);
+};
+
 const legend = items => `<div class="legend">${items.map(([c, t]) =>
   `<span><i style="background:${c}"></i>${t}</span>`).join('')}</div>`;
 
@@ -313,7 +333,11 @@ function drawBrandLift(host, serie) {
   const L = recortar(TODOS, MESES);
   const visible = new Set(L);
   serie = serie.filter(r => visible.has(r.month));
-  const recortado = L.length < TODOS.length;
+  const recortado = L.length < rangoCalendario(TODOS[0], TODOS[TODOS.length - 1]).length;
+  // Los meses de calendario sin estudio dentro de la ventana. Decirlo es el punto: MX estuvo un
+  // año sin medir y eso no puede leerse como una serie continua.
+  const conDato = new Set(TODOS);
+  const huecos = L.filter(m => !conDato.has(m));
   const dato = (s, m, k) => (s.find(r => r.month === m) || {})[k] ?? null;
 
   // El mes en curso viene de un estudio que todavía no cerró: su cifra puede moverse. Se pinta
@@ -333,7 +357,13 @@ function drawBrandLift(host, serie) {
   // ⚠ Los dos paneles de tasas COMPARTEN escala a la fuerza. Si cada uno autoescalara, dos series
   // con niveles muy distintos se verían del mismo tamaño y el lector concluiría que no hay
   // diferencia — justo lo contrario del dato.
-  host.innerHTML = preguntas.map((q, i) => {
+  const avisoHuecos = huecos.length ? `<div class="nota-hueco">Sin estudio en
+    <strong>${huecos.length} ${huecos.length === 1 ? 'mes' : 'meses'}</strong> de esta ventana
+    (${huecos.length > 6 ? huecos[0] + ' … ' + huecos[huecos.length - 1] : huecos.join(', ')}).
+    Meta no corrió Brand Lift esos meses; las barras faltan a propósito en vez de dibujarse en
+    cero.</div>` : '';
+
+  host.innerHTML = avisoHuecos + preguntas.map((q, i) => {
     const s = serie.filter(r => r.question === q);
     const ult = s[s.length - 1] || {};
     const lift = 100 * (ult.lift || 0);
@@ -406,7 +436,10 @@ const porPlaza = (serie, campo) => {
 };
 
 function drawTraffic(host, serie) {
-  const s = porPlaza(serie), L = s.map(r => r.month);
+  const todo = porPlaza(serie);
+  const L = recortar(todo.map(r => r.month), MESES);
+  const visible = new Set(L);
+  const s = todo.filter(r => visible.has(r.month));
   const conCpv = s.filter(r => r.cpv != null).length;
   host.innerHTML = `<div class="charts-grid">
     <div class="panel"><h3>Usuarios activos</h3>
@@ -414,10 +447,11 @@ function drawTraffic(host, serie) {
       <div class="ch"><canvas id="tr-users"></canvas></div>${legend([[C.azul, 'Usuarios activos']])}</div>
     <div class="panel"><h3>Costo por visita (CPV)</h3>
       <div class="cap">Inversión de la plaza ÷ usuarios activos. Mensual por diseño: la tabla de inversión no tiene granularidad diaria.
-        ${conCpv < L.length ? `<br><strong>${L.length - conCpv} de ${L.length} meses sin inversión registrada</strong> — la línea deja hueco, no cero.` : ''}</div>
+        ${conCpv < s.length ? `<br><strong>${s.length - conCpv} de ${s.length} meses sin inversión registrada</strong> — la línea deja hueco, no cero.` : ''}</div>
       <div class="ch"><canvas id="tr-cpv"></canvas></div>${legend([[C.ambar, 'CPV']])}</div></div>`;
-  mkMulti('tr-users', L, [{ label: 'Usuarios activos', color: C.azul, data: s.map(r => r.users) }], { fmt: 'num' });
-  mkMulti('tr-cpv', L, [{ label: 'CPV', color: C.ambar, data: s.map(r => r.cpv) }], { fmt: 'money' });
+  const val = k => L.map(m => { const r = s.find(x => x.month === m); return r ? r[k] : null; });
+  mkMulti('tr-users', L, [{ label: 'Usuarios activos', color: C.azul, data: val('users') }], { fmt: 'num' });
+  mkMulti('tr-cpv', L, [{ label: 'CPV', color: C.ambar, data: val('cpv') }], { fmt: 'money' });
 }
 
 // ── Exit poll ─────────────────────────────────────────────────────────────────
@@ -445,11 +479,11 @@ function drawExitPoll(host, serie) {
   // sin respuestas consumirían lugares de la ventana y quedarían 3 meses dibujados.
   const conVolumen = todo.filter(r => r.respuestas >= PISO_RESPUESTAS);
   const omitidos = todo.length - conVolumen.length;
-  const visibles = new Set(recortar(conVolumen.map(r => r.month), MESES));
+  const L = recortar(conVolumen.map(r => r.month), MESES);
+  const visibles = new Set(L);
   const s = conVolumen.filter(r => visibles.has(r.month));
   const recortado = s.length < conVolumen.length;
-  const desde = s.length ? s[0].month : null;
-  const L = s.map(r => r.month);
+  const desde = L.length ? L[0] : null;
   if (!s.length) {
     host.innerHTML = `<div class="empty-metric"><span class="icon">—</span>
       <strong>Volumen insuficiente</strong><p>Ningún mes de esta plaza alcanza las
@@ -483,10 +517,12 @@ function drawExitPoll(host, serie) {
       <div class="ch"><canvas id="ep-share"></canvas></div>
       ${legend(mostrar.map((k, i) => [esUber(k) ? C.verde : PALETA[(i + 1) % PALETA.length], k]))}</div></div>`;
 
-  mkMulti('ep-tasa', L, [{ label: 'Tasa de respuesta', color: C.gris, data: s.map(r => r.tasa) }], { fmt: 'pct' });
+  const fila = m => s.find(r => r.month === m);
+  mkMulti('ep-tasa', L, [{ label: 'Tasa de respuesta', color: C.gris,
+    data: L.map(m => (fila(m) || {}).tasa ?? null) }], { fmt: 'pct' });
   mkMulti('ep-share', L, mostrar.map((k, i) => ({
     label: k, color: esUber(k) ? C.verde : PALETA[(i + 1) % PALETA.length],
-    data: s.map(r => share(r, k)) })), { fmt: 'pct' });
+    data: L.map(m => { const r = fila(m); return r ? share(r, k) : null; }) })), { fmt: 'pct' });
 }
 
 // ── Filtros y render ──────────────────────────────────────────────────────────
