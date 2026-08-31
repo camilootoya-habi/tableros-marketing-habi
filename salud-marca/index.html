@@ -190,6 +190,7 @@ function mkMulti(id, labels, datasets, o = {}) {
 }
 
 const C = { azul: '#818cf8', gris: '#94a3b8', ambar: '#fbbf24', verde: '#34d399',
+            rojo: '#f87171',
             rosa: '#f472b6', cian: '#22d3ee' };
 const PALETA = [C.azul, C.verde, C.ambar, C.cian, C.rosa, C.gris];
 const NOMBRE_PREGUNTA = { ad_recall: 'Ad recall (recordación del anuncio)',
@@ -288,9 +289,10 @@ const srcTag = m => (m && m.source)
   ? `<span class="src">fuente: ${{ bq: 'BigQuery', api: 'Meta API', cache: 'caché en repo' }[m.source] || m.source}</span>` : '';
 
 // ── Brand Lift ────────────────────────────────────────────────────────────────
-// Orden del embudo de marca, no alfabético: recordar el anuncio → tener la marca en mente →
-// que además guste. Así las dos filas se leen de izquierda a derecha como una progresión.
-const ORDEN_PREGUNTAS = ['ad_recall', 'toma', 'favorability', 'intent',
+// TOMA va primero en los dos países: es el indicador de marca por excelencia —cuánta gente nos
+// nombra a nosotros cuando piensa en vender su casa— y el resto son señales de apoyo. Detrás va
+// el embudo: recordar el anuncio, que la marca guste, y elegirnos.
+const ORDEN_PREGUNTAS = ['toma', 'ad_recall', 'favorability', 'intent',
                          'sin_identificar_alta', 'sin_identificar_baja'];
 const ordenar = qs => [...qs].sort((a, b) => {
   const ia = ORDEN_PREGUNTAS.indexOf(a), ib = ORDEN_PREGUNTAS.indexOf(b);
@@ -352,7 +354,7 @@ function drawBrandLift(host, serie) {
           <div class="ch"><canvas id="bl-e-${i}"></canvas></div>${legend([[C.azul, 'Expuestos']])}</div>
         <div class="panel"><h3>Lift</h3>
           <div class="cap">La diferencia neta entre los dos: lo que la pauta causó, en puntos.</div>
-          <div class="ch"><canvas id="bl-l-${i}"></canvas></div>${legend([[C.ambar, 'Lift en puntos']])}</div>
+          <div class="ch"><canvas id="bl-l-${i}"></canvas></div>${legend([[C.verde, 'La pauta subió el indicador'], [C.rojo, 'Lo bajó']])}</div>
       </div>
     </div>`;
   }).join('');
@@ -368,8 +370,16 @@ function drawBrandLift(host, serie) {
     mkMulti(`bl-e-${i}`, L, [
       { type: 'bar', label: 'Expuestos', color: conParcial(C.azul), data: col('exposed') },
     ], { fmt: 'pct', max: tope });
+    // El signo del lift es la lectura entera del panel: verde = la pauta subió el indicador,
+    // rojo = lo bajó. Un solo color obligaba a leer el eje para saber de qué lado está cada
+    // barra. El mes en curso va translúcido igual que en los otros paneles.
+    const lifts = col('lift');
     mkMulti(`bl-l-${i}`, L, [
-      { type: 'bar', label: 'Lift', color: conParcial(C.ambar), data: col('lift') },
+      { type: 'bar', label: 'Lift', data: lifts,
+        color: L.map((m, k) => {
+          const base = (lifts[k] ?? 0) < 0 ? C.rojo : C.verde;
+          return parciales.has(m) ? base + '55' : base;
+        }) },
     ], { fmt: 'pts' });
   });
 }
