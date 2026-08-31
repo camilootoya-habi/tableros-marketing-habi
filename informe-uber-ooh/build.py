@@ -5,7 +5,7 @@ Solo escribe la carpeta del mes actual: al cambiar de mes, la anterior deja de t
 inmutable **por construcción**, sin un paso manual que alguien pueda olvidar. `--freeze YYYY-MM`
 sella un mes concreto antes de tiempo, para mandarlo a comité a mitad de mes.
 
-Las cifras se hornean desde marca-mx/data.json al HTML, así que una edición pasada no depende de
+Las cifras se hornean desde salud-marca/data.json al HTML, así que una edición pasada no depende de
 nada externo: se abre en dos años y muestra lo mismo que el día que se firmó.
 
 Uso: python3 build.py [--freeze YYYY-MM]
@@ -19,7 +19,7 @@ import re
 import render
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-DATA = os.path.join(HERE, "..", "marca-mx", "data.json")
+DATA = os.path.join(HERE, "..", "salud-marca", "data.json")
 CONTENIDO = os.path.join(HERE, "contenido")
 MONTH_RE = re.compile(r"^\d{4}-\d{2}$")
 

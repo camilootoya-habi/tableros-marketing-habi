@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Ensambla marca-mx/data.json. Tres drivers independientes: si uno falla, los otros
+"""Ensambla salud-marca/data.json. Tres drivers independientes: si uno falla, los otros
 escriben (mismo criterio de aislamiento que scripts/run_queries.py).
 Uso: python3 build.py  (desde la carpeta del tablero; requiere bq autenticado y
 META_SYSTEM_USER_TOKEN o META_PCOM_TOKEN para Brand Lift)."""
