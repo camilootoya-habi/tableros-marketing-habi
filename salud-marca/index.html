@@ -249,10 +249,13 @@ const NOTA_SIN_ID = 'Colombia pregunta cuatro cosas y dos ya no se distinguen po
 
 const meses = s => [...new Set(s.map(r => r.month))].sort();
 
-// Brand Lift arranca en jul-2022 y ya son 46 meses. Toda la historia de golpe aplasta el detalle
-// de lo reciente, que es lo que se mira para operar; por eso el default son 24 meses y la historia
-// completa queda a un clic. La ventana se cuenta sobre los meses QUE HAY, no sobre el calendario:
-// un mes sin estudio no debe consumir un lugar de la ventana.
+// Ventana común a todas las series mensuales. Brand Lift ya lleva 46 meses y el exit poll 28
+// utilizables: toda la historia de golpe aplasta el detalle de lo reciente, que es lo que se mira
+// para operar, y la historia completa queda a un clic. Es UN solo filtro para todo el tablero, no
+// uno por indicador: dos ventanas distintas en la misma pantalla harían que dos gráficas vecinas
+// cubran periodos distintos sin que nada lo diga.
+// La ventana se cuenta sobre los meses QUE HAY, no sobre el calendario: un mes sin estudio (o sin
+// respuestas suficientes en el exit poll) no debe consumir un lugar de la ventana.
 const VENTANAS = ['12 meses', '24 meses', 'Todo'];
 const recortar = (L, ventana) => {
   const n = parseInt(ventana, 10);
@@ -261,7 +264,7 @@ const recortar = (L, ventana) => {
 const legend = items => `<div class="legend">${items.map(([c, t]) =>
   `<span><i style="background:${c}"></i>${t}</span>`).join('')}</div>`;
 
-let DATA = null, PAIS = 'MX', PLAZA = 'Todas', MESES_BL = '24 meses';
+let DATA = null, PAIS = 'MX', PLAZA = 'Todas', MESES = '24 meses';
 
 // ── El corazón del tablero: cada métrica se dibuja según su `status`, no según si su
 // serie viene vacía. Un `not_available` explica qué fuente falta; jamás pinta un chart
@@ -307,7 +310,7 @@ const ordenar = qs => [...qs].sort((a, b) => {
 function drawBrandLift(host, serie) {
   const preguntas = ordenar(new Set(serie.map(r => r.question)));
   const TODOS = meses(serie);
-  const L = recortar(TODOS, MESES_BL);
+  const L = recortar(TODOS, MESES);
   const visible = new Set(L);
   serie = serie.filter(r => visible.has(r.month));
   const recortado = L.length < TODOS.length;
@@ -438,8 +441,13 @@ const PISO_RESPUESTAS = 50;
 
 function drawExitPoll(host, serie) {
   const todo = aggExit(serie);
-  const s = todo.filter(r => r.respuestas >= PISO_RESPUESTAS);
-  const omitidos = todo.length - s.length;
+  // Orden: primero el piso de respuestas, DESPUÉS la ventana. Al revés, los meses de 2022-2024
+  // sin respuestas consumirían lugares de la ventana y quedarían 3 meses dibujados.
+  const conVolumen = todo.filter(r => r.respuestas >= PISO_RESPUESTAS);
+  const omitidos = todo.length - conVolumen.length;
+  const visibles = new Set(recortar(conVolumen.map(r => r.month), MESES));
+  const s = conVolumen.filter(r => visibles.has(r.month));
+  const recortado = s.length < conVolumen.length;
   const desde = s.length ? s[0].month : null;
   const L = s.map(r => r.month);
   if (!s.length) {
@@ -462,7 +470,7 @@ function drawExitPoll(host, serie) {
   host.innerHTML = `<div class="charts-grid">
     <div class="panel"><h3>Tasa de respuesta</h3>
       <div class="cap">Quién contesta "¿dónde nos conociste?" sobre registros WEB. Último mes: ${(100 * (ult.tasa || 0)).toFixed(1)}%.
-        Serie desde ${desde}${omitidos ? ` · se omiten ${omitidos} ${omitidos === 1 ? 'mes' : 'meses'} previos con menos de ${PISO_RESPUESTAS} respuestas` : ''}.</div>
+        Serie desde ${desde}${recortado ? ` (ventana de ${MESES.toLowerCase()})` : ''}${omitidos ? ` · la encuesta existe desde 2022 pero hasta abr-2024 casi nadie la respondía: se omiten ${omitidos} ${omitidos === 1 ? 'mes' : 'meses'} con menos de ${PISO_RESPUESTAS} respuestas` : ''}.</div>
       <div class="ch"><canvas id="ep-tasa"></canvas></div>${legend([[C.gris, 'Tasa de respuesta']])}</div>
     <div class="panel"><h3>Share por canal declarado</h3>
       <div class="cap">Sobre el total de respuestas del mes. Es <strong>selección múltiple</strong>:
@@ -494,7 +502,7 @@ function render() {
   document.getElementById('filtros').innerHTML =
     chips('País', ['MX', 'CO'], PAIS, 'pais') +
     chips('Plaza · aplica a tráfico y exit poll', ['Todas', 'MTY', 'GDL', 'CDMX', 'Resto'], PLAZA, 'plaza') +
-    chips('Periodo · Brand Lift', VENTANAS, MESES_BL, 'meses');
+    chips('Periodo', VENTANAS, MESES, 'meses');
 
   destroyCharts();
   const app = document.getElementById('app');
@@ -540,20 +548,20 @@ window.rerender = render;
 // La vista queda en la URL: así se puede mandar "el tablero de Colombia" por Slack en vez de
 // "abre el tablero y dale click a CO".
 function syncURL() {
-  const q = new URLSearchParams({ pais: PAIS, plaza: PLAZA, meses: MESES_BL });
+  const q = new URLSearchParams({ pais: PAIS, plaza: PLAZA, meses: MESES });
   history.replaceState(null, '', `?${q}`);
 }
 function readURL() {
   const q = new URLSearchParams(location.search);
   if (['MX', 'CO'].includes(q.get('pais'))) PAIS = q.get('pais');
   if (['Todas', 'MTY', 'GDL', 'CDMX', 'Resto'].includes(q.get('plaza'))) PLAZA = q.get('plaza');
-  if (VENTANAS.includes(q.get('meses'))) MESES_BL = q.get('meses');
+  if (VENTANAS.includes(q.get('meses'))) MESES = q.get('meses');
 }
 
 document.addEventListener('click', e => {
   const b = e.target.closest('.chip'); if (!b) return;
   if (b.dataset.pick === 'pais') PAIS = b.dataset.val;
-  else if (b.dataset.pick === 'meses') MESES_BL = b.dataset.val;
+  else if (b.dataset.pick === 'meses') MESES = b.dataset.val;
   else PLAZA = b.dataset.val;
   syncURL();
   render();
