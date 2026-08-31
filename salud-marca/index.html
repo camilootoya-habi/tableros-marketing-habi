@@ -80,6 +80,7 @@
   .fila > .fila-h .n { font-size: 10.5px; font-weight: 700; color: var(--accent); border: 1px solid var(--border-strong); border-radius: 4px; padding: 1px 6px; }
   .fila > .fila-h h4 { font-size: 13.5px; font-weight: 700; color: var(--text-title); }
   .fila > .fila-h .q { font-size: 11.5px; color: var(--text-muted-3); }
+  .fila > .fila-h .aviso { font-size: 10.5px; font-weight: 600; background: var(--warn-bg); color: var(--warn-fg); border-radius: 4px; padding: 2px 7px; }
   .panel { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 14px 15px 12px; display: flex; flex-direction: column; }
   .panel h3 { font-size: 12.5px; color: var(--text-title); font-weight: 700; margin-bottom: 2px; }
   .panel .cap { font-size: 11px; color: var(--text-muted-3); margin-bottom: 8px; }
@@ -183,15 +184,38 @@ function mkMulti(id, labels, datasets, o = {}) {
 const C = { azul: '#818cf8', gris: '#94a3b8', ambar: '#fbbf24', verde: '#34d399',
             rosa: '#f472b6', cian: '#22d3ee' };
 const PALETA = [C.azul, C.verde, C.ambar, C.cian, C.rosa, C.gris];
-const NOMBRE_PREGUNTA = { ad_recall: 'Ad Recall (recordación del anuncio)',
-                          toma: 'Top of Mind awareness', favorability: 'Brand favorability' };
-// Qué se le pregunta al encuestado. Va en la etiqueta de la fila: sin esto, "favorability"
-// de -1.7 pts se lee como una caída de marca en vez de como lo que es, una pregunta distinta.
+const NOMBRE_PREGUNTA = { ad_recall: 'Ad recall (recordación del anuncio)',
+                          toma: 'Top of mind awareness', favorability: 'Brand favorability',
+                          intent: 'Intent (intención de elegirnos)' };
+
+// El texto LITERAL que ve el encuestado, leído de Ads Manager (2026-08-31). Cambia por país:
+// la marca se llama Habi en CO y Tuhabi en MX, y la lista de competidores del TOMA no es la
+// misma. Sin este texto, favorability en -4 pts se lee como una caída de marca en vez de como
+// lo que es, una pregunta de opinión midiendo otra cosa.
 const PREGUNTA_TEXTO = {
-  ad_recall: '¿Recuerdas haber visto un anuncio de Habi en los últimos 2 días?',
-  toma: '¿Cuál es la primera marca que se te viene a la mente para vender tu casa?',
-  favorability: '¿Qué tan favorable es tu opinión sobre Habi?',
+  CO: {
+    ad_recall: '«¿Recuerdas haber visto un anuncio de Habi en internet o en un dispositivo móvil en los últimos dos días?»',
+    toma: '«¿Cuál de las siguientes marcas te viene primero a la mente al pensar en compañías que compren vivienda de manera directa?» — Habi / Home Capital / Houm / Otra-ninguna',
+    favorability: '«¿Cómo describirías tu opinión general sobre Habi?» — deseada: muy o bastante favorable',
+    intent: '«¿Elegirás o tendrás en cuenta a Habi la próxima vez que necesites vender tu vivienda?»',
+  },
+  MX: {
+    ad_recall: '«¿Recuerdas haber visto un anuncio de Tuhabi online o en un dispositivo móvil en los últimos dos días?»',
+    toma: '«¿Cuál de los(as) siguientes marcas te viene primero a la mente al pensar en compañías que compren vivienda de manera directa?» — Tuhabi / Flat / Clikalia / Inmuebles24 / Otra-ninguna',
+    favorability: '«¿Cómo describirías tu opinión general sobre Tuhabi?» — deseada: muy o algo favorable',
+  },
 };
+
+// ⚠ El TOMA de los dos países NO es comparable, aunque Meta le ponga el mismo nombre. MX ofrece
+// 5 opciones con 4 marcas reales y CO ofrece 4 con 3: más marcas en la lista es menos
+// probabilidad MECÁNICA de elegir la propia. Buena parte de la brecha (MX 11-20% vs CO 41-53%)
+// es el diseño de la pregunta, no la fuerza de la marca. Se avisa en el tablero en vez de
+// esconderlo, porque el toggle de país invita justamente a esa comparación.
+const AVISO_PREGUNTA = {
+  toma: 'No comparable entre países: MX elige entre 4 marcas, CO entre 3. Menos opciones sube la tasa por diseño.',
+  intent: 'Solo Colombia: México no incluye esta pregunta en su estudio.',
+};
+
 const meses = s => [...new Set(s.map(r => r.month))].sort();
 const legend = items => `<div class="legend">${items.map(([c, t]) =>
   `<span><i style="background:${c}"></i>${t}</span>`).join('')}</div>`;
@@ -229,7 +253,7 @@ const srcTag = m => (m && m.source)
 // ── Brand Lift ────────────────────────────────────────────────────────────────
 // Orden del embudo de marca, no alfabético: recordar el anuncio → tener la marca en mente →
 // que además guste. Así las dos filas se leen de izquierda a derecha como una progresión.
-const ORDEN_PREGUNTAS = ['ad_recall', 'toma', 'favorability'];
+const ORDEN_PREGUNTAS = ['ad_recall', 'toma', 'favorability', 'intent'];
 const ordenar = qs => [...qs].sort((a, b) => {
   const ia = ORDEN_PREGUNTAS.indexOf(a), ib = ORDEN_PREGUNTAS.indexOf(b);
   return (ia < 0 ? 99 : ia) - (ib < 0 ? 99 : ib) || a.localeCompare(b);
@@ -263,7 +287,8 @@ function drawBrandLift(host, serie) {
       <div class="fila-h">
         <span class="n">${i + 1}</span>
         <h4>${NOMBRE_PREGUNTA[q] || q}</h4>
-        <span class="q">${PREGUNTA_TEXTO[q] || ''}</span>
+        <span class="q">${(PREGUNTA_TEXTO[PAIS] || {})[q] || ''}</span>
+        ${AVISO_PREGUNTA[q] ? `<span class="aviso">⚠ ${AVISO_PREGUNTA[q]}</span>` : ''}
       </div>
       <div class="charts-grid dos">
         <div class="panel">

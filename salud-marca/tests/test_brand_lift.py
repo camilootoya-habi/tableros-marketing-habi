@@ -130,3 +130,55 @@ def test_load_cache_sigue_devolviendo_solo_la_lista_de_filas(monkeypatch, tmp_pa
     rows = BL.load_cache()
     assert isinstance(rows, list)
     assert rows == [CACHED_A]
+
+
+# ── Mes del estudio: del NOMBRE, no del start_time ────────────────────────────
+# Los estudios recurrentes arrancan el día 29. Febrero no tiene 29, así que el estudio
+# "Feb-Mar" arranca el 1 de MARZO y `start_time[:7]` lo mandaba a marzo: dos estudios en el
+# mismo mes y febrero desaparecido. Pasó en 2023-03, 2025-03 y 2026-03 de CO. El nombre
+# ("Feb 2023-Mar 2023") sí lo dice sin ambigüedad, así que es la fuente correcta.
+
+def test_mes_sale_del_nombre_no_del_start_time():
+    estudios = [{
+        "id": "1537329786743415", "type": "LIFT",
+        "name": "Habi: Continuous Brand Lift (Feb 2023-Mar 2023)",
+        "start_time": "2023-03-01T05:00:00+0000",
+        "objectives": {"data": [{"results": [json.dumps({
+            "experiment_id": "1", "scoreMean.test": 0.4})]}]},
+    }]
+    assert BL.parse_results(estudios, "CO")[0]["month"] == "2023-02"
+
+
+def test_dos_estudios_solapados_caen_en_meses_distintos():
+    def est(sid, nombre, start, exp):
+        return {"id": sid, "type": "LIFT", "name": nombre, "start_time": start,
+                "objectives": {"data": [{"results": [json.dumps({
+                    "experiment_id": exp, "scoreMean.test": 0.4})]}]}}
+    estudios = [
+        est("A", "Habi: Continuous Brand Lift (Feb 2026-Mar 2026)", "2026-03-01T05:00:00+0000", "1"),
+        est("B", "Habi: Continuous Brand Lift (Mar 2026-Apr 2026)", "2026-03-29T05:00:00+0000", "2"),
+    ]
+    meses = sorted(r["month"] for r in BL.parse_results(estudios, "CO"))
+    assert meses == ["2026-02", "2026-03"]
+
+
+def test_nombre_sin_mes_reconocible_cae_al_start_time():
+    """Un nombre que no trae mes no debe romper nada: se vuelve al comportamiento viejo."""
+    estudios = [{
+        "id": "X", "type": "LIFT", "name": "Un estudio sin fecha en el nombre",
+        "start_time": "2024-08-29T05:00:00+0000",
+        "objectives": {"data": [{"results": [json.dumps({
+            "experiment_id": "1", "scoreMean.test": 0.4})]}]},
+    }]
+    assert BL.parse_results(estudios, "MX")[0]["month"] == "2024-08"
+
+
+def test_nombre_de_un_solo_mes():
+    """MX usa "(Mes AAAA)" sin rango. Debe leerse igual."""
+    estudios = [{
+        "id": "Y", "type": "LIFT", "name": "HABI MX - Continuous Brand Lift (Abr 2025)",
+        "start_time": "2025-05-01T05:00:00+0000",
+        "objectives": {"data": [{"results": [json.dumps({
+            "experiment_id": "1", "scoreMean.test": 0.4})]}]},
+    }]
+    assert BL.parse_results(estudios, "MX")[0]["month"] == "2025-04"

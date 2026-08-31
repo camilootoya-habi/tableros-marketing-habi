@@ -15,6 +15,7 @@ afuera algo que ya estaba guardado. El backfill histórico se corre a mano, nunc
 """
 import json
 import os
+import re
 from urllib.parse import urlencode
 from urllib.request import urlopen
 from urllib.error import HTTPError, URLError
@@ -32,13 +33,37 @@ def _token():
     return os.environ.get("META_SYSTEM_USER_TOKEN") or os.environ.get("META_PCOM_TOKEN") or ""
 
 
+# ── El mes de un estudio ───────────────────────────────────────────────────────
+# Los estudios recurrentes arrancan el día 29 del mes que cubren. Febrero no tiene 29, así que
+# el estudio "Feb-Mar" arranca el 1 de MARZO: leer el mes de `start_time` mandaba dos estudios
+# al mismo mes calendario y hacía desaparecer febrero. Ocurrió en 2023-03, 2025-03 y 2026-03 de
+# CO, y ahí las reglas de huella de `questions.json` comparan las 4 preguntas de un estudio
+# contra las 4 del otro y se equivocan. El NOMBRE sí trae el mes sin ambigüedad
+# ("Feb 2023-Mar 2023"), así que es la fuente correcta; `start_time` queda de respaldo para un
+# nombre que no traiga mes reconocible.
+_MESES = {m: i for i, m in enumerate(
+    "ene feb mar abr may jun jul ago sep oct nov dic".split(), 1)}
+_MESES.update({m: i for i, m in enumerate(
+    "jan feb mar apr may jun jul aug sep oct nov dec".split(), 1)})
+_RE_MES = re.compile(r"([A-Za-zÁÉÍÓÚáéíóú]{3,10})\.?\s+(20\d\d)")
+
+
+def study_month(study):
+    """`YYYY-MM` del estudio. Del nombre si trae mes; si no, del `start_time`."""
+    for txt, anio in _RE_MES.findall(study.get("name") or ""):
+        n = _MESES.get(txt[:3].lower())
+        if n:
+            return f"{anio}-{n:02d}"   # el PRIMER mes del rango: el que el estudio cubre
+    return (study.get("start_time") or "")[:7]
+
+
 def parse_results(studies, country):
     """study → objective → experiment. `results` trae JSON serializado dentro de strings."""
     rows = []
     for s in studies:
         if s.get("type") != "LIFT":
             continue
-        month = (s.get("start_time") or "")[:7]
+        month = study_month(s)
         for o in ((s.get("objectives") or {}).get("data") or []):
             for raw in (o.get("results") or []):
                 try:
