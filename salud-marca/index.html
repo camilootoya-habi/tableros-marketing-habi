@@ -313,13 +313,16 @@ const NOTA_SIN_ID = 'Colombia pregunta cuatro cosas y dos ya no se distinguen po
 
 const meses = s => [...new Set(s.map(r => r.month))].sort();
 
-// Promedio móvil de 3 meses sobre una serie ya alineada a las etiquetas. La muestra mensual de
-// Brand Lift es de ~500 encuestados por pregunta, así que un mes puede moverse varios puntos por
-// azar; la media móvil separa el nivel de la marca del ruido del muestreo.
+// Promedio móvil sobre una serie ya alineada a las etiquetas. La muestra mensual de Brand Lift
+// es de ~500 encuestados por pregunta, así que un mes puede moverse varios puntos por azar; la
+// media móvil separa el nivel de la marca del ruido del muestreo.
 // Un mes sin dato NO aporta y NO interrumpe: se promedia sobre los valores que haya en la
-// ventana de 3. Si el mes en curso es nulo, el punto es nulo — dibujar media sobre un mes que
-// no se midió inventaría un dato.
-const mediaMovil = (vals, n = 3) => vals.map((v, i) => {
+// ventana. Si el mes en curso es nulo, el punto es nulo — dibujar media sobre un mes que no se
+// midió inventaría un dato. ⚠ Con MX sin estudio entre abr-2024 y mar-2025, una ventana de 6
+// puede promediar meses separados por un año: el punto sigue siendo honesto (solo usa lo que
+// hay) pero conviene leerlo junto al aviso de huecos.
+const VENTANA_MEDIA = 6;
+const mediaMovil = (vals, n = VENTANA_MEDIA) => vals.map((v, i) => {
   if (v == null) return null;
   const w = vals.slice(Math.max(0, i - n + 1), i + 1).filter(x => x != null);
   return w.reduce((a, b) => a + b, 0) / w.length;
@@ -461,11 +464,11 @@ function drawBrandLift(host, serie) {
       <p class="hint" style="margin:-2px 0 8px">${resumen}</p>
       <div class="tres-vars">
         <div class="panel"><h3>No expuestos</h3>
-          <div class="cap">Grupo de control: misma audiencia, sin ver los anuncios. Escala compartida con el panel de al lado. La línea es el promedio de los últimos 3 meses.</div>
-          <div class="ch"><canvas id="bl-c-${i}"></canvas></div>${legend([[C.gris, 'No expuestos'], [C.gris, 'Promedio 3 meses']])}</div>
+          <div class="cap">Grupo de control: misma audiencia, sin ver los anuncios. Escala compartida con el panel de al lado. La línea es el promedio de los últimos ${VENTANA_MEDIA} meses.</div>
+          <div class="ch"><canvas id="bl-c-${i}"></canvas></div>${legend([[C.gris, 'No expuestos'], [C.gris, `Promedio ${VENTANA_MEDIA} meses`]])}</div>
         <div class="panel"><h3>Expuestos</h3>
-          <div class="cap">Quienes sí vieron la pauta. Escala compartida con el panel anterior. La línea es el promedio de los últimos 3 meses.</div>
-          <div class="ch"><canvas id="bl-e-${i}"></canvas></div>${legend([[C.azul, 'Expuestos'], [C.cian, 'Promedio 3 meses']])}</div>
+          <div class="cap">Quienes sí vieron la pauta. Escala compartida con el panel anterior. La línea es el promedio de los últimos ${VENTANA_MEDIA} meses.</div>
+          <div class="ch"><canvas id="bl-e-${i}"></canvas></div>${legend([[C.azul, 'Expuestos'], [C.cian, `Promedio ${VENTANA_MEDIA} meses`]])}</div>
         <div class="panel"><h3>Lift</h3>
           <div class="cap">La diferencia neta entre los dos: lo que la pauta causó, en puntos.</div>
           <div class="ch"><canvas id="bl-l-${i}"></canvas></div>${legend([[C.verde, 'La pauta subió el indicador'], [C.rojo, 'Lo bajó']])}</div>
@@ -481,11 +484,11 @@ function drawBrandLift(host, serie) {
     const ctrl = col('control'), expo = col('exposed');
     mkMulti(`bl-c-${i}`, L, [
       { type: 'bar', label: 'No expuestos', color: conParcial(C.gris + '88', '33'), data: ctrl },
-      { type: 'line', label: 'Promedio 3 meses', color: C.gris, data: mediaMovil(ctrl) },
+      { type: 'line', label: `Promedio ${VENTANA_MEDIA} meses`, color: C.gris, data: mediaMovil(ctrl) },
     ], { fmt: 'pct', max: tope });
     mkMulti(`bl-e-${i}`, L, [
       { type: 'bar', label: 'Expuestos', color: conParcial(C.azul), data: expo },
-      { type: 'line', label: 'Promedio 3 meses', color: C.cian, data: mediaMovil(expo) },
+      { type: 'line', label: `Promedio ${VENTANA_MEDIA} meses`, color: C.cian, data: mediaMovil(expo) },
     ], { fmt: 'pct', max: tope });
     // El signo del lift es la lectura entera del panel: verde = la pauta subió el indicador,
     // rojo = lo bajó. Un solo color obligaba a leer el eje para saber de qué lado está cada
