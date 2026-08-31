@@ -3,10 +3,10 @@
 Se corre A MANO cuando entra un estudio nuevo, nunca desde el cron: es una decisión de
 identificación, no un refresco de datos.
 
-⚠ Solo mapea `ad_recall` y `favorability`. TOMA e Intent de CO comparten huella (distancia de
-0.40 vs 0.69 pts al TOMA de MX, muy por debajo del margen de 2.8 pts que hace confiable la regla
-de ad_recall) y **no se adivinan**: publicar una pregunta con el nombre equivocado es peor que no
-publicarla. Se resuelven leyendo el lift de la pestaña "Top of mind awareness" en Ads Manager.
+Mapea las 4 preguntas de CO. Las cuatro reglas se validaron contra Ads Manager el 2026-08-31
+sobre el estudio "Jul 2026-Aug 2026", y las cuatro coinciden al decimal:
+Ad recall 25.0→40.8 (+15.8) · Top of mind 29.1→41.2 (+12.1) · Brand favorability 40.7→38.3
+(−2.3) · Intent 17.2→17.1 (−0.1).
 
 Reglas, dentro de UN estudio (nunca dentro de un mes: dos estudios pueden caer en el mismo mes
 calendario, ver `study_month`):
@@ -14,6 +14,13 @@ calendario, ver `study_month`):
      Dos señales independientes; si no coinciden, el estudio se deja sin mapear.
   2. ad_recall = `benchmark_region` MÁS ALTO de las restantes, con margen ≥1.5 pts sobre la
      siguiente. El benchmark de ad_recall vive en 4-6 y el resto abajo de 2.
+  3. De las dos que sobran, toma = la de MAYOR tasa de expuestos e intent = la menor. NO se usa
+     el benchmark: TOMA e Intent lo tienen casi idéntico (0.40 vs 0.69 pts de distancia al TOMA
+     de MX) y por ahí no se separan. La tasa sí: en los 46 estudios los rangos jamás se solapan
+     —27.7-53.8% contra 9.1-18.6%—. Ojo con la intuición de comparar contra MX: el TOMA de CO da
+     más alto porque elige entre 3 marcas y el de MX entre 4, así que el rango de MX (11-20%) se
+     parece al de Intent de CO por coincidencia. El separador honesto es la tasa dentro del
+     estudio, no el parecido con el otro país.
 """
 import json
 import os
@@ -50,7 +57,14 @@ def clasificar(rows):
             saltados.append((sid, f"ad_recall sin margen: {100*margen:.2f} pts"))
             continue
         mapeo[resto[0]["experiment_id"]] = "ad_recall"
-        # resto[1:] = TOMA e Intent. NO se mapean: comparten huella.
+
+        ultimas = sorted(resto[1:], key=lambda r: -(r.get("exposed") or 0))
+        if len(ultimas) == 2:
+            mapeo[ultimas[0]["experiment_id"]] = "toma"
+            mapeo[ultimas[1]["experiment_id"]] = "intent"
+        elif ultimas:
+            # Un estudio con 3 preguntas no permite decir si la que sobra es TOMA o Intent.
+            saltados.append((sid, "queda 1 pregunta sola: no se puede decir si es toma o intent"))
     return mapeo, saltados
 
 

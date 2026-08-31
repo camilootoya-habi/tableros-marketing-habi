@@ -211,13 +211,16 @@ const PREGUNTA_TEXTO = {
   },
 };
 
-// ⚠ El TOMA de los dos países NO es comparable, aunque Meta le ponga el mismo nombre. MX ofrece
-// 5 opciones con 4 marcas reales y CO ofrece 4 con 3: más marcas en la lista es menos
-// probabilidad MECÁNICA de elegir la propia. Buena parte de la brecha (MX 11-20% vs CO 41-53%)
-// es el diseño de la pregunta, no la fuerza de la marca. Se avisa en el tablero en vez de
-// esconderlo, porque el toggle de país invita justamente a esa comparación.
+// ⚠ El TOMA de CO (41-53%) y el de MX (11-20%) no se comparan como niveles, y la brecha tiene
+// DOS causas que no se pueden separar con estos datos:
+//   1. Marca real: Habi es más fuerte en Colombia — es donde se fundó, lleva más años y compra
+//      más casas sobre una población menor. Es de esperar que le vaya mejor en top of mind.
+//   2. Diseño de la pregunta: MX elige entre 4 marcas y CO entre 3, y menos opciones sube la
+//      tasa mecánicamente.
+// Lo que sí es limpio es la TENDENCIA dentro de cada país, porque ahí la pregunta no cambia.
+// Se avisa en el tablero en vez de esconderlo, porque el toggle de país invita a esa comparación.
 const AVISO_PREGUNTA = {
-  toma: 'No comparable entre países: MX elige entre 4 marcas, CO entre 3. Menos opciones sube la tasa por diseño.',
+  toma: 'Los niveles no se comparan entre países: Habi es más fuerte en CO y además allá se elige entre 3 marcas contra 4 en MX. La tendencia dentro de cada país sí es limpia.',
   intent: 'Solo Colombia: México no incluye esta pregunta en su estudio.',
   sin_identificar_alta: 'Es Top of mind awareness o Intent — la serie es real, el nombre no está confirmado.',
   sin_identificar_baja: 'Es Top of mind awareness o Intent — la serie es real, el nombre no está confirmado.',
