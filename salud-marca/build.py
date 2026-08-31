@@ -149,6 +149,9 @@ def collect(now):
         "exit_poll": {"MX": exit_poll_mx,
                       "CO": contract.metric("not_available",
                                             reason=contract.NOT_AVAILABLE[("exit_poll", "CO")])},
+        "encuestador": {c: contract.metric("not_available", planned=True,
+                                           reason=contract.NOT_AVAILABLE[("encuestador", c)])
+                        for c in ("MX", "CO")},
     }
     return contract.envelope(metrics, now)
 

@@ -33,3 +33,22 @@ def test_metric_stale_conserva_serie_y_last_updated():
     assert len(m["series"]) == 2
     assert m["last_updated"] == "2026-07-24T12:00:00Z"
     assert "reason" not in m
+
+
+def test_planned_marca_lo_que_no_existe_todavia():
+    """Un indicador planeado y una fuente sin conectar son los dos `not_available`, pero el
+    lector necesita distinguirlos: uno espera trabajo técnico, el otro espera una decisión."""
+    m = contract.metric("not_available", reason="el agente no existe", planned=True)
+    assert m["planned"] is True and m["status"] == "not_available"
+
+
+def test_planned_no_aplica_a_una_metrica_con_datos():
+    import pytest
+    with pytest.raises(ValueError):
+        contract.metric("ok", series=[], planned=True)
+
+
+def test_planned_sigue_exigiendo_razon():
+    import pytest
+    with pytest.raises(ValueError):
+        contract.metric("not_available", planned=True)

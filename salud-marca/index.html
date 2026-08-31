@@ -33,6 +33,7 @@
   .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; flex-wrap: wrap; gap: 12px; }
   .header h1 { font-size: 22px; font-weight: 600; color: var(--text-title); }
   .header h1 span { color: var(--accent); }
+  .cobertura { font-size: 11.5px; color: var(--text-muted-3); margin-left: auto; margin-right: 10px; }
   .theme-btn { background: var(--card); border: 1px solid var(--border); color: var(--text-muted-2); border-radius: 6px; padding: 4px 10px; font-size: 14px; cursor: pointer; transition: background .15s, color .15s; }
   .theme-btn:hover { background: var(--card-hover); color: var(--accent); }
   .sub { color: var(--text-muted-2); font-size: 13px; line-height: 1.6; max-width: 820px; margin-bottom: 18px; }
@@ -97,6 +98,7 @@
 
   /* El vacío explícito: cuando falta la FUENTE, se explica. Nunca un chart en blanco ni ceros. */
   .empty-metric { background: var(--card); border: 1px dashed var(--border-strong); border-radius: 10px; padding: 28px 24px; text-align: center; }
+  .empty-metric.planeada { border-style: solid; border-color: var(--border); background: transparent; }
   .empty-metric .icon { font-size: 22px; color: var(--text-muted-3); display: block; margin-bottom: 8px; }
   .empty-metric strong { display: block; font-size: 13.5px; color: var(--text-muted); margin-bottom: 8px; }
   .empty-metric p { font-size: 12.5px; color: var(--text-muted-3); line-height: 1.65; max-width: 620px; margin: 0 auto; }
@@ -115,6 +117,7 @@
 
 <div class="header">
   <h1>Salud de marca — <span id="paisTitulo">México</span></h1>
+  <span id="cobertura" class="cobertura"></span>
   <button class="theme-btn" id="themeToggle" onclick="toggleTheme()">🌙</button>
 </div>
 <p class="sub">Cómo se transforma la marca mes a mes. Los indicadores se agrupan por
@@ -271,8 +274,10 @@ function renderMetric(host, metric, drawFn) {
     return '';
   }
   if (metric.status === 'not_available' || metric.status === 'error') {
-    const t = metric.status === 'error' ? 'Falló la última actualización' : 'Sin fuente conectada';
-    host.innerHTML = `<div class="empty-metric"><span class="icon">${metric.status === 'error' ? '⚠' : '—'}</span>
+    const t = metric.status === 'error' ? 'Falló la última actualización'
+      : metric.planned ? 'Todavía no existe' : 'Sin fuente conectada';
+    const ic = metric.status === 'error' ? '⚠' : metric.planned ? '○' : '—';
+    host.innerHTML = `<div class="empty-metric${metric.planned ? ' planeada' : ''}"><span class="icon">${ic}</span>
       <strong>${t}</strong><p>${metric.reason || ''}</p></div>`;
     return '';
   }
@@ -497,13 +502,17 @@ function render() {
     ['brand_lift', 'Brand Lift continuo de Meta',
      'Meta encuesta cada mes a un grupo expuesto a la pauta y a un grupo de control equivalente al que le retiene los anuncios. El <strong>lift</strong> es la diferencia neta entre los dos: lo que la pauta causó, no lo que correlaciona.',
      drawBrandLift, ['Percepción', 'Qué piensan de nosotros. Se pregunta, no se deduce del comportamiento.']],
+    ['exit_poll', 'Atribución declarada — exit poll de registro',
+     'Lo que la gente dice cuando se le pregunta dónde nos conoció, al momento de registrarse. Es declarado, no medido: sirve para leer tendencia, nunca para atribuir cierres.',
+     drawExitPoll],
+    ['encuestador', 'Agente encuestador de marca',
+     'Un agente que contactará gente por WhatsApp mes a mes con tres preguntas: <strong>¿nos conocen?</strong>, <strong>¿con qué atributo nos relacionan?</strong> y <strong>¿nos ven como comprador directo, como inmobiliaria o como varias cosas?</strong> Es el único indicador de este tablero que preguntaría a gente que <em>no</em> ha interactuado con nosotros — todos los demás miden sobre audiencia ya alcanzada por la pauta o ya registrada.',
+     null],
     ['traffic', 'Tráfico y costo por visita por plaza',
      'Si la marca funciona, el tráfico sube y el costo por visita baja. La marca es la pólvora; el performance, la mecha.',
-     drawTraffic],
-    ['exit_poll', 'Atribución declarada — exit poll de registro',
-     'Lo que la gente dice cuando se le pregunta dónde nos conoció. Es declarado, no medido: sirve para tendencia, no para atribuir cierres.',
-     drawExitPoll],
+     drawTraffic, ['Demanda', 'Cuánta gente llega al sitio. Es comportamiento, no opinión.']],
   ];
+
   app.innerHTML = secs.map(([k, , , , bloque]) =>
     (bloque ? `<div class="bloque"><h2 class="bloque-h">${bloque[0]}</h2><p class="bloque-p">${bloque[1]}</p></div>` : '') +
     `<div class="section"><h2 id="h-${k}"></h2><p class="hint" id="p-${k}"></p><div id="c-${k}"></div></div>`).join('');
@@ -511,9 +520,20 @@ function render() {
   secs.forEach(([k, titulo, hint, fn]) => {
     const m = M[k] && M[k][PAIS];
     document.getElementById(`p-${k}`).innerHTML = hint;
-    const badge = renderMetric(document.getElementById(`c-${k}`), m, fn);
+    // `fn` null = métrica declarada que todavía no tiene forma de dibujarse (el encuestador).
+    // Su `status` es `not_available`, así que `renderMetric` nunca llega a llamarla; el null es
+    // para que quede explícito que no hay dibujo pendiente de escribir, sino fuente pendiente
+    // de existir.
+    const badge = renderMetric(document.getElementById(`c-${k}`), m, fn || (() => {}));
     document.getElementById(`h-${k}`).innerHTML = titulo + ' ' + badge + ' ' + srcTag(m);
   });
+
+  // Cobertura: cuántas celdas de este país tienen dato. Es honesto y de paso es el indicador de
+  // progreso del proyecto — hoy dice 4 de 7 en MX.
+  const total = secs.length, conDato = secs.filter(([k]) =>
+    M[k] && M[k][PAIS] && ['ok', 'stale'].includes(M[k][PAIS].status)).length;
+  document.getElementById('cobertura').textContent =
+    `${conDato} de ${total} indicadores con dato en ${PAIS === 'MX' ? 'México' : 'Colombia'}`;
 }
 window.rerender = render;
 
