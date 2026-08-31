@@ -68,12 +68,9 @@
   .charts-grid.tres + .charts-grid.tres { margin-top: 14px; }
   @media (max-width: 1000px) { .charts-grid.tres { grid-template-columns: 1fr; } }
 
-  /* Una fila = un indicador. Izquierda el lift (¿está funcionando?), derecha los niveles
-     (¿de dónde sale?). Rejilla FIJA de 2 para que las filas queden alineadas columna a
-     columna: con auto-fit una fila podría acomodar 1 y otra 2 y se perdería la lectura
-     vertical, que es todo el punto de contar un indicador a la vez. */
-  .charts-grid.dos { grid-template-columns: repeat(2, 1fr); }
-  @media (max-width: 900px) { .charts-grid.dos { grid-template-columns: 1fr; } }
+  /* Una fila = un indicador, una sola gráfica a lo ancho. Las columnas de expuestos y no
+     expuestos ya llevan el lift en la línea del eje derecho: un panel aparte solo con el lift
+     repetía el mismo dato en otra forma. */
   .fila { margin-bottom: 18px; }
   .fila:last-child { margin-bottom: 0; }
   .fila > .fila-h { display: flex; align-items: baseline; gap: 9px; margin-bottom: 7px; flex-wrap: wrap; }
@@ -85,6 +82,7 @@
   .panel h3 { font-size: 12.5px; color: var(--text-title); font-weight: 700; margin-bottom: 2px; }
   .panel .cap { font-size: 11px; color: var(--text-muted-3); margin-bottom: 8px; }
   .ch { position: relative; height: 200px; }
+  .ch.alto { height: 270px; }
   .legend { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 8px; }
   .legend span { font-size: 11px; color: var(--text-muted-2); display: inline-flex; align-items: center; gap: 5px; }
   .legend i { width: 10px; height: 10px; border-radius: 2px; display: inline-block; }
@@ -275,9 +273,10 @@ function drawBrandLift(host, serie) {
     ? ` · <strong>${[...parciales].join(', ')} en curso</strong>, el estudio no ha cerrado`
     : '';
 
-  // Una FILA por indicador: izquierda el lift en puntos (¿está funcionando?), derecha las dos
-  // tasas que lo producen (¿de dónde sale?). Se lee un indicador a la vez, de arriba abajo,
-  // en el orden del embudo de marca.
+  // Una FILA por indicador, UNA sola gráfica a lo ancho. Las columnas de expuestos y no
+  // expuestos ya llevan el lift en la línea del eje derecho, así que un panel aparte solo con
+  // el lift repetía el mismo dato en otra forma. El encabezado se queda con lo que ese panel
+  // aportaba de verdad: el lift del último mes y el máximo histórico.
   host.innerHTML = preguntas.map((q, i) => {
     const s = serie.filter(r => r.question === q);
     const ult = s[s.length - 1] || {};
@@ -290,27 +289,19 @@ function drawBrandLift(host, serie) {
         <span class="q">${(PREGUNTA_TEXTO[PAIS] || {})[q] || ''}</span>
         ${AVISO_PREGUNTA[q] ? `<span class="aviso">⚠ ${AVISO_PREGUNTA[q]}</span>` : ''}
       </div>
-      <div class="charts-grid dos">
-        <div class="panel">
-          <h3>${NOMBRE_PREGUNTA[q] || q}</h3>
-          <div class="cap">${ult.month || '—'}: <strong>${lift >= 0 ? '+' : ''}${lift.toFixed(1)} pts</strong>
-            de lift · máximo ${(100 * (pico.lift || 0)).toFixed(1)} pts en ${pico.month || '—'}${notaParcial}</div>
-          <div class="ch"><canvas id="bl-v-${i}"></canvas></div>
-          ${legend([[PALETA[i], 'Lift en puntos']])}</div>
-        <div class="panel">
-          <h3>${NOMBRE_PREGUNTA[q] || q} — expuestos vs no expuestos</h3>
-          <div class="cap">${ult.month || '—'}: ${(100 * (ult.exposed || 0)).toFixed(1)}% con exposición
-            vs ${(100 * (ult.control || 0)).toFixed(1)}% sin exposición${notaParcial}</div>
-          <div class="ch"><canvas id="bl-d-${i}"></canvas></div>
-          ${legend([[C.gris, 'No expuestos'], [C.azul, 'Expuestos'], [C.ambar, 'Lift (eje derecho)']])}</div>
-      </div></div>`;
+      <div class="panel">
+        <div class="cap"><strong>${ult.month || '—'}</strong>:
+          ${(100 * (ult.exposed || 0)).toFixed(1)}% con exposición vs
+          ${(100 * (ult.control || 0)).toFixed(1)}% sin exposición →
+          <strong>${lift >= 0 ? '+' : ''}${lift.toFixed(1)} pts de lift</strong>
+          · máximo ${(100 * (pico.lift || 0)).toFixed(1)} pts en ${pico.month || '—'}${notaParcial}</div>
+        <div class="ch alto"><canvas id="bl-d-${i}"></canvas></div>
+        ${legend([[C.gris, 'No expuestos'], [C.azul, 'Expuestos'], [C.ambar, 'Lift (eje derecho)']])}</div>
+    </div>`;
   }).join('');
 
   preguntas.forEach((q, i) => {
     const s = serie.filter(r => r.question === q);
-    mkMulti(`bl-v-${i}`, L, [
-      { type: 'bar', label: 'Lift', color: conParcial(PALETA[i]), data: L.map(m => dato(s, m, 'lift')) },
-    ], { fmt: 'pts' });
     // Doble eje: el lift son unos pocos puntos y quedaría pegado al suelo si compartiera
     // escala con tasas de 15-35%.
     mkMulti(`bl-d-${i}`, L, [
