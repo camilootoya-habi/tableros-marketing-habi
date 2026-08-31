@@ -77,6 +77,11 @@
   .fila > .fila-h .n { font-size: 10.5px; font-weight: 700; color: var(--accent); border: 1px solid var(--border-strong); border-radius: 4px; padding: 1px 6px; }
   .fila > .fila-h h4 { font-size: 13.5px; font-weight: 700; color: var(--text-title); }
   .fila > .fila-h .q { font-size: 11.5px; color: var(--text-muted-3); }
+  /* La fila de una pregunta sin nombre se marca visualmente: su serie es real, pero afirmar
+     cuál pregunta es sería inventar. El punteado dice "esto todavía no está cerrado". */
+  .fila.dudosa > .panel { border-style: dashed; border-color: var(--border-strong); }
+  .fila.dudosa > .fila-h .n { color: var(--warn-fg); background: var(--warn-bg); border-color: var(--warn-bg); }
+  .nota-hueco { background: var(--card); border: 1px dashed var(--border-strong); border-left: 3px solid var(--accent); border-radius: 8px; padding: 11px 14px; margin: 4px 0 14px; font-size: 12.5px; color: var(--text-muted); line-height: 1.6; }
   .fila > .fila-h .aviso { font-size: 10.5px; font-weight: 600; background: var(--warn-bg); color: var(--warn-fg); border-radius: 4px; padding: 2px 7px; }
   .panel { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 14px 15px 12px; display: flex; flex-direction: column; }
   .panel h3 { font-size: 12.5px; color: var(--text-title); font-weight: 700; margin-bottom: 2px; }
@@ -184,7 +189,9 @@ const C = { azul: '#818cf8', gris: '#94a3b8', ambar: '#fbbf24', verde: '#34d399'
 const PALETA = [C.azul, C.verde, C.ambar, C.cian, C.rosa, C.gris];
 const NOMBRE_PREGUNTA = { ad_recall: 'Ad recall (recordación del anuncio)',
                           toma: 'Top of mind awareness', favorability: 'Brand favorability',
-                          intent: 'Intent (intención de elegirnos)' };
+                          intent: 'Intent (intención de elegirnos)',
+                          sin_identificar_alta: 'Pregunta sin identificar — la de tasa alta',
+                          sin_identificar_baja: 'Pregunta sin identificar — la de tasa baja' };
 
 // El texto LITERAL que ve el encuestado, leído de Ads Manager (2026-08-31). Cambia por país:
 // la marca se llama Habi en CO y Tuhabi en MX, y la lista de competidores del TOMA no es la
@@ -212,7 +219,19 @@ const PREGUNTA_TEXTO = {
 const AVISO_PREGUNTA = {
   toma: 'No comparable entre países: MX elige entre 4 marcas, CO entre 3. Menos opciones sube la tasa por diseño.',
   intent: 'Solo Colombia: México no incluye esta pregunta en su estudio.',
+  sin_identificar_alta: 'Es Top of mind awareness o Intent — la serie es real, el nombre no está confirmado.',
+  sin_identificar_baja: 'Es Top of mind awareness o Intent — la serie es real, el nombre no está confirmado.',
 };
+
+// El texto que explica el hueco. Las dos preguntas están en el estudio de CO desde jul-2022 con
+// datos completos; lo que falta es la ETIQUETA, y no se deduce: TOMA e Intent tienen la misma
+// huella de benchmark. Se muestran con nombre posicional en vez de esconderse, porque el tablero
+// explica sus huecos. Se resuelve leyendo el lift de la pestaña "Top of mind awareness" en
+// Ads Manager (estudio Jul 2026-Aug 2026 de Colombia).
+const NOTA_SIN_ID = 'Colombia pregunta cuatro cosas y dos ya no se distinguen por su huella de '
+  + 'benchmark: <strong>Top of mind awareness</strong> e <strong>Intent</strong>. La serie de '
+  + 'abajo es real y completa desde jul-2022 — lo único que falta es saber cuál es cuál. Se '
+  + 'resuelve leyendo el lift de la pestaña "Top of mind awareness" en Ads Manager.';
 
 const meses = s => [...new Set(s.map(r => r.month))].sort();
 const legend = items => `<div class="legend">${items.map(([c, t]) =>
@@ -251,7 +270,8 @@ const srcTag = m => (m && m.source)
 // ── Brand Lift ────────────────────────────────────────────────────────────────
 // Orden del embudo de marca, no alfabético: recordar el anuncio → tener la marca en mente →
 // que además guste. Así las dos filas se leen de izquierda a derecha como una progresión.
-const ORDEN_PREGUNTAS = ['ad_recall', 'toma', 'favorability', 'intent'];
+const ORDEN_PREGUNTAS = ['ad_recall', 'toma', 'favorability', 'intent',
+                         'sin_identificar_alta', 'sin_identificar_baja'];
 const ordenar = qs => [...qs].sort((a, b) => {
   const ia = ORDEN_PREGUNTAS.indexOf(a), ib = ORDEN_PREGUNTAS.indexOf(b);
   return (ia < 0 ? 99 : ia) - (ib < 0 ? 99 : ib) || a.localeCompare(b);
@@ -282,9 +302,11 @@ function drawBrandLift(host, serie) {
     const ult = s[s.length - 1] || {};
     const lift = 100 * (ult.lift || 0);
     const pico = s.reduce((a, b) => (b.lift ?? -9) > (a.lift ?? -9) ? b : a, s[0] || {});
-    return `<div class="fila">
+    const esPrimeraSinId = q === 'sin_identificar_alta';
+    return `${esPrimeraSinId ? `<div class="nota-hueco">${NOTA_SIN_ID}</div>` : ''}
+      <div class="fila${q.startsWith('sin_identificar') ? ' dudosa' : ''}">
       <div class="fila-h">
-        <span class="n">${i + 1}</span>
+        <span class="n">${q.startsWith('sin_identificar') ? '?' : i + 1}</span>
         <h4>${NOMBRE_PREGUNTA[q] || q}</h4>
         <span class="q">${(PREGUNTA_TEXTO[PAIS] || {})[q] || ''}</span>
         ${AVISO_PREGUNTA[q] ? `<span class="aviso">⚠ ${AVISO_PREGUNTA[q]}</span>` : ''}

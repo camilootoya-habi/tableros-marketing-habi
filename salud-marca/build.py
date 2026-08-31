@@ -80,7 +80,7 @@ def collect_brand_lift(country, now):
     country_cache = [r for r in all_cache if r["country"] == country]
 
     def _desde_cache(status, last_updated):
-        series = marca_parciales(BL.publishable(BL.series(BL.map_questions(country_cache))), now)
+        series = marca_parciales(BL.publishable(BL.nombrar_sin_identificar(BL.series(BL.map_questions(country_cache)))), now)
         if not series:
             return contract.metric("not_available", reason=_sin_identificar(country))
         return contract.metric(status, source="cache", series=series, last_updated=last_updated)
@@ -107,7 +107,7 @@ def collect_brand_lift(country, now):
     BL.save_cache(merged, refresh_times)
 
     rows = BL.map_questions([r for r in merged if r["country"] == country])
-    series = marca_parciales(BL.publishable(BL.series(rows)), now)
+    series = marca_parciales(BL.publishable(BL.nombrar_sin_identificar(BL.series(rows))), now)
     if not series:
         return contract.metric("not_available", reason=_sin_identificar(country))
     return contract.metric("ok", source="api", series=series, last_updated=now)

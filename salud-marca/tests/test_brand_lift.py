@@ -182,3 +182,51 @@ def test_nombre_de_un_solo_mes():
             "experiment_id": "1", "scoreMean.test": 0.4})]}]},
     }]
     assert BL.parse_results(estudios, "MX")[0]["month"] == "2025-04"
+
+
+# ── Las preguntas sin nombre se muestran, no se esconden ──────────────────────
+# El tablero explica cada hueco en vez de taparlo. Filtrar en silencio las preguntas sin
+# identificar rompía esa regla: CO mostraba 2 filas cuando su estudio tiene 4 preguntas, sin
+# decir en ninguna parte que faltaban dos. Se les da un nombre POSICIONAL estable —la de mayor
+# tasa de expuestos y la de menor, dentro del mismo estudio— para poder dibujar su serie sin
+# afirmar cuál pregunta es. En los 46 estudios de CO los dos rangos no se solapan
+# (27.7-53.8% vs 9.1-18.6%), así que la posición es estable mes a mes.
+
+def _r(exp_id, exposed, study="S1", month="2026-07"):
+    return {"country": "CO", "month": month, "study_id": study,
+            "experiment_id": exp_id, "question": "sin_identificar", "exposed": exposed}
+
+
+def test_las_sin_identificar_reciben_nombre_posicional():
+    rows = BL.nombrar_sin_identificar([_r("a", 0.41), _r("b", 0.17)])
+    por_id = {r["experiment_id"]: r["question"] for r in rows}
+    assert por_id == {"a": "sin_identificar_alta", "b": "sin_identificar_baja"}
+
+
+def test_la_posicion_se_calcula_dentro_de_cada_estudio():
+    """Un estudio con tasas altas no debe empujar al otro: cada uno se ordena solo."""
+    rows = BL.nombrar_sin_identificar([
+        _r("a", 0.41, "S1"), _r("b", 0.17, "S1"),
+        _r("c", 0.12, "S2"), _r("d", 0.09, "S2"),
+    ])
+    por_id = {r["experiment_id"]: r["question"] for r in rows}
+    assert por_id["c"] == "sin_identificar_alta" and por_id["d"] == "sin_identificar_baja"
+
+
+def test_no_toca_las_preguntas_ya_identificadas():
+    ok = {"country": "CO", "month": "2026-07", "study_id": "S1",
+          "experiment_id": "z", "question": "ad_recall", "exposed": 0.9}
+    rows = BL.nombrar_sin_identificar([ok, _r("a", 0.41), _r("b", 0.17)])
+    assert next(r for r in rows if r["experiment_id"] == "z")["question"] == "ad_recall"
+
+
+def test_una_sola_sin_identificar_no_recibe_posicion():
+    """Con una sola no hay 'alta' ni 'baja' que distinguir: se deja sin nombre y no se publica."""
+    rows = BL.nombrar_sin_identificar([_r("a", 0.41)])
+    assert rows[0]["question"] == "sin_identificar"
+
+
+def test_publishable_deja_pasar_las_posicionales_pero_no_las_anonimas():
+    rows = [_r("a", 0.41), _r("b", 0.17), _r("c", 0.30, "S2")]
+    pub = BL.publishable(BL.nombrar_sin_identificar(rows))
+    assert {r["experiment_id"] for r in pub} == {"a", "b"}

@@ -192,6 +192,36 @@ def map_questions(rows, mapping=None):
     return rows
 
 
+SIN_ID = ("sin_identificar_alta", "sin_identificar_baja")
+
+
+def nombrar_sin_identificar(rows):
+    """Le da un nombre POSICIONAL a las preguntas cuya etiqueta no se conoce, para poder
+    dibujar su serie sin afirmar cuál pregunta es.
+
+    El tablero explica cada hueco en vez de taparlo, y filtrar en silencio lo no identificado
+    rompía esa regla: CO mostraba 2 filas cuando su estudio tiene 4 preguntas, sin decir en
+    ninguna parte que faltaban dos. La posición es la tasa de expuestos DENTRO del mismo
+    estudio (nunca del mes: dos estudios pueden caer en el mismo mes calendario). En los 46
+    estudios de CO los dos rangos jamás se solapan —27.7-53.8% contra 9.1-18.6%— así que
+    "alta" y "baja" señalan la misma pregunta todos los meses.
+
+    Con una sola sin identificar no hay posición que distinguir: se deja anónima, y
+    `publishable()` la sigue dejando afuera.
+    """
+    por_estudio = {}
+    for r in rows:
+        if r.get("question") == "sin_identificar":
+            por_estudio.setdefault(r.get("study_id"), []).append(r)
+    for rs in por_estudio.values():
+        if len(rs) != 2:
+            continue
+        alta, baja = sorted(rs, key=lambda r: -(r.get("exposed") or 0))
+        alta["question"], baja["question"] = SIN_ID
+    return rows
+
+
 def publishable(rows):
-    """Solo lo identificado llega al tablero y al informe."""
+    """Solo lo identificado llega al tablero y al informe. Las posicionales sí pasan: llevan
+    su propia advertencia y su serie es real; lo que no se afirma es qué pregunta son."""
     return [r for r in rows if r.get("question") not in (None, "sin_identificar")]
