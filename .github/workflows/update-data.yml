@@ -213,7 +213,7 @@ jobs:
           import json
           with open('/tmp/funnel_raw.json') as f:
               data = json.load(f)
-          int_keys = ('f','tr','t','cal_mm','cal_inmo','asg_inmo','cal_mm_no_inmo','cal_mm_dup','cal_mm_desc','incomp','dup')
+          int_keys = ('tr','t','cal_mm','cal_inmo','asg_inmo','cal_mm_no_inmo','cal_desclas','cal_mm_desclas','cal_mm_dup','cal_mm_desc','incomp','dup')
           for r in data:
               for k in int_keys:
                   r[k] = int(r[k])
@@ -230,11 +230,51 @@ jobs:
           with open('/tmp/antifunnel_raw.json') as f:
               data = json.load(f)
           for r in data:
-              for k in ('f','state_id','n'):
+              for k in ('state_id','n'):
                   r[k] = int(r[k])
           with open('tablero-marketing/antifunnel.json','w') as f:
               json.dump(data, f, separators=(',',':'))
           print(f'Antifunnel rows: {len(data)}')
+          "
+
+      - name: Query MM-desclasificados por estado actual (CO + MX)
+        if: always()
+        run: |
+          bq query --use_legacy_sql=false --format=json --max_rows=200000 < tablero-marketing/mm_desclas_states.sql > /tmp/mm_desclas_raw.json
+
+      - name: Process MM-desclasificados data.json
+        if: always()
+        run: |
+          python3 -c "
+          import json
+          with open('/tmp/mm_desclas_raw.json') as f:
+              data = json.load(f)
+          for r in data:
+              for k in ('state_id','n'):
+                  r[k] = int(r[k])
+          with open('tablero-marketing/mm_desclas_states.json','w') as f:
+              json.dump(data, f, separators=(',',':'))
+          print(f'MM-desclas rows: {len(data)}')
+          "
+
+      - name: Query Inmo-desclasificados por estado actual (CO + MX)
+        if: always()
+        run: |
+          bq query --use_legacy_sql=false --format=json --max_rows=200000 < tablero-marketing/inmo_desclas_states.sql > /tmp/inmo_desclas_raw.json
+
+      - name: Process Inmo-desclasificados data.json
+        if: always()
+        run: |
+          python3 -c "
+          import json
+          with open('/tmp/inmo_desclas_raw.json') as f:
+              data = json.load(f)
+          for r in data:
+              for k in ('state_id','n'):
+                  r[k] = int(r[k])
+          with open('tablero-marketing/inmo_desclas_states.json','w') as f:
+              json.dump(data, f, separators=(',',':'))
+          print(f'Inmo-desclas rows: {len(data)}')
           "
 
       - name: Process MM-sin-Inmo data.json
@@ -245,7 +285,7 @@ jobs:
           with open('/tmp/mm_sin_inmo_raw.json') as f:
               data = json.load(f)
           for r in data:
-              for k in ('f','state_id','n'):
+              for k in ('state_id','n'):
                   r[k] = int(r[k])
           with open('tablero-marketing/mm_sin_inmo_states.json','w') as f:
               json.dump(data, f, separators=(',',':'))
