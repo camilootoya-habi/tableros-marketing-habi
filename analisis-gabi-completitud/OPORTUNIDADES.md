@@ -125,6 +125,7 @@ Todas las queries corren con `bq query --use_legacy_sql=false --maximum_bytes_bi
 - `queries/m2_cohortes_desenlace.sql` — DIO_TODO / PASO_M2 / MURIO_EN_M2 con volumen mensual y desenlace.
 - `queries/reask_por_campo.sql` — qué campo re-pregunta Gabi tras el bloque.
 - `queries/m2.sql`, `queries/conv_m2.clean.json`, `queries/show.py` — la evidencia cualitativa original (28-ago).
+- `queries/funnel_etapas_botA.sql` — funnel del bot A (anexo) · `funnel_ambos.json` — ambos funnels en JSON para graficar.
 
 ## 5. Límites y qué habría que A/B-testear
 
@@ -146,3 +147,45 @@ Todas las queries corren con `bq query --use_legacy_sql=false --maximum_bytes_bi
 - **Solo bot B (2026).** El bot A ("de a uno") tiene otro funnel; la comparación A vs B ya está en el
   análisis del 28-ago (`queries/estrat.sql`, `queries/ruteo.sql`) y no se re-derivó aquí.
 - Ventana jun–ago 2026; los volúmenes mensuales fueron estables (±8%), pero estacionalidad no evaluada.
+
+---
+
+## Anexo: funnel del bot A ("de a uno") y comparación
+
+Cohorte A: apertura "*¡Has solicitado una Oferta de Compra...!*" (excluyente con la de B por primera
+línea de Gabi), misma ventana. ⚠ En el bot A `last_activity` se mueve sin mensajes nuevos: el 61% de
+los deals A con `last_activity` jun–ago tenía su último mensaje en 2024–2025. La cohorte exige además
+que el **último `HORA` real** caiga en la ventana → **868 deals** (en B esto casi no pasa: 97% de su
+cohorte ya caía en ventana). Query: `queries/funnel_etapas_botA.sql`; datos de ambos funnels en
+`funnel_ambos.json`. Validación manual de 8 colas de A: sin falsos positivos de muerte; sí apareció
+la trampa de `last_activity` (por eso el filtro) y un caso de fusión de etapas del LLM.
+
+Progresión propia de A (leída en conversaciones; no calca la de B): consentimiento "ACEPTO" →
+dirección (calle+número+CP) → antigüedad+precio → tipo de inmueble y m²/recámaras (el LLM las
+interlava — 95 convs con m² sin pregunta de tipo y 72 al revés — van como UNA etapa; aquí es donde A
+sugiere rangos de m² por comparables) → baños+estacionamiento → "tengo toda la información".
+**Sin equivalente entre bots:** el consentimiento ACEPTO solo existe en A; el bloque de 6 y la
+re-pregunta de m² en mensaje aparte solo existen en B.
+
+| Etapa (paralelo conceptual) | A: deals | A: muere (% etapa) | B: deals | B: muere (% etapa) |
+|---|---|---|---|---|
+| Recibió apertura | 868 | 308 (35,5%) | 9.076 | 5.325 (58,7%) |
+| Respondió algo | 560 | 216 en consentimiento (38,6%) | 3.751 | 532 en tipo (14,2%) |
+| Llegó a dirección | 344 | 140 (40,7%) | 3.219 | 1.571 (48,8%) |
+| Le piden datos del inmueble | 226 (de a uno) | 90+29 en el camino | 1.695 (bloque de 6) | 448 (26,4%) |
+| Dio la mayoría de los datos | 122 (llegó a baños = ≥4 de 6) | 64 (52,5%)* | 1.237 (respondió bloque) | 147 en re-ask m² (11,9%) |
+| Completó levantamiento | 46 (5,3%)* | — | 1.060 (11,7%) | — |
+
+\* El cierre de A lo redacta el LLM y el marcador es débil (46 acumulado vs 21 por clasificación
+excluyente): la fila "completó" de A es piso, no punto; parte de las 64 "muertes en baños" son
+levantamientos casi completos (rutean al 57,8%).
+
+**Lectura honesta:** (1) A engancha mejor la apertura (64,5% responde vs 41,3%) pero su cohorte 2026
+es chica y distinta — B es el lanzamiento masivo; poblaciones no aleatorizadas, nada de esto es un A/B.
+(2) La etapa dirección mata ~40–49% en AMBOS bots — es fricción del dato, no del estilo, y refuerza la
+oportunidad #1. (3) A pierde menos justo donde sugiere opciones (tipo+m²/recámaras: 20,4%, la mejor
+tasa intermedia de los dos funnels) — consistente con la oportunidad #3/#4, aunque con n=142 es
+indicio, no prueba. (4) A pesar de estilos opuestos, el % que entrega la mayoría de los datos es casi
+idéntico (A 14,1% vs B 13,6%): el "de a uno" no gana en completitud global, gana en dónde se muere.
+El ruteo por etapa de muerte de A también crece con la profundidad (7,8% → 57,8%), con niveles más
+bajos que B en las etapas tempranas.

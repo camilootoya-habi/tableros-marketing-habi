@@ -1,0 +1,28 @@
+{
+  "meta": {
+    "ventana": "conversaciones jun-ago 2026 (bot A: filtrado ADEMÁS por fecha real del último mensaje, ver queries/funnel_etapas_botA.sql; bot B: last_activity, queries/funnel_etapas.sql y muerte_por_etapa_desenlace.sql)",
+    "definicion": "deals = conversaciones que alcanzaron la etapa; muere = muertes exclusivas en la etapa; pct_etapa = muere/deals*100",
+    "no_comparable": "las etapas intermedias difieren por diseño: A pide consentimiento ACEPTO y los datos DE A UNO con sugerencias; B no tiene consentimiento y pide un BLOQUE de 6 datos con re-preguntas de faltantes"
+  },
+  "botA": [
+    {"etapa": "recibio_apertura", "deals": 868, "muere": 308, "pct_etapa": 35.5},
+    {"etapa": "respondio_algo", "deals": 560, "muere": 216, "pct_etapa": 38.6},
+    {"etapa": "consintio_y_le_piden_direccion", "deals": 344, "muere": 140, "pct_etapa": 40.7},
+    {"etapa": "dio_direccion_le_piden_antiguedad_precio", "deals": 226, "muere": 90, "pct_etapa": 39.8},
+    {"etapa": "llego_a_tipo_m2_recamaras", "deals": 142, "muere": 29, "pct_etapa": 20.4},
+    {"etapa": "llego_a_banos_estacionamiento", "deals": 122, "muere": 64, "pct_etapa": 52.5},
+    {"etapa": "completo_levantamiento", "deals": 46, "muere": null, "pct_etapa": null}
+  ],
+  "botB": [
+    {"etapa": "recibio_apertura", "deals": 9076, "muere": 5325, "pct_etapa": 58.7},
+    {"etapa": "respondio_algo", "deals": 3751, "muere": 532, "pct_etapa": 14.2},
+    {"etapa": "llego_a_direccion", "deals": 3219, "muere": 1571, "pct_etapa": 48.8},
+    {"etapa": "le_piden_bloque_de_6", "deals": 1695, "muere": 448, "pct_etapa": 26.4},
+    {"etapa": "respondio_bloque", "deals": 1237, "muere": 147, "pct_etapa": 11.9},
+    {"etapa": "completo_o_paso_repreguntas", "deals": 1060, "muere": null, "pct_etapa": null}
+  ],
+  "ruteo_por_etapa_de_muerte": {
+    "botA": {"1_nunca_respondio": 7.8, "2_consentimiento": 10.6, "3_direccion": 17.9, "4_antiguedad_precio": 20.0, "5_tipo_m2_recamaras": 34.5, "6_banos_estac": 57.8, "7_completo": 47.6},
+    "botB": {"1_nunca_respondio": 4.4, "2_tipo": 12.8, "3_direccion": 16.2, "4_ante_bloque": 51.8, "5_reask_m2": 72.9, "6_completo_o_paso": 79.1}
+  }
+}
