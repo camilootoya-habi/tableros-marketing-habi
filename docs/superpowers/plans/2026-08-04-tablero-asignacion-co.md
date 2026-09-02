@@ -15,10 +15,13 @@
 - **Nunca editar el `index.html` de la raíz** — es generado por `scripts/build_hub.py`.
 - Gráficas **siempre con Chart.js** vía `mkChart`, nunca SVG a mano.
 - Facturar BQ en `sellers-main-prod`. `papyrus-data` y `papyrus-master` **no** permiten crear jobs con estas credenciales: se leen cross-project con path completo.
-- pipeline_id: MM = `798578615` · INMO = `803674753` · legacy = `1679217`.
+- pipeline_id: MM = `798578615` · INMO = `803674753`.
+- ⚠️ **`1679217` ("Sellers CO") NO es un producto: es el pipeline donde nace todo deal** (1.373.130 nids en 940 días, más que el universo entero de leads de la ventana). Tampoco lo son los pipelines de MX (`15290604`, `638550350`, `10867264`). **`prod_1` se calcula SOLO entre MM e INMO**; todo lo demás se ignora. Las métricas de producto se condicionan además a que el lead esté asignado (`d_primera_asig IS NOT NULL`). Los asignados que nunca entraron a MM ni INMO se cuentan en una métrica propia, `sin_producto`.
+- ⚠️ **Cobertura de los pipelines nuevos: MM arranca 2025-09-18 e INMO 2025-10-02.** Los períodos anteriores tienen las columnas de producto en cero **por construcción, no por caída**. El frontend los marca "sin cobertura" (ver Task 5). Las métricas de asignación (`asig_30d`, `asig_ever`, `gabi_30d`, `directo_30d`) sí tienen data desde 2024-01 y se muestran normal.
 - `hubspot.historical`: particionada por MONTH en `fecha`, clusterizada por `propiedad`, `valor` es STRING, **~5 h de rezago**. Filtrar SIEMPRE por `propiedad` y por `fecha`.
 - **`bi_co.seguimiento_asignacion_ibuyer_co.pipeline` es snapshot** — prohibido usarlo para la secuencia de productos. De esa tabla solo se usan `fecha_asignacion`, `tipo_asignacion`, `tipo`, `equipo_inicial`, `area_metropolitana`, `fuente`.
 - **`product_qualified` no tiene fecha ni historial** — se usa solo como atributo de estado final, jamás como fecha ni como secuencia.
+- ⚠️ **La secuencia de productos se compara SIEMPRE con TIMESTAMP, nunca con DATE.** 1.729 nids tienen eventos de MM e INMO el mismo día y a nivel DATE su orden es indefinido (el resultado cambiaría entre corridas del cron). Las fechas se derivan de los timestamps solo para agrupar por período y para medir diferencias en días.
 - Percentiles: **mediana y p90, nunca promedio**.
 - `bq query --format=json` devuelve **todos los valores como STRING** — el frontend debe hacer `Number()` en cada métrica.
 - Nunca usar `ANY_VALUE` para tomar "el primero" de un grupo: usar `ARRAY_AGG(... ORDER BY ... LIMIT 1)[OFFSET(0)]`.
@@ -44,8 +47,13 @@
   - `d` = fecha del ancla (lente A: creación; B: llegada a INMO; C: llegada a MM; REC: creación)
   - `dim` ∈ `total` | `fuente` | `area` | `equipo`; `dim_val` = el valor (o `'total'`)
   - `metrica` = nombre de la métrica (ver cada tarea); `n` = conteo de nids
-- `kind='tiempo'` — pre-agregado: `{kind, gran, periodo, salto, mediana, p90, n}`
-  - `gran` ∈ `semana` | `mes` | `ciclo`; `salto` ∈ `creacion_gabi` | `gabi_mm` | `mm_inmo` | `inmo_mm`
+- `kind='tiempo'` — pre-agregado. ⚠️ **BigQuery nombra las columnas del `UNION ALL` según la PRIMERA rama**, así que las filas de tiempo comparten las 7 columnas de las filas de conteo. Para que ningún campo mienta sobre su contenido, se mapean así (una fila por medida, no una fila con tres medidas):
+  - `lente` = `'TIEMPO'` (identifica la familia)
+  - `d` = período (una fecha real: el inicio del período)
+  - `dim` = granularidad ∈ `semana` | `mes` | `ciclo`
+  - `dim_val` = salto ∈ `creacion_gabi` | `gabi_mm` | `mm_inmo` | `inmo_mm`
+  - `metrica` ∈ `mediana` | `p90` | `n_casos`; `n` = el valor
+  - **Prohibido** meter un número en un campo llamado `metrica` o un p90 en uno llamado `dim_val`.
 
 ---
 
@@ -173,7 +181,9 @@ git commit -m "feat(asignacion-co): scaffolding del tablero y pipeline de datos"
   `d_asig` DATE, `tipo_1` STRING (`gabi`|`comercial`), `tipo_asignacion_1` STRING,
   `d_owner` DATE, `d_primera_asig` DATE, `senal_primera` STRING (`seguimiento`|`owner`),
   `gabi_flag` BOOL, `gabi_producto` STRING, `d_gabi` DATE,
-  `prod_1` STRING (`MM`|`INMO`|`LEGACY`), `d_mm` DATE, `d_inmo` DATE, `d_prod_1` DATE,
+  `prod_1` STRING (`MM`|`INMO`|NULL si nunca entró a ninguno), `d_mm` DATE, `d_inmo` DATE, `d_prod_1` DATE,
+  `ts_mm` TIMESTAMP, `ts_inmo` TIMESTAMP, `ts_prod_1` TIMESTAMP (la secuencia se compara con estos, no con las fechas),
+  `inmo_despues_de_mm` BOOL, `mm_despues_de_inmo` BOOL,
   `n_asig` INT64, `en_wbr` BOOL.
   Y las métricas de la lente A: `creados`, `asig_30d`, `asig_ever`, `gabi_30d`, `directo_30d`, `prod1_mm`, `prod1_inmo`, `prod1_legacy`.
 
@@ -209,30 +219,34 @@ En `asignacion-co/query.sql`, después del CTE `leads`, agregar:
 , pipe_ev AS (
   SELECT
     CAST(nid AS STRING) AS nid,
-    DATE(fecha) AS d,
-    CASE TRIM(valor)
-      WHEN '798578615' THEN 'MM'
-      WHEN '803674753' THEN 'INMO'
-      ELSE 'LEGACY'
-    END AS prod
+    TIMESTAMP(fecha) AS ts,          -- la secuencia se ordena por TIMESTAMP, no por DATE
+    IF(TRIM(valor) = '798578615', 'MM', 'INMO') AS prod
   FROM `sellers-main-prod.hubspot.historical`
   WHERE propiedad = 'pipeline'
+    -- SOLO los dos pipelines de producto. 1679217 y los de MX no son productos (ver Global Constraints).
+    AND TRIM(valor) IN ('798578615', '803674753')
     AND DATE(fecha) >= DATE_SUB(CURRENT_DATE(), INTERVAL 940 DAY)
 )
 , pipes AS (
   SELECT
     nid,
-    MIN(IF(prod = 'MM',   d, NULL)) AS d_mm,
-    MIN(IF(prod = 'INMO', d, NULL)) AS d_inmo,
-    ARRAY_AGG(prod ORDER BY d LIMIT 1)[OFFSET(0)] AS prod_1,
-    MIN(d) AS d_prod_1,
+    -- Timestamps: son la verdad de la SECUENCIA (1.729 nids tienen MM e INMO el mismo día,
+    -- y los 1.769 casos son desempatables con el timestamp)
+    MIN(IF(prod = 'MM',   ts, NULL)) AS ts_mm,
+    MIN(IF(prod = 'INMO', ts, NULL)) AS ts_inmo,
+    MIN(ts)                          AS ts_prod_1,
+    ARRAY_AGG(prod ORDER BY ts LIMIT 1)[OFFSET(0)] AS prod_1,
+    -- Fechas: derivadas de los timestamps, solo para agrupar por período y medir días
+    DATE(MIN(IF(prod = 'MM',   ts, NULL))) AS d_mm,
+    DATE(MIN(IF(prod = 'INMO', ts, NULL))) AS d_inmo,
+    DATE(MIN(ts))                          AS d_prod_1,
     -- Rutas de regreso: ¿hubo un evento de un producto POSTERIOR a la primera entrada al otro?
-    LOGICAL_OR(prod = 'INMO' AND d > primera_mm)   AS inmo_despues_de_mm,
-    LOGICAL_OR(prod = 'MM'   AND d > primera_inmo) AS mm_despues_de_inmo
+    LOGICAL_OR(prod = 'INMO' AND ts > primera_mm)   AS inmo_despues_de_mm,
+    LOGICAL_OR(prod = 'MM'   AND ts > primera_inmo) AS mm_despues_de_inmo
   FROM (
-    SELECT nid, d, prod,
-           MIN(IF(prod = 'MM',   d, NULL)) OVER (PARTITION BY nid) AS primera_mm,
-           MIN(IF(prod = 'INMO', d, NULL)) OVER (PARTITION BY nid) AS primera_inmo
+    SELECT nid, ts, prod,
+           MIN(IF(prod = 'MM',   ts, NULL)) OVER (PARTITION BY nid) AS primera_mm,
+           MIN(IF(prod = 'INMO', ts, NULL)) OVER (PARTITION BY nid) AS primera_inmo
     FROM pipe_ev
   )
   GROUP BY nid
@@ -263,7 +277,8 @@ En `asignacion-co/query.sql`, después del CTE `leads`, agregar:
     a.d_gabi,
     a.a1.tipo = 'gabi'                                      AS gabi_flag,
     COALESCE(NULLIF(TRIM(g.product_qualified), ''), '(sin calificar)') AS gabi_producto,
-    p.prod_1, p.d_prod_1, p.d_mm, p.d_inmo, p.inmo_despues_de_mm,
+    p.prod_1, p.d_prod_1, p.d_mm, p.d_inmo,
+    p.ts_mm, p.ts_inmo, p.ts_prod_1, p.inmo_despues_de_mm, p.mm_despues_de_inmo,
     w.nid IS NOT NULL                                       AS en_wbr
   FROM leads l
   LEFT JOIN asig  a USING (nid)
@@ -336,12 +351,14 @@ Expected:
                       AND DATE_DIFF(b.d_asig, b.d_creacion, DAY) <= 30, b.nid, NULL))         AS gabi_30d,
     COUNT(DISTINCT IF(b.d_primera_asig IS NOT NULL AND NOT COALESCE(b.gabi_flag, FALSE)
                       AND DATE_DIFF(b.d_primera_asig, b.d_creacion, DAY) <= 30, b.nid, NULL)) AS directo_30d,
-    COUNT(DISTINCT IF(b.prod_1 = 'MM'
+    -- Producto: solo MM/INMO, y SIEMPRE condicionado a estar asignado
+    COUNT(DISTINCT IF(b.d_primera_asig IS NOT NULL AND b.prod_1 = 'MM'
                       AND DATE_DIFF(b.d_prod_1, b.d_creacion, DAY) <= 30, b.nid, NULL))       AS prod1_mm,
-    COUNT(DISTINCT IF(b.prod_1 = 'INMO'
+    COUNT(DISTINCT IF(b.d_primera_asig IS NOT NULL AND b.prod_1 = 'INMO'
                       AND DATE_DIFF(b.d_prod_1, b.d_creacion, DAY) <= 30, b.nid, NULL))       AS prod1_inmo,
-    COUNT(DISTINCT IF(b.prod_1 = 'LEGACY'
-                      AND DATE_DIFF(b.d_prod_1, b.d_creacion, DAY) <= 30, b.nid, NULL))       AS prod1_legacy
+    -- Asignados que nunca entraron a MM ni INMO (dentro de la ventana de 30 d)
+    COUNT(DISTINCT IF(b.d_primera_asig IS NOT NULL AND b.prod_1 IS NULL
+                      AND DATE_DIFF(b.d_primera_asig, b.d_creacion, DAY) <= 30, b.nid, NULL)) AS sin_producto
   FROM base2 b
   JOIN dims x USING (nid)
   GROUP BY d, dim, dim_val
@@ -349,7 +366,7 @@ Expected:
 SELECT 'count' AS kind, 'A' AS lente, d, dim, dim_val, metrica, n
 FROM lente_a
 UNPIVOT (n FOR metrica IN (
-  creados, asig_30d, asig_ever, gabi_30d, directo_30d, prod1_mm, prod1_inmo, prod1_legacy
+  creados, asig_30d, asig_ever, gabi_30d, directo_30d, prod1_mm, prod1_inmo, sin_producto
 ))
 WHERE n > 0
 ```
@@ -370,8 +387,8 @@ for x in r:
         tot[x['metrica']] += int(x['n'])
 print(dict(tot))
 assert tot['asig_30d'] <= tot['asig_ever'] <= tot['creados'], 'jerarquía de asignados rota'
-assert tot['gabi_30d'] + tot['directo_30d'] <= tot['asig_ever'] + 1, 'gabi+directo excede asignados'
-assert tot['prod1_mm'] + tot['prod1_inmo'] + tot['prod1_legacy'] <= tot['asig_ever'], 'productos exceden asignados'
+assert tot['gabi_30d'] + tot['directo_30d'] == tot['asig_30d'], 'gabi y directo deben particionar asig_30d exactamente'
+assert tot['prod1_mm'] + tot['prod1_inmo'] + tot['sin_producto'] <= tot['asig_ever'], 'productos exceden asignados'
 # la suma por dimensión debe reproducir el total (± leads sin ese atributo)
 for dim in ('fuente','area','equipo'):
     s = sum(int(x['n']) for x in r if x['dim']==dim and x['metrica']=='creados')
@@ -414,12 +431,12 @@ Agregar antes del SELECT final:
 , rutas_inmo AS (
   SELECT b.*, CASE
     WHEN b.d_inmo IS NULL THEN NULL
-    WHEN b.prod_1 = 'INMO' AND b.d_mm IS NOT NULL AND b.d_mm > b.d_inmo
+    WHEN b.prod_1 = 'INMO' AND b.ts_mm IS NOT NULL AND b.ts_mm > b.ts_inmo
          AND b.inmo_despues_de_mm                                   THEN 'r_regreso'
-    WHEN b.d_mm IS NOT NULL AND b.d_mm < b.d_inmo
+    WHEN b.ts_mm IS NOT NULL AND b.ts_mm < b.ts_inmo
          AND COALESCE(b.gabi_flag, FALSE)
          AND b.gabi_producto IN ('ibuyer', 'ibuyer_and_real_estate') THEN 'r_gabi_mm_cruce'
-    WHEN b.d_mm IS NOT NULL AND b.d_mm < b.d_inmo                    THEN 'r_cruce'
+    WHEN b.ts_mm IS NOT NULL AND b.ts_mm < b.ts_inmo                    THEN 'r_cruce'
     WHEN COALESCE(b.gabi_flag, FALSE)                                THEN 'r_gabi_prod'
     ELSE 'r_directo' END AS ruta
   FROM base2 b
@@ -429,10 +446,10 @@ Agregar antes del SELECT final:
   SELECT b.*, CASE
     WHEN b.d_mm IS NULL THEN NULL
     WHEN b.prod_1 = 'MM' AND b.mm_despues_de_inmo                    THEN 'r_regreso'
-    WHEN b.d_inmo IS NOT NULL AND b.d_inmo < b.d_mm
+    WHEN b.ts_inmo IS NOT NULL AND b.ts_inmo < b.ts_mm
          AND COALESCE(b.gabi_flag, FALSE)
          AND b.gabi_producto IN ('real_estate', 'ibuyer_and_real_estate') THEN 'r_gabi_mm_cruce'
-    WHEN b.d_inmo IS NOT NULL AND b.d_inmo < b.d_mm                  THEN 'r_cruce'
+    WHEN b.ts_inmo IS NOT NULL AND b.ts_inmo < b.ts_mm                  THEN 'r_cruce'
     WHEN COALESCE(b.gabi_flag, FALSE)                                THEN 'r_gabi_prod'
     ELSE 'r_directo' END AS ruta
   FROM base2 b
@@ -501,8 +518,13 @@ s = sum(int(x['n']) for x in r
         if x['lente']=='B' and x['dim']=='total'
         and x['metrica'] in ('r_cruce','r_gabi_mm_cruce')
         and '2026-04-01' <= x['d'] <= '2026-07-31')
-print('MM->INMO abr-jul 2026:', s, '(baseline del spec: 8459)')
-assert 7000 <= s <= 10000, 'muy lejos del baseline: revisar la definición de cruce'
+print('MM->INMO con llegada en abr-jul 2026:', s)
+# ⚠️ Baseline recalibrado (verificado 2026-08-04). El baseline original de 8.459 se midió con
+# una ventana de eventos de 4 meses, así que solo veía cruces cuyo paso por MM también cayó
+# en abr-jul. Aquí la ventana de `pipes` es de 940 días, así que el total es ~2x: ~16.2k-16.6k,
+# de los cuales ~8.3k tienen su paso por MM dentro de abr-2026 (esos SÍ son comparables al
+# baseline) y ~8.0k lo tienen antes. Medición independiente del controlador: 16.572 / 8.302 / 8.270.
+assert 14000 <= s <= 19000, f'total de cruces fuera del rango esperado ({s}): revisar la definición de cruce'
 PY
 ```
 Expected: un valor cercano a 8.459. **Si se aleja más de ~20%, parar y explicar la diferencia** — puede ser legítima (la ventana de `pipes` es más larga aquí, así que capta cruces cuyo paso por MM fue antes de abril) pero hay que entenderla, no asumirla.
@@ -584,11 +606,14 @@ FROM (
     COUNT(DISTINCT IF(NOT asignado AND     en_wbr, nid, NULL)) AS q_noasig_en_mart,
     COUNT(DISTINCT IF(NOT asignado AND NOT en_wbr, nid, NULL)) AS q_noasig_no_mart,
     -- descomposición del cuadrante ⚠ "asignado y NO en el mart", por prioridad
-    COUNT(DISTINCT IF(asignado AND NOT en_wbr AND fuente_id = 1,             nid, NULL)) AS gap_ventanas,
-    COUNT(DISTINCT IF(asignado AND NOT en_wbr AND fuente_id <> 1
-                      AND fuente_id NOT IN (3,47,37,41,42,7,20,39,35),       nid, NULL)) AS gap_no_marketing,
+    -- ⚠️ COALESCE obligatorio: con fuente_id NULL las tres condiciones evalúan a NULL (no a FALSE)
+    -- y el lead se cae de los tres buckets, rompiendo la exhaustividad. Verificado: 41 leads así.
+    -- Un fuente_id nulo no es fuente de marketing → cae en gap_no_marketing.
+    COUNT(DISTINCT IF(asignado AND NOT en_wbr AND COALESCE(fuente_id, -1) = 1,  nid, NULL)) AS gap_ventanas,
+    COUNT(DISTINCT IF(asignado AND NOT en_wbr AND COALESCE(fuente_id, -1) <> 1
+                      AND COALESCE(fuente_id, -1) NOT IN (3,47,37,41,42,7,20,39,35), nid, NULL)) AS gap_no_marketing,
     COUNT(DISTINCT IF(asignado AND NOT en_wbr
-                      AND fuente_id IN (3,47,37,41,42,7,20,39,35),           nid, NULL)) AS gap_sin_explicar
+                      AND COALESCE(fuente_id, -1) IN (3,47,37,41,42,7,20,39,35),      nid, NULL)) AS gap_sin_explicar
   FROM (SELECT *, d_primera_asig IS NOT NULL AS asignado FROM base2)
   GROUP BY d_creacion
 )
@@ -781,7 +806,9 @@ El estado del filtro es `{dim, dimVal}` y se pasa tal cual a `agrega()`. Default
 
 - [ ] **Step 4: Renderizar la tabla de la lente A**
 
-Columnas, en este orden: `Cosecha` · `Creados` · `Asignado ≤30d` · `Ever asignado (ref.)` · `GABI` · `Directo a pipeline` · `1er producto MM` · `INMO` · `legacy`.
+Columnas, en este orden: `Cosecha` · `Creados` · `Asignado ≤30d` · `Ever asignado (ref.)` · `GABI` · `Directo a pipeline` · `1er producto MM` · `INMO` · `Sin producto`.
+
+**Regla de cobertura:** `1er producto MM` usa el corte **2025-09-18**; `INMO` usa **2025-10-02**; y **`Sin producto` usa el más TARDÍO de los dos (2025-10-02)**, porque "nunca entró a ninguno" solo significa algo cuando ambos pipelines existen — entre el 18-sep y el 2-oct contaría como "sin producto" leads que simplemente no tenían INMO disponible. En los períodos cuyo fin sea anterior a su corte, esas columnas se renderizan como `—` con `title="los pipelines MM/INMO no existían aún"`, NUNCA como 0. Las columnas de asignación se muestran normal. Debajo de la tabla, una nota: "Las columnas de producto arrancan en sep-2025, cuando se crearon los pipelines MM e INMO en HubSpot".
 
 Reglas de render:
 - Cada celda de métrica muestra `n (%)`. El **denominador del % es `asig_30d`**, salvo `Asignado ≤30d` y `Ever asignado`, cuyo denominador es `creados`.
@@ -893,7 +920,7 @@ Tabla 2×2 con los 4 cuadrantes (`q_asig_en_mart`, `q_asig_no_mart`, `q_noasig_e
 
 - [ ] **Step 2: Renderizar la descomposición del gap**
 
-Barras apiladas con `mkChart` (`type:'bar'`) sobre `gap_ventanas`, `gap_no_marketing`, `gap_sin_explicar`, por período. `gap_sin_explicar` en el color de alerta.
+Barras apiladas con Chart.js sobre `gap_ventanas`, `gap_no_marketing`, `gap_sin_explicar`, por período. ⚠️ **`gap_sin_explicar` NO va en color de alerta** y su etiqueta en la UI es **"De fuente de marketing, fuera del mart"**, nunca "sin explicar": contiene los filtros de calificación del mart que esta v1 no descompone (ver Step 3), así que pintarlo como alerta afirmaría un problema que no está demostrado.
 
 - [ ] **Step 3: Escribir el texto de conclusiones con las cifras reales**
 
@@ -901,10 +928,13 @@ Redactar el bloque usando los números que salieron en la Task 4 Step 4 (no inve
 
 1. **La premisa corregida:** ever-asignado y el WBR mart no pueden coincidir por construcción — el mart es un indicador de marketing con 16 filtros, el ever-asignado cuenta todo lo asignado. Las dos brechas (esperada vs no esperada) van separadas explícitamente.
 2. **El tamaño de cada brecha** con las cifras de los últimos 6 meses.
-3. **El hallazgo accionable:** qué hay en `gap_sin_explicar` (leads de fuente de marketing, asignados, ausentes del mart) y en `q_noasig_en_mart` (el mart los cuenta y nuestras señales no).
-4. **La propuesta de mejora**, con dos ítems concretos: (a) qué revisar en la construcción del mart según lo que domine el gap; (b) **instrumentar `product_qualified` en el historial de HubSpot**, sin lo cual la ruta GABI→producto no es fechable.
+3. **Los dos resultados medidos, ambos contra la hipótesis original del spec:**
+   - `q_noasig_en_mart` = **0** en toda la ventana y en cada uno de los últimos 6 meses. El spec anticipaba que el hallazgo principal serían leads que el mart cuenta y nuestras señales no ven. **No existen.** Hay que decirlo así, como hipótesis refutada.
+   - El gap corre en la otra dirección y está dominado por un solo balde: gap total **56.801** = Ventanas **5.137** + fuentes no-marketing **95** + de fuente de marketing fuera del mart **51.569**.
+4. ⚠️ **El límite de esta v1, escrito explícitamente y sin adornos.** Ese balde de 51.569 **no es un hallazgo de leads perdidos**: el mart, además de filtrar por fuente, aplica **filtros de calificación** (los 16 de su definición canónica) que esta v1 no descompone. La mayor parte de esos 51.569 está esperablemente explicada por ellos. Prohibido publicar ese número como brecha accionable.
+5. **La propuesta de mejora**, con tres ítems concretos: (a) descomponer ese balde filtro por filtro — **la lógica ya existe en el tablero `asignados-creacion`** (bitmask de 5 filtros), así que la recomendación es cruzar ambos tableros, no re-implementarla aquí; (b) **instrumentar `product_qualified` en el historial de HubSpot**, sin lo cual la ruta GABI→producto no es fechable; (c) evaluar si `asignacion-co` y `asignados-creacion` deberían fusionarse, dado que uno reconcilia el conteo y el otro la mecánica.
 
-Reglas de redacción: sin jerga técnica en el texto visible, framing factual, y **ninguna afirmación sin su cifra al lado**.
+Reglas de redacción: sin jerga técnica en el texto visible, framing factual, y **ninguna afirmación sin su cifra al lado**. Y la regla dura de este bloque: **ninguna cifra presentada como problema sin decir qué parte de ella está explicada.**
 
 - [ ] **Step 4: Verificar que las cifras del texto coinciden con el JSON**
 

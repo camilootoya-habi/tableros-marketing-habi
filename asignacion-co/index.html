@@ -1,0 +1,798 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📢</text></svg>">
+<title>Asignación · MM vs INMO (CO)</title>
+<!-- ESTÁNDAR: las gráficas se hacen con Chart.js (no SVG a mano). Este tablero las construye directo con `new Chart(...)` (multi-serie), sin helper genérico. -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<style>
+  :root {
+    --bg: #0f172a; --card: #1e293b; --card-hover: #263348;
+    --border: #334155; --border-strong: #4b5563; --row-border: #283548;
+    --text: #e2e8f0; --text-title: #f8fafc;
+    --text-muted: #cbd5e1; --text-muted-2: #94a3b8; --text-muted-3: #64748b;
+    --accent: #818cf8; --accent-on: #f8fafc;
+    --row-total: rgba(129,140,248,.12); --ok: #34d399; --sky: #38bdf8; --warn: #fbbf24;
+  }
+  body.light {
+    --bg: #f5f7fa; --card: #ffffff; --card-hover: #f1f5f9;
+    --border: #e2e8f0; --border-strong: #cbd5e1; --row-border: #f1f5f9;
+    --text: #334155; --text-title: #0f172a;
+    --text-muted: #475569; --text-muted-2: #64748b; --text-muted-3: #94a3b8;
+    --accent: #6366f1; --accent-on: #ffffff;
+    --row-total: rgba(99,102,241,.10); --ok: #059669; --sky: #0284c7; --warn: #b45309;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; background: var(--bg); color: var(--text); padding: 24px; transition: background 0.2s, color 0.2s; }
+
+  .back-link { display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; background: var(--card); border: 1px solid var(--border); border-radius: 6px; color: var(--text-muted-2); text-decoration: none; font-size: 13px; margin-bottom: 16px; transition: color 0.15s, border-color 0.15s; }
+  .back-link:hover { color: var(--accent); border-color: var(--accent); }
+
+  .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 12px; }
+  .header h1 { font-size: 22px; font-weight: 600; color: var(--text-title); }
+  .header h1 span { color: var(--accent); }
+  .theme-btn { background: var(--card); border: 1px solid var(--border); color: var(--text-muted-2); border-radius: 6px; padding: 4px 10px; font-size: 14px; cursor: pointer; transition: background 0.15s, color 0.15s; }
+  .theme-btn:hover { background: var(--card-hover); color: var(--accent); }
+
+
+  /* Formato de tabla con períodos en columnas — copiado de marketing-loop (tabla "Impacto en asignados") */
+  .ftab{background:var(--card);border:1px solid var(--border);border-radius:10px;overflow-x:auto;margin-bottom:8px}
+  .ftab table{width:100%;border-collapse:separate;border-spacing:0;font-size:13px}
+  .ftab thead th{background:var(--border);color:var(--text-muted);font-weight:600;text-transform:uppercase;font-size:11px;letter-spacing:.5px;padding:11px 13px;text-align:right;position:sticky;top:0;z-index:2;white-space:nowrap;border:none}
+  .ftab thead th:first-child{text-align:left;width:264px;min-width:264px;max-width:264px;white-space:normal;vertical-align:middle;position:sticky;left:0;z-index:3;background:var(--border);border-right:2px solid var(--border-strong)}
+  .ftab thead th.cur{font-style:italic;color:var(--warn)}
+  .ftab thead th.cur::after{content:'*';margin-left:3px}
+  .ftab tbody td{padding:10px 13px;text-align:right;border-top:1px solid var(--border);white-space:nowrap}
+  .ftab tbody td:first-child{text-align:left;font-weight:500;color:var(--text-muted);white-space:normal;width:264px;min-width:264px;max-width:264px;position:sticky;left:0;z-index:1;background:var(--card);border-right:2px solid var(--border-strong)}
+  .ftab tbody tr:hover td{background:var(--card-hover)}
+  .ftab tbody tr:hover td:first-child{background:var(--card-hover)}
+  .ftab tbody tr.row-total td{font-weight:700;color:var(--text-title);font-size:14px;background:var(--row-total)}
+  .ftab tbody tr.row-loop td{background:rgba(52,211,153,.14);color:var(--ok);font-weight:700}
+  .ftab tbody tr.row-loop td:first-child{background:rgba(52,211,153,.14);border-left:3px solid var(--ok)}
+  .ftab tbody tr.row-blue td{background:rgba(56,189,248,.14);color:var(--sky);font-weight:700}
+  .ftab tbody tr.row-blue td:first-child{background:rgba(56,189,248,.14);border-left:3px solid var(--sky)}
+  .ftab tbody tr.row-stage td{color:var(--text-muted-2);font-size:12px}
+  .ftab td.na{color:var(--text-muted-3)}
+
+  /* Columna de títulos fija: los valores deben pasar por DEBAJO, nunca encima del texto */
+  .ftab thead th:first-child{z-index:6;box-shadow:2px 0 0 0 var(--border-strong)}
+  .ftab tbody tr td:first-child{z-index:5;background:var(--card);background-clip:padding-box;box-shadow:2px 0 0 0 var(--border-strong)}
+  .ftab tbody tr:hover td:first-child{background:var(--card-hover)}
+  /* sólidos, NO rgba: con transparencia las celdas que hacen scroll se ven a través */
+  .ftab tbody tr.row-total td:first-child{background:#26304a}
+  body.light .ftab tbody tr.row-total td:first-child{background:#ececfb}
+  .ftab tbody tr.row-loop  td:first-child{background:#123a2e}
+  .ftab tbody tr.row-blue  td:first-child{background:#0e3347}
+  .ftab tbody tr.row-stage td:first-child{background:var(--card)}
+  body.light .ftab tbody tr.row-loop td:first-child{background:#d9f2e8}
+  body.light .ftab tbody tr.row-blue td:first-child{background:#dceefb}
+  .ftab tbody td{position:relative;z-index:0}
+  .sel{background:var(--card);color:var(--text);border:1px solid var(--border-strong);border-radius:8px;padding:7px 10px;font-size:13px;font-family:inherit;cursor:pointer}
+  .sel:focus{outline:2px solid var(--accent);outline-offset:1px}
+  .table-container { background: var(--card); border-radius: 10px; border: 1px solid var(--border); overflow-x: auto; }
+  table { width: 100%; border-collapse: separate; border-spacing: 0; font-size: 13px; }
+  thead th { background: var(--border); color: var(--text-muted-2); font-weight: 600; text-transform: uppercase; font-size: 11px; letter-spacing: 0.5px; padding: 12px 14px; text-align: left; white-space: nowrap; }
+  tbody td { padding: 10px 14px; border-top: 1px solid var(--row-border); white-space: nowrap; }
+  tbody tr:hover td { background: var(--card-hover); }
+
+  .empty-state { padding: 48px 24px; text-align: center; color: var(--text-muted-3); font-size: 14px; line-height: 1.6; }
+  .empty-state strong { display: block; font-size: 16px; margin-bottom: 8px; color: var(--text-muted-2); }
+
+  /* Gráficas Chart.js: paneles en grilla + contenedor .ch de alto fijo (Chart.js necesita altura explícita) */
+  .charts-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 14px; margin-top: 16px; }
+  .panel { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 14px 15px 12px; display: flex; flex-direction: column; }
+  .panel h3 { font-size: 12.5px; color: var(--text-title); font-weight: 700; margin-bottom: 10px; }
+  .ch { position: relative; height: 190px; }
+
+  /* Selector estándar del repo: chip-groups (ver feedback_selector_estandar) */
+  .selectors {
+    display: flex; gap: 24px; flex-wrap: wrap;
+    background: var(--card); border: 1px solid var(--border); border-radius: 12px;
+    padding: 16px; margin-bottom: 20px;
+  }
+  .selector-group { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .selector-group label {
+    font-size: 11px; color: var(--text-muted-2); text-transform: uppercase;
+    letter-spacing: 0.5px; font-weight: 600; margin-right: 4px;
+  }
+  .chip {
+    background: var(--bg); border: 1px solid var(--border); color: var(--text);
+    padding: 6px 12px; border-radius: 999px; cursor: pointer; font-size: 13px;
+    transition: all 0.1s;
+  }
+  .chip:hover { border-color: var(--accent); }
+  .chip.active { background: var(--accent); color: var(--accent-on); border-color: var(--accent); font-weight: 600; }
+
+  .lente-block { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 16px 18px; margin-bottom: 20px; }
+  .lente-block h2 { font-size: 16px; color: var(--text-title); margin-bottom: 4px; }
+  .lente-block .subt { font-size: 12.5px; color: var(--text-muted-2); margin-bottom: 14px; }
+  .lente-block .nota { font-size: 11.5px; color: var(--text-muted-3); margin-top: 8px; }
+
+  table.tbl-lente td.inmadura-cell, tr.inmadura { opacity: .55; }
+  .lbl-inmadura { font-size: 10px; color: var(--text-muted-3); border: 1px solid var(--border); border-radius: 4px; padding: 1px 5px; margin-left: 6px; }
+  td.na { color: var(--text-muted-3); text-align: center; }
+  td.metric-cell { text-align: right; }
+  td.metric-cell .pct { font-size: 11px; opacity: .75; margin-left: 4px; }
+
+  /* Bloque de conclusiones (Task 7) */
+  td.desacuerdo { background: rgba(245, 158, 11, 0.16); }
+  .concl-text { font-size: 13.5px; line-height: 1.7; color: var(--text); margin-top: 14px; }
+  .concl-text p { margin-bottom: 12px; }
+  .concl-text strong { color: var(--text-title); }
+  .concl-text ul { margin: 8px 0 12px 22px; }
+  .concl-text li { margin-bottom: 6px; }
+  .concl-callout { border-left: 3px solid #f59e0b; background: rgba(245, 158, 11, 0.08); padding: 10px 14px; border-radius: 0 6px 6px 0; margin-bottom: 12px; }
+  .concl-refutada { border-left: 3px solid #64748b; background: rgba(100, 116, 139, 0.08); padding: 10px 14px; border-radius: 0 6px 6px 0; margin-bottom: 12px; }
+</style>
+<script>
+  function toggleTheme() {
+    const isLight = document.body.classList.toggle('light');
+    localStorage.setItem('tablero-theme', isLight ? 'light' : 'dark');
+    document.getElementById('themeToggle').textContent = isLight ? '☀️' : '🌙';
+  }
+</script>
+</head>
+<body>
+<a href="../" class="back-link">← Volver al hub</a>
+
+<div class="header">
+  <h1>Asignación · MM vs INMO (CO)</h1>
+  <button class="theme-btn" id="themeToggle" onclick="toggleTheme()">🌙</button>
+</div>
+
+<div id="app"></div>
+
+<script>
+  // Restore theme preference
+  if (localStorage.getItem('tablero-theme') === 'light') {
+    document.body.classList.add('light');
+    document.getElementById('themeToggle').textContent = '☀️';
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // Helpers de bucketing y agregación (contrato consumido por las Tasks 6-7).
+  // ─────────────────────────────────────────────────────────────────────────
+  const D = s => new Date(s + 'T00:00:00Z');
+
+  function isoWeekKey(dt) {
+    const t = new Date(Date.UTC(dt.getUTCFullYear(), dt.getUTCMonth(), dt.getUTCDate()));
+    const dow = (t.getUTCDay() + 6) % 7;             // lunes = 0
+    t.setUTCDate(t.getUTCDate() - dow + 3);          // jueves de esa semana ISO
+    const y = t.getUTCFullYear();
+    const wk = 1 + Math.round((t - Date.UTC(y, 0, 4)) / 604800000);
+    return `${y}-W${String(wk).padStart(2, '0')}`;
+  }
+
+  // Ciclo comercial: semanas que arrancan el miércoles
+  function cicloKey(dt) {
+    const t = new Date(dt.getTime());
+    const shift = (t.getUTCDay() - 3 + 7) % 7;       // miércoles = 3
+    t.setUTCDate(t.getUTCDate() - shift);
+    return `${t.toISOString().slice(0, 10)}`;
+  }
+
+  function bucket(s, gran) {
+    const dt = D(s);
+    if (gran === 'mes')   return s.slice(0, 7);
+    if (gran === 'ciclo') return cicloKey(dt);
+    return isoWeekKey(dt);
+  }
+
+  function ultimosPeriodos(rows, gran, n = 20) {
+    const set = new Set(rows.map(r => bucket(r.d, gran)));
+    return [...set].sort().slice(-n);
+  }
+
+  function agrega(rows, { lente, gran, dim, dimVal }) {
+    const out = new Map();
+    for (const r of rows) {
+      if (r.kind !== 'count' || r.lente !== lente) continue;
+      if (r.dim !== dim || r.dim_val !== dimVal) continue;
+      const p = bucket(r.d, gran);
+      if (!out.has(p)) out.set(p, new Map());
+      const m = out.get(p);
+      m.set(r.metrica, (m.get(r.metrica) || 0) + Number(r.n));   // bq devuelve STRING
+    }
+    return out;
+  }
+
+  // Último día del período, según la granularidad
+  function finDePeriodo(periodo, gran) {
+    if (gran === 'mes') {
+      const [y, m] = periodo.split('-').map(Number);
+      return new Date(Date.UTC(y, m, 0));               // día 0 del mes siguiente = último del mes
+    }
+    if (gran === 'ciclo') {
+      const t = D(periodo);                             // miércoles de inicio
+      t.setUTCDate(t.getUTCDate() + 6);                 // martes de cierre
+      return t;
+    }
+    const [y, w] = periodo.split('-W').map(Number);     // semana ISO -> domingo
+    const jue = new Date(Date.UTC(y, 0, 4));
+    const lun = new Date(jue);
+    lun.setUTCDate(jue.getUTCDate() - ((jue.getUTCDay() + 6) % 7) + (w - 1) * 7);
+    lun.setUTCDate(lun.getUTCDate() + 6);
+    return lun;
+  }
+
+  // Un período está inmaduro si su último día aún no cumple `dias` desde hoy
+  function esInmaduro(periodo, gran, dias) {
+    const fin = finDePeriodo(periodo, gran);
+    return (Date.now() - fin.getTime()) / 86400000 < dias;
+  }
+
+  function valoresPorDim(rows) {
+    const out = { fuente: new Set(), area: new Set(), equipo: new Set() };
+    for (const r of rows) if (r.kind === 'count' && out[r.dim]) out[r.dim].add(r.dim_val);
+    return Object.fromEntries(Object.entries(out).map(([k, v]) => [k, [...v].sort()]));
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // ESTÁNDAR DE GRÁFICAS: Chart.js (no dibujar SVG a mano). Este tablero tiene
+  // solo gráficas multi-serie, así que se construyen directo con `new Chart(...)`
+  // (ver drawChartA / drawChartGap más abajo) en vez de un helper genérico.
+  // Nota: Chart.js lee los colores al crear el gráfico. Si cambias de tema en vivo,
+  // vuelve a renderizar (destruye con _charts.forEach(c=>c.destroy()); _charts=[]; y recrea).
+  // ─────────────────────────────────────────────────────────────────────────
+  const cssv = n => getComputedStyle(document.body).getPropertyValue(n).trim();
+  let _charts = [];
+
+  (async () => {
+    const app = document.getElementById('app');
+    let data;
+    try {
+      const res = await fetch('data.json');
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      data = await res.json();
+    } catch (e) {
+      app.innerHTML = `
+        <div class="table-container">
+          <div class="empty-state">
+            <strong>Aún no hay data.json</strong>
+            Se genera automáticamente la próxima vez que corra el cron.<br>
+            Asegúrate de haber declarado <code>"query": "query.sql"</code> en tu <code>meta.json</code>.
+          </div>
+        </div>`;
+      return;
+    }
+
+    if (!Array.isArray(data) || data.length === 0) {
+      app.innerHTML = `
+        <div class="table-container">
+          <div class="empty-state">
+            <strong>Sin resultados</strong>
+            Tu query.sql no devolvió filas. Revísala en BigQuery.
+          </div>
+        </div>`;
+      return;
+    }
+
+    const rows = data; // 120k filas, ya cargadas una sola vez en memoria
+
+    // ── Fechas de cobertura de los pipelines MM / INMO en HubSpot ──────────
+    const MM_PIPELINE_DESDE = new Date('2025-09-18T00:00:00Z');
+    const INMO_PIPELINE_DESDE = new Date('2025-10-02T00:00:00Z');
+
+    // ── Estado global ────────────────────────────────────────────────────
+    let granActual = 'semana';
+    let filtro = { dim: 'total', dimVal: 'total' };
+    const aggCache = new Map(); // cachea agrega() por combinación lente|gran|dim|dimVal
+
+    function aggregaCached(lente) {
+      const key = `${lente}|${granActual}|${filtro.dim}|${filtro.dimVal}`;
+      if (!aggCache.has(key)) {
+        aggCache.set(key, agrega(rows, { lente, gran: granActual, dim: filtro.dim, dimVal: filtro.dimVal }));
+      }
+      return aggCache.get(key);
+    }
+
+    const dimLabels = { fuente: 'Fuente', area: 'Área metropolitana', equipo: 'Equipo' };
+    const valores = valoresPorDim(rows);
+
+    // ── Selectores globales ─────────────────────────────────────────────
+    // Orden y etiquetas de las 6 fuentes de marketing de CO (el valor es el de la tabla, la etiqueta es la bonita)
+    const FUENTES_ORDEN = [
+      ['WEB', 'WEB'],
+      ['Estudio Inmueble', 'Estudio Inmueble'],
+      ['lead_forms', 'Leadforms'],
+      ['CRM', 'CRM'],
+      ['Broker', 'Broker'],
+      ['comercial', 'Comercial'],
+    ];
+    function fuentesOrdenadas() {
+      const presentes = new Set(valores.fuente || []);
+      const enOrden = FUENTES_ORDEN.filter(([v]) => presentes.has(v));
+      const extras = [...presentes].filter(v => !FUENTES_ORDEN.some(([o]) => o === v)).sort().map(v => [v, v]);
+      return [...enOrden, ...extras];
+    }
+
+    function renderSelectors() {
+      const granOpts = [['semana', 'Semana (Lun→Dom)'], ['mes', 'Mes'], ['ciclo', 'Ciclo comercial (Mié→Mar)']]
+        .map(([v, l]) => `<option value="${v}"${granActual === v ? ' selected' : ''}>${l}</option>`).join('');
+      const granSel = `<select class="sel" id="granSel">${granOpts}</select>`;
+
+      return `
+        <div class="selectors">
+          <div class="selector-group"><label>Granularidad</label>${granSel}</div>
+          <div class="selector-group"><label>Fuente</label>
+            <button class="chip ${filtro.dim === 'total' ? 'active' : ''}" data-dim="total" data-dimval="total">Todas</button>
+            ${fuentesOrdenadas().map(([v, l]) => `<button class="chip ${filtro.dim === 'fuente' && filtro.dimVal === v ? 'active' : ''}" data-dim="fuente" data-dimval="${v}">${l}</button>`).join('')}
+          </div>
+        </div>`;
+    }
+
+    function wireSelectors() {
+      const gs = document.getElementById('granSel');
+      if (gs) gs.onchange = e => { granActual = e.target.value; render(); };
+      document.querySelectorAll('.chip[data-dim]').forEach(el => {
+        el.addEventListener('click', () => {
+          filtro = { dim: el.dataset.dim, dimVal: el.dataset.dimval };
+          render();
+        });
+      });
+    }
+
+    // ── Lente A: tabla + gráfica ─────────────────────────────────────────
+    const COLS_A = [
+      { key: 'creados', label: 'Creados', den: null },
+      { key: 'asig_30d', label: 'Asignado ≤30d', den: 'creados' },
+      { key: 'asig_ever', label: 'Ever asignado (ref.)', den: 'creados' },
+      { key: 'gabi_30d', label: 'GABI', den: 'asig_30d' },
+      { key: 'directo_30d', label: 'Directo a pipeline', den: 'asig_30d' },
+      { key: 'prod1_mm', label: '1er producto MM', den: 'asig_30d', producto: true },
+      { key: 'prod1_inmo', label: 'INMO', den: 'asig_30d', producto: true },
+      { key: 'sin_producto', label: 'Sin producto', den: 'asig_30d', producto: true },
+    ];
+
+    function heatColor(pct, min, max) {
+      if (pct == null || !isFinite(pct) || max === min) return 'transparent';
+      const t = Math.max(0, Math.min(1, (pct - min) / (max - min)));
+      // rojo (t=0) -> verde (t=1)
+      const r = Math.round(220 - 120 * t);
+      const g = Math.round(90 + 130 * t);
+      const b = 90;
+      return `rgba(${r},${g},${b},0.28)`;
+    }
+
+    // Etiqueta corta de período para las cabeceras (estilo marketing-loop)
+    const MESES_CORTOS = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+    function labelPeriodo(p, gran) {
+      if (gran === 'mes')  return MESES_CORTOS[+p.slice(5, 7) - 1] + ' ' + p.slice(2, 4);
+      if (gran === 'ciclo') return p.slice(5);           // MM-DD del miércoles de inicio
+      return p.slice(5);                                  // W## de la semana ISO
+    }
+
+    function renderLenteA() {
+      const map = aggregaCached('A');
+      const periodos = ultimosPeriodos(rows.filter(r => r.kind === 'count' && r.lente === 'A'), granActual, 20);
+
+      const cols = periodos.map(p => {
+        const m = map.get(p) || new Map();
+        const cobertura = finDePeriodo(p, granActual);
+        const g = k => Number(m.get(k) || 0);
+        return {
+          p,
+          creados:   g('creados'),
+          asigEver:  g('asig_ever'),
+          asigWbr:   g('asig_wbr'),
+          gabi:      g('dest_gabi'),
+          mm:        g('dest_mm'),
+          inmo:      g('dest_inmo'),
+          pend:      g('dest_pendiente'),
+          coberturaMM:   cobertura >= MM_PIPELINE_DESDE,
+          coberturaInmo: cobertura >= INMO_PIPELINE_DESDE,
+        };
+      });
+
+      const last = cols.length - 1;
+      const cur = i => i === last ? ' class="cur"' : '';
+      const fmt = n => n.toLocaleString('es-CO');
+      const th = cols.map((c, i) => `<th${cur(i)}>${labelPeriodo(c.p, granActual)}</th>`).join('');
+
+      // fila de conteos; `cob` decide si la celda tiene cobertura de pipeline
+      const filaN = (label, get, cls = '', cob = null) => `<tr class="${cls}"><td>${label}</td>` + cols.map((c, i) => {
+        if (cob && !cob(c)) return `<td${cur(i)} class="na" title="los pipelines MM/INMO no existían aún">—</td>`;
+        return `<td${cur(i)}>${fmt(get(c))}</td>`;
+      }).join('') + '</tr>';
+
+      // fila de % con denominador explícito
+      const filaPctSobre = (label, get, getDen, cls = '', cob = null) => `<tr class="${cls}"><td>${label}</td>` + cols.map((c, i) => {
+        if (cob && !cob(c)) return `<td${cur(i)} class="na">—</td>`;
+        const den = getDen(c);
+        const pct = den ? (get(c) / den * 100) : null;
+        return `<td${cur(i)}>${pct == null ? '<span class="na">·</span>' : pct.toFixed(1) + '%'}</td>`;
+      }).join('') + '</tr>';
+      // atajo: % sobre ever asignados
+      const filaPct = (label, get, cls = '', cob = null) => filaPctSobre(label, get, c => c.asigEver, cls, cob);
+
+      const hcol = { semana: 'Semana (ISO)', mes: 'Mes', ciclo: 'Ciclo (inicia mié)' }[granActual] || 'Período';
+
+      const tabla = `<table><thead><tr><th>${hcol}</th>${th}</tr></thead><tbody>
+        ${filaN('Leads creados', c => c.creados, 'row-total')}
+        ${filaN('<b>Ever asignados</b>', c => c.asigEver, 'row-loop')}
+        ${filaN('Asignados WBR mart', c => c.asigWbr)}
+        ${filaPctSobre('% ever asignado / creados', c => c.asigEver, c => c.creados, 'row-stage')}
+        ${filaPctSobre('% WBR mart / ever asignado', c => c.asigWbr, c => c.asigEver, 'row-stage')}
+        ${filaN('1ª asignación · GABI', c => c.gabi, 'row-blue')}
+        ${filaN('1ª asignación · MM', c => c.mm, '', c => c.coberturaMM)}
+        ${filaN('1ª asignación · Inmo', c => c.inmo, '', c => c.coberturaInmo)}
+        ${filaN('1ª asignación · sin destino aún', c => c.pend)}
+        ${filaPct('% GABI', c => c.gabi, 'row-stage')}
+        ${filaPct('% MM', c => c.mm, 'row-stage', c => c.coberturaMM)}
+        ${filaPct('% Inmo', c => c.inmo, 'row-stage', c => c.coberturaInmo)}
+      </tbody></table>`;
+
+      chartADataPending = {
+        chartLabels: cols.map(c => labelPeriodo(c.p, granActual)),
+        pctAsig: cols.map(c => c.creados ? (c.asigEver / c.creados * 100) : null),
+        pctMM:   cols.map(c => c.coberturaMM   && c.asigEver ? (c.mm   / c.asigEver * 100) : null),
+        pctGabi: cols.map(c => c.asigEver ? (c.gabi / c.asigEver * 100) : null),
+        pctInmo: cols.map(c => c.coberturaInmo && c.asigEver ? (c.inmo / c.asigEver * 100) : null),
+      };
+
+      return `
+        <div class="lente-block">
+          <h2>Lente A — Cosechas por fecha de creación</h2>
+          <div class="subt">Ancla: <strong>fecha de creación del lead</strong>. Base: <strong>ever asignado</strong> (sin ventana de maduración). Los % van sobre ever asignados; el más reciente está a la derecha y va marcado con *.</div>
+          <div class="ftab" id="tablaLenteA">${tabla}</div>
+          <div class="nota"><strong>Las tres filas de 1ª asignación suman los ever asignados.</strong> Cada lead cuenta una sola vez, en el destino al que llegó <em>primero</em> en el tiempo: GABI (el bot), MM o Inmo. Si un lead entró a GABI y después pasó a MM, cuenta en GABI, porque esa fue su primera asignación. "Sin destino aún" son leads con señal de asignación pero que todavía no aparecen en ninguno de los tres (unos pocos por período, casi todos del período en curso). Las filas de MM e Inmo van con <span class="na">—</span> antes de sep-2025 y oct-2025, cuando se crearon esos pipelines en HubSpot.</div>
+          <div class="charts-grid">
+            <div class="panel">
+              <h3>% ever asignado sobre creados · % MM y % Inmo sobre ever asignados</h3>
+              <div class="ch"><canvas id="chartLenteA"></canvas></div>
+            </div>
+          </div>
+        </div>`;
+    }
+
+    let chartADataPending = null;
+
+    function drawChartA() {
+      const d = chartADataPending;
+      if (!d) return;
+      const c = document.getElementById('chartLenteA');
+      if (!c || !window.Chart) return;
+      const color1 = cssv('--accent'), grid = cssv('--border'), tick = cssv('--text-muted-2');
+      const corte = '2026-04';
+      // segmento antes/después de abril 2026: borderDash distinto antes del corte
+      const dashBefore = ctx => {
+        const label = d.chartLabels[ctx.p0DataIndex];
+        return label && label < corte ? [6, 4] : undefined;
+      };
+      _charts.push(new Chart(c, {
+        type: 'line',
+        data: {
+          labels: d.chartLabels,
+          datasets: [
+            { label: '% asig_30d/creados', data: d.pctAsig, borderColor: color1, backgroundColor: color1, tension: .35, pointRadius: 2, borderWidth: 2, spanGaps: true, segment: { borderDash: dashBefore } },
+            { label: '% prod1_mm/asig_30d', data: d.pctMM, borderColor: '#f59e0b', backgroundColor: '#f59e0b', tension: .35, pointRadius: 2, borderWidth: 2, spanGaps: true, segment: { borderDash: dashBefore } },
+            { label: '% prod1_inmo/asig_30d', data: d.pctInmo, borderColor: '#34d399', backgroundColor: '#34d399', tension: .35, pointRadius: 2, borderWidth: 2, spanGaps: true, segment: { borderDash: dashBefore } },
+          ],
+        },
+        options: {
+          responsive: true, maintainAspectRatio: false, interaction: { mode: 'index', intersect: false },
+          plugins: {
+            legend: { display: true, labels: { color: tick, font: { size: 10 } } },
+            tooltip: { callbacks: { label: ctx => `${ctx.dataset.label}: ${ctx.parsed.y == null ? '—' : ctx.parsed.y.toFixed(1) + '%'}` } },
+          },
+          scales: {
+            x: { ticks: { color: tick, maxTicksLimit: 8 }, grid: { display: false } },
+            y: { beginAtZero: true, ticks: { color: tick, callback: v => v + '%' }, grid: { color: grid } },
+          },
+        },
+      }));
+    }
+
+    // ── Lentes B/C: tablas de rutas (llegada a INMO / a MM) ───────────────
+    // Config espejo: B ancla en llegada a INMO, C ancla en llegada a MM.
+    const RUTAS_BC = {
+      B: {
+        titulo: 'Lente B — Rutas de llegada a INMO',
+        subt: 'Ancla: fecha de llegada a INMO. Este período NO es el mismo grupo de leads que la lente A. Además, la cohorte parte de leads creados en los últimos 760 días — inventario reactivado más antiguo (hasta 940 días vía pipeline) queda fuera de "Llegadas INMO".',
+        colLlegadas: 'Llegadas INMO',
+        cols: [
+          { key: 'r_directo', label: 'Directo' },
+          { key: 'r_gabi_prod', label: 'GABI → INMO' },
+          { key: 'r_gabi_mm_cruce', label: 'GABI(MM) → MM → INMO', callout: true },
+          { key: 'r_cruce', label: 'MM → INMO' },
+          { key: 'r_regreso', label: 'INMO → MM → INMO' },
+        ],
+        saltoTiempo: 'mm_inmo',
+        saltoLabel: 'MM → INMO',
+      },
+      C: {
+        titulo: 'Lente C — Rutas de llegada a MM',
+        subt: 'Ancla: fecha de llegada a MM. Este período NO es el mismo grupo de leads que la lente A. Además, la cohorte parte de leads creados en los últimos 760 días — inventario reactivado más antiguo (hasta 940 días vía pipeline) queda fuera de "Llegadas MM".',
+        colLlegadas: 'Llegadas MM',
+        cols: [
+          { key: 'r_directo', label: 'Directo' },
+          { key: 'r_gabi_prod', label: 'GABI → MM' },
+          { key: 'r_gabi_mm_cruce', label: 'GABI(INMO) → INMO → MM', callout: true },
+          { key: 'r_cruce', label: 'INMO → MM' },
+          { key: 'r_regreso', label: 're-entrada a MM' },
+        ],
+        saltoTiempo: 'inmo_mm',
+        saltoLabel: 'INMO → MM',
+      },
+    };
+
+    function renderTablaRutas(lente) {
+      const cfg = RUTAS_BC[lente];
+      const map = aggregaCached(lente);
+      const periodos = ultimosPeriodos(rows.filter(r => r.kind === 'count' && r.lente === lente), granActual, 20);
+
+      const filas = periodos.map(p => {
+        const m = map.get(p) || new Map();
+        const llegadas = Number(m.get('llegadas') || 0);
+        const inmaduro = esInmaduro(p, granActual, 30);
+        const celdas = cfg.cols.map(c => {
+          const n = Number(m.get(c.key) || 0);
+          const pct = llegadas ? (n / llegadas * 100) : null;
+          return { n, pct };
+        });
+        return { p, llegadas, inmaduro, celdas };
+      });
+
+      const thead = `<thead><tr><th>Período</th><th>${cfg.colLlegadas}</th>${cfg.cols.map(c => `<th>${c.label}</th>`).join('')}</tr></thead>`;
+      const tbody = filas.map(f => {
+        const tds = f.celdas.map(cel => {
+          const pctStr = cel.pct != null ? ` <span class="pct">(${cel.pct.toFixed(1)}%)</span>` : '';
+          return `<td class="metric-cell">${cel.n.toLocaleString('es-CO')}${pctStr}</td>`;
+        }).join('');
+        const label = f.inmaduro ? `${f.p}<span class="lbl-inmadura">inmadura</span>` : f.p;
+        return `<tr class="${f.inmaduro ? 'inmadura' : ''}"><td>${label}</td><td class="metric-cell">${f.llegadas.toLocaleString('es-CO')}</td>${tds}</tr>`;
+      }).join('');
+
+      return `
+        <div class="table-container">
+          <table class="tbl-lente">${thead}<tbody>${tbody}</tbody></table>
+        </div>
+        <div class="nota">
+          <code>product_qualified</code> no tiene fecha ni historial: es el <strong>estado actual</strong> de la calificación de GABI.
+          Estas columnas dicen "hoy está calificado así y pasó por el otro producto", <strong>no</strong> que la calificación fuera anterior al paso.
+        </div>`;
+    }
+
+    // ── Panel de tiempos por salto (filas kind='tiempo', pre-calculadas) ──
+    const SALTOS_TIEMPO = [
+      { key: 'creacion_gabi', label: 'creación → GABI' },
+      { key: 'gabi_mm', label: 'GABI → MM' },
+    ];
+
+    function renderPanelTiempos(lente) {
+      const cfg = RUTAS_BC[lente];
+      const saltos = [...SALTOS_TIEMPO, { key: cfg.saltoTiempo, label: cfg.saltoLabel }];
+
+      // Filas de tiempo: NO se re-agregan; ya vienen truncadas por `dim`=granularidad.
+      // ⚠️ No reaccionan al filtro de fuente/área/equipo: no tienen esas dimensiones.
+      const tiempoRows = rows.filter(r => r.kind === 'tiempo' && r.dim === granActual);
+      const periodos = [...new Set(tiempoRows.map(r => r.d))].sort().slice(-20);
+
+      const porPeriodo = new Map();
+      for (const r of tiempoRows) {
+        if (!porPeriodo.has(r.d)) porPeriodo.set(r.d, new Map());
+        const m = porPeriodo.get(r.d);
+        if (!m.has(r.dim_val)) m.set(r.dim_val, {});
+        m.get(r.dim_val)[r.metrica] = Number(r.n);   // bq devuelve STRING
+      }
+
+      const thead = `<thead><tr><th>Período</th>${saltos.map(s => `<th>${s.label}</th>`).join('')}</tr></thead>`;
+      const tbody = periodos.map(p => {
+        const m = porPeriodo.get(p) || new Map();
+        const tds = saltos.map(s => {
+          const v = m.get(s.key);
+          if (!v || v.mediana == null) return `<td class="na">—</td>`;
+          const nStr = v.n_casos != null ? ` <span class="pct">n=${v.n_casos.toLocaleString('es-CO')}</span>` : '';
+          return `<td class="metric-cell">${v.mediana}d (${v.p90 ?? '—'}d)${nStr}</td>`;
+        }).join('');
+        // p ya viene truncado por BigQuery a su período; solo se re-formatea la etiqueta
+        // (misma función `bucket` que usan las demás tablas), NO se re-bucketea el dato.
+        return `<tr><td>${bucket(p, granActual)}</td>${tds}</tr>`;
+      }).join('');
+
+      return `
+        <div class="panel" style="grid-column: 1 / -1;">
+          <h3>Tiempo por salto — mediana (p90) en días, n=casos — nunca promedio</h3>
+          <div class="table-container">
+            <table class="tbl-lente">${thead}<tbody>${tbody}</tbody></table>
+          </div>
+          <div class="nota">De los leads que llegaron en cada período, mediana/p90 de días desde la punta anterior del salto (que puede ser muy anterior al período), y n=número de casos detrás de esa mediana/p90. No sumar esto como "tiempo del mes"; y este panel NO reacciona al filtro de fuente/área/equipo (las filas de tiempo no tienen esas dimensiones).</div>
+        </div>`;
+    }
+
+    function renderLenteBC(lente) {
+      const cfg = RUTAS_BC[lente];
+      return `
+        <div class="lente-block">
+          <h2>${cfg.titulo}</h2>
+          <div class="subt"><strong>${cfg.subt}</strong></div>
+          ${renderTablaRutas(lente)}
+          <div class="charts-grid">
+            ${renderPanelTiempos(lente)}
+          </div>
+        </div>`;
+    }
+
+    // ── Conclusiones: reconciliación con el WBR mart (lente REC) ──────────
+    const CUADRANTES = [
+      { key: 'q_asig_en_mart',    label: 'Asignado y en el mart',              desacuerdo: false },
+      { key: 'q_asig_no_mart',    label: 'Asignado, fuera del mart (total)',   desacuerdo: true },
+      { key: 'q_noasig_en_mart',  label: 'No asignado y en el mart',           desacuerdo: true },
+      { key: 'q_noasig_no_mart',  label: 'No asignado y fuera del mart',       desacuerdo: false },
+    ];
+    const GAP_METRICAS = [
+      { key: 'gap_ventanas',      label: 'Ventanas',                          color: '#818cf8' },
+      { key: 'gap_no_marketing',  label: 'Fuentes no-marketing',              color: '#64748b' },
+      { key: 'gap_sin_explicar',  label: 'De fuente de marketing, fuera del mart', color: '#94a3b8' },
+    ];
+
+    let chartGapDataPending = null;
+
+    function renderConclusiones() {
+      // La reconciliación con el WBR mart solo existe agregada a dim='total' en el SQL
+      // (ver query.sql ~L267): SIEMPRE se lee sobre el total, sin importar el filtro activo,
+      // para no caer en ceros cuando hay un chip de fuente/área/equipo seleccionado.
+      const recKey = `REC|${granActual}|total|total`;
+      if (!aggCache.has(recKey)) {
+        aggCache.set(recKey, agrega(rows, { lente: 'REC', gran: granActual, dim: 'total', dimVal: 'total' }));
+      }
+      const map = aggCache.get(recKey);
+      const periodos = ultimosPeriodos(rows.filter(r => r.kind === 'count' && r.lente === 'REC'), granActual, 20);
+      const filtroActivo = !(filtro.dim === 'total' && filtro.dimVal === 'total');
+
+      const filas = periodos.map(p => {
+        const m = map.get(p) || new Map();
+        const inmaduro = esInmaduro(p, granActual, 30);
+        const cuad = CUADRANTES.map(c => Number(m.get(c.key) || 0));
+        const gap = GAP_METRICAS.map(g => Number(m.get(g.key) || 0));
+        return { p, inmaduro, cuad, gap };
+      });
+
+      // ── Tabla de cuadrantes ──
+      const thead = `<thead><tr><th>Período</th>${CUADRANTES.map(c => `<th>${c.label}</th>`).join('')}</tr></thead>`;
+      const tbody = filas.map(f => {
+        const tds = CUADRANTES.map((c, i) => {
+          const n = f.cuad[i];
+          return `<td class="metric-cell${c.desacuerdo ? ' desacuerdo' : ''}">${n.toLocaleString('es-CO')}</td>`;
+        }).join('');
+        const label = f.inmaduro ? `${f.p}<span class="lbl-inmadura">inmadura</span>` : f.p;
+        return `<tr class="${f.inmaduro ? 'inmadura' : ''}"><td>${label}</td>${tds}</tr>`;
+      }).join('');
+
+      chartGapDataPending = {
+        labels: filas.map(f => f.p),
+        series: GAP_METRICAS.map((g, i) => ({ label: g.label, color: g.color, data: filas.map(f => f.gap[i]) })),
+      };
+
+      // ── Cifras de las Conclusiones: derivadas de la misma agregación REC (dim=total),
+      // pero SIEMPRE en granularidad mensual (el texto habla de "meses"), sin importar
+      // el selector de granularidad de las tablas. Fuente única de verdad: data.json.
+      const fmt = n => n.toLocaleString('es-CO');
+      const recMesKey = 'REC|mes|total|total';
+      if (!aggCache.has(recMesKey)) {
+        aggCache.set(recMesKey, agrega(rows, { lente: 'REC', gran: 'mes', dim: 'total', dimVal: 'total' }));
+      }
+      const mapMes = aggCache.get(recMesKey);
+      const mesesTodos = [...mapMes.keys()].sort();
+      const sumaTotal = key => mesesTodos.reduce((acc, p) => acc + Number((mapMes.get(p) || new Map()).get(key) || 0), 0);
+
+      const totCreados = CUADRANTES.reduce((acc, c) => acc + sumaTotal(c.key), 0);
+      const totAsigEnMart = sumaTotal('q_asig_en_mart');
+      const totNoasigEnMart = sumaTotal('q_noasig_en_mart');
+      const totAsigNoMart = sumaTotal('q_asig_no_mart');
+      const totGapVentanas = sumaTotal('gap_ventanas');
+      const totGapNoMkt = sumaTotal('gap_no_marketing');
+      const totGapSinExplicar = sumaTotal('gap_sin_explicar');
+
+      const ultimos6Meses = mesesTodos.slice(-6);
+      const nombreMes = p => {
+        const [y, m] = p.split('-');
+        const nombres = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+        return `${nombres[Number(m) - 1]}-${y}`;
+      };
+      const detalleMeses = ultimos6Meses.map(p => {
+        const m = mapMes.get(p) || new Map();
+        const gapSinExplicar = Number(m.get('gap_sin_explicar') || 0);
+        const gapVentanas = Number(m.get('gap_ventanas') || 0);
+        const gapNoMkt = Number(m.get('gap_no_marketing') || 0);
+        const extras = [];
+        if (gapVentanas > 0) extras.push(`${fmt(gapVentanas)} de ventanas`);
+        if (gapNoMkt > 0) extras.push(`${fmt(gapNoMkt)} de fuentes no-marketing`);
+        const extraStr = extras.length ? ` (más ${extras.join(' y ')})` : '';
+        const incompleto = esInmaduro(p, 'mes', 30) ? ' (mes incompleto)' : '';
+        return `${nombreMes(p)} <strong>${fmt(gapSinExplicar)}</strong>${extraStr}${incompleto}`;
+      }).join(', ');
+      const maxGapVentanasReciente = Math.max(...ultimos6Meses.map(p => Number((mapMes.get(p) || new Map()).get('gap_ventanas') || 0)), 0);
+      const maxGapNoMktReciente = Math.max(...ultimos6Meses.map(p => Number((mapMes.get(p) || new Map()).get('gap_no_marketing') || 0)), 0);
+      const maxNoasigEnMartReciente = Math.max(...ultimos6Meses.map(p => Number((mapMes.get(p) || new Map()).get('q_noasig_en_mart') || 0)), 0);
+
+      return `
+        <div class="lente-block">
+          <h2>Conclusiones — reconciliación con el WBR mart</h2>
+          <div class="subt">Ancla: fecha de creación del lead. Cruce entre "asignado alguna vez" (ever-asignado) y el indicador de asignados del WBR mart.</div>
+
+          <div class="table-container">
+            <table class="tbl-lente">${thead}<tbody>${tbody}</tbody></table>
+          </div>
+          <div class="nota">En ámbar, los dos cuadrantes de desacuerdo entre ever-asignado y el WBR mart. La reconciliación con el WBR mart se calcula sobre el total; no reacciona al filtro de fuente/área/equipo.${filtroActivo ? ` <strong>Filtro activo (${filtro.dimVal}) ignorado en este bloque.</strong>` : ''}</div>
+
+          <div class="charts-grid">
+            <div class="panel" style="grid-column: 1 / -1;">
+              <h3>Descomposición del cuadrante "Asignado, fuera del mart" — por período</h3>
+              <div class="ch"><canvas id="chartGap"></canvas></div>
+            </div>
+          </div>
+
+          <div class="concl-text">
+            <p><strong>Por qué no coinciden, por construcción.</strong> El WBR mart es un indicador de marketing: cuenta leads de fuente de marketing que además pasan 16 filtros de calificación. El ever-asignado es más amplio: cuenta todo lead que en algún momento fue asignado, sin importar la fuente ni si califica para el mart. Que los dos números no coincidan es esperado; lo que importa es separar la brecha que ese diseño explica de la que no.</p>
+
+            <p><strong>Tamaño de cada brecha en la ventana completa (${fmt(totCreados)} leads creados):</strong> de los ${fmt(totAsigEnMart)} leads que el mart cuenta como asignados, el ever-asignado los tiene a todos (${fmt(totNoasigEnMart)} de desacuerdo en esa dirección — ver hipótesis abajo). En la otra dirección, ${fmt(totAsigNoMart)} leads están asignados según ever-asignado pero el mart no los cuenta, y esa brecha se descompone en <strong>ventanas de tiempo: ${fmt(totGapVentanas)}</strong>, <strong>fuentes que no son de marketing: ${fmt(totGapNoMkt)}</strong>, y <strong>de fuente de marketing pero fuera del mart: ${fmt(totGapSinExplicar)}</strong>.</p>
+
+            <p><strong>En los últimos 6 meses</strong>, la brecha "de fuente de marketing, fuera del mart" se mantuvo estable mes a mes: ${detalleMeses}. Las otras dos categorías son marginales en todos los meses: ventanas nunca superó ${fmt(maxGapVentanasReciente)} leads/mes y fuentes no-marketing nunca superó ${fmt(maxGapNoMktReciente)} leads/mes en el período reciente.</p>
+
+            <div class="concl-refutada">
+              <strong>Hipótesis original del spec, refutada.</strong> El spec anticipaba que el hallazgo principal serían leads que el WBR mart cuenta como asignados y que nuestras señales de asignación no ven. Medido: <strong>${fmt(maxNoasigEnMartReciente)}</strong> leads en ese cuadrante, en toda la ventana y en cada uno de los últimos 6 meses. No existen. Esa hipótesis no se sostuvo con los datos.
+            </div>
+
+            <div class="concl-callout">
+              <strong>Límite de esta v1.</strong> El balde de <strong>${fmt(totGapSinExplicar)}</strong> ("de fuente de marketing, fuera del mart") no es un hallazgo de leads perdidos. El WBR mart, además de filtrar por fuente, aplica 16 filtros de calificación que esta v1 no descompone — la mayor parte de esos ${fmt(totGapSinExplicar)} está esperablemente explicada por esos filtros, no por un problema de conteo. Este tablero no distingue cuánto de ese número es filtro legítimo y cuánto no; publicarlo como brecha accionable sería un error.
+            </div>
+
+            <p><strong>Propuesta de mejora:</strong></p>
+            <ul>
+              <li>Descomponer el balde de ${fmt(totGapSinExplicar)} filtro por filtro cruzando con el tablero <strong>asignados-creacion</strong> de este mismo repo, que ya tiene esa lógica construida (5 filtros) — no hace falta re-implementarla aquí.</li>
+              <li>Instrumentar <code>product_qualified</code> en el historial de HubSpot: hoy es un estado sin fecha, así que la ruta GABI → producto no se puede fechar con precisión.</li>
+              <li>Evaluar si <strong>asignacion-co</strong> y <strong>asignados-creacion</strong> deberían fusionarse en un solo tablero: uno reconcilia el conteo con el mart y el otro explica la mecánica filtro por filtro — hoy hay que mirar los dos para tener el cuadro completo.</li>
+            </ul>
+          </div>
+        </div>`;
+    }
+
+    function drawChartGap() {
+      const d = chartGapDataPending;
+      if (!d) return;
+      const c = document.getElementById('chartGap');
+      if (!c || !window.Chart) return;
+      const grid = cssv('--border'), tick = cssv('--text-muted-2');
+      _charts.push(new Chart(c, {
+        type: 'bar',
+        data: {
+          labels: d.labels,
+          datasets: d.series.map(s => ({
+            label: s.label, data: s.data, backgroundColor: s.color, borderRadius: 3, stack: 'gap',
+          })),
+        },
+        options: {
+          responsive: true, maintainAspectRatio: false, interaction: { mode: 'index', intersect: false },
+          plugins: {
+            legend: { display: true, labels: { color: tick, font: { size: 10 } } },
+            tooltip: { callbacks: { label: ctx => `${ctx.dataset.label}: ${ctx.parsed.y == null ? '—' : ctx.parsed.y.toLocaleString('es-CO')}` } },
+          },
+          scales: {
+            x: { stacked: true, ticks: { color: tick, maxTicksLimit: 8 }, grid: { display: false } },
+            y: { stacked: true, beginAtZero: true, ticks: { color: tick }, grid: { color: grid } },
+          },
+        },
+      }));
+    }
+
+    // ── Render principal: redibuja selectores + lentes ───────────────────
+    function render() {
+      _charts.forEach(c => c.destroy());
+      _charts = [];
+      app.innerHTML = renderSelectors() + renderLenteA() + renderLenteBC('B') + renderLenteBC('C') + renderConclusiones();
+      wireSelectors();
+      drawChartA();
+      drawChartGap();
+      // las tablas con períodos en columnas arrancan mostrando el período más reciente (a la derecha)
+      document.querySelectorAll('.ftab').forEach(el => { el.scrollLeft = el.scrollWidth; });
+    }
+
+    render();
+  })();
+</script>
+</body>
+</html>

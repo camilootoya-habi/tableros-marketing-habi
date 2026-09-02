@@ -1,0 +1,10 @@
+{
+  "title": "Asignación · MM vs INMO (CO)",
+  "description": "Tres lentes: cosechas por fecha de creación, llegadas a INMO y llegadas a MM con sus rutas de origen (directo, GABI, cruce entre productos). Incluye reconciliación con el WBR mart.",
+  "country": "CO",
+  "section": "dashboard",
+  "order": 200,
+  "query": "query.sql",
+  "maximum_bytes_billed": 5000000000,
+  "max_rows": 300000
+}
