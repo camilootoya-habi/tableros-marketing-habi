@@ -7,42 +7,38 @@
   },
   "por_tipo": {
     "ambigua_registrada": {
-      "hallazgos": 156,
+      "hallazgos": 132,
       "convs": {
-        "B": 127,
-        "A": 13
+        "B": 119,
+        "A": 2
       },
       "pct_convs": {
-        "B": 1.4,
-        "A": 1.5
+        "B": 1.3,
+        "A": 0.2
       },
       "pct_convs_con_respuesta": {
-        "B": 3.4,
-        "A": 2.3
+        "B": 3.2,
+        "A": 0.4
       },
       "subtipos": {
-        "sin_numeros": 79,
-        "marcador_ambiguo": 77
+        "sin_numeros": 73,
+        "marcador_ambiguo": 59
       },
       "por_etapa": {
         "B": {
-          "6_completo_o_paso": 85,
-          "2_murio_en_tipo": 10,
-          "3_murio_en_direccion": 17,
+          "6_completo_o_paso": 81,
+          "2_murio_en_tipo": 8,
+          "3_murio_en_direccion": 16,
           "5_murio_en_reask_m2": 12,
-          "4_murio_ante_bloque": 3
+          "4_murio_ante_bloque": 2
         },
         "A": {
-          "7_completo": 1,
-          "4_murio_en_antiguedad_precio": 4,
-          "5_murio_en_tipo_m2_recamaras": 3,
           "2_murio_en_consentimiento": 1,
-          "6_murio_en_banos_estac": 3,
-          "3_murio_en_direccion": 1
+          "5_murio_en_tipo_m2_recamaras": 1
         }
       },
       "ruteo": {
-        "con_bug": 60.0,
+        "con_bug": 66.1,
         "sin_bug": 18.3
       }
     },
@@ -123,38 +119,30 @@
       }
     },
     "intencion_ignorada": {
-      "hallazgos": 29,
+      "hallazgos": 9,
       "convs": {
-        "B": 26,
-        "A": 3
+        "B": 9
       },
       "pct_convs": {
-        "B": 0.3,
-        "A": 0.3
+        "B": 0.1
       },
       "pct_convs_con_respuesta": {
-        "B": 0.7,
-        "A": 0.5
+        "B": 0.2
       },
       "subtipos": {
-        "pide_humano": 9,
-        "numero_equivocado": 16,
-        "opt_out": 4
+        "pide_humano": 6,
+        "numero_equivocado": 1,
+        "opt_out": 2
       },
       "por_etapa": {
         "B": {
-          "2_murio_en_tipo": 14,
-          "5_murio_en_reask_m2": 1,
-          "6_completo_o_paso": 8,
+          "6_completo_o_paso": 3,
+          "2_murio_en_tipo": 3,
           "3_murio_en_direccion": 3
-        },
-        "A": {
-          "3_murio_en_direccion": 1,
-          "2_murio_en_consentimiento": 2
         }
       },
       "ruteo": {
-        "con_bug": 37.9,
+        "con_bug": 44.4,
         "sin_bug": 18.9
       }
     },
@@ -380,29 +368,29 @@
       }
     },
     "nudge_anomalo": {
-      "hallazgos": 115,
+      "hallazgos": 45,
       "convs": {
-        "B": 115
+        "B": 45
       },
       "pct_convs": {
-        "B": 1.3
+        "B": 0.5
       },
       "pct_convs_con_respuesta": {
-        "B": 3.1
+        "B": 1.2
       },
       "subtipos": {
-        "nudge_tras_usuario": 114,
+        "nudge_tras_usuario": 44,
         "nudge_doble": 1
       },
       "por_etapa": {
         "B": {
-          "2_murio_en_tipo": 70,
-          "3_murio_en_direccion": 30,
-          "6_completo_o_paso": 15
+          "6_completo_o_paso": 3,
+          "2_murio_en_tipo": 30,
+          "3_murio_en_direccion": 12
         }
       },
       "ruteo": {
-        "con_bug": 8.7,
+        "con_bug": 2.2,
         "sin_bug": 19.0
       }
     },
@@ -439,121 +427,109 @@
       }
     },
     "pregunta_ignorada": {
-      "hallazgos": 880,
+      "hallazgos": 6,
       "convs": {
-        "B": 376,
-        "A": 202
+        "A": 2,
+        "B": 3
       },
       "pct_convs": {
-        "B": 4.1,
-        "A": 23.3
+        "A": 0.2,
+        "B": 0.0
       },
       "pct_convs_con_respuesta": {
-        "B": 10.0,
-        "A": 36.1
+        "A": 0.4,
+        "B": 0.1
       },
       "subtipos": {
-        "siguio_guion": 456,
-        "candidata_llm": 415,
-        "siguio_nudge": 9
+        "repitio_mensaje_anterior": 3,
+        "siguio_nudge": 3
       },
       "por_etapa": {
-        "B": {
-          "4_murio_ante_bloque": 17,
-          "2_murio_en_tipo": 103,
-          "6_completo_o_paso": 137,
-          "5_murio_en_reask_m2": 30,
-          "3_murio_en_direccion": 89
-        },
         "A": {
-          "4_murio_en_antiguedad_precio": 49,
-          "6_murio_en_banos_estac": 36,
-          "7_completo": 10,
-          "2_murio_en_consentimiento": 47,
-          "3_murio_en_direccion": 42,
-          "5_murio_en_tipo_m2_recamaras": 18
+          "2_murio_en_consentimiento": 2
+        },
+        "B": {
+          "3_murio_en_direccion": 1,
+          "2_murio_en_tipo": 2
         }
       },
       "ruteo": {
-        "con_bug": 38.1,
-        "sin_bug": 17.7
+        "con_bug": 0.0,
+        "sin_bug": 18.9
       }
     },
     "repregunta_dato_ya_dado": {
-      "hallazgos": 151,
+      "hallazgos": 64,
       "convs": {
-        "B": 120,
-        "A": 5
+        "B": 53,
+        "A": 1
       },
       "pct_convs": {
-        "B": 1.3,
-        "A": 0.6
+        "B": 0.6,
+        "A": 0.1
       },
       "pct_convs_con_respuesta": {
-        "B": 3.2,
-        "A": 0.9
+        "B": 1.4,
+        "A": 0.2
       },
       "subtipos": {
-        "precio": 34,
-        "cajones": 52,
-        "recamaras": 18,
-        "banos": 26,
-        "area": 12,
-        "antiguedad": 9
+        "recamaras": 12,
+        "cajones": 11,
+        "precio": 16,
+        "banos": 7,
+        "antiguedad": 8,
+        "area": 10
       },
       "por_etapa": {
         "B": {
-          "6_completo_o_paso": 94,
-          "5_murio_en_reask_m2": 17,
-          "3_murio_en_direccion": 2,
-          "2_murio_en_tipo": 7
+          "6_completo_o_paso": 46,
+          "3_murio_en_direccion": 1,
+          "5_murio_en_reask_m2": 4,
+          "2_murio_en_tipo": 2
         },
         "A": {
-          "7_completo": 1,
-          "4_murio_en_antiguedad_precio": 3,
-          "5_murio_en_tipo_m2_recamaras": 1
+          "4_murio_en_antiguedad_precio": 1
         }
       },
       "ruteo": {
-        "con_bug": 84.0,
-        "sin_bug": 18.1
+        "con_bug": 83.3,
+        "sin_bug": 18.6
       }
     },
     "silencio_bot": {
-      "hallazgos": 330,
+      "hallazgos": 260,
       "convs": {
-        "B": 200,
-        "A": 130
+        "B": 139,
+        "A": 121
       },
       "pct_convs": {
-        "B": 2.2,
-        "A": 15.0
+        "B": 1.5,
+        "A": 13.9
       },
       "pct_convs_con_respuesta": {
-        "B": 5.3,
-        "A": 23.2
+        "B": 3.7,
+        "A": 21.6
       },
       "subtipos": {
-        "solo_nudge": 97,
-        "sin_respuesta_final": 233
+        "solo_nudge": 65,
+        "sin_respuesta_final": 195
       },
       "por_etapa": {
         "B": {
-          "2_murio_en_tipo": 85,
-          "3_murio_en_direccion": 25,
-          "6_completo_o_paso": 90
+          "2_murio_en_tipo": 66,
+          "6_completo_o_paso": 62,
+          "3_murio_en_direccion": 11
         },
         "A": {
-          "4_murio_en_antiguedad_precio": 5,
-          "6_murio_en_banos_estac": 7,
-          "2_murio_en_consentimiento": 107,
-          "3_murio_en_direccion": 8,
-          "5_murio_en_tipo_m2_recamaras": 3
+          "4_murio_en_antiguedad_precio": 4,
+          "6_murio_en_banos_estac": 5,
+          "2_murio_en_consentimiento": 104,
+          "3_murio_en_direccion": 8
         }
       },
       "ruteo": {
-        "con_bug": 23.9,
-        "sin_bug": 18.7
+        "con_bug": 20.0,
+        "sin_bug": 18.9
       }
     }
   },

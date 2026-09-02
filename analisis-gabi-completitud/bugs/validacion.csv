@@ -1,0 +1,91 @@
+tipo,bot,deal_id,veredicto,nota
+pregunta_ignorada,B,1735808,FP,regex matcheaba 'que' pronombre relativo (v1)
+pregunta_ignorada,B,1714437,FP,gabi si respondio antes de seguir el guion (v1)
+pregunta_ignorada,B,1741322,FP,autorespuesta de otro negocio (v1)
+pregunta_ignorada,B,1762648,FP,gabi respondio la pregunta (v1)
+pregunta_ignorada,B,1707261,FP,gabi reformulo el termino preguntado (v1)
+pregunta_ignorada,B,1708075,FP,'que' relativo (v1)
+pregunta_ignorada,B,1754998,FP,gabi respondio (v1)
+pregunta_ignorada,B,1709156,FP,'que' relativo (v1)
+pregunta_ignorada,B,1738645,FP,gabi respondio (v1)
+pregunta_ignorada,B,1757700,FP,'como' aproximativo no interrogativo (v1)
+pregunta_ignorada,B,1707392,FP,'que' relativo (v1)
+pregunta_ignorada,B,1752732,FP,autorespuesta de negocio (v1)
+pregunta_ignorada,B,1721158,FP,autorespuesta de negocio (v1)
+pregunta_ignorada,B,1706706,FP,gabi respondio deflectando (v1)
+pregunta_ignorada,B,1708870,FP,autorespuesta de negocio (v1)
+pregunta_ignorada,B,1755681,FP,preguntas retoricas tras cierre (v2)
+pregunta_ignorada,B,1770077,TP,pregunta si aceptan terrenos y solo recibe nudge (v2)
+pregunta_ignorada,B,1716011,FP,artefacto de orden de turnos (v2)
+pregunta_ignorada,B,1705352,FP,autorespuesta de negocio + orden de turnos (v2)
+pregunta_ignorada,B,1752312,FP,el nudge precede a la respuesta real por orden (v2)
+repregunta_dato_ya_dado,B,1769475,FP,usuario dijo no saber el area; 60 mts era excedente
+repregunta_dato_ya_dado,B,1710687,FP,dato no verificable en la ventana
+repregunta_dato_ya_dado,B,1715016,FP,avaluo 2022 no es precio pedido
+repregunta_dato_ya_dado,B,1708118,TP,usuario dio $3'700.000 y gabi repregunta el valor
+repregunta_dato_ya_dado,B,1710630,FP,precio de compra 2011 no es precio pedido
+repregunta_dato_ya_dado,B,1763311,TP,usuario dio 3 recamaras y gabi las vuelve a pedir
+repregunta_dato_ya_dado,B,1707278,FP,el usuario aun no habia dado cajones
+repregunta_dato_ya_dado,B,1713835,TP,usuario dio 3 banos y gabi los vuelve a pedir
+repregunta_dato_ya_dado,B,1725487,FP,gabi confirma un valor ya anotado; no repregunta
+repregunta_dato_ya_dado,B,1741786,TP,usuario dio 52 metros y gabi repregunta area
+repregunta_dato_ya_dado,B,1753961,TP,usuario dio 6 recamaras y gabi las vuelve a pedir
+repregunta_dato_ya_dado,B,1762582,TP,usuario dio precio en mxn y gabi lo vuelve a pedir
+ambigua_registrada,B,1725444,FP,gabi aclaro que no necesitaba ese dato
+ambigua_registrada,B,1711191,FP,gabi lo registro bien y repregunto el bloque
+ambigua_registrada,B,1733933,FP,gabi dedujo el estado y repregunto
+ambigua_registrada,B,1751709,FP,gabi ofrecio ayuda y acepto aproximado
+ambigua_registrada,B,1706441,FP,el usuario pedia visita; no es ambiguedad de dato
+ambigua_registrada,B,1707297,FP,gabi tomo el dato y pidio solo lo faltante
+ambigua_registrada,B,1760678,FP,'no tengo ningun problema' matcheado como ambiguo
+ambigua_registrada,B,1740714,FP,'no se encuentra' matcheado como 'no se'
+ambigua_registrada,B,1707691,FP,gabi insistio por el codigo postal
+ambigua_registrada,B,1729068,FP,adeudo infonavit no es respuesta ambigua a un campo
+ambigua_registrada,B,1743054,FP,'Ok' seguido de repregunta del bloque
+ambigua_registrada,B,1707038,FP,gabi cerro con la informacion completa
+nudge_anomalo,B,1749563,FP,cortesia 'ok gracias' (filtrado en v2)
+nudge_anomalo,B,1725778,FP,cortesia (filtrado en v2)
+nudge_anomalo,B,1755681,TP,usuario escribio mensaje largo y recibe nudge
+nudge_anomalo,B,1714351,TP,dos nudges identicos seguidos
+nudge_anomalo,B,1717229,FP,cortesia 'ok' (filtrado en v2)
+nudge_anomalo,B,1762814,FP,cortesia 'ok' (filtrado en v2)
+nudge_anomalo,B,1720208,TP,usuario respondio tipo y ubicacion y recibe nudge
+nudge_anomalo,B,1753050,FP,cortesia 'gracias' (filtrado en v2)
+nudge_anomalo,B,1715477,FP,cortesia 'gracias' (filtrado en v2)
+nudge_anomalo,B,1760783,FP,cortesia 'ok' (filtrado en v2)
+silencio_bot,B,1725487,TP,usuario escribe 'Dime' y no hay respuesta
+silencio_bot,B,1711956,FP,cortesia tras el cierre (filtrado en v2)
+silencio_bot,B,1731772,TP,usuario responde 'Casa' y solo recibe nudge
+silencio_bot,B,1757986,FP,emoji de cortesia (filtrado en v2)
+silencio_bot,B,1704803,FP,cortesia de cierre (filtrado en v2)
+silencio_bot,B,1706924,FP,autorespuesta de negocio (filtrado en v2)
+silencio_bot,B,1744430,TP,usuario responde tipo y solo recibe nudge
+silencio_bot,B,1707633,TP,usuario completa la respuesta y solo recibe nudge
+silencio_bot,B,1729599,TP,usuario pregunta si pueden hacer oferta y no hay respuesta
+silencio_bot,B,1752521,TP,usuario da el ultimo dato y no hay respuesta
+intencion_ignorada,B,1733753,TP,pide asesor y gabi sigue pidiendo area
+intencion_ignorada,B,1708818,FP,'me equivoque' era correccion (filtrado en v2)
+intencion_ignorada,B,1743717,TP,dice que no inicio nada y gabi sigue el guion
+intencion_ignorada,B,1704158,FP,'me equivoque' era correccion de antiguedad (filtrado en v2)
+intencion_ignorada,B,1707336,TP,reclama por la oferta prometida y gabi sigue pidiendo datos
+intencion_ignorada,B,1708303,FP,'me equivoque' suelto (filtrado en v2)
+intencion_ignorada,B,1743636,FP,'me equivoque' suelto (filtrado en v2)
+intencion_ignorada,B,1724614,TP,pide hablar con asesor y gabi sigue pidiendo datos
+intencion_ignorada,B,1702935,TP,dice que no vende departamentos y gabi registra datos
+intencion_ignorada,B,1721822,FP,correccion de municipio (filtrado en v2)
+loop_repeticion,B,1737612,TP,mensaje de apertura enviado dos veces
+loop_repeticion,B,1714615,TP,mensaje de apertura enviado dos veces
+loop_repeticion,B,1747849,TP,gabi reenvia la apertura despues de que el usuario respondio
+loop_repeticion,B,1705150,TP,gabi pide el area tres veces
+loop_repeticion,B,1707802,TP,mensaje de apertura enviado dos veces
+loop_repeticion,B,1764378,TP,mensaje de apertura enviado dos veces
+loop_repeticion,B,1709118,TP,gabi reenvia la apertura tras la respuesta del usuario
+loop_repeticion,B,1742489,TP,mensaje de apertura enviado dos veces
+loop_repeticion,B,1705736,TP,gabi insiste por un dato que el usuario dijo no tener
+loop_repeticion,B,1760235,TP,gabi reenvia la apertura tras la respuesta del usuario
+media_no_manejado,B,1712565,TP,ubicacion compartida sin acuse
+media_no_manejado,B,1710180,FP,gabi explico que necesita la direccion en texto
+media_no_manejado,B,1718465,TP,ubicacion compartida y solo recibe nudge
+media_no_manejado,B,1751102,TP,ubicacion ignorada; gabi sigue pidiendo estado y cp
+media_no_manejado,B,1705720,TP,ubicacion ignorada; el usuario tuvo que escribirla
+media_no_manejado,B,1748477,FP,gabi explico que no procesa links de maps

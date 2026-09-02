@@ -114,10 +114,32 @@ ACK = "¡Gracias! 🙌 Ya registré la *antigüedad*, *recámaras*, *baños*, *c
 
 
 # --- 1 pregunta_ignorada ---
-def test_pregunta_ignorada_bot_b_responde_con_guion():
-    t = mk(('g', 'hola', 0), ('u', '¿Cuánto me ofrecen por mi casa?', 1), ('g', GUION_DIR, 2))
+def test_pregunta_ignorada_gabi_repite_el_mensaje_anterior():
+    # validación manual: sólo es bug cuando Gabi REPITE en vez de responder. Si responde y además
+    # sigue el guion en el mismo mensaje (lo habitual), no es bug.
+    t = mk(('g', GUION_DIR, 0), ('u', '¿Cuánto me ofrecen por mi casa?', 1), ('g', GUION_DIR, 2))
     h = D.det_pregunta_ignorada(t, 'B')
-    assert h and h[0]['tipo'] == 'pregunta_ignorada' and h[0]['idx'] == 1
+    assert h and h[0]['subtipo'] == 'repitio_mensaje_anterior' and h[0]['idx'] == 1
+
+
+def test_pregunta_ignorada_no_dispara_si_gabi_responde_y_sigue_el_guion():
+    t = mk(('g', GUION_DIR, 0), ('u', '¿Cuánto tardan?', 1),
+           ('g', '¡Claro! Toma 48 horas. Ahora compárteme la *dirección* en texto, por favor:', 2))
+    assert D.det_pregunta_ignorada(t, 'B') == []
+
+
+def test_pregunta_ignorada_ignora_autorespuesta_de_otro_negocio():
+    # validación manual: 4 de 15 casos eran auto-respuestas de otro negocio (el teléfono no es del lead)
+    t = mk(('g', GUION_DIR, 0),
+           ('u', 'Gracias por comunicarte con Abarrotes los Chihuahuas. ¿Cómo podemos ayudarte?', 1),
+           ('g', GUION_DIR, 2))
+    assert D.det_pregunta_ignorada(t, 'B') == []
+
+
+def test_pregunta_ignorada_ignora_que_y_como_sin_signo():
+    # validación manual: 'la casa que compré' y 'como 80 m2' daban falsos positivos masivos
+    t = mk(('g', GUION_DIR, 0), ('u', 'Es una casa que está en una privada, como 80 m2', 1), ('g', GUION_DIR, 2))
+    assert D.det_pregunta_ignorada(t, 'B') == []
 
 
 def test_pregunta_ignorada_bot_b_responde_con_nudge():
@@ -130,11 +152,6 @@ def test_pregunta_ignorada_no_dispara_si_gabi_sale_del_guion():
     assert D.det_pregunta_ignorada(t, 'B') == []
 
 
-def test_pregunta_ignorada_bot_a_solo_marca_candidata():
-    t = mk(('g', 'hola', 0), ('u', '¿Cuánto tardan?', 1), ('g', 'Necesito la dirección.', 2))
-    assert D.det_pregunta_ignorada(t, 'A')[0]['subtipo'] == 'candidata_llm'
-
-
 def test_pregunta_ignorada_ignora_respuesta_numerica_con_signo():
     # calibración: '3?' es una respuesta al bloque, no una pregunta
     t = mk(('g', BLOQUE, 0), ('u', '3?', 1), ('g', ACK, 2))
@@ -145,6 +162,11 @@ def test_pregunta_ignorada_acepta_pregunta_corta():
     # calibración: '¿Eres bot?' / 'Hay cobertura ?' son preguntas reales de 2-3 palabras
     t = mk(('g', GUION_DIR, 0), ('u', 'Eres bot?', 1), ('g', GUION_DIR, 2))
     assert D.det_pregunta_ignorada(t, 'B')
+
+
+def test_pregunta_ignorada_no_dispara_si_gabi_sale_del_guion_2():
+    t = mk(('g', GUION_DIR, 0), ('u', 'Eres bot?', 1), ('g', 'Soy un asistente virtual de TuHabi.', 2))
+    assert D.det_pregunta_ignorada(t, 'B') == []
 
 
 def test_pregunta_ignorada_ignora_el_signo_dentro_de_una_url():
@@ -250,3 +272,71 @@ def test_latencia_alta_se_apaga_si_la_linea_de_tiempo_no_es_monotona():
     # periodos concatenadas). Ahí los deltas no significan nada, así que el detector no debe opinar.
     t = mk(('g', 'hola', 0), ('u', 'Casa', 1), ('g', '¡Perfecto!', 15), ('u', 'ok', -50000))
     assert D.det_latencia_alta(t, 'B') == []
+
+
+def test_repregunta_no_dispara_si_el_dato_no_trae_cantidad():
+    # validación manual: 'cochera (entrada de casa)' no dice cuántos cajones -> re-preguntar es correcto
+    t = mk(('g', BLOQUE, 0), ('u', '30 años, 90 m2, 2 recámaras, 1 baño, cochera, $1,700,000', 1),
+           ('g', '¿cuántos *cajones de estacionamiento* tiene?', 2))
+    assert all(x['subtipo'] != 'cajones' for x in D.det_repregunta_dato_ya_dado(t, 'B'))
+
+
+def test_repregunta_cuenta_el_sin_estacionamiento():
+    t = mk(('g', BLOQUE, 0), ('u', '44 años, 200 m2, sin estacionamiento, 4 millones', 1),
+           ('g', 'Me faltan: *recámaras*, *baños* y *cajones de estacionamiento*', 2))
+    assert any(x['subtipo'] == 'cajones' for x in D.det_repregunta_dato_ya_dado(t, 'B'))
+
+
+def test_repregunta_no_toma_una_direccion_como_precio():
+    # validación manual: 'Av México Coyoacán 372 torre H depto 1602, Cp 03230' pasaba como precio
+    t = mk(('g', BLOQUE, 0), ('u', 'Av México Coyoacán 372 torre H depto 1602, col xoco, Cp 03230', 1),
+           ('g', 'me faltan: *antigüedad*, *área construida* y *valor que pides* en MXN', 2))
+    assert all(x['subtipo'] != 'precio' for x in D.det_repregunta_dato_ya_dado(t, 'B'))
+
+
+def test_repregunta_no_confunde_terreno_con_area_construida():
+    t = mk(('g', BLOQUE, 0), ('u', 'El terreno mide 6x15, con un total de 90 metros cuadrados', 1),
+           ('g', 'Me faltan: *área construida* en m², *baños* y *precio*', 2))
+    assert all(x['subtipo'] != 'area' for x in D.det_repregunta_dato_ya_dado(t, 'B'))
+
+
+def test_repregunta_no_confunde_anos_pagando_con_antiguedad():
+    t = mk(('g', BLOQUE, 0), ('u', 'La obtuve por Infonavit, tengo 7 años pagándola', 1),
+           ('g', 'Me faltan: *antigüedad* en años y *área construida*', 2))
+    assert all(x['subtipo'] != 'antiguedad' for x in D.det_repregunta_dato_ya_dado(t, 'B'))
+
+
+def test_repregunta_no_confunde_una_deuda_con_el_precio():
+    t = mk(('g', BLOQUE, 0), ('u', 'Debo 7 mil de predial y 103 mil al Infonavit', 1),
+           ('g', 'Solo me falta el *valor que pides* en MXN', 2))
+    assert all(x['subtipo'] != 'precio' for x in D.det_repregunta_dato_ya_dado(t, 'B'))
+
+
+def test_repregunta_ignora_la_muletilla_de_las_escrituras():
+    # validación manual: 'Si no recuerdas el área, suele venir en las escrituras' acompaña a OTRAS
+    # peticiones y hacía contar una re-pregunta de área que nunca ocurrió
+    t = mk(('g', BLOQUE, 0), ('u', '90 metros construidos, 1 cajón, $850,000', 1),
+           ('g', 'Me faltan 2 datos: 📅 *Antigüedad* y 🛁 *Baños*. Si no recuerdas el área, suele venir en las escrituras', 2))
+    assert all(x['subtipo'] != 'area' for x in D.det_repregunta_dato_ya_dado(t, 'B'))
+
+
+def test_silencio_bot_ignora_las_cortesias():
+    # validación manual: 'Ok' / 'Gracias' / '👍' tras el cierre no dejan nada pendiente
+    t = mk(('g', 'Te contactaremos en breve ✨', 0), ('u', 'Ok gracias', 1))
+    assert D.det_silencio_bot(t, 'B') == []
+
+
+def test_nudge_anomalo_ignora_las_cortesias():
+    t = mk(('g', GUION_DIR, 0), ('u', 'Ok', 1), ('g', NUDGE, 121))
+    assert D.det_nudge_anomalo(t, 'B') == []
+
+
+def test_nudge_anomalo_si_el_usuario_respondio_de_verdad():
+    t = mk(('g', GUION_DIR, 0), ('u', 'Hola es casa y se encuentra en Nuevo Vallarta', 1), ('g', NUDGE, 121))
+    assert D.det_nudge_anomalo(t, 'B')[0]['subtipo'] == 'nudge_tras_usuario'
+
+
+def test_intencion_no_toma_una_correccion_como_numero_equivocado():
+    # validación manual: 'Me equivoqué, la antigüedad es de 11 años' es una corrección, no un opt-out
+    t = mk(('g', BLOQUE, 0), ('u', 'Me equivoqué, la antigüedad es de 11 años', 1), ('g', GUION_DIR, 2))
+    assert D.det_intencion_ignorada(t, 'B') == []
