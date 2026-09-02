@@ -106,3 +106,140 @@ def test_latencia_alta_gabi_tarda_mas_de_10_min():
 def test_latencia_alta_ignora_nudge():
     t = mk(('g', 'hola', 0), ('u', 'Casa', 1), ('g', NUDGE, 121))
     assert D.det_latencia_alta(t, 'B') == []
+
+
+GUION_DIR = ("¡Perfecto! 🏡 Ya anoté que es una *casa*.\n\nAhora compárteme la *dirección* en texto, por favor:\n"
+             "📍 *Estado*\n🛣️ *Calle*")
+ACK = "¡Gracias! 🙌 Ya registré la *antigüedad*, *recámaras*, *baños*, *cajones* y el *valor pedido*."
+
+
+# --- 1 pregunta_ignorada ---
+def test_pregunta_ignorada_bot_b_responde_con_guion():
+    t = mk(('g', 'hola', 0), ('u', '¿Cuánto me ofrecen por mi casa?', 1), ('g', GUION_DIR, 2))
+    h = D.det_pregunta_ignorada(t, 'B')
+    assert h and h[0]['tipo'] == 'pregunta_ignorada' and h[0]['idx'] == 1
+
+
+def test_pregunta_ignorada_bot_b_responde_con_nudge():
+    t = mk(('g', 'hola', 0), ('u', 'y cuánto tardan?', 1), ('g', NUDGE, 121))
+    assert D.det_pregunta_ignorada(t, 'B')[0]['subtipo'] == 'siguio_nudge'
+
+
+def test_pregunta_ignorada_no_dispara_si_gabi_sale_del_guion():
+    t = mk(('g', 'hola', 0), ('u', '¿Cuánto tardan?', 1), ('g', 'La evaluación toma 48 horas hábiles.', 2))
+    assert D.det_pregunta_ignorada(t, 'B') == []
+
+
+def test_pregunta_ignorada_bot_a_solo_marca_candidata():
+    t = mk(('g', 'hola', 0), ('u', '¿Cuánto tardan?', 1), ('g', 'Necesito la dirección.', 2))
+    assert D.det_pregunta_ignorada(t, 'A')[0]['subtipo'] == 'candidata_llm'
+
+
+def test_pregunta_ignorada_ignora_respuesta_numerica_con_signo():
+    # calibración: '3?' es una respuesta al bloque, no una pregunta
+    t = mk(('g', BLOQUE, 0), ('u', '3?', 1), ('g', ACK, 2))
+    assert D.det_pregunta_ignorada(t, 'B') == []
+
+
+def test_pregunta_ignorada_acepta_pregunta_corta():
+    # calibración: '¿Eres bot?' / 'Hay cobertura ?' son preguntas reales de 2-3 palabras
+    t = mk(('g', GUION_DIR, 0), ('u', 'Eres bot?', 1), ('g', GUION_DIR, 2))
+    assert D.det_pregunta_ignorada(t, 'B')
+
+
+def test_pregunta_ignorada_ignora_el_signo_dentro_de_una_url():
+    # calibración: las ubicaciones de WhatsApp llegan como https://maps.app.goo.gl/xxx?g_st=aw
+    t = mk(('g', GUION_DIR, 0), ('u', 'https://maps.app.goo.gl/J1ZQb?g_st=aw', 1), ('g', GUION_DIR, 2))
+    assert D.det_pregunta_ignorada(t, 'B') == []
+
+
+# --- 2 ambigua_registrada ---
+def test_ambigua_registrada_no_se_y_ack():
+    t = mk(('g', BLOQUE, 0), ('u', 'no sé los metros, como 10 años, 3 recámaras', 1), ('g', ACK, 2))
+    assert D.det_ambigua_registrada(t, 'B')[0]['subtipo'] == 'marcador_ambiguo'
+
+
+def test_ambigua_registrada_sin_numeros_tras_bloque():
+    t = mk(('g', BLOQUE, 0), ('u', 'es grande, tiene varias recámaras', 1), ('g', ACK, 2))
+    assert D.det_ambigua_registrada(t, 'B')[0]['subtipo'] == 'sin_numeros'
+
+
+def test_ambigua_no_dispara_si_gabi_repregunta():
+    t = mk(('g', BLOQUE, 0), ('u', 'no sé los metros', 1), ('g', 'Solo me falta la *área construida*', 2))
+    assert D.det_ambigua_registrada(t, 'B') == []
+
+
+def test_ambigua_no_dispara_con_aprox_y_numero():
+    # calibración: '150 mts 2 aprox.' es una respuesta usable, no una ambigüedad
+    t = mk(('g', BLOQUE, 0), ('u', '25 años aprox, 190 m2, 4 recámaras, 3 baños, 2 cajones, 2 millones', 1), ('g', ACK, 2))
+    assert D.det_ambigua_registrada(t, 'B') == []
+
+
+def test_ambigua_no_dispara_con_no_tengo_cochera():
+    # calibración: 'No tengo cochera' es un dato, no una ambigüedad
+    t = mk(('g', BLOQUE, 0), ('u', '10 años, 120 m2, 3, 1 baño, no tengo cochera, 900 mil', 1), ('g', ACK, 2))
+    assert D.det_ambigua_registrada(t, 'B') == []
+
+
+# --- 3 repregunta_dato_ya_dado ---
+def test_repregunta_area_ya_dada():
+    t = mk(('g', BLOQUE, 0), ('u', '10 años\n120 m2\n3\n2\n1\n2,500,000', 1),
+           ('g', 'Solo me falta la *área construida* en m²', 2))
+    h = D.det_repregunta_dato_ya_dado(t, 'B')
+    assert h and h[0]['subtipo'] == 'area'
+
+
+def test_repregunta_precio_ya_dado():
+    t = mk(('g', BLOQUE, 0), ('u', '10 años, 120 m2, 3, 2, 1, $2,500,000', 1),
+           ('g', 'Solo me falta el *valor* que pides', 2))
+    assert any(x['subtipo'] == 'precio' for x in D.det_repregunta_dato_ya_dado(t, 'B'))
+
+
+def test_repregunta_no_dispara_si_el_dato_no_estaba():
+    t = mk(('g', BLOQUE, 0), ('u', '10 años, 3 recámaras, 2 baños, 1 cajón, 2,500,000', 1),
+           ('g', 'Solo me falta la *área construida*', 2))
+    assert all(x['subtipo'] != 'area' for x in D.det_repregunta_dato_ya_dado(t, 'B'))
+
+
+# --- 4 intencion_ignorada ---
+def test_intencion_optout_seguida_de_guion():
+    t = mk(('g', 'hola', 0), ('u', 'ya vendí la casa, gracias', 1), ('g', GUION_DIR, 2))
+    assert D.det_intencion_ignorada(t, 'B')[0]['subtipo'] == 'opt_out'
+
+
+def test_intencion_humano_seguida_de_nudge():
+    t = mk(('g', 'hola', 0), ('u', 'prefiero que me llame un asesor', 1), ('g', NUDGE, 121))
+    assert D.det_intencion_ignorada(t, 'B')[0]['subtipo'] == 'pide_humano'
+
+
+def test_intencion_numero_equivocado():
+    t = mk(('g', 'hola', 0), ('u', 'Tiene número equivocado.', 1), ('g', GUION_DIR, 2))
+    assert D.det_intencion_ignorada(t, 'B')[0]['subtipo'] == 'numero_equivocado'
+
+
+def test_intencion_no_dispara_si_gabi_la_atiende():
+    t = mk(('g', 'hola', 0), ('u', 'ya vendí', 1), ('g', 'Entendido, cerramos tu solicitud. ¡Éxitos!', 2))
+    assert D.det_intencion_ignorada(t, 'B') == []
+
+
+def test_intencion_no_dispara_por_la_palabra_llama_en_se_llama():
+    # calibración: 'un fraccionamiento que se llama igual' no es pedir que lo llamen
+    t = mk(('g', GUION_DIR, 0), ('u', 'es un fraccionamiento que se llama Villas Santin', 1), ('g', GUION_DIR, 2))
+    assert D.det_intencion_ignorada(t, 'B') == []
+
+
+# --- 5 media_no_manejado ---
+def test_media_url_maps_seguida_de_guion():
+    t = mk(('g', GUION_DIR, 0), ('u', 'https://maps.app.goo.gl/2mWHhwEScLzMACHf8?g_st=ic', 1), ('g', GUION_DIR, 2))
+    assert D.det_media_no_manejado(t, 'B')[0]['tipo'] == 'media_no_manejado'
+
+
+def test_media_maps_apple():
+    t = mk(('g', GUION_DIR, 0), ('u', 'https://maps.apple/p/b.BnFSBDraDDe.z', 1), ('g', NUDGE, 121))
+    assert D.det_media_no_manejado(t, 'B')[0]['subtipo'] == 'ubicacion'
+
+
+def test_media_no_dispara_si_gabi_acusa_la_ubicacion():
+    t = mk(('g', GUION_DIR, 0), ('u', 'https://maps.app.goo.gl/abc', 1),
+           ('g', 'Gracias, no puedo abrir enlaces. ¿Me escribes calle y número?', 2))
+    assert D.det_media_no_manejado(t, 'B') == []
