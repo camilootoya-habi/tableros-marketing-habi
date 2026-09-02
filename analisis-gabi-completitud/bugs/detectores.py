@@ -109,6 +109,10 @@ def det_hora_no_monotona(turns, bot):
 
 # ---------- 12 latencia_alta ----------
 def det_latencia_alta(turns, bot):
+    """Sólo opina si la línea de tiempo es monótona: hay conversaciones de varios periodos concatenadas
+    (402 del bot A, 407 del B) donde los deltas entre turnos no significan nada."""
+    if det_hora_no_monotona(turns, bot):
+        return []
     out = []
     for a, b in zip(turns, turns[1:]):
         if a.rol == 'usuario' and b.rol == 'gabi' and not is_nudge(b.texto):

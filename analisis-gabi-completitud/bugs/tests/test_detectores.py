@@ -243,3 +243,10 @@ def test_media_no_dispara_si_gabi_acusa_la_ubicacion():
     t = mk(('g', GUION_DIR, 0), ('u', 'https://maps.app.goo.gl/abc', 1),
            ('g', 'Gracias, no puedo abrir enlaces. ¿Me escribes calle y número?', 2))
     assert D.det_media_no_manejado(t, 'B') == []
+
+
+def test_latencia_alta_se_apaga_si_la_linea_de_tiempo_no_es_monotona():
+    # calibración: 402 convs del bot A tienen saltos hacia atrás de meses (conversaciones de varios
+    # periodos concatenadas). Ahí los deltas no significan nada, así que el detector no debe opinar.
+    t = mk(('g', 'hola', 0), ('u', 'Casa', 1), ('g', '¡Perfecto!', 15), ('u', 'ok', -50000))
+    assert D.det_latencia_alta(t, 'B') == []
