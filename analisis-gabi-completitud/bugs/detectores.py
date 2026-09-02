@@ -123,7 +123,9 @@ def det_latencia_alta(turns, bot):
         if a.rol == 'usuario' and b.rol == 'gabi' and not is_nudge(b.texto):
             d = _dt(a, b)
             if d is not None and d > LATENCIA_MAX_S:
-                out.append(_h('latencia_alta', b, f'{int(d // 60)}min'))
+                h = int(d // 3600)
+                bucket = '10-60min' if d < 3600 else f'{h}h' if h < 24 else 'mas_de_1_dia'
+                out.append(_h('latencia_alta', b, bucket))
     return out
 
 

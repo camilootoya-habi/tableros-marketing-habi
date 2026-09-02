@@ -39,6 +39,12 @@ HILOS ABIERTOS (el trabajo que sigue, en orden de valor):
 3. Diseñar los A/B propuestos (§5): dirección pre-llenada vs control; bloque con
    sugerencias de m²/precio vs sin. Con ~400-500 muertes/mes en dirección, 10 pp se
    detectan en semanas.
+4. Bugs del agente: BUGS-AGENTE.md tiene la tabla validada (detectores en bugs/, 62 tests,
+   90 conversaciones etiquetadas en bugs/validacion.csv). Lo accionable ya medido: 493
+   leads recibieron la apertura 2+ veces, 139 conversaciones quedan sin respuesta y 45
+   nudges se disparan tras una respuesta real. Siguiente: priorizar con producto y
+   re-correr `python3 bugs/run.py` tras cada cambio de guion para ver si bajan. Pendiente
+   de decisión de Nicolas: el juez LLM (§6) implica mandar conversaciones a un API externo.
 
 REGLAS OPERATIVAS:
 - BigQuery SOLO LECTURAS: bq CLI, facturado a sellers-main-prod, SIEMPRE con
