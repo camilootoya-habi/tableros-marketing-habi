@@ -264,6 +264,14 @@ body.light #sheet-web .wchip.country { background: #dbeafe; border-color: #3b82f
 #sheet-otp .paso .nota-mecanismo { font-size: 12px; color: var(--text-muted-2); border-top: 1px solid var(--border); padding-top: 12px; }
 #sheet-otp .paso .nota-mecanismo b { color: var(--text); }
 
+#sheet-otp .conclusion-card { background: rgba(251,191,36,.10); border: 1px solid var(--w-amber);
+  border-radius: 10px; padding: 16px 20px; margin: 16px 0 4px; }
+#sheet-otp .conclusion-card h5 { margin: 0 0 10px; font-size: 13px; font-weight: 700; color: var(--w-amber);
+  text-transform: uppercase; letter-spacing: .04em; }
+#sheet-otp .conclusion-card p { font-size: 13px; line-height: 1.7; color: var(--text); margin: 0 0 10px; max-width: 800px; }
+#sheet-otp .conclusion-card p:last-child { margin-bottom: 0; }
+#sheet-otp .conclusion-card b { color: var(--text-title); }
+#sheet-otp .conclusion-card .cifra { font-family: ui-monospace, monospace; color: var(--w-amber); font-weight: 600; }
 #sheet-otp .grupos { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 12px; margin-bottom: 14px; }
 #sheet-otp .grupo { border: 1px solid var(--border); border-radius: 8px; padding: 13px 15px; }
 #sheet-otp .grupo.tratado { border-color: var(--accent); }
@@ -765,8 +773,8 @@ body.light #sheet-web .wchip.country { background: #dbeafe; border-color: #3b82f
   <div class="quality-charts cols-4">
     <div class="qc-card"><div class="qc-title">Sesiones que llegan a contacto</div><div class="qc-wrap"><canvas id="otpChVol"></canvas></div></div>
     <div class="qc-card"><div class="qc-title">Llegan a contacto →<br>envían el formulario</div><div class="qc-wrap"><canvas id="otpChEnv"></canvas></div></div>
+    <div class="qc-card"><div class="qc-title">Share con OTP<br>de los que envían el formulario</div><div class="qc-wrap"><canvas id="otpChShare"></canvas></div></div>
     <div class="qc-card"><div class="qc-title">Conversión total<br>llegan a contacto → crean lead</div><div class="qc-wrap"><canvas id="otpChCvr"></canvas></div></div>
-    <div class="qc-card"><div class="qc-title">Share con OTP<br>de los que llegan a contacto</div><div class="qc-wrap"><canvas id="otpChShare"></canvas></div></div>
   </div>
 
   <h2 class="section-heading">Salud del OTP</h2>
@@ -835,6 +843,7 @@ body.light #sheet-web .wchip.country { background: #dbeafe; border-color: #3b82f
           el OTP solo toca el del medio. Multiplicándolos se reconstruyen exactamente los números del
           experimento:</p>
         <div class="cadena" id="otpCadena"></div>
+        <div class="conclusion-card" id="otpConclusion"></div>
         <p class="nota-mecanismo"><b>Dónde está el error, en una línea:</b> al brazo con OTP le falta el
           primer factor. Su denominador ya excluye a quien no envió, así que su porcentaje solo multiplica
           validación × calificación — y por eso sale más alto. Al reponer el factor de envío, el efecto
@@ -2130,8 +2139,9 @@ function otpRenderConv() {
            periods.map(per => { const t = tot(per); return t.c ? env(per) / t.c * 100 : 0; }), etiquetas, true);
   otpChart('otpChCvr', 'Contacto → lead', '#34d399',
            periods.map(per => { const t = tot(per); return t.c ? t.l / t.c * 100 : 0; }), etiquetas, true);
+  // share sobre los que ENVÍAN, igual que la fila 3 de la tabla: es el rollout real
   otpChart('otpChShare', 'Share con OTP', '#fbbf24',
-           periods.map(per => { const t = tot(per); return t.c ? acc[per].con.c / t.c * 100 : 0; }), etiquetas, true);
+           periods.map(per => { const e = env(per); return e ? envCon(per) / e * 100 : 0; }), etiquetas, true);
 }
 
 // Comparación [A] como la mide EXP-011 vs [B] alineando denominadores.
@@ -2199,6 +2209,39 @@ function otpRenderExp(ab) {
        ${t('contacto → calificado', pc(resRep), 'res reportado')}
      </div>
      <div class="cad-delta rep"><span>Su denominador ya excluye a quien no envió:</span>+${(resRep - resS).toFixed(1)} pp</div>`;
+
+  // ── la conclusión, con los números del propio dato ──
+  const box = document.getElementById('otpConclusion');
+  if (!box) return;
+  const caidaPp  = resS - resC;
+  const caidaRel = caidaPp / resS * 100;
+  const repDelta = resRep - resS;
+
+  // señales de "persona real" desde el re-encendido del 2-sep
+  const dias = ((WEB_DATA.otp || {}).salud || {})[pais] || [];
+  const v2 = dias.filter(d => d.regimen.indexOf('A/B v2') === 0);
+  const req = v2.reduce((a, d) => a + d.req, 0);
+  const reenvio = v2.reduce((a, d) => a + d.reenvio, 0);
+  const tope = v2.reduce((a, d) => a + d.tope, 0);
+  const pais_n = pais === 'CO' ? 'Colombia' : 'México';
+
+  box.innerHTML =
+    `<h5>La conclusión</h5>
+     <p>El experimento concluyó que el OTP <b>mejora</b> la calificación
+       (<span class="cifra">+${repDelta.toFixed(1)}pp</span>), y sobre eso se llevó al 100%. Ese número está
+       mal medido: al brazo con OTP <b>le falta el factor de envío</b>, porque su denominador ya excluye a
+       quien nunca envió el formulario.</p>
+     <p>Medido bien, en ${pais_n} el OTP <b>baja</b> la conversión de contacto a calificado de
+       <span class="cifra">${resS.toFixed(1)}%</span> a <span class="cifra">${resC.toFixed(1)}%</span>
+       — son <span class="cifra">${caidaPp.toFixed(1)}pp</span>, una caída del
+       <span class="cifra">${caidaRel.toFixed(0)}%</span> en el flujo de leads calificados.</p>
+     ${req ? `<p>Y <b>no es limpieza de ruido</b>: desde que se volvió a prender el 2 de septiembre,
+       <span class="cifra">${fmt(reenvio)}</span> personas pidieron reenviar el código
+       (<span class="cifra">${(reenvio / req * 100).toFixed(0)}%</span> de las que lo pidieron) y
+       <span class="cifra">${fmt(tope)}</span> chocaron contra el tope de reenvíos
+       (<span class="cifra">${(tope / req * 100).toFixed(0)}%</span>). <b>Un número falso no pide reenvío.</b>
+       Quien lo hace es una persona real, esperando un SMS que no llegó, con intención de ser contactada —
+       y la estamos perdiendo.</p>` : ''}`;
 }
 
 
