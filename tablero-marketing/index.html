@@ -771,6 +771,12 @@ body.light #sheet-web .wchip.country { background: #dbeafe; border-color: #3b82f
       de inmediato.</p>
   </div>
 
+  <div class="quality-charts cols-3">
+    <div class="qc-card"><div class="qc-title">Sesiones que llegan a contacto</div><div class="qc-wrap"><canvas id="otpChVol"></canvas></div></div>
+    <div class="qc-card"><div class="qc-title">Conversión total<br>llegan a contacto → crean lead</div><div class="qc-wrap"><canvas id="otpChCvr"></canvas></div></div>
+    <div class="qc-card"><div class="qc-title">Share con OTP<br>de los que llegan a contacto</div><div class="qc-wrap"><canvas id="otpChShare"></canvas></div></div>
+  </div>
+
   <h2 class="section-heading">Salud del OTP — serie diaria<span class="wblock-meta" id="otpSaludMeta"></span></h2>
   <div class="table-container">
     <table id="otpSaludTable"><thead><tr><th></th><th>Día</th></tr></thead><tbody></tbody></table>
@@ -2003,6 +2009,41 @@ function otpRenderSalud(salud) {
 
 // mapea una fecha ISO al identificador de período de cada granularidad,
 // con el MISMO formato que espera formatPeriod()/isCurrentPeriod()
+// Gráfica de línea para la fila bajo la tabla Contacto → Lead. Maneja volumen y %,
+// y se registra en QC_CHARTS para que el cambio de tema la reconstruya como las demás.
+function otpChart(canvasId, label, color, valores, labels, esPct) {
+  const ctx = document.getElementById(canvasId);
+  if (!ctx || typeof Chart === 'undefined') return;
+  const shown = valores.filter(v => v > 0);
+  let yMin = 0, yMax;
+  if (shown.length) {
+    const lo = Math.min(...shown), hi = Math.max(...shown);
+    const pad = Math.max(hi - lo, 1) * 0.25;
+    yMin = Math.max(0, lo - pad);
+    yMax = hi + pad;
+    if (esPct) { yMin = Math.max(0, Math.floor(yMin / 2) * 2); yMax = Math.min(100, Math.ceil(yMax / 2) * 2); }
+  }
+  const tc = themeColors();
+  if (QC_CHARTS[canvasId]) QC_CHARTS[canvasId].destroy();
+  QC_CHARTS[canvasId] = new Chart(ctx, {
+    type: 'line',
+    data: { labels, datasets: [{ label, data: valores, borderColor: color, backgroundColor: color + '22',
+      tension: 0.3, pointRadius: 2, pointHoverRadius: 4, borderWidth: 2, fill: true }] },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      interaction: { mode: 'index', intersect: false },
+      plugins: { legend: { display: false },
+        tooltip: { callbacks: { label: c => esPct ? c.parsed.y.toFixed(1) + '%' : fmt(Math.round(c.parsed.y)) } } },
+      scales: {
+        x: { ticks: { color: tc.tickSmall, font: { size: 9 }, maxRotation: 0, autoSkip: true, maxTicksLimit: 6 }, grid: { color: tc.grid } },
+        y: { ticks: { color: tc.tickSmall, font: { size: 9 },
+               callback: v => esPct ? v + '%' : (v >= 1000 ? (v / 1000).toFixed(0) + 'k' : v) },
+             grid: { color: tc.grid }, min: yMin, max: yMax }
+      }
+    }
+  });
+}
+
 function otpPeriodo(iso, g) {
   const [y, m, dd] = iso.split('-').map(Number);
   if (g === 'D') return iso;
@@ -2065,6 +2106,15 @@ function otpRenderConv() {
   html += fila('sin_c', 'SIN OTP · llegan a contacto', per => acc[per].sin.c, 'row-total');
   html += fila('sin_l', 'SIN OTP · crean lead', per => acc[per].sin.l, 'row-stage', per => acc[per].sin.c);
   tbody.innerHTML = html;
+
+  // ── fila de gráficas: volumen, conversión total y share con OTP ────────────
+  const etiquetas = periods.map(per => formatPeriod(per, gran));
+  otpChart('otpChVol', 'Sesiones a contacto', '#818cf8',
+           periods.map(per => tot(per).c), etiquetas, false);
+  otpChart('otpChCvr', 'Contacto → lead', '#34d399',
+           periods.map(per => { const t = tot(per); return t.c ? t.l / t.c * 100 : 0; }), etiquetas, true);
+  otpChart('otpChShare', 'Share con OTP', '#fbbf24',
+           periods.map(per => { const t = tot(per); return t.c ? acc[per].con.c / t.c * 100 : 0; }), etiquetas, true);
 }
 
 // Comparación [A] como la mide EXP-011 vs [B] alineando denominadores.
