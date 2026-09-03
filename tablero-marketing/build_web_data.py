@@ -235,7 +235,19 @@ def main(clicks_path, sessions_path, leads_path, rutas_path, referrers_path,
         c["caract"] += int(r["n_caracteristicas"]); c["felic"] += int(r["n_felicitaciones"])
         c["lead"] += int(r["n_lead"]); c["calif"] += int(r["n_calificado"])
 
-    out["otp"] = {"salud": salud, "ab": ab}
+    # filas diarias con brazo, para la tabla Contacto → Lead (se agrupa en el frontend
+    # según la temporalidad elegida)
+    dias_ab = []
+    for r in otp_ab:
+        if r["pais"] not in PAISES:
+            continue
+        dias_ab.append({
+            "pais": r["pais"], "dia": r["dia"], "regimen": r["regimen"],
+            "brazo": "con" if r["con_otp"] in (1, "1", True, "true") else "sin",
+            "contacto": int(r["n_contacto"]), "lead": int(r["n_lead"]),
+        })
+
+    out["otp"] = {"salud": salud, "ab": ab, "dias": dias_ab}
 
     with open(out_path, "w") as f:
         json.dump(out, f, separators=(",", ":"))

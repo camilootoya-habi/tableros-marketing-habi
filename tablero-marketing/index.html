@@ -554,6 +554,16 @@ body.light #sheet-web .wchip.country { background: #dbeafe; border-color: #3b82f
       que no valida es un envío de formulario que no se convirtió en lead. No hace falta un A/B para medirlo.</p>
   </div>
 
+  <h2 class="section-heading">Contacto → Lead<span class="wblock-meta" id="otpConvMeta"></span></h2>
+  <div class="table-container">
+    <table id="otpConvTable"><thead><tr><th></th><th>Métrica</th></tr></thead><tbody></tbody></table>
+  </div>
+  <div class="whint">La fila <strong>TOTAL</strong> es la conversión real del tramo y <strong>no depende del
+    brazo</strong>: sirve para ver si la conversión del formulario cambió al prender o apagar el OTP.
+    Las filas por brazo llevan el sesgo descrito abajo — <strong>«sin OTP» incluye a quien nunca envió el
+    formulario</strong>, así que su tasa está deprimida y no se puede leer como control.
+    Se agrupa por la temporalidad seleccionada; se excluyen los días de falla de infraestructura.</div>
+
   <h2 class="section-heading">Comparación por régimen<span class="wblock-meta"> · ⚠️ ver advertencia</span></h2>
   <div class="otp-warn">
     <strong>⚠️ Esta tabla NO es un A/B válido. No la uses para decidir.</strong>
@@ -1671,6 +1681,7 @@ function otpRender() {
   otpRenderSemaforo(d.salud);
   otpRenderSalud(d.salud);
   otpRenderCompuerta(d.salud);
+  otpRenderConv();
   otpRenderAb(d.ab || {});
 }
 
@@ -1750,6 +1761,70 @@ function otpRenderCompuerta(salud) {
       <b>${fmt(req)}</b> pidieron código, <b>${fmt(ok)}</b> validaron</span>
       <b style="color:var(--w-red)">${fmt(perdidos)} envíos perdidos (${(perdidos / req * 100).toFixed(0)}%)</b></div>`;
   }).join('');
+}
+
+// mapea una fecha ISO al identificador de período de cada granularidad,
+// con el MISMO formato que espera formatPeriod()/isCurrentPeriod()
+function otpPeriodo(iso, g) {
+  const [y, m, dd] = iso.split('-').map(Number);
+  if (g === 'D') return iso;
+  if (g === 'M') return `${y}-${String(m).padStart(2, '0')}`;
+  if (g === 'Q') return `${y}-Q${Math.floor((m - 1) / 3) + 1}`;
+  if (g === 'Y') return String(y);
+  const dt = new Date(Date.UTC(y, m - 1, dd));
+  const dow = dt.getUTCDay();                     // 0=dom
+  const shift = g === 'C' ? (dow - 3 + 7) % 7     // ciclo comercial: miércoles
+                          : (dow === 0 ? 6 : dow - 1);  // ISO: lunes
+  dt.setUTCDate(dt.getUTCDate() - shift);
+  return dt.toISOString().slice(0, 10);
+}
+
+function otpRenderConv() {
+  const p = webPais(), gran = getGran();
+  const filas = (WEB_DATA.otp && WEB_DATA.otp.dias) || [];
+  const thead = document.querySelector('#otpConvTable thead tr');
+  const tbody = document.querySelector('#otpConvTable tbody');
+
+  // agrupa los días en períodos, excluyendo falla de infraestructura
+  const acc = {};
+  for (const r of filas) {
+    if (r.pais !== p) continue;
+    if (r.regimen === 'falla total' || r.regimen === 'degradado SNS') continue;
+    const per = otpPeriodo(r.dia, gran);
+    const a = acc[per] || (acc[per] = { con: { c: 0, l: 0 }, sin: { c: 0, l: 0 }, regs: {} });
+    a[r.brazo].c += r.contacto;
+    a[r.brazo].l += r.lead;
+    a.regs[r.regimen] = (a.regs[r.regimen] || 0) + r.contacto;
+  }
+  const periods = Object.keys(acc).sort().slice(-20);
+  if (!periods.length) { tbody.innerHTML = ''; return; }
+
+  document.getElementById('otpConvMeta').textContent = ` · ${getCountry()} · ${GRAN_LABELS[gran]}`;
+  thead.innerHTML = '<th></th><th>Métrica</th>' + periods.map(per => {
+    // el régimen dominante del período, para dar contexto a la columna
+    const regs = acc[per].regs;
+    const dom = Object.keys(regs).sort((a, b) => regs[b] - regs[a])[0] || '';
+    return `<th title="${dom}">${formatPeriod(per, gran)}</th>`;
+  }).join('');
+
+  const tot = per => ({ c: acc[per].con.c + acc[per].sin.c, l: acc[per].con.l + acc[per].sin.l });
+  const fila = (lbl, get, cls, pct) => {
+    const vals = periods.map(get);
+    if (!pct) return `<tr class="${cls}"><td></td><td>${lbl}</td>` + vals.map(v => `<td>${fmt(v)}</td>`).join('') + '</tr>';
+    const dens = periods.map(pct);
+    return `<tr class="${cls}"><td></td><td>${lbl}</td>${heatCells(vals, dens, false)}</tr>`;
+  };
+
+  let html = '';
+  html += `<tr class="row-section"><td class="section-title" colspan="2">TOTAL — sin sesgo de brazo</td><td class="section-fill" colspan="${periods.length}"></td></tr>`;
+  html += fila('Llegan a contacto', per => tot(per).c, 'row-total');
+  html += fila('Crean lead', per => tot(per).l, 'row-stage', per => tot(per).c);
+  html += `<tr class="row-section"><td class="section-title" colspan="2">Por brazo — ⚠️ «sin OTP» incluye a quien no envió el formulario</td><td class="section-fill" colspan="${periods.length}"></td></tr>`;
+  html += fila('CON OTP · llegan a contacto', per => acc[per].con.c, 'row-total');
+  html += fila('CON OTP · crean lead', per => acc[per].con.l, 'row-stage', per => acc[per].con.c);
+  html += fila('SIN OTP · llegan a contacto', per => acc[per].sin.c, 'row-total');
+  html += fila('SIN OTP · crean lead', per => acc[per].sin.l, 'row-stage', per => acc[per].sin.c);
+  tbody.innerHTML = html;
 }
 
 function otpRenderAb(ab) {
