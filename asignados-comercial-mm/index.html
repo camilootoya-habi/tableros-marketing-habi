@@ -1,0 +1,519 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Asignados comercial MM · ciclo 29-jul a 25-ago 2026</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<style>
+  :root{
+    --bg:#0f172a; --card:#1e293b; --card2:#263348; --border:#334155; --border2:#4b5563; --row:#283548;
+    --text:#e2e8f0; --title:#f8fafc; --mut:#cbd5e1; --mut2:#94a3b8; --mut3:#64748b;
+    --mm:#3987e5; --inmo:#c98500; --sus:#199e70; --gabi:#d95926; --otro:#7E8796;
+    --bad:#e66767; --ok:#4ade80; --line:#94a3b8;
+  }
+  body.light{
+    --bg:#f7f8fa; --card:#fff; --card2:#f1f5f9; --border:#e2e8f0; --border2:#cbd5e1; --row:#f1f5f9;
+    --text:#334155; --title:#0f172a; --mut:#475569; --mut2:#64748b; --mut3:#94a3b8;
+    --mm:#2a78d6; --inmo:#eda100; --sus:#1baf7a; --gabi:#eb6834; --otro:#8B94A3;
+    --bad:#c1332f; --ok:#15803d; --line:#64748b;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{font-family:'Segoe UI',system-ui,-apple-system,sans-serif;background:var(--bg);color:var(--text);padding:28px 24px 70px;font-size:14px}
+  .wrap{max-width:1060px;margin:0 auto}
+  .back-link{display:inline-flex;align-items:center;gap:6px;padding:6px 12px;background:var(--card);
+    border:1px solid var(--border);border-radius:6px;color:var(--mut2);text-decoration:none;font-size:13px;margin-bottom:16px}
+  .back-link:hover{color:var(--mm);border-color:var(--mm)}
+  .top{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;flex-wrap:wrap;
+       padding-bottom:18px;border-bottom:2px solid var(--border)}
+  h1{font-size:24px;font-weight:650;color:var(--title);line-height:1.25;letter-spacing:-.2px}
+  .sub{font-size:13px;color:var(--mut2);margin-top:7px}
+  .theme{background:var(--card);border:1px solid var(--border);color:var(--mut2);border-radius:6px;padding:4px 10px;font-size:14px;cursor:pointer}
+  h2{font-size:16.5px;font-weight:650;color:var(--title);margin:40px 0 3px;letter-spacing:-.1px}
+  h2 .num{color:var(--mut3);font-weight:600;margin-right:9px;font-variant-numeric:tabular-nums}
+  h3{font-size:13px;font-weight:700;color:var(--title);margin-bottom:9px}
+  p{color:var(--mut);line-height:1.62;margin:9px 0;max-width:92ch}
+  code{font-family:ui-monospace,'SF Mono',Menlo,monospace;font-size:12px;background:var(--border);padding:1px 5px;border-radius:3px}
+  strong{color:var(--title);font-weight:650}
+  ul{margin:9px 0 9px 19px;color:var(--mut);line-height:1.62} li{margin-bottom:5px}
+
+  .verdict{background:var(--card);border:1px solid var(--border);border-left:4px solid var(--bad);
+    border-radius:8px;padding:18px 20px;margin-top:20px}
+  .verdict .q{font-size:11px;text-transform:uppercase;letter-spacing:.7px;color:var(--mut3);margin-bottom:9px}
+  .verdict .ans{font-size:16px;color:var(--title);font-weight:600;line-height:1.5}
+  .verdict p{margin:10px 0 0}
+
+  .kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(178px,1fr));gap:11px;margin:18px 0 0}
+  .kpi{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:14px 15px}
+  .kpi .k{font-size:10px;text-transform:uppercase;letter-spacing:.55px;color:var(--mut3);margin-bottom:7px;line-height:1.35}
+  .kpi .v{font-size:25px;font-weight:700;color:var(--title);font-variant-numeric:tabular-nums;line-height:1}
+  .kpi .s{font-size:11.5px;color:var(--mut2);margin-top:6px;line-height:1.45}
+  .kpi.al .v{color:var(--bad)} .kpi.go .v{color:var(--ok)}
+
+  .panel{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:15px 16px;margin-top:13px}
+  .g2{display:grid;grid-template-columns:1fr 1fr;gap:13px}
+  @media(max-width:880px){.g2{grid-template-columns:1fr}}
+  .ch{position:relative;height:225px}
+
+  .tw{overflow-x:auto;border:1px solid var(--border);border-radius:8px;background:var(--card);margin-top:13px}
+  table{width:100%;border-collapse:separate;border-spacing:0;font-size:12.5px;min-width:560px}
+  thead th{background:var(--border);color:var(--mut2);font-weight:650;text-transform:uppercase;font-size:9.5px;
+    letter-spacing:.45px;padding:9px 11px;text-align:right;white-space:nowrap}
+  thead th:first-child{text-align:left}
+  tbody td{padding:8px 11px;border-top:1px solid var(--row);text-align:right;white-space:nowrap;
+    font-family:ui-monospace,'SF Mono',Menlo,monospace;font-variant-numeric:tabular-nums}
+  tbody td:first-child{text-align:left;font-family:inherit}
+  tbody tr:hover td{background:var(--card2)}
+  tr.tot td{font-weight:700;background:var(--card2)}
+  tr.si td{background:#4ade8018} body.light tr.si td{background:#15803d12}
+  tr.si td:first-child{font-weight:650;color:var(--title)}
+  .dot{display:inline-block;width:9px;height:9px;border-radius:2px;margin-right:7px;vertical-align:1px}
+  .yes{color:var(--ok);font-weight:700} .no{color:var(--bad);font-weight:700}
+
+  .box{border-left:3px solid var(--mm);background:#3987e514;padding:14px 17px;border-radius:0 7px 7px 0;margin:15px 0}
+  body.light .box{background:#2a78d610}
+  .box.warn{border-left-color:var(--gabi);background:#d9592614} body.light .box.warn{background:#eb683410}
+  .box.key{border-left-color:var(--ok);background:#4ade8014} body.light .box.key{background:#15803d10}
+  .box .l{font-size:9.5px;text-transform:uppercase;letter-spacing:.7px;color:var(--mut3);display:block;margin-bottom:6px}
+  .box p{margin:0;color:var(--text)} .box p+p{margin-top:8px}
+  .cap{font-size:11.5px;color:var(--mut3);margin-top:9px;line-height:1.55;max-width:92ch}
+
+  details{margin-top:14px;border:1px solid var(--border);border-radius:8px;background:var(--card)}
+  summary{cursor:pointer;padding:13px 16px;font-size:13px;font-weight:600;list-style:none;display:flex;justify-content:space-between;align-items:center}
+  summary::-webkit-details-marker{display:none}
+  summary::after{content:"+";font-family:ui-monospace,monospace;color:var(--mut3)}
+  details[open] summary::after{content:"−"}
+  summary:focus-visible{outline:2px solid var(--mm);outline-offset:-2px}
+  .db{padding:0 16px 16px;font-size:12.5px;color:var(--mut2);line-height:1.6}
+  .db p{font-size:12.5px;margin:7px 0}
+  footer{margin-top:40px;padding-top:16px;border-top:1px solid var(--border);font-size:11px;color:var(--mut3)}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<a href="../" class="back-link">← Volver al hub</a>
+
+<div class="top">
+  <div>
+    <h1>¿Se gatilla la cláusula del 80%?</h1>
+    <div class="sub">Asignados a comercial de Market Maker · México · ciclo 29-jul → 25-ago 2026 · 4 ciclos comerciales miércoles→martes</div>
+  </div>
+  <button class="theme" id="tb" onclick="tg()">🌙</button>
+</div>
+
+<div class="verdict">
+  <div class="q">Respuesta corta</div>
+  <div class="ans">Sí, sobre el número medido: 2.470 asignados contra una meta de 3.556 es <strong>69,5%</strong>.
+  Pero 569 de los 1.086 leads faltantes se explican por dos cambios de enrutamiento identificables, ocurridos
+  aguas arriba del comercial, y si se reconocen el cumplimiento sube a <strong>85,5%</strong> y la cláusula no
+  se gatilla.</div>
+  <p>Ninguna de las dos bolsas alcanza por separado: contando solo el Descartador quedan en 77,2% y contando solo
+  GABI en 77,7%. <strong>Se necesitan las dos para cruzar el umbral</strong>, así que la decisión es una sola:
+  ¿son ambas atribuibles a la operación y no al equipo comercial?</p>
+</div>
+
+<div class="kpis">
+  <div class="kpi"><div class="k">Meta de leads asignados</div><div class="v">4.300</div>
+    <div class="s">real 3.792 · <strong>88,2%</strong></div></div>
+  <div class="kpi"><div class="k">Meta asignados comercial</div><div class="v">3.556</div>
+    <div class="s">4.300 × 83% de conversión</div></div>
+  <div class="kpi al"><div class="k">Real asignados comercial MM</div><div class="v">2.470</div>
+    <div class="s">69,5% · faltaron 1.086</div></div>
+  <div class="kpi al"><div class="k">Conversión real del ciclo</div><div class="v">65,2%</div>
+    <div class="s">contra 83% asumido</div></div>
+</div>
+
+<h2><span class="num">1</span>El desfase entre las dos metas</h2>
+<p>Las dos metas se miden sobre la misma ventana de calendario, pero un lead no llega al comercial el mismo día
+que marketing lo asigna. Conviene despejarlo primero, porque es la primera objeción que aparece.</p>
+
+<div class="g2">
+  <div class="panel">
+    <h3>Cuánto tarda un lead en llegar al comercial</h3>
+    <div class="ch" style="height:200px"><canvas id="cLag"></canvas></div>
+    <div class="cap">Cohorte del ciclo que llegó a comercial de MM. <strong>El 90% llega en 5 días o menos.</strong></div>
+  </div>
+  <div class="panel">
+    <h3>De qué está hecho el KPI del ciclo</h3>
+    <div class="ch" style="height:200px"><canvas id="cArr"></canvas></div>
+    <div class="cap">2.009 leads son del propio ciclo y <strong>456 (18,5%) son arrastre</strong> de ciclos anteriores.</div>
+  </div>
+</div>
+
+<div class="box">
+  <span class="l">Conclusión del capítulo</span>
+  <p>El desfase <strong>juega a favor del indicador comercial, no en contra</strong>: entraron 456 leads de ciclos
+  previos y salieron 274 del propio ciclo que convirtieron después. Neto <strong>+182 leads</strong> a favor.
+  El faltante no se explica por el corte de calendario.</p>
+</div>
+
+<h2><span class="num">2</span>Cuánto del hueco es de marketing</h2>
+<p>Marketing entregó 3.792 de una meta de 4.300: <strong>88,2%</strong>, faltaron 508 leads. Al 83% de conversión
+que se asumió al fijar la meta, esos 508 valían <strong>422 asignados comerciales</strong>.</p>
+
+<div class="tw"><table>
+  <thead><tr><th>Descomposición del hueco comercial</th><th>Leads</th><th>% del hueco</th></tr></thead>
+  <tbody>
+    <tr><td>Hueco total: 3.556 − 2.470</td><td>1.086</td><td>100%</td></tr>
+    <tr><td><span class="dot" style="background:var(--otro)"></span>Atribuible al volumen de marketing (508 × 83%)</td><td>422</td><td>38,9%</td></tr>
+    <tr class="tot"><td>Hueco restante, a explicar por las bolsas</td><td>664</td><td>61,1%</td></tr>
+  </tbody>
+</table></div>
+<p>Marketing explica el 38,9% del faltante. <strong>El 61,1% restante ocurre después de la Asignación Marketing</strong>, en el
+recorrido del lead hasta el comercial. Ese es el hueco que los capítulos siguientes descomponen.</p>
+
+<h2><span class="num">3</span>Cuánto tarda GABI en liberar, y por qué 292 leads están vencidos</h2>
+<p>El paso intermedio es GABI: recibe el lead y lo libera hacia un comercial. Para saber si un lead está
+“atascado” hay que fijar primero el parámetro normal de ese paso.</p>
+
+<div class="panel">
+  <h3>Curva de liberación — % de la cohorte que ya tiene comercial asignado al día N</h3>
+  <div class="ch" style="height:250px"><canvas id="cCurva"></canvas></div>
+  <div class="cap">Cada punto solo cuenta leads que a hoy tienen al menos N días de exposición, así ningún ciclo se
+  compara contra otro con distinta madurez.</div>
+</div>
+
+<div class="box warn">
+  <span class="l">El parámetro normal es 6 días</span>
+  <p>En abril, mayo y junio la curva <strong>se aplana en el día 6</strong> y ya no se mueve: 96,3% · 98,5% · 96,7%
+  liberado, y de ahí en adelante gana apenas 0,3 puntos en 24 días más. Es decir, si un lead no salió al día 6,
+  históricamente ya no salía.</p>
+  <p>En este ciclo, al día 6 solo estaba liberado el <strong>83,0%</strong>. Son 13,3 a 15,5 puntos por debajo
+  del parámetro.</p>
+</div>
+
+<div class="g2">
+  <div class="panel">
+    <h3>Media de días en GABI antes de pasar a comercial</h3>
+    <div class="ch" style="height:200px"><canvas id="cMedia"></canvas></div>
+    <div class="cap">Semana de asignación de marketing, miércoles a martes. Media entre los leads que sí fueron liberados.</div>
+  </div>
+  <div class="panel">
+    <h3>Cobertura: % liberado dentro del parámetro de 6 días</h3>
+    <div class="ch" style="height:200px"><canvas id="cCob"></canvas></div>
+    <div class="cap">Misma cohorte semanal. La línea punteada es el piso histórico de abril a junio.</div>
+  </div>
+</div>
+
+<div class="box warn">
+  <span class="l">Por qué la media engaña y hay que leerla junto a la cobertura</span>
+  <p>La media de días <strong>bajó</strong>, de 3,93 en abril a 2,50 en agosto, y la mediana de 5 a 3 días.
+  Leída sola parece una mejora. Pero solo mide a los leads que <em>sí</em> se liberaron: es un promedio sobre los
+  sobrevivientes.</p>
+  <p>La cobertura cuenta la otra mitad de la historia y va en dirección opuesta: <strong>de 99,0% a 77,1%</strong>.
+  GABI libera más rápido a los que libera, y deja atrás una cola que crece. El problema no es la velocidad
+  promedio, es a cuántos alcanza.</p>
+</div>
+
+<h3 style="margin-top:26px">Por qué estos 292 leads se consideran vencidos y no en tránsito</h3>
+<p>Un lead cuenta como vencido si al cerrar el ciclo <strong>ya llevaba más de 6 días</strong> desde su asignación
+de marketing —el parámetro normal— y todavía no tenía comercial. Tuvo tiempo de salir dentro del ciclo y no salió.</p>
+
+<div class="tw"><table>
+  <thead><tr><th>Ciclo</th><th>Vencidos al cierre</th><th>Siguen sin comercial hoy</th><th>Salieron después</th></tr></thead>
+  <tbody>
+    <tr><td>C-4 · 08abr – 05may</td><td>138</td><td>128</td><td>10</td></tr>
+    <tr><td>C-3 · 06may – 02jun</td><td>47</td><td>40</td><td>7</td></tr>
+    <tr><td>C-2 · 03jun – 30jun</td><td>101</td><td>35</td><td>66</td></tr>
+    <tr><td>C-1 · 01jul – 28jul</td><td>196</td><td>54</td><td>142</td></tr>
+    <tr class="tot"><td>C0 · 29jul – 25ago</td><td>292</td><td>280</td><td>12</td></tr>
+  </tbody>
+</table></div>
+
+<div class="box warn">
+  <span class="l">Tres pruebas de que no están en tránsito</span>
+  <p><strong>1 · Ya superaron el parámetro con margen.</strong> El más joven de los 292 tiene hoy 9 días desde su
+  asignación de marketing y la mediana del grupo son 15 días, contra un parámetro de 6.</p>
+  <p><strong>2 · Prácticamente ninguno salió después.</strong> De los 292, <strong>280 siguen sin comercial hoy</strong>
+  — solo 12 se liberaron después del cierre. En el ciclo C-2 la proporción fue inversa: de 101 vencidos, 66
+  terminaron saliendo. Esta cola no se está moviendo.</p>
+  <p><strong>3 · La línea base es 95.</strong> El promedio de vencidos al cierre en los tres ciclos previos a
+  julio fue de 95, midiendo cada ciclo con la foto de su propio último día. Este ciclo tiene 292: un exceso de
+  <strong>197 leads</strong> sobre lo normal.</p>
+</div>
+
+<h3 style="margin-top:26px">La prueba definitiva: la cola siempre existió, pero antes se rescataba</h3>
+<p>Al cierre de cada ciclo siempre quedan leads sin liberar — es normal, entre 11,6% y 15,8% de la cohorte.
+Lo que nunca había pasado es que esa cola se quede quieta. Midiendo cuántos de los que estaban sin liberar al
+cierre terminaron recibiendo un comercial después:</p>
+
+<div class="tw"><table>
+  <thead><tr><th>Ciclo</th><th>Sin liberar al cierre</th><th>Sin liberar hoy</th><th>Rescatados después</th><th>% rescatado</th></tr></thead>
+  <tbody>
+    <tr><td>C-4 · 08abr – 05may</td><td>649</td><td>133</td><td>516</td><td>79,5%</td></tr>
+    <tr><td>C-3 · 06may – 02jun</td><td>465</td><td>47</td><td>418</td><td>89,9%</td></tr>
+    <tr><td>C-2 · 03jun – 30jun</td><td>424</td><td>42</td><td>382</td><td>90,1%</td></tr>
+    <tr><td>C-1 · 01jul – 28jul</td><td>507</td><td>60</td><td>447</td><td>88,2%</td></tr>
+    <tr class="tot"><td>C0 · 29jul – 25ago</td><td>754</td><td>421</td><td>333</td><td class="no">44,2%</td></tr>
+  </tbody>
+</table></div>
+
+<div class="box warn">
+  <span class="l">Lo que esto cierra</span>
+  <p>En los cuatro ciclos anteriores, <strong>entre el 79,5% y el 90,1% de la cola se rescató</strong>. Este ciclo
+  va en <strong>44,2%</strong>, la mitad de lo normal, y ya pasaron entre 9 y 36 días desde que se asignaron.</p>
+  <p>Esto responde la objeción de que “todavía están madurando”: históricamente la cola se resolvía sola, y esta
+  no lo está haciendo. Los 421 leads que siguen sin comercial no son inventario en tránsito, son inventario
+  perdido para este ciclo — y por la tendencia, probablemente perdido del todo.</p>
+</div>
+
+<h2><span class="num">4</span>Las bolsas: dónde quedaron los leads que no llegaron a MM</h2>
+<p>Seguí los 3.791 leads que marketing asignó en el ciclo hasta su primera asignación comercial. Los cinco
+destinos son excluyentes y suman la cohorte completa.</p>
+
+<div class="panel">
+  <h3>Reparto de la cohorte de marketing al cierre de cada ciclo</h3>
+  <div class="ch" style="height:250px"><canvas id="cBolsas"></canvas></div>
+</div>
+
+<div class="tw"><table>
+  <thead><tr><th>% de la cohorte, medido al cierre de cada ciclo</th><th>C-4</th><th>C-3</th><th>C-2</th><th>C-1</th><th>C0</th></tr></thead>
+  <tbody>
+    <tr><td><span class="dot" style="background:var(--mm)"></span>Ya con comercial de Market Maker</td><td>70,3%</td><td>75,5%</td><td>68,8%</td><td>61,8%</td><td>53,2%</td></tr>
+    <tr><td><span class="dot" style="background:var(--inmo)"></span>Ya con comercial de Inmobiliaria</td><td>12,7%</td><td>11,2%</td><td>18,0%</td><td>20,1%</td><td>19,6%</td></tr>
+    <tr><td><span class="dot" style="background:var(--sus)"></span>Descartador</td><td>1,2%</td><td>1,4%</td><td>1,5%</td><td>4,5%</td><td>7,3%</td></tr>
+    <tr><td><span class="dot" style="background:var(--gabi)"></span>Todavía sin liberar por GABI</td><td>15,8%</td><td>11,9%</td><td>11,6%</td><td>13,7%</td><td>19,9%</td></tr>
+  </tbody>
+</table></div>
+
+<div class="box warn">
+  <span class="l">Por qué esta tabla se mide al cierre y no a hoy</span>
+  <p>Cada ciclo se mide con la foto de su <strong>último día</strong>. Medido con el estado actual, los ciclos
+  viejos aparecerían artificialmente mejores: han tenido meses para liberar leads que en su momento seguían
+  atascados. Con la medición comparable, <strong>siempre hubo cola al cierre</strong> —entre 11,6% y 15,8%— y el
+  19,9% de este ciclo es 1,5 veces la norma. La anomalía no es que haya cola, es lo que pasa con ella después.</p>
+</div>
+
+<div class="box">
+  <span class="l">Lo que muestra la serie</span>
+  <p>Los leads que MM dejó de recibir se reparten en <strong>tres</strong> bolsas, no dos, y en proporciones
+  parecidas. Contra la línea base de los tres ciclos previos a julio, la cohorte que llega a un comercial de MM
+  cae <strong>18,3 puntos</strong> —de 71,5% a 53,2%— y esos puntos aparecen exactamente aquí:</p>
+  <ul style="margin-top:8px">
+    <li><strong>Cola sin liberar por GABI: +6,8 pp</strong> (13,1% → 19,9%) ≈ 258 leads</li>
+    <li><strong>Descartador: +5,9 pp</strong> (1,4% → 7,3%) ≈ 225 leads</li>
+    <li><strong>Inmobiliaria: +5,6 pp</strong> (14,0% → 19,6%) ≈ 214 leads</li>
+  </ul>
+  <p style="margin-top:8px">Las tres suman los 18,3 puntos. <strong>Inmobiliaria no es un detalle menor:</strong>
+  pesa casi lo mismo que las otras dos. Queda fuera de la discusión de comisiones por una razón distinta a su
+  tamaño — esos 214 leads <em>sí</em> recibieron un comercial, el del otro producto, así que hay un equipo que los
+  trabajó y tiene su propia meta.</p>
+</div>
+
+<div class="box">
+  <span class="l">¿Estaba mal puesta la meta?</span>
+  <p><strong>No.</strong> Medido igual que se construyó la meta —asignados comerciales de MM en la ventana del
+  ciclo sobre asignados de marketing en la misma ventana— el promedio de los tres ciclos previos a julio fue
+  <strong>82,3%</strong>, casi exactamente el 83% que se usó. El supuesto describía la operación real.</p>
+  <p>Con una advertencia para el próximo ciclo: ese ratio de calendario se sostiene mientras la cola sea estable,
+  porque lo que entra de arrastre compensa lo que sale. <strong>Cuando la cola crece, el ratio se cae solo</strong>
+  — y es exactamente lo que pasó. Por eso fijar la meta del ciclo entrante con 83% reproduce este conflicto si no
+  se corrige la liberación primero.</p>
+</div>
+
+<h2><span class="num">5</span>Escenarios de conteo contra el umbral del 80%</h2>
+<p>La bolsa de GABI son <strong>leads que ya debieron liberarse dentro del ciclo</strong> — quedaron fuera del
+parámetro, no son inventario en tránsito. Las filas de “solo el incremental” cuentan únicamente el exceso de cada
+bolsa sobre su línea base histórica, que es la lectura más conservadora.</p>
+
+<div class="panel">
+  <h3>Cumplimiento según lo que se cuente</h3>
+  <div class="ch" style="height:265px"><canvas id="cEsc"></canvas></div>
+  <div class="cap">La línea vertical es el umbral del 80% del esquema de comisiones.</div>
+</div>
+
+<div class="tw"><table>
+  <thead><tr><th>Qué se cuenta</th><th>Leads sumados</th><th>Total</th><th>vs meta 3.556</th><th>¿≥ 80%?</th></tr></thead>
+  <tbody>
+    <tr><td>Solo comercial de Market Maker</td><td>—</td><td>2.470</td><td>69,5%</td><td class="no">no</td></tr>
+    <tr><td>+ Descartador completo</td><td>277</td><td>2.747</td><td>77,2%</td><td class="no">no</td></tr>
+    <tr><td>+ vencidos de GABI completos</td><td>292</td><td>2.762</td><td>77,7%</td><td class="no">no</td></tr>
+    <tr><td>+ solo el incremental del Descartador</td><td>221</td><td>2.691</td><td>75,7%</td><td class="no">no</td></tr>
+    <tr><td>+ solo el incremental de GABI</td><td>197</td><td>2.667</td><td>75,0%</td><td class="no">no</td></tr>
+    <tr class="si"><td>+ ambos incrementales</td><td>418</td><td>2.888</td><td>81,2%</td><td class="yes">sí</td></tr>
+    <tr class="si"><td>+ ambas bolsas completas</td><td>569</td><td>3.039</td><td>85,5%</td><td class="yes">sí</td></tr>
+  </tbody>
+</table></div>
+
+<div class="box key">
+  <span class="l">El hallazgo que decide</span>
+  <p><strong>Ninguna bolsa cruza el umbral por separado.</strong> Susana sola llega a 77,2% y GABI sola a 77,7%.
+  Se necesitan las dos, y entonces da igual si se cuentan completas (85,5%) o solo su exceso sobre la norma
+  (81,2%): ambos caminos cruzan el 80%.</p>
+  <p>Eso simplifica la decisión. No hay que negociar qué fracción de cada bolsa cuenta — solo si <strong>las dos
+  son atribuibles a la operación y no al desempeño del equipo comercial</strong>.</p>
+</div>
+
+<h2><span class="num">6</span>Decisión</h2>
+<p>El faltante no es del equipo comercial. Los 569 leads en disputa nunca llegaron a un comercial de Market
+Maker: 277 se enrutaron al Descartador y 292 se quedaron en GABI más allá del parámetro normal, con 280 de ellos
+todavía sin comercial hoy. Los dos son <strong>cambios en cómo se reparten los leads</strong> ocurridos aguas
+arriba del comercial — no un juicio sobre si están bien o mal, sino un hecho: <strong>el equipo no tuvo ese
+insumo para trabajarlo</strong>, y la meta de cierres se le fijó asumiendo que sí lo tendría.</p>
+
+<div class="tw"><table>
+  <thead><tr><th>Opción</th><th>Cumplimiento que se reconoce</th><th>Efecto en comisiones</th></tr></thead>
+  <tbody>
+    <tr><td><strong>A · Sobre el número medido</strong><br><span style="font-size:11.5px;color:var(--mut3)">se aplica la cláusula tal como está escrita, sin considerar los cambios de enrutamiento</span></td>
+        <td>69,5%</td><td style="text-align:left;font-family:inherit">Se baja la meta de cierres y se reconoce sobrecumplimiento. <strong>Requiere presupuesto adicional.</strong></td></tr>
+    <tr class="si"><td><strong>B · Ajustado por los dos cambios</strong><br><span style="font-size:11.5px;color:var(--mut3)">recomendada</span></td>
+        <td>81,2% a 85,5%</td><td style="text-align:left;font-family:inherit">No se gatilla la cláusula. Las comisiones se pagan contra la meta original. <strong>Sin presupuesto adicional.</strong></td></tr>
+    <tr><td><strong>C · Ajustado por uno solo de los dos cambios</strong><br><span style="font-size:11.5px;color:var(--mut3)">el Descartador o la cola de GABI, no ambos</span></td>
+        <td>75,0% a 77,7%</td><td style="text-align:left;font-family:inherit">Se gatilla igual. No existe como punto medio: ninguno de los dos cambios alcanza por separado.</td></tr>
+  </tbody>
+</table></div>
+
+<div class="box key">
+  <span class="l">Recomendación</span>
+  <p><strong>Opción B.</strong> El umbral del 80% existe para proteger al equipo comercial de un insumo
+  insuficiente. Aquí el insumo bajó porque <strong>cambió el reparto de leads aguas arriba</strong>, no porque
+  el equipo rindiera menos. Los 569 leads son trazables uno por uno y se puede señalar exactamente a dónde
+  fueron.</p>
+  <p>La discusión de si estos dos cambios son deseables es aparte y no hay que resolverla para pagar las
+  comisiones de este ciclo. Puede que enviar más leads al Descartador sea correcto, y puede que el tiempo
+  adicional en GABI responda a un ajuste deliberado del proceso. Lo que no se sostiene es que el equipo comercial
+  cargue con el efecto de un cambio que no decidió ni conoció al momento de fijarse su meta.</p>
+  <p>Con dos condiciones hacia adelante. Primero, <strong>definir si los dos cambios se quedan</strong>: hoy la
+  cobertura de liberación a 6 días está en 77,1% contra un piso histórico de 96% y viene cayendo tres ciclos
+  seguidos, y el Descartador pasó de 53 a 277 leads por ciclo. Segundo, <strong>recalibrar la conversión de
+  referencia del esquema</strong>: el 83% describía la operación de abril a junio, y si los cambios se quedan,
+  volver a fijar la meta con ese número reproduce este mismo conflicto el mes entrante.</p>
+</div>
+
+<details>
+  <summary>Nota de método: definiciones, filtros y salvedades</summary>
+  <div class="db">
+    <p><strong>Asignados marketing.</strong> <code>papyrus-master.sellers_data_mart.sellers_leads_asignados_marketing_wbr_mart</code>,
+    <code>pais='mexico'</code>, fecha <code>dia</code>. Un lead por <code>nid</code>.</p>
+    <p><strong>Asignados a comercial de MM.</strong> <code>sellers-main-prod.bi_mx.seguimiento_asignacion_ibuyer</code>
+    con <code>tipo_asignacion='Primer Asignación'</code>, <code>flag_asignacion_comercial='aplica_asignacion'</code>,
+    unido a la fila de <code>tipo_asignacion_comercial='Primer Asignación comercial'</code>, que aporta la fecha.
+    <strong>Filtro imprescindible:</strong> <code>equipo_inicial</code> de Market Maker (norte 1, equipo sur,
+    guadalajara, monterrey, guanajuato, queretaro, sin equipo). Sin ese filtro entran 801 asignaciones de los
+    equipos de Inmobiliaria y 277 del back office, y el ciclo aparenta 99,8% de cumplimiento.</p>
+    <p><strong>Parámetro de liberación.</strong> Se fija en 6 días porque en los ciclos de abril, mayo y junio la
+    curva se aplana ahí: 96,3%–98,5% liberado al día 6 y menos de 0,5 puntos adicionales en los 24 días
+    siguientes.</p>
+    <p><strong>Vencido al cierre.</strong> Lead cuya asignación de marketing ocurrió al menos 6 días antes del
+    último día del ciclo y que al cerrar el ciclo no tenía asignación comercial.</p>
+    <p><strong>Líneas base.</strong> Promedio de C-2, C-3 y C-4 (abril a junio). Se excluye C-1 porque julio ya
+    muestra el deterioro y usarlo subestimaría el exceso.</p>
+    <p><strong>Salvedades.</strong> Las curvas de liberación cuentan en cada día solo los leads con esa exposición
+    cumplida; en las semanas más recientes el conjunto es menor y el dato es más ruidoso. La media de días se
+    calcula sobre los leads liberados, así que está sesgada hacia arriba en cobertura y hacia abajo en tiempo —
+    por eso se presenta junto a la cobertura y no sola. El query oficial del indicador termina con una lista
+    manual de ~600 <code>nid</code> excluidos; verifiqué por muestreo que sus fechas están entre diciembre de 2025
+    y febrero de 2026, así que no afectan este ciclo.</p>
+  </div>
+</details>
+
+<footer>
+  Datos de BigQuery al 03-sep-2026. Ciclo 29-jul → 25-ago 2026, cuatro ciclos comerciales de miércoles a martes.
+</footer>
+</div>
+
+<script>
+function tg(){const l=document.body.classList.toggle('light');
+  localStorage.setItem('diag-theme',l?'light':'dark');document.getElementById('tb').textContent=l?'☀️':'🌙';render();}
+if(localStorage.getItem('diag-theme')==='light'){document.body.classList.add('light');document.getElementById('tb').textContent='☀️';}
+const cv=n=>getComputedStyle(document.body).getPropertyValue(n).trim();
+const nf=v=>v.toLocaleString('es-MX');
+
+// --- datos ---
+const LAG=[{k:'0–2 d',v:767},{k:'3–5 d',v:1287},{k:'6–9 d',v:59},{k:'10–20 d',v:159},{k:'21+ d',v:1}];
+const ARR=[{k:'Del propio ciclo',v:2009,c:'--mm'},{k:'Arrastre de ciclos previos',v:456,c:'--otro'}];
+const DIAS=[1,2,3,4,5,6,7,8,9,14,21,30];
+const CURVA={
+  'C-4 · abr':[23.7,27.9,33.3,39.5,85.2,96.3,96.4,96.4,96.4,96.4,96.5,96.6],
+  'C-3 · may':[29.9,38.0,44.0,54.8,92.2,98.5,98.5,98.6,98.6,98.6,98.6,98.7],
+  'C-2 · jun':[27.1,43.6,50.6,87.0,95.5,96.7,96.8,96.8,96.8,96.8,96.9,97.0],
+  'C-1 · jul':[28.6,46.7,55.0,90.0,90.3,90.5,90.7,90.8,91.0,93.8,95.0,96.6],
+  'C0 · ago' :[28.9,45.7,55.8,82.1,82.7,83.0,83.5,83.9,84.4,87.5,97.2,98.1]};
+const SEM=['8 abr','15 abr','22 abr','29 abr','6 may','13 may','20 may','27 may','3 jun','10 jun','17 jun','24 jun','1 jul','8 jul','15 jul','22 jul','29 jul','5 ago','12 ago','19 ago'];
+const MEDIA=[3.93,3.78,3.82,3.65,3.43,3.28,3.30,3.13,3.29,2.92,4.68,3.08,3.31,4.90,3.71,3.37,3.90,2.67,2.33,2.50];
+const COB=[91.1,99.0,98.2,98.2,98.5,98.3,98.7,98.6,99.0,98.2,93.6,97.8,95.3,84.4,90.7,91.7,82.8,91.2,82.1,77.1];
+const CIC=['C-4','C-3','C-2','C-1','C0'];
+const BOLSAS=[{k:'Ya con comercial de Market Maker',c:'--mm',v:[70.3,75.5,68.8,61.8,53.2]},
+              {k:'Ya con comercial de Inmobiliaria',c:'--inmo',v:[12.7,11.2,18.0,20.1,19.6]},
+              {k:'Descartador',c:'--sus',v:[1.2,1.4,1.5,4.5,7.3]},
+              {k:'Todavía sin liberar por GABI',c:'--gabi',v:[15.8,11.9,11.6,13.7,19.9]}];
+const ESC=[{k:'Solo MM',v:69.5},{k:"+ Descartador completo",v:77.2},{k:'+ GABI completo',v:77.7},
+           {k:'+ incremental Descartador',v:75.7},{k:'+ incremental GABI',v:75.0},
+           {k:'+ ambos incrementales',v:81.2},{k:'+ ambas completas',v:85.5}];
+
+const umbral80={id:'u80',beforeDatasetsDraw(ch){const{ctx,chartArea,scales}=ch;const x=scales.x.getPixelForValue(80);
+  ctx.save();ctx.strokeStyle=cv('--bad');ctx.lineWidth=2;ctx.setLineDash([6,4]);
+  ctx.beginPath();ctx.moveTo(x,chartArea.top);ctx.lineTo(x,chartArea.bottom);ctx.stroke();
+  ctx.setLineDash([]);ctx.fillStyle=cv('--bad');ctx.font='600 11px system-ui';ctx.textAlign='center';
+  ctx.fillText('80%',x,chartArea.top-5);ctx.restore();}};
+const piso96={id:'p96',beforeDatasetsDraw(ch){const{ctx,chartArea,scales}=ch;const y=scales.y.getPixelForValue(96);
+  if(y<chartArea.top||y>chartArea.bottom)return;ctx.save();ctx.strokeStyle=cv('--mut3');ctx.lineWidth=1.5;ctx.setLineDash([5,4]);
+  ctx.beginPath();ctx.moveTo(chartArea.left,y);ctx.lineTo(chartArea.right,y);ctx.stroke();ctx.restore();}};
+
+let charts=[];
+function render(){
+  charts.forEach(c=>c&&c.destroy()); charts=[];
+  const grid=cv('--border'), tick=cv('--mut2'), card=cv('--card');
+  const base=(pct)=>({responsive:true,maintainAspectRatio:false,
+    plugins:{legend:{position:'bottom',labels:{color:tick,boxWidth:10,boxHeight:10,padding:12,usePointStyle:true,pointStyle:'rectRounded',font:{size:11}}},
+      tooltip:{backgroundColor:card,titleColor:cv('--title'),bodyColor:cv('--mut'),borderColor:cv('--border2'),
+        borderWidth:1,padding:10,cornerRadius:5,boxWidth:9,boxHeight:9,boxPadding:4,
+        callbacks:{label:c=>` ${c.dataset.label}: ${String(c.parsed.y ?? c.parsed.x).replace('.',',')}${pct?'%':''}`}}},
+    scales:{x:{grid:{display:false},ticks:{color:tick,font:{size:10.5}}},
+            y:{beginAtZero:true,grid:{color:grid},border:{display:false},
+               ticks:{color:tick,font:{size:10}, callback:v=>v+(pct?'%':'')}}}});
+
+  charts.push(new Chart(document.getElementById('cLag'),{type:'bar',
+    data:{labels:LAG.map(x=>x.k),datasets:[{label:'leads',data:LAG.map(x=>x.v),backgroundColor:cv('--mm'),borderRadius:3}]},
+    options:{...base(false),plugins:{...base(false).plugins,legend:{display:false},
+      tooltip:{...base(false).plugins.tooltip,callbacks:{label:c=>` ${nf(c.parsed.y)} leads · ${(c.parsed.y/2283*100).toFixed(1)}%`}}}}}));
+
+  charts.push(new Chart(document.getElementById('cArr'),{type:'bar',
+    data:{labels:['KPI del ciclo'],datasets:ARR.map(x=>({label:x.k,data:[x.v],backgroundColor:cv(x.c),borderRadius:3,borderColor:card,borderWidth:1}))},
+    options:{...base(false),indexAxis:'y',scales:{x:{stacked:true,beginAtZero:true,grid:{color:grid},ticks:{color:tick,font:{size:10}}},
+      y:{stacked:true,grid:{display:false},ticks:{color:tick,font:{size:10.5}}}},
+      plugins:{...base(false).plugins,tooltip:{...base(false).plugins.tooltip,callbacks:{label:c=>` ${c.dataset.label}: ${nf(c.parsed.x)}`}}}}}));
+
+  const ramp=['--otro','--otro','--otro','--inmo','--gabi'];
+  charts.push(new Chart(document.getElementById('cCurva'),{type:'line',
+    data:{labels:DIAS.map(d=>'d'+d),datasets:Object.keys(CURVA).map((k,i)=>({
+      label:k,data:CURVA[k],borderColor:cv(ramp[i]),backgroundColor:cv(ramp[i]),
+      borderWidth:i===4?3:1.8,borderDash:i<3?[4,3]:[],tension:.2,
+      pointRadius:i===4?4:2.5,pointHoverRadius:7,pointBorderColor:card,pointBorderWidth:1.5}))},
+    options:{...base(true),scales:{...base(true).scales,y:{...base(true).scales.y,beginAtZero:false,min:20,max:100}},
+      plugins:{...base(true).plugins},},plugins:[piso96]}));
+
+  charts.push(new Chart(document.getElementById('cMedia'),{type:'line',
+    data:{labels:SEM,datasets:[{label:'media de días en GABI',data:MEDIA,borderColor:cv('--sus'),backgroundColor:cv('--sus'),
+      borderWidth:2,tension:.25,pointRadius:2.5,pointHoverRadius:6,pointBorderColor:card,pointBorderWidth:1.5}]},
+    options:{...base(false),plugins:{...base(false).plugins,legend:{display:false}},
+      scales:{x:{grid:{display:false},ticks:{color:tick,font:{size:9},maxRotation:0,autoSkip:true,autoSkipPadding:6}},
+        y:{beginAtZero:true,suggestedMax:6,grid:{color:grid},border:{display:false},ticks:{color:tick,font:{size:10},callback:v=>v+' d'}}}}}));
+
+  charts.push(new Chart(document.getElementById('cCob'),{type:'line',
+    data:{labels:SEM,datasets:[{label:'% liberado a 6 días',data:COB,borderColor:cv('--gabi'),backgroundColor:cv('--gabi'),
+      borderWidth:2,tension:.25,pointRadius:2.5,pointHoverRadius:6,pointBorderColor:card,pointBorderWidth:1.5}]},
+    options:{...base(true),plugins:{...base(true).plugins,legend:{display:false}},
+      scales:{x:{grid:{display:false},ticks:{color:tick,font:{size:9},maxRotation:0,autoSkip:true,autoSkipPadding:6}},
+        y:{beginAtZero:false,min:70,max:100,grid:{color:grid},border:{display:false},ticks:{color:tick,font:{size:10},callback:v=>v+'%'}}}},
+    plugins:[piso96]}));
+
+  charts.push(new Chart(document.getElementById('cBolsas'),{type:'bar',
+    data:{labels:CIC,datasets:BOLSAS.map(b=>({label:b.k,data:b.v,backgroundColor:cv(b.c),borderRadius:2,borderColor:card,borderWidth:1}))},
+    options:{...base(true),scales:{x:{stacked:true,grid:{display:false},ticks:{color:tick,font:{size:11}}},
+      y:{stacked:true,beginAtZero:true,max:100,grid:{color:grid},border:{display:false},ticks:{color:tick,font:{size:10},callback:v=>v+'%'}}}}}));
+
+  charts.push(new Chart(document.getElementById('cEsc'),{type:'bar',
+    data:{labels:ESC.map(x=>x.k),datasets:[{label:'cumplimiento',data:ESC.map(x=>x.v),
+      backgroundColor:ESC.map(x=>x.v>=80?cv('--ok'):cv('--otro')),borderRadius:3}]},
+    options:{...base(true),indexAxis:'y',plugins:{...base(true).plugins,legend:{display:false},
+      tooltip:{...base(true).plugins.tooltip,callbacks:{label:c=>` ${String(c.parsed.x).replace('.',',')}% de la meta`}}},
+      scales:{x:{beginAtZero:true,max:95,grid:{color:grid},ticks:{color:tick,font:{size:10},callback:v=>v+'%'}},
+        y:{grid:{display:false},ticks:{color:tick,font:{size:10.5}}}}},
+    plugins:[umbral80]}));
+}
+render();
+</script>
+</body>
+</html>
