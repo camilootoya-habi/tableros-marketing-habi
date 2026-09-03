@@ -770,10 +770,11 @@ body.light #sheet-web .wchip.country { background: #dbeafe; border-color: #3b82f
       de inmediato.</p>
   </div>
 
-  <div class="quality-charts cols-4">
+  <div class="quality-charts cols-5">
     <div class="qc-card"><div class="qc-title">Sesiones que llegan a contacto</div><div class="qc-wrap"><canvas id="otpChVol"></canvas></div></div>
     <div class="qc-card"><div class="qc-title">Llegan a contacto →<br>envían el formulario</div><div class="qc-wrap"><canvas id="otpChEnv"></canvas></div></div>
     <div class="qc-card"><div class="qc-title">Share con OTP<br>de los que envían el formulario</div><div class="qc-wrap"><canvas id="otpChShare"></canvas></div></div>
+    <div class="qc-card"><div class="qc-title">Envían con OTP →<br>crean lead</div><div class="qc-wrap"><canvas id="otpChOtpLead"></canvas></div></div>
     <div class="qc-card"><div class="qc-title">Conversión total<br>llegan a contacto → crean lead</div><div class="qc-wrap"><canvas id="otpChCvr"></canvas></div></div>
   </div>
 
@@ -843,7 +844,6 @@ body.light #sheet-web .wchip.country { background: #dbeafe; border-color: #3b82f
           el OTP solo toca el del medio. Multiplicándolos se reconstruyen exactamente los números del
           experimento:</p>
         <div class="cadena" id="otpCadena"></div>
-        <div class="conclusion-card" id="otpConclusion"></div>
         <p class="nota-mecanismo"><b>Dónde está el error, en una línea:</b> al brazo con OTP le falta el
           primer factor. Su denominador ya excluye a quien no envió, así que su porcentaje solo multiplica
           validación × calificación — y por eso sale más alto. Al reponer el factor de envío, el efecto
@@ -853,6 +853,7 @@ body.light #sheet-web .wchip.country { background: #dbeafe; border-color: #3b82f
           <em>después</em> de darle enviar, así que no puede cambiar cuánta gente le da enviar. Es un
           argumento de mecanismo, no una medición — la tasa de envío sí varía en el tiempo por otras
           razones (81,2% antes del OTP, 76,5% durante el apagado en CO).</p>
+        <div class="conclusion-card" id="otpConclusion"></div>
       </div>
     </section>
 
@@ -2137,6 +2138,10 @@ function otpRenderConv() {
            periods.map(per => tot(per).c), etiquetas, false);
   otpChart('otpChEnv', 'Contacto → envían', '#38bdf8',
            periods.map(per => { const t = tot(per); return t.c ? env(per) / t.c * 100 : 0; }), etiquetas, true);
+  // el eslabón que el OTP toca: de los que enviaron CON OTP, cuántos llegan a lead.
+  // Es, en la práctica, la tasa de validación vista desde el negocio.
+  otpChart('otpChOtpLead', 'Envío con OTP → lead', '#f472b6',
+           periods.map(per => { const c = acc[per].con.c; return c ? acc[per].con.l / c * 100 : 0; }), etiquetas, true);
   otpChart('otpChCvr', 'Contacto → lead', '#34d399',
            periods.map(per => { const t = tot(per); return t.c ? t.l / t.c * 100 : 0; }), etiquetas, true);
   // share sobre los que ENVÍAN, igual que la fila 3 de la tabla: es el rollout real
