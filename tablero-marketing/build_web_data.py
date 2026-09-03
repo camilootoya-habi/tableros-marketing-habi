@@ -244,6 +244,7 @@ def main(clicks_path, sessions_path, leads_path, rutas_path, referrers_path,
         dias_ab.append({
             "pais": r["pais"], "dia": r["dia"], "regimen": r["regimen"],
             "brazo": "con" if r["con_otp"] in (1, "1", True, "true") else "sin",
+            "canal": r.get("canal") or "Directo",
             "contacto": int(r["n_contacto"]), "lead": int(r["n_lead"]),
         })
 

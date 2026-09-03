@@ -99,8 +99,52 @@ lead AS (
   JOIN deals dl ON dl.uuid = br.deal_uuid AND dl.pais = sc.pais AND dl.d_deal = sc.d
 ),
 
+-- canal del visitante: diccionario oficial de UTM primero, referrer después.
+-- Se toma del PRIMER evento de página de ese visitante ESE DÍA (misma lógica que la
+-- hoja de Tráfico). ⚠️ context_campaign_utm_* está 0% poblado: el utm va en la URL.
+primer_evento AS (
+  SELECT 'MX' AS pais, anonymous_id, DATE(timestamp,'America/Mexico_City') AS d,
+         LOWER(REGEXP_EXTRACT(context_page_url, r'[?&]utm_campaign=([^&#]*)')) AS camp,
+         LOWER(IFNULL(context_page_referrer,'')) AS ref
+  FROM `sellers-main-prod.mx_segment_profiles.pages`
+  WHERE DATE(timestamp,'America/Mexico_City') >= '2026-05-01' AND context_page_url LIKE '%habi.mx%'
+  QUALIFY ROW_NUMBER() OVER (PARTITION BY anonymous_id, DATE(timestamp,'America/Mexico_City') ORDER BY timestamp) = 1
+  UNION ALL
+  SELECT 'CO', anonymous_id, DATE(timestamp,'America/Bogota'),
+         LOWER(REGEXP_EXTRACT(context_page_url, r'[?&]utm_campaign=([^&#]*)')),
+         LOWER(IFNULL(context_page_referrer,''))
+  FROM `sellers-main-prod.co_segment_profiles.pages`
+  WHERE DATE(timestamp,'America/Bogota') >= '2026-05-01' AND context_page_url LIKE '%habi.co%'
+  QUALIFY ROW_NUMBER() OVER (PARTITION BY anonymous_id, DATE(timestamp,'America/Bogota') ORDER BY timestamp) = 1
+),
+dic AS (
+  SELECT 'CO' AS pais, LOWER(campana_mercadeo_original) AS c, mkt_channel_medium AS medium, mkt_platform AS plat
+  FROM `sellers-main-prod.bi_co.registro_unico_utm_mkt_colombia` WHERE campana_mercadeo_original IS NOT NULL
+  UNION ALL
+  SELECT 'MX', LOWER(campana_mercadeo_original), mkt_channel_medium, mkt_platform
+  FROM `sellers-main-prod.bi_mx.registro_unico_utm_mkt_mexico` WHERE campana_mercadeo_original IS NOT NULL
+),
+dic1 AS (SELECT * FROM dic QUALIFY ROW_NUMBER() OVER (PARTITION BY pais, c ORDER BY plat) = 1),
+canal AS (
+  SELECT pe.pais, pe.anonymous_id, pe.d,
+    CASE
+      WHEN dd.plat IS NOT NULL THEN CONCAT(dd.plat, ' · ', dd.medium)
+      WHEN pe.camp IS NOT NULL THEN 'Pauta sin clasificar'
+      WHEN pe.ref = '' THEN 'Directo'
+      WHEN REGEXP_CONTAINS(pe.ref, r'^https?://([^/:?#]*\.)?(chatgpt\.com|openai\.com|perplexity\.ai|gemini\.google\.com|copilot\.microsoft\.com|claude\.ai|chat\.deepseek\.com)') THEN 'Buscador IA · Orgánico'
+      WHEN REGEXP_CONTAINS(pe.ref, r'^https?://([^/:?#]*\.)?google\.') OR STARTS_WITH(pe.ref,'https://syndicatedsearch.goog') THEN 'Google · Orgánico'
+      WHEN REGEXP_CONTAINS(pe.ref, r'^https?://([^/:?#]*\.)?(bing|yahoo|duckduckgo|ecosia|yandex)\.') THEN 'Otro buscador · Orgánico'
+      WHEN REGEXP_CONTAINS(pe.ref, r'^https?://([^/:?#]*\.)?(facebook|instagram)\.') THEN 'Meta · Orgánico'
+      WHEN REGEXP_CONTAINS(pe.ref, r'^https?://([^/:?#]*\.)?(tiktok|youtube|twitter|linkedin|pinterest)\.') THEN 'Otra red · Orgánico'
+      WHEN REGEXP_CONTAINS(pe.ref, r'^https?://([^/:?#]*\.)?(habi\.co|tuhabi\.mx|habi\.mx)') THEN 'Interno'
+      ELSE 'Referral'
+    END AS canal
+  FROM primer_evento pe
+  LEFT JOIN dic1 dd ON dd.pais = pe.pais AND dd.c = pe.camp
+),
+
 base AS (
-  SELECT c.pais, c.d,
+  SELECT c.pais, c.d, IFNULL(k.canal, 'Directo') AS canal,
     IFNULL(o.request, 0) AS con_otp,
     IFNULL(o.valida, 0)  AS valida_otp,
     IFNULL(a.caracteristicas, 0) AS caracteristicas,
@@ -111,6 +155,7 @@ base AS (
   LEFT JOIN otp o    ON o.pais = c.pais AND o.anonymous_id = c.anonymous_id AND o.d = c.d
   LEFT JOIN avanza a ON a.pais = c.pais AND a.anonymous_id = c.anonymous_id
   LEFT JOIN lead l   ON l.pais = c.pais AND l.anonymous_id = c.anonymous_id AND l.d = c.d
+  LEFT JOIN canal k  ON k.pais = c.pais AND k.anonymous_id = c.anonymous_id AND k.d = c.d
 )
 
 SELECT pais, CAST(d AS STRING) AS dia,
@@ -123,7 +168,7 @@ SELECT pais, CAST(d AS STRING) AS dia,
     WHEN d <= '2026-09-01' THEN 'apagado'
     ELSE 'A/B v2 (50%)'
   END AS regimen,
-  con_otp,
+  con_otp, canal,
   COUNT(*)                    AS n_contacto,
   SUM(valida_otp)             AS valida_otp,
   SUM(caracteristicas)        AS n_caracteristicas,
@@ -131,5 +176,5 @@ SELECT pais, CAST(d AS STRING) AS dia,
   SUM(lead)                   AS n_lead,
   SUM(calificado)             AS n_calificado
 FROM base
-GROUP BY 1, 2, 3, 4
+GROUP BY 1, 2, 3, 4, 5
 ORDER BY pais, dia, con_otp

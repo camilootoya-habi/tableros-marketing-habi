@@ -245,9 +245,9 @@ body.light #sheet-web .wchip.country { background: #dbeafe; border-color: #3b82f
 #sheet-otp .otp-warn p { font-size: 12.5px; line-height: 1.6; color: var(--text); margin: 10px 0 0; }
 #sheet-otp .otp-warn code { background: var(--w-card2); border-radius: 4px; padding: 1px 5px; font-size: 11.5px; }
 #sheet-traf .wnuevas { font-size: 12px; color: var(--text-muted-2); display: inline-flex; align-items: center; gap: 6px; cursor: pointer; }
-#sheet-traf .wcanal-bar, #sheet-web .wcanal-bar { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin: 0 0 12px; }
-#sheet-traf .wcanal-chips, #sheet-web .wcanal-chips { display: flex; gap: 6px; flex-wrap: wrap; }
-#sheet-traf .wcanal-sel, #sheet-web .wcanal-sel { min-width: 240px; padding: 6px 10px; font-size: 12px; }
+#sheet-otp .wcanal-bar, #sheet-traf .wcanal-bar, #sheet-web .wcanal-bar { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin: 0 0 12px; }
+#sheet-otp .wcanal-chips, #sheet-traf .wcanal-chips, #sheet-web .wcanal-chips { display: flex; gap: 6px; flex-wrap: wrap; }
+#sheet-otp .wcanal-sel, #sheet-traf .wcanal-sel, #sheet-web .wcanal-sel { min-width: 240px; padding: 6px 10px; font-size: 12px; }
 #sheet-web .wtipo, #sheet-traf .wtipo { display: inline-block; width: 8px; height: 8px; border-radius: 50%; }
 #sheet-web .wpath, #sheet-traf .wpath, #sheet-otp .wpath { display: inline; font-family: ui-monospace, monospace; font-size: 10px;
   color: var(--text-muted-3); font-weight: 400; margin-left: 8px; white-space: nowrap; }
@@ -269,7 +269,7 @@ body.light #sheet-web .wchip.country { background: #dbeafe; border-color: #3b82f
   border-top: 1px solid var(--border); padding-top: 12px; margin: 0; }
 #sheet-web .wdef .wdef-note, #sheet-otp .wdef .wdef-note strong { color: var(--text); }
 #sheet-web .wrutas-filter { display: flex; gap: 6px; margin-bottom: 12px; flex-wrap: wrap; }
-#sheet-web .wrbtn, #sheet-traf .wrbtn { background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 7px 12px; cursor: pointer; font-size: 12px; color: var(--text-muted-2); transition: all 0.15s; }
+#sheet-web .wrbtn, #sheet-traf .wrbtn, #sheet-otp .wrbtn { background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 7px 12px; cursor: pointer; font-size: 12px; color: var(--text-muted-2); transition: all 0.15s; }
 #sheet-web .wrbtn:hover:not(.active) { border-color: var(--accent); color: var(--text-title); }
 #sheet-web .wrbtn.active { background: var(--accent); color: var(--accent-on); border-color: var(--accent); font-weight: 600; }
 #sheet-web .whint, #sheet-traf .whint, #sheet-otp .whint { font-size: 11px; color: var(--text-muted-2); margin-top: 8px; font-style: italic; }
@@ -291,9 +291,9 @@ body.light #sheet-web .wchip.country { background: #dbeafe; border-color: #3b82f
   <div class="tabnav">
     <button class="tab active" data-sheet="cal" onclick="goSheet('cal')">Calificación de leads</button>
     <button class="tab" data-sheet="asg" onclick="goSheet('asg')">Asignación de leads</button>
-    <button class="tab" data-sheet="traf" onclick="goSheet('traf')">Tráfico</button>
+    <button class="tab" data-sheet="traf" onclick="goSheet('traf')">Tráfico WEB</button>
     <button class="tab" data-sheet="web" onclick="goSheet('web')">Funnel WEB</button>
-    <button class="tab" data-sheet="otp" onclick="goSheet('otp')">OTP</button>
+    <button class="tab" data-sheet="otp" onclick="goSheet('otp')">OTP WEB</button>
   </div>
 </nav>
 
@@ -664,6 +664,16 @@ body.light #sheet-web .wchip.country { background: #dbeafe; border-color: #3b82f
 </dialog>
 
 <div class="sheet" id="sheet-otp" hidden>
+  <div class="wcanal-bar">
+    <div class="wcanal-chips">
+      <button class="wrbtn active" data-t="todos"    onclick="webSetCanalTipo('todos')">Todos</button>
+      <button class="wrbtn"        data-t="pauta"    onclick="webSetCanalTipo('pauta')">Pauta</button>
+      <button class="wrbtn"        data-t="organico" onclick="webSetCanalTipo('organico')">Orgánico</button>
+      <button class="wrbtn"        data-t="directo"  onclick="webSetCanalTipo('directo')">Directo</button>
+    </div>
+    <select class="granularity wcanal-sel" onchange="webSetCanal(this.value)"></select>
+  </div>
+
   <h2 class="section-heading" style="margin-top:0">Contacto → Lead</h2>
   <p class="otp-intro">Para crear un lead hay que <strong>enviar el formulario de datos de contacto</strong>:
     ese es el paso que dispara la creación del negocio en Backbone. El OTP se interpone justo ahí, así que
@@ -680,37 +690,17 @@ body.light #sheet-web .wchip.country { background: #dbeafe; border-color: #3b82f
     Se agrupa por la temporalidad seleccionada; se excluyen los días de falla de infraestructura.</div>
 
   <div class="wdef otp-panaderia">
-    <h3>🥖 Por qué «con OTP» y «sin OTP» no se pueden comparar</h3>
-    <p class="wdef-lead">Imagina que quieres saber si <strong>hacer fila</strong> en la panadería hace que
-      la gente compre menos pan. Pero solo puedes ver a los que hicieron fila.</p>
-    <ul class="otp-pan">
-      <li>Los que <strong>hicieron fila</strong> casi todos compran pan — para eso hicieron la fila.</li>
-      <li>En «los que <strong>no hicieron fila</strong>» te queda metida toda la gente que solo pasó por
-        la calle, miró la vitrina y siguió de largo.</li>
-      <li>Comparas los dos grupos y te sale que <strong>hacer fila hace comprar más pan</strong>.
-        Obviamente está mal: la fila no te hace comprar, la haces <em>porque ya querías comprar</em>.</li>
-    </ul>
-    <p class="wdef-lead" style="margin-bottom:8px">Acá pasa lo mismo, cambiando las palabras:</p>
-    <div class="otp-mapa">
-      <div><span>hacer fila</span><b>pasar por el OTP</b></div>
-      <div><span>comprar pan</span><b>crear el lead</b></div>
-      <div><span>pasar de largo</span><b>llegar a /contacto y no enviar el formulario</b></div>
-    </div>
-    <p class="wdef-note">
-      <strong>El detalle técnico:</strong> el OTP solo se dispara <strong>al enviar el formulario</strong>.
-      Como la única señal que tenemos es <code>otp_request_sent</code>, el grupo «con OTP» son
-      <em>los que enviaron</em> y el grupo «sin OTP» son <em>todos los demás</em>, incluidos los que nunca
-      enviaron. Los dos grupos no arrancan del mismo punto, así que sus porcentajes no se pueden restar.
-      <br><br>
-      <strong>Cómo se arregla:</strong> con la <strong>bandera de asignación</strong> del lado de producto —
-      qué usuarios cayeron en el brazo con OTP, <em>hayan enviado el formulario o no</em>. Es un solo campo,
-      y con él la comparación pasa a ser válida de inmediato.
-      <br><br>
-      <strong>Mientras tanto, usa la fila TOTAL de la tabla de arriba:</strong> esa no depende del brazo,
-      así que no tiene este problema.
-    </p>
+    <h3>Por qué «con OTP» y «sin OTP» no se pueden comparar</h3>
+    <p class="wdef-lead"><strong>El detalle técnico:</strong> el OTP solo se dispara <strong>al enviar el
+      formulario</strong>. Como la única señal que tenemos es <code>otp_request_sent</code>, el grupo
+      «con OTP» son <em>los que enviaron</em> y el grupo «sin OTP» son <em>todos los demás</em>, incluidos
+      los que nunca enviaron. Los dos grupos no arrancan del mismo punto, así que sus porcentajes no se
+      pueden restar.</p>
+    <p class="wdef-lead" style="margin-bottom:0"><strong>Cómo se arregla:</strong> con la
+      <strong>bandera de asignación</strong> del lado de producto — qué usuarios cayeron en el brazo con OTP,
+      hayan enviado el formulario o no. Es un solo campo, y con él la comparación pasa a ser válida
+      de inmediato.</p>
   </div>
-
 
   <h2 class="section-heading">Salud del OTP — serie diaria<span class="wblock-meta" id="otpSaludMeta"></span></h2>
   <div class="table-container">
@@ -1745,7 +1735,7 @@ function goSheet(name) {
   if (ctrls) ctrls.hidden = false;
   const fuentesCard = document.getElementById('filterBar');
   if (fuentesCard && fuentesCard.closest('.control-card')) {
-    fuentesCard.closest('.control-card').hidden = (name === 'web' || name === 'traf');
+    fuentesCard.closest('.control-card').hidden = (name === 'web' || name === 'traf' || name === 'otp');
   }
   if (name === 'asg') renderFlow();
   if (name === 'web' || name === 'traf' || name === 'otp') loadWebSheet();
@@ -1905,6 +1895,7 @@ function otpRenderConv() {
   for (const r of filas) {
     if (r.pais !== p) continue;
     if (r.regimen === 'falla total' || r.regimen === 'degradado SNS') continue;
+    if (!webCanalMatch(r.canal || 'Directo')) continue;
     const per = otpPeriodo(r.dia, gran);
     const a = acc[per] || (acc[per] = { con: { c: 0, l: 0 }, sin: { c: 0, l: 0 }, regs: {} });
     a[r.brazo].c += r.contacto;
