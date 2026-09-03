@@ -220,18 +220,31 @@ body.light #sheet-web .wchip.country { background: #dbeafe; border-color: #3b82f
 #sheet-web #webRutasTable tbody td:nth-child(2) { position: static; min-width: 420px; max-width: 620px; font-weight: 400; color: var(--text); border-right: 1px solid var(--border); }
 #sheet-web #webRutasTable thead th:nth-child(2) { position: static; }
 #sheet-web #webRutasTable tbody td { text-align: right; }
+#sheet-otp .otp-semaforo { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 14px; margin-bottom: 22px; }
+#sheet-otp .otp-card { background: var(--card); border: 1px solid var(--border); border-left: 4px solid var(--border-strong); border-radius: 10px; padding: 16px 18px; }
+#sheet-otp .otp-card.ok { border-left-color: var(--w-green); }
+#sheet-otp .otp-card.warn { border-left-color: var(--w-amber); }
+#sheet-otp .otp-card.bad { border-left-color: var(--w-red); }
+#sheet-otp .otp-pais { font-size: 12px; color: var(--text-muted-2); text-transform: uppercase; letter-spacing: .05em; }
+#sheet-otp .otp-estado { font-size: 19px; font-weight: 600; margin: 4px 0 10px; color: var(--text-title); }
+#sheet-otp .otp-kv { display: flex; justify-content: space-between; font-size: 12px; color: var(--text); padding: 3px 0; }
+#sheet-otp .otp-kv b { font-family: ui-monospace, monospace; color: var(--text-title); }
+#sheet-otp .otp-warn { background: rgba(239,68,68,.08); border: 1px solid var(--w-red); border-radius: 10px; padding: 16px 20px; margin-bottom: 14px; }
+#sheet-otp .otp-warn strong { color: var(--w-red); }
+#sheet-otp .otp-warn p { font-size: 12.5px; line-height: 1.6; color: var(--text); margin: 10px 0 0; }
+#sheet-otp .otp-warn code { background: var(--w-card2); border-radius: 4px; padding: 1px 5px; font-size: 11.5px; }
 #sheet-traf .wnuevas { font-size: 12px; color: var(--text-muted-2); display: inline-flex; align-items: center; gap: 6px; cursor: pointer; }
 #sheet-traf .wcanal-bar, #sheet-web .wcanal-bar { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin: 0 0 12px; }
 #sheet-traf .wcanal-chips, #sheet-web .wcanal-chips { display: flex; gap: 6px; flex-wrap: wrap; }
 #sheet-traf .wcanal-sel, #sheet-web .wcanal-sel { min-width: 240px; padding: 6px 10px; font-size: 12px; }
 #sheet-web .wtipo, #sheet-traf .wtipo { display: inline-block; width: 8px; height: 8px; border-radius: 50%; }
-#sheet-web .wpath, #sheet-traf .wpath { display: inline; font-family: ui-monospace, monospace; font-size: 10px;
+#sheet-web .wpath, #sheet-traf .wpath, #sheet-otp .wpath { display: inline; font-family: ui-monospace, monospace; font-size: 10px;
   color: var(--text-muted-3); font-weight: 400; margin-left: 8px; white-space: nowrap; }
-#sheet-web .wdef { background: var(--card); border: 1px solid var(--border); border-left: 3px solid var(--accent);
+#sheet-web .wdef, #sheet-otp .wdef { background: var(--card); border: 1px solid var(--border); border-left: 3px solid var(--accent);
   border-radius: 10px; padding: 18px 22px; margin: 22px 0 8px; }
-#sheet-web .wdef h3 { margin: 0 0 12px; font-size: 14px; font-weight: 600; color: var(--text-title);
+#sheet-web .wdef h3, #sheet-otp .wdef h3 { margin: 0 0 12px; font-size: 14px; font-weight: 600; color: var(--text-title);
   display: flex; align-items: center; gap: 8px; }
-#sheet-web .wdef .wdef-lead { font-size: 13px; line-height: 1.6; color: var(--text); margin: 0 0 14px; }
+#sheet-web .wdef .wdef-lead, #sheet-otp .wdef .wdef-lead { font-size: 13px; line-height: 1.6; color: var(--text); margin: 0 0 14px; }
 #sheet-web .wdef .wdef-chain { display: flex; flex-wrap: wrap; align-items: center; gap: 6px;
   font-family: ui-monospace, monospace; font-size: 11.5px; margin: 0 0 16px; }
 #sheet-web .wdef .wdef-chain span.k { background: var(--w-card2); border: 1px solid var(--border);
@@ -239,16 +252,16 @@ body.light #sheet-web .wchip.country { background: #dbeafe; border-color: #3b82f
 #sheet-web .wdef .wdef-chain span.a { color: var(--text-muted-2); }
 #sheet-web .wdef ol { margin: 0 0 14px; padding-left: 20px; }
 #sheet-web .wdef li { font-size: 12.5px; line-height: 1.65; color: var(--text); margin-bottom: 5px; }
-#sheet-web .wdef code { background: var(--w-card2); border-radius: 4px; padding: 1px 5px;
+#sheet-web .wdef code, #sheet-otp .wdef code { background: var(--w-card2); border-radius: 4px; padding: 1px 5px;
   font-size: 11.5px; color: var(--text-title); }
-#sheet-web .wdef .wdef-note { font-size: 11.5px; line-height: 1.6; color: var(--text-muted-2);
+#sheet-web .wdef .wdef-note, #sheet-otp .wdef .wdef-note { font-size: 11.5px; line-height: 1.6; color: var(--text-muted-2);
   border-top: 1px solid var(--border); padding-top: 12px; margin: 0; }
-#sheet-web .wdef .wdef-note strong { color: var(--text); }
+#sheet-web .wdef .wdef-note, #sheet-otp .wdef .wdef-note strong { color: var(--text); }
 #sheet-web .wrutas-filter { display: flex; gap: 6px; margin-bottom: 12px; flex-wrap: wrap; }
 #sheet-web .wrbtn, #sheet-traf .wrbtn { background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 7px 12px; cursor: pointer; font-size: 12px; color: var(--text-muted-2); transition: all 0.15s; }
 #sheet-web .wrbtn:hover:not(.active) { border-color: var(--accent); color: var(--text-title); }
 #sheet-web .wrbtn.active { background: var(--accent); color: var(--accent-on); border-color: var(--accent); font-weight: 600; }
-#sheet-web .whint, #sheet-traf .whint { font-size: 11px; color: var(--text-muted-2); margin-top: 8px; font-style: italic; }
+#sheet-web .whint, #sheet-traf .whint, #sheet-otp .whint { font-size: 11px; color: var(--text-muted-2); margin-top: 8px; font-style: italic; }
 #sheet-web .filter-indicator { background: rgba(129, 140, 248, 0.15); border: 1px solid var(--accent); border-radius: 6px; padding: 4px 10px; font-size: 11px; color: var(--accent); font-family: ui-monospace, monospace; }
 #sheet-web .clear-filter-btn { background: transparent; border: 1px solid var(--border); border-radius: 6px; padding: 4px 10px; color: var(--text-muted-2); font-size: 11px; cursor: pointer; }
 #sheet-web .clear-filter-btn:hover { color: var(--text-title); border-color: var(--accent); }
@@ -269,6 +282,7 @@ body.light #sheet-web .wchip.country { background: #dbeafe; border-color: #3b82f
     <button class="tab" data-sheet="asg" onclick="goSheet('asg')">Asignación de leads</button>
     <button class="tab" data-sheet="traf" onclick="goSheet('traf')">Tráfico</button>
     <button class="tab" data-sheet="web" onclick="goSheet('web')">Funnel WEB</button>
+    <button class="tab" data-sheet="otp" onclick="goSheet('otp')">OTP</button>
   </div>
 </nav>
 
@@ -517,6 +531,46 @@ body.light #sheet-web .wchip.country { background: #dbeafe; border-color: #3b82f
   <p style="opacity:.7">Métrica: <code>COUNT(DISTINCT anonymous_id)</code> sobre <code>segment_profiles.pages</code>. El % es sobre <strong>Inicio del formulario</strong> del mismo período.</p>
   <button type="button" class="close-btn" onclick="this.closest('dialog').close()">Cerrar</button>
 </dialog>
+
+<div class="sheet" id="sheet-otp" hidden>
+  <div id="otpSemaforo" class="otp-semaforo"></div>
+
+  <h2 class="section-heading">Salud del OTP — serie diaria<span class="wblock-meta" id="otpSaludMeta"></span></h2>
+  <div class="table-container">
+    <table id="otpSaludTable"><thead><tr><th></th><th>Día</th></tr></thead><tbody></tbody></table>
+  </div>
+  <div class="whint">Por <strong>visitante</strong>, no por evento (un reenvío no debe inflar el denominador).
+    <strong>Tasa</strong> = valida / pidió código. Régimen sombreado: los días marcados ⚠️ son
+    <strong>falla de infraestructura</strong> (budget de AWS SNS), no fricción del OTP, y deben excluirse
+    de cualquier comparación. Últimos 30 días.</div>
+
+  <div class="wdef">
+    <h3>🚪 La compuerta — el número que EXP-011 dejó abierto</h3>
+    <p class="wdef-lead">El experimento original anotó como pendiente <em>"cuantificar la caída de volumen en
+      el paso OTP (request enviado vs. verificado)"</em>. Con el lead creándose <strong>al pasar el OTP</strong>
+      (~110 s después de validar), ya es medible: <strong>quien valida obtiene lead ~100%; quien no valida, ~8%</strong>.</p>
+    <div id="otpCompuerta"></div>
+    <p class="wdef-note">La <strong>tasa de validación es la medida directa del costo del OTP</strong>: cada punto
+      que no valida es un envío de formulario que no se convirtió en lead. No hace falta un A/B para medirlo.</p>
+  </div>
+
+  <h2 class="section-heading">Comparación por régimen<span class="wblock-meta"> · ⚠️ ver advertencia</span></h2>
+  <div class="otp-warn">
+    <strong>⚠️ Esta tabla NO es un A/B válido. No la uses para decidir.</strong>
+    <p>La bandera <code>con OTP</code> se deriva de <code>otp_request_sent</code>, que <strong>se dispara al
+    enviar el formulario</strong>, no al asignar la variante. Así, el brazo "con OTP" son <em>los que enviaron
+    el formulario</em> y el brazo "sin OTP" son <em>todos los que pisaron /contacto</em>, incluyendo a quien
+    nunca envió. Los denominadores no son comparables, y por eso el resultado sale invertido: parece que el
+    OTP <em>duplica</em> la conversión, lo cual es imposible para un paso que solo añade fricción.</p>
+    <p>El mismo artefacto está presente en el A/B v1 de EXP-011, cuyo resultado publicado (+4,7pp CO / +8,4pp MX
+    en calificación) se replica exactamente con esta misma medición. <strong>Para cerrar el A/B hace falta la
+    bandera de asignación del lado de producto</strong> — qué usuarios fueron asignados al tratamiento,
+    hayan enviado el formulario o no. Con eso, esta tabla pasa a ser válida en un día.</p>
+  </div>
+  <div class="table-container">
+    <table id="otpAbTable"><thead><tr><th>Régimen</th></tr></thead><tbody></tbody></table>
+  </div>
+</div>
 
 <div class="sheet" id="sheet-traf" hidden>
   <div class="wcanal-bar">
@@ -1526,7 +1580,7 @@ function goSheet(name) {
     fuentesCard.closest('.control-card').hidden = (name === 'web' || name === 'traf');
   }
   if (name === 'asg') renderFlow();
-  if (name === 'web' || name === 'traf') loadWebSheet();
+  if (name === 'web' || name === 'traf' || name === 'otp') loadWebSheet();
   location.hash = name;
   window.scrollTo(0, 0);
 }
@@ -1607,6 +1661,120 @@ function webClearFilter() {
   renderWeb();
 }
 
+// ── Hoja OTP ─────────────────────────────────────────────────────────────────
+// Baseline de julio (rollout 100% estable, antes de la degradación de SNS)
+const OTP_BASELINE = { CO: 0.875, MX: 0.805 };
+
+function otpRender() {
+  const d = (WEB_DATA.otp || {});
+  if (!d.salud) return;
+  otpRenderSemaforo(d.salud);
+  otpRenderSalud(d.salud);
+  otpRenderCompuerta(d.salud);
+  otpRenderAb(d.ab || {});
+}
+
+function otpRenderSemaforo(salud) {
+  const cont = document.getElementById('otpSemaforo');
+  cont.innerHTML = ['CO', 'MX'].map(p => {
+    const dias = salud[p] || [];
+    if (!dias.length) return '';
+    const ult = dias[dias.length - 1];
+    const tasa = ult.req ? ult.ok / ult.req : 0;
+    const base = OTP_BASELINE[p];
+    // último día con alguna validación → cuántos días lleva caído
+    let sinOk = 0;
+    for (let i = dias.length - 1; i >= 0 && dias[i].ok === 0; i--) sinOk++;
+    let estado = 'OPERATIVO', cls = 'ok';
+    if (ult.req === 0 || sinOk >= 2) { estado = 'CAÍDO'; cls = 'bad'; }
+    else if (tasa < base - 0.10) { estado = 'DEGRADADO'; cls = 'warn'; }
+    const delta = ((tasa - base) * 100);
+    return `<div class="otp-card ${cls}">
+      <div class="otp-pais">${p === 'CO' ? 'Colombia' : 'México'} · ${ult.regimen}</div>
+      <div class="otp-estado">${estado}</div>
+      <div class="otp-kv"><span>Tasa de validación</span><b>${(tasa * 100).toFixed(0)}%</b></div>
+      <div class="otp-kv"><span>Baseline julio</span><b>${(base * 100).toFixed(0)}%</b></div>
+      <div class="otp-kv"><span>Diferencia</span><b style="color:${delta < -10 ? 'var(--w-red)' : delta < -3 ? 'var(--w-amber)' : 'var(--w-green)'}">${delta >= 0 ? '+' : ''}${delta.toFixed(0)}pp</b></div>
+      <div class="otp-kv"><span>Códigos pedidos (día)</span><b>${fmt(ult.req)}</b></div>
+      <div class="otp-kv"><span>Tope de reenvíos</span><b style="color:${ult.tope > ult.req * 0.1 ? 'var(--w-red)' : 'var(--text-title)'}">${fmt(ult.tope)}</b></div>
+      <div class="otp-kv"><span>Último dato</span><b>${ult.dia}</b></div>
+    </div>`;
+  }).join('');
+}
+
+function otpRenderSalud(salud) {
+  const p = webPais();
+  const dias = (salud[p] || []).slice(-30);
+  const thead = document.querySelector('#otpSaludTable thead tr');
+  const tbody = document.querySelector('#otpSaludTable tbody');
+  document.getElementById('otpSaludMeta').textContent = ` · ${getCountry()} · últimos ${dias.length} días`;
+  if (!dias.length) { tbody.innerHTML = ''; return; }
+
+  const filas = [
+    ['Códigos pedidos', d => d.req, false],
+    ['Validan', d => d.ok, false],
+    ['Tasa de validación', d => d.req ? d.ok / d.req : 0, true],
+    ['Abandona sin intentar', d => d.abandona, false],
+    ['Intenta y falla', d => d.falla, false],
+    ['Intentos agotados', d => d.agotado, false],
+    ['Pide reenvío', d => d.reenvio, false],
+    ['Tope de reenvíos', d => d.tope, false],
+  ];
+  thead.innerHTML = '<th></th><th>Día</th>' + dias.map(d => {
+    const alerta = d.regimen.includes('degradado') || d.regimen.includes('falla');
+    return `<th${alerta ? ' class="in-progress" title="' + d.regimen + '"' : ''}>${d.dia.slice(5)}</th>`;
+  }).join('');
+  tbody.innerHTML = filas.map(([lbl, f, esPct]) =>
+    `<tr class="row-stage"><td></td><td>${lbl}</td>` +
+    dias.map(d => {
+      const v = f(d);
+      if (esPct) {
+        const c = v >= OTP_BASELINE[p] - 0.05 ? 'var(--w-green)' : v >= OTP_BASELINE[p] - 0.15 ? 'var(--w-amber)' : 'var(--w-red)';
+        return `<td><span class="p" style="color:${c}">${(v * 100).toFixed(0)}%</span></td>`;
+      }
+      return `<td>${fmt(v)}</td>`;
+    }).join('') + '</tr>').join('');
+}
+
+function otpRenderCompuerta(salud) {
+  const cont = document.getElementById('otpCompuerta');
+  cont.innerHTML = ['CO', 'MX'].map(p => {
+    // solo régimen actual, excluyendo días de falla de infraestructura
+    const dias = (salud[p] || []).filter(d => d.regimen.indexOf('A/B v2') === 0);
+    const req = dias.reduce((a, d) => a + d.req, 0);
+    const ok = dias.reduce((a, d) => a + d.ok, 0);
+    if (!req) return '';
+    const perdidos = req - ok;
+    return `<div class="otp-kv" style="border-bottom:1px solid var(--border);padding:8px 0">
+      <span><strong>${p === 'CO' ? 'Colombia' : 'México'}</strong> — desde el re-encendido:
+      <b>${fmt(req)}</b> pidieron código, <b>${fmt(ok)}</b> validaron</span>
+      <b style="color:var(--w-red)">${fmt(perdidos)} envíos perdidos (${(perdidos / req * 100).toFixed(0)}%)</b></div>`;
+  }).join('');
+}
+
+function otpRenderAb(ab) {
+  const p = webPais();
+  const regs = ab[p] || {};
+  const thead = document.querySelector('#otpAbTable thead tr');
+  const tbody = document.querySelector('#otpAbTable tbody');
+  const orden = ['sin OTP', 'A/B v1', 'rollout 100%', 'degradado SNS', 'falla total', 'apagado', 'A/B v2 (50%)'];
+  thead.innerHTML = '<th>Régimen</th><th>Brazo</th><th>n en /contacto</th><th>→ Características</th><th>→ Registro</th><th>→ Lead</th><th>→ Calificado</th>';
+  let html = '';
+  for (const r of orden) {
+    const b = regs[r];
+    if (!b) continue;
+    for (const k of ['sin', 'con']) {
+      const c = b[k];
+      if (!c || !c.contacto) continue;
+      const pct = v => `<span class="p">${(v / c.contacto * 100).toFixed(1)}%</span>`;
+      html += `<tr class="row-stage"><td>${r}</td><td>${k === 'con' ? 'CON OTP' : 'SIN OTP'}</td>` +
+              `<td>${fmt(c.contacto)}</td><td>${pct(c.caract)}</td><td>${pct(c.felic)}</td>` +
+              `<td>${pct(c.lead)}</td><td>${pct(c.calif)}</td></tr>`;
+    }
+  }
+  tbody.innerHTML = html || '<tr><td colspan="7" style="text-align:center;padding:30px;color:var(--text-muted-2)">Sin datos</td></tr>';
+}
+
 function renderWeb() {
   if (!WEB_DATA) return;
   const ld = document.getElementById('webLoading');
@@ -1615,6 +1783,7 @@ function renderWeb() {
   if (!ct) return;          // el contenedor pudo ser reemplazado por el mensaje de error
   ct.hidden = false;
   webRenderHeader();
+  otpRender();
   webLlenarSelectorCanal();
   webRenderReferrers();
   webRenderTable();
@@ -1903,6 +2072,7 @@ Promise.all([
   if (h === 'asg') goSheet('asg');
   else if (h === 'web') goSheet('web');
   else if (h === 'traf') goSheet('traf');
+  else if (h === 'otp') goSheet('otp');
 }).catch(() => {
   document.querySelector('#funnelTable tbody').innerHTML = '<tr><td colspan="2" style="padding:40px;color:#f87171;text-align:center">No se encontró data.json</td></tr>';
 });

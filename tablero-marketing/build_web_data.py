@@ -8,7 +8,7 @@ Cada granularidad viene YA agregada de BigQuery: las métricas son COUNT(DISTINC
 de visitantes y de nids, que NO se pueden sumar entre períodos.
 
 Usage:
-  python3 build_web_data.py clicks.json sessions.json leads.json rutas.json referrers.json web_data.json
+  python3 build_web_data.py clicks.json sessions.json leads.json rutas.json referrers.json otp_salud.json otp_ab.json web_data.json
 """
 import json
 import sys
@@ -85,12 +85,15 @@ def zeros():
     return {sid: 0 for sid in STAGE_IDS}
 
 
-def main(clicks_path, sessions_path, leads_path, rutas_path, referrers_path, out_path):
+def main(clicks_path, sessions_path, leads_path, rutas_path, referrers_path,
+         otp_salud_path, otp_ab_path, out_path):
     clicks = json.load(open(clicks_path))
     sessions = json.load(open(sessions_path))
     leads = json.load(open(leads_path))
     rutas = json.load(open(rutas_path))
     referrers = json.load(open(referrers_path))
+    otp_salud = json.load(open(otp_salud_path))
+    otp_ab = json.load(open(otp_ab_path))
 
     # store[pais][gran][periodo] -> {"totals": {...}, "by_<dim>": {val: {...}}}
     store = {p: {g: defaultdict(lambda: {"totals": zeros(),
@@ -198,6 +201,42 @@ def main(clicks_path, sessions_path, leads_path, rutas_path, referrers_path, out
             b["total_fin"] = sum(x["n"] for x in b["filas"] if x["fin"])
     out["rutas"] = rt
 
+    # ── OTP ───────────────────────────────────────────────────────────────────
+    # Salud diaria: el embudo del propio OTP y por qué se cae la gente.
+    salud = {p: [] for p in PAISES}
+    for r in otp_salud:
+        if r["pais"] not in salud:
+            continue
+        salud[r["pais"]].append({
+            "dia": r["dia"], "regimen": r["regimen"],
+            "req": int(r["requests"]), "ok": int(r["validan"]),
+            "abandona": int(r["abandona_sin_intentar"]), "falla": int(r["intenta_y_falla"]),
+            "agotado": int(r["intentos_agotados"]), "reenvio": int(r["pide_reenvio"]),
+            "tope": int(r["tope_reenvios"]), "envio_fallido": int(r["envio_fallido"]),
+        })
+    for p in salud:
+        salud[p].sort(key=lambda x: x["dia"])
+
+    # Comparación por régimen. ⚠️ NO es un A/B válido: `con_otp` se deriva de
+    # `otp_request_sent`, que se dispara AL ENVIAR el formulario — así que el brazo
+    # tratado son "los que enviaron" y el control son "todos los que pisaron /contacto",
+    # incluyendo a quien nunca envió. Los denominadores no son comparables y por eso el
+    # resultado sale invertido (con OTP parece convertir el doble). Se guarda para
+    # mostrarlo COMO ADVERTENCIA en el tablero, no como resultado.
+    ab = {p: {} for p in PAISES}
+    for r in otp_ab:
+        pais = r["pais"]
+        if pais not in ab:
+            continue
+        b = ab[pais].setdefault(r["regimen"], {})
+        k = "con" if r["con_otp"] in (1, "1", True, "true") else "sin"
+        c = b.setdefault(k, {"contacto": 0, "valida": 0, "caract": 0, "felic": 0, "lead": 0, "calif": 0})
+        c["contacto"] += int(r["n_contacto"]); c["valida"] += int(r["valida_otp"])
+        c["caract"] += int(r["n_caracteristicas"]); c["felic"] += int(r["n_felicitaciones"])
+        c["lead"] += int(r["n_lead"]); c["calif"] += int(r["n_calificado"])
+
+    out["otp"] = {"salud": salud, "ab": ab}
+
     with open(out_path, "w") as f:
         json.dump(out, f, separators=(",", ":"))
 
@@ -210,7 +249,7 @@ def main(clicks_path, sessions_path, leads_path, rutas_path, referrers_path, out
 
 
 if __name__ == "__main__":
-    if len(sys.argv) != 7:
+    if len(sys.argv) != 9:
         print(__doc__)
         sys.exit(1)
     main(*sys.argv[1:])

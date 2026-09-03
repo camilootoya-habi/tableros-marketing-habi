@@ -535,10 +535,20 @@ jobs:
         run: |
           bq query --use_legacy_sql=false --format=json --max_rows=500000 < tablero-marketing/web_query_referrers.sql > /tmp/tmweb_ref.json
 
+      - name: Query tablero-marketing/web — OTP salud (CO+MX)
+        if: always()
+        run: |
+          bq query --use_legacy_sql=false --format=json --max_rows=200000 < tablero-marketing/web_query_otp_salud.sql > /tmp/otp_salud.json
+
+      - name: Query tablero-marketing/web — OTP A/B (CO+MX)
+        if: always()
+        run: |
+          bq query --use_legacy_sql=false --format=json --max_rows=200000 < tablero-marketing/web_query_otp_ab.sql > /tmp/otp_ab.json
+
       - name: Build tablero-marketing/web_data.json
         if: always()
         run: |
-          python3 tablero-marketing/build_web_data.py /tmp/tmweb_clicks.json /tmp/tmweb_sessions.json /tmp/tmweb_leads.json /tmp/tmweb_rutas.json /tmp/tmweb_ref.json tablero-marketing/web_data.json
+          python3 tablero-marketing/build_web_data.py /tmp/tmweb_clicks.json /tmp/tmweb_sessions.json /tmp/tmweb_leads.json /tmp/tmweb_rutas.json /tmp/tmweb_ref.json /tmp/otp_salud.json /tmp/otp_ab.json tablero-marketing/web_data.json
 
       - name: Auto-discovery — correr queries de tableros nuevos (líderes)
         if: always()
