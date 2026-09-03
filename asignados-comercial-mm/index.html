@@ -89,7 +89,7 @@
   footer{margin-top:40px;padding-top:16px;border-top:1px solid var(--border);font-size:11px;color:var(--mut3)}
 </style>
 </head>
-<body>
+<body class="light">
 <div class="wrap">
 
 <a href="../" class="back-link">← Volver al hub</a>
@@ -99,7 +99,7 @@
     <h1>¿Se gatilla la cláusula del 80%?</h1>
     <div class="sub">Asignados a comercial de Market Maker · México · ciclo 29-jul → 25-ago 2026 · 4 ciclos comerciales miércoles→martes</div>
   </div>
-  <button class="theme" id="tb" onclick="tg()">🌙</button>
+  <button class="theme" id="tb" onclick="tg()">☀️</button>
 </div>
 
 <div class="verdict">
@@ -367,18 +367,9 @@ insumo para trabajarlo</strong>, y la meta de cierres se le fijó asumiendo que 
 <div class="box key">
   <span class="l">Recomendación</span>
   <p><strong>Opción B.</strong> El umbral del 80% existe para proteger al equipo comercial de un insumo
-  insuficiente. Aquí el insumo bajó porque <strong>cambió el reparto de leads aguas arriba</strong>, no porque
+  insuficiente. Aquí el insumo bajó porque <strong>cambió el reparto de leads arriba</strong>, no porque
   el equipo rindiera menos. Los 569 leads son trazables uno por uno y se puede señalar exactamente a dónde
   fueron.</p>
-  <p>La discusión de si estos dos cambios son deseables es aparte y no hay que resolverla para pagar las
-  comisiones de este ciclo. Puede que enviar más leads al Descartador sea correcto, y puede que el tiempo
-  adicional en GABI responda a un ajuste deliberado del proceso. Lo que no se sostiene es que el equipo comercial
-  cargue con el efecto de un cambio que no decidió ni conoció al momento de fijarse su meta.</p>
-  <p>Con dos condiciones hacia adelante. Primero, <strong>definir si los dos cambios se quedan</strong>: hoy la
-  cobertura de liberación a 6 días está en 77,1% contra un piso histórico de 96% y viene cayendo tres ciclos
-  seguidos, y el Descartador pasó de 53 a 277 leads por ciclo. Segundo, <strong>recalibrar la conversión de
-  referencia del esquema</strong>: el 83% describía la operación de abril a junio, y si los cambios se quedan,
-  volver a fijar la meta con ese número reproduce este mismo conflicto el mes entrante.</p>
 </div>
 
 <details>
@@ -416,7 +407,8 @@ insumo para trabajarlo</strong>, y la meta de cierres se le fijó asumiendo que 
 <script>
 function tg(){const l=document.body.classList.toggle('light');
   localStorage.setItem('diag-theme',l?'light':'dark');document.getElementById('tb').textContent=l?'☀️':'🌙';render();}
-if(localStorage.getItem('diag-theme')==='light'){document.body.classList.add('light');document.getElementById('tb').textContent='☀️';}
+if(localStorage.getItem('diag-theme')==='dark'){document.body.classList.remove('light');document.getElementById('tb').textContent='🌙';}
+else{document.getElementById('tb').textContent='☀️';}
 const cv=n=>getComputedStyle(document.body).getPropertyValue(n).trim();
 const nf=v=>v.toLocaleString('es-MX');
 
