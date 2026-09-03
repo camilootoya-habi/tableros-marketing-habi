@@ -762,8 +762,9 @@ body.light #sheet-web .wchip.country { background: #dbeafe; border-color: #3b82f
       de inmediato.</p>
   </div>
 
-  <div class="quality-charts cols-3">
+  <div class="quality-charts cols-4">
     <div class="qc-card"><div class="qc-title">Sesiones que llegan a contacto</div><div class="qc-wrap"><canvas id="otpChVol"></canvas></div></div>
+    <div class="qc-card"><div class="qc-title">Llegan a contacto →<br>envían el formulario</div><div class="qc-wrap"><canvas id="otpChEnv"></canvas></div></div>
     <div class="qc-card"><div class="qc-title">Conversión total<br>llegan a contacto → crean lead</div><div class="qc-wrap"><canvas id="otpChCvr"></canvas></div></div>
     <div class="qc-card"><div class="qc-title">Share con OTP<br>de los que llegan a contacto</div><div class="qc-wrap"><canvas id="otpChShare"></canvas></div></div>
   </div>
@@ -1868,7 +1869,7 @@ function goSheet(name) {
     fuentesCard.closest('.control-card').hidden = (name === 'web' || name === 'traf' || name === 'otp');
   }
   if (name === 'asg') renderFlow();
-  if (name === 'web' || name === 'traf' || name === 'otp') loadWebSheet();
+  if (name === 'web' || name === 'traf' || name === 'otp') { loadWebSheet(); scrollTablasDerecha(); }
   location.hash = name;
   window.scrollTo(0, 0);
 }
@@ -2106,6 +2107,8 @@ function otpRenderConv() {
   const etiquetas = periods.map(per => formatPeriod(per, gran));
   otpChart('otpChVol', 'Sesiones a contacto', '#818cf8',
            periods.map(per => tot(per).c), etiquetas, false);
+  otpChart('otpChEnv', 'Contacto → envían', '#38bdf8',
+           periods.map(per => { const t = tot(per); return t.c ? env(per) / t.c * 100 : 0; }), etiquetas, true);
   otpChart('otpChCvr', 'Contacto → lead', '#34d399',
            periods.map(per => { const t = tot(per); return t.c ? t.l / t.c * 100 : 0; }), etiquetas, true);
   otpChart('otpChShare', 'Share con OTP', '#fbbf24',
@@ -2181,6 +2184,17 @@ function otpRenderExp(ab) {
 
 
 
+// Las tablas de estas hojas crecen hacia la derecha con los períodos más recientes.
+// Se hace en rAF porque justo después de innerHTML el navegador todavía no ha medido
+// el contenido, y scrollWidth vendría en 0. Las hojas ocultas se saltan (miden 0) y se
+// reposicionan al mostrarlas desde goSheet().
+function scrollTablasDerecha() {
+  requestAnimationFrame(() => {
+    document.querySelectorAll('#sheet-web .table-container, #sheet-traf .table-container, #sheet-otp .table-container')
+      .forEach(c => { if (c.scrollWidth > c.clientWidth) c.scrollLeft = c.scrollWidth; });
+  });
+}
+
 function renderWeb() {
   if (!WEB_DATA) return;
   const ld = document.getElementById('webLoading');
@@ -2194,7 +2208,7 @@ function renderWeb() {
   webRenderReferrers();
   webRenderTable();
   webRenderRutas();
-  document.querySelectorAll('#sheet-web .table-container').forEach(c => { c.scrollLeft = c.scrollWidth; });
+  scrollTablasDerecha();
 }
 
 function webRenderHeader() {
