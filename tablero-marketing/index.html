@@ -275,7 +275,7 @@ body.light #sheet-web .wchip.country { background: #dbeafe; border-color: #3b82f
 
 /* la cadena multiplicativa: el elemento que hace visible el argumento */
 #sheet-otp .cadena { display: grid; gap: 10px; margin-bottom: 14px; }
-#sheet-otp .cad-fila { display: grid; grid-template-columns: 86px 1fr 18px 1fr 18px 100px; gap: 10px; align-items: stretch; }
+#sheet-otp .cad-fila { display: grid; grid-template-columns: 86px 1fr 16px 1fr 16px 1fr 16px 120px; gap: 8px; align-items: stretch; }
 #sheet-otp .cad-brazo { display: flex; align-items: center; font-size: 12px; font-weight: 600; color: var(--text-muted-2); }
 #sheet-otp .cad-op { display: flex; align-items: center; justify-content: center; font-family: ui-monospace, monospace; color: var(--text-muted-3); }
 #sheet-otp .cad-term { background: var(--w-card2); border: 1px solid var(--border); border-radius: 7px; padding: 9px 12px; }
@@ -285,10 +285,18 @@ body.light #sheet-web .wchip.country { background: #dbeafe; border-color: #3b82f
 #sheet-otp .cad-fila.con .cad-term.tocado { border-color: var(--w-amber); }
 #sheet-otp .cad-fila.con .cad-term.tocado .v { color: var(--w-amber); }
 #sheet-otp .cad-fila.con .cad-term.res .v { color: var(--w-red); }
+#sheet-otp .cad-fila.rep { margin-top: 4px; opacity: .95; }
+#sheet-otp .cad-fila.rep .cad-brazo { font-size: 10.5px; line-height: 1.25; color: var(--w-amber); }
+#sheet-otp .cad-term.falta { background: transparent; border: 1px dashed var(--w-red); border-radius: 7px; padding: 9px 12px; }
+#sheet-otp .cad-term.falta .k { color: var(--w-red); }
+#sheet-otp .cad-term.falta .v { color: var(--w-red); font-family: ui-monospace, monospace; font-size: 17px; }
+#sheet-otp .cad-term.reportado { border-color: var(--w-amber); }
+#sheet-otp .cad-term.reportado .v { color: var(--w-amber) !important; }
+#sheet-otp .cad-delta.rep { color: var(--w-amber); border-top-style: dotted; }
 #sheet-otp .cad-delta { grid-column: 1 / -1; text-align: right; font-family: ui-monospace, monospace; font-size: 13px;
   color: var(--w-red); border-top: 1px dashed var(--border-strong); padding-top: 9px; }
 #sheet-otp .cad-delta span { color: var(--text-muted-2); font-family: inherit; margin-right: 8px; }
-@media (max-width: 720px) {
+@media (max-width: 900px) {
   #sheet-otp .cad-fila { grid-template-columns: 1fr; }
   #sheet-otp .cad-op { display: none; }
 }
@@ -824,9 +832,16 @@ body.light #sheet-web .wchip.country { background: #dbeafe; border-color: #3b82f
       <div class="paso-n">3</div>
       <div class="paso-cuerpo">
         <h4>Cómo se mide el impacto real</h4>
-        <p>El tramo tiene <strong>dos pasos encadenados</strong>, y el OTP solo toca el segundo:</p>
+        <p>De llegar a contacto a tener un lead calificado hay <strong>tres pasos encadenados</strong>, y
+          el OTP solo toca el del medio. Multiplicándolos se reconstruyen exactamente los números del
+          experimento:</p>
         <div class="cadena" id="otpCadena"></div>
-        <p class="nota-mecanismo"><b>Por qué la tasa de envío es la misma en ambos:</b> el OTP aparece
+        <p class="nota-mecanismo"><b>Dónde está el error, en una línea:</b> al brazo con OTP le falta el
+          primer factor. Su denominador ya excluye a quien no envió, así que su porcentaje solo multiplica
+          validación × calificación — y por eso sale más alto. Al reponer el factor de envío, el efecto
+          <strong>cambia de signo</strong>.
+          <br><br>
+          <b>Por qué la tasa de envío es la misma en ambos:</b> el OTP aparece
           <em>después</em> de darle enviar, así que no puede cambiar cuánta gente le da enviar. Es un
           argumento de mecanismo, no una medición — la tasa de envío sí varía en el tiempo por otras
           razones (81,2% antes del OTP, 76,5% durante el apagado en CO).</p>
@@ -2075,35 +2090,48 @@ function otpRenderExp(ab) {
   const cad = document.getElementById('otpCadena');
   if (!cad) return;
   const pais = webPais();
-  const pre = (ab[pais] || {})['sin OTP'];           // antes del OTP: todos control
-  const roll = (ab[pais] || {})['rollout 100%'];     // brazo tratado: denominador = los que enviaron
-  if (!pre || !pre.sin || !roll || !roll.con) { cad.innerHTML = ''; return; }
+  const v1 = (ab[pais] || {})['A/B v1'];
+  if (!v1 || !v1.con || !v1.sin) { cad.innerHTML = ''; return; }
 
-  // sin OTP, enviar el formulario ⇒ lead. Así que contacto→lead ES la tasa de envío.
-  const envio = pre.sin.lead / pre.sin.contacto * 100;
-  // con OTP, el denominador ya son los que enviaron. Así que esto ES la tasa de validación.
-  const valida = roll.con.lead / roll.con.contacto * 100;
-  const sinOtp = envio, conOtp = envio * valida / 100;
+  // Los tres eslabones, sobre la MISMA ventana que midió EXP-011:
+  //  envío      → sin OTP, enviar ⇒ lead, así que contacto→lead ES la tasa de envío
+  //  validación → con OTP, el denominador ya son los que enviaron, así que ES la tasa de validación
+  //  calificación → lead→calificado, por brazo
+  const envio  = v1.sin.lead / v1.sin.contacto * 100;
+  const valida = v1.con.lead / v1.con.contacto * 100;
+  const calS   = v1.sin.calif / v1.sin.lead * 100;
+  const calC   = v1.con.calif / v1.con.lead * 100;
+  const resS   = envio * calS / 100;
+  const resC   = envio * valida * calC / 10000;
+  const resRep = valida * calC / 100;          // lo que reportó EXP-011: sin el factor de envío
 
-  const term = (k, v, cls) => `<div class="cad-term ${cls || ''}"><span class="k">${k}</span><span class="v">${v}</span></div>`;
+  const t = (k, v, cls) => `<div class="cad-term ${cls || ''}"><span class="k">${k}</span><span class="v">${v}</span></div>`;
+  const pc = x => x.toFixed(1) + '%';
   cad.innerHTML =
     `<div class="cad-fila sin">
        <div class="cad-brazo">SIN OTP</div>
-       ${term('contacto → envío', envio.toFixed(1) + '%')}
-       <div class="cad-op">×</div>
-       ${term('envío → lead', '100%')}
-       <div class="cad-op">=</div>
-       ${term('contacto → lead', sinOtp.toFixed(1) + '%', 'res')}
+       ${t('contacto → envío', pc(envio))}<div class="cad-op">×</div>
+       ${t('envío → lead', '100%')}<div class="cad-op">×</div>
+       ${t('lead → calificado', pc(calS))}<div class="cad-op">=</div>
+       ${t('contacto → calificado', pc(resS), 'res')}
      </div>
      <div class="cad-fila con">
        <div class="cad-brazo">CON OTP</div>
-       ${term('contacto → envío', envio.toFixed(1) + '%')}
-       <div class="cad-op">×</div>
-       ${term('envío → lead', valida.toFixed(1) + '%', 'tocado')}
-       <div class="cad-op">=</div>
-       ${term('contacto → lead', conOtp.toFixed(1) + '%', 'res')}
+       ${t('contacto → envío', pc(envio))}<div class="cad-op">×</div>
+       ${t('envío → lead', pc(valida), 'tocado')}<div class="cad-op">×</div>
+       ${t('lead → calificado', pc(calC))}<div class="cad-op">=</div>
+       ${t('contacto → calificado', pc(resC), 'res')}
      </div>
-     <div class="cad-delta"><span>El OTP solo toca el segundo paso:</span>${(conOtp - sinOtp).toFixed(1)} pp</div>`;
+     <div class="cad-delta"><span>Efecto real del OTP:</span>${(resC - resS).toFixed(1)} pp</div>
+     <div class="cad-fila rep">
+       <div class="cad-brazo">Lo que<br>reportó<br>EXP-011</div>
+       <div class="cad-term falta"><span class="k">factor ausente</span><span class="v">—</span></div>
+       <div class="cad-op">×</div>
+       ${t('envío → lead', pc(valida))}<div class="cad-op">×</div>
+       ${t('lead → calificado', pc(calC))}<div class="cad-op">=</div>
+       ${t('contacto → calificado', pc(resRep), 'res reportado')}
+     </div>
+     <div class="cad-delta rep"><span>Su denominador ya excluye a quien no envió:</span>+${(resRep - resS).toFixed(1)} pp</div>`;
 }
 
 
