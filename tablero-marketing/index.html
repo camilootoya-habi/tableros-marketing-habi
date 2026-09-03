@@ -231,6 +231,17 @@ body.light #sheet-web .wchip.country { background: #dbeafe; border-color: #3b82f
 #sheet-otp .otp-kv b { font-family: ui-monospace, monospace; color: var(--text-title); }
 #sheet-otp .otp-intro { font-size: 13px; line-height: 1.65; color: var(--text); max-width: 860px; margin: 0 0 6px; }
 #sheet-otp #otpConvMeta { display: block; font-size: 12px; color: var(--text-muted-2); margin-bottom: 10px; }
+#sheet-otp .otp-exp { background: var(--card); border: 1px solid var(--border); border-left: 3px solid var(--accent); border-radius: 10px; padding: 18px 22px; }
+#sheet-otp .otp-exp-q { margin-bottom: 16px; }
+#sheet-otp .otp-exp-lbl { font-size: 12px; font-weight: 600; color: var(--text-title); margin-bottom: 8px; }
+#sheet-otp .otp-exp-lbl span { font-weight: 400; color: var(--text-muted-3); font-family: ui-monospace, monospace; margin-left: 8px; }
+#sheet-otp .otp-exp-q code { display: block; background: var(--w-card2); border-radius: 6px; padding: 10px 12px; font-size: 11.5px; line-height: 1.5; color: var(--text); overflow-x: auto; }
+#sheet-otp .otp-exp-q code b { color: var(--w-amber); }
+#sheet-otp .otp-exp-q p { font-size: 12.5px; line-height: 1.6; color: var(--text); margin: 10px 0 0; }
+#sheet-otp .otp-exp-note { font-size: 12.5px; line-height: 1.65; color: var(--text-muted-2); border-top: 1px solid var(--border); padding-top: 14px; margin: 16px 0 0; }
+#sheet-otp .otp-exp-note strong { color: var(--text); }
+#sheet-otp .otp-exp .fila-a td { color: var(--text-muted-2); }
+#sheet-otp .otp-exp .fila-b td { font-weight: 600; }
 #sheet-otp .otp-panaderia { border-left-color: var(--w-amber); }
 #sheet-otp .otp-pan { margin: 0 0 16px; padding-left: 20px; }
 #sheet-otp .otp-pan li { font-size: 13px; line-height: 1.7; color: var(--text); margin-bottom: 6px; }
@@ -712,21 +723,38 @@ body.light #sheet-web .wchip.country { background: #dbeafe; border-color: #3b82f
     de cualquier comparación. Últimos 30 días.</div>
 
 
-  <h2 class="section-heading">Comparación por régimen<span class="wblock-meta"> · ⚠️ ver advertencia</span></h2>
-  <div class="otp-warn">
-    <strong>⚠️ Esta tabla NO es un A/B válido. No la uses para decidir.</strong>
-    <p>La bandera <code>con OTP</code> se deriva de <code>otp_request_sent</code>, que <strong>se dispara al
-    enviar el formulario</strong>, no al asignar la variante. Así, el brazo "con OTP" son <em>los que enviaron
-    el formulario</em> y el brazo "sin OTP" son <em>todos los que pisaron /contacto</em>, incluyendo a quien
-    nunca envió. Los denominadores no son comparables, y por eso el resultado sale invertido: parece que el
-    OTP <em>duplica</em> la conversión, lo cual es imposible para un paso que solo añade fricción.</p>
-    <p>El mismo artefacto está presente en el A/B v1 de EXP-011, cuyo resultado publicado (+4,7pp CO / +8,4pp MX
-    en calificación) se replica exactamente con esta misma medición. <strong>Para cerrar el A/B hace falta la
-    bandera de asignación del lado de producto</strong> — qué usuarios fueron asignados al tratamiento,
-    hayan enviado el formulario o no. Con eso, esta tabla pasa a ser válida en un día.</p>
-  </div>
-  <div class="table-container">
-    <table id="otpAbTable"><thead><tr><th>Régimen</th></tr></thead><tbody></tbody></table>
+  <h2 class="section-heading">Qué midió EXP-011 y qué pasa al alinear el denominador</h2>
+  <p class="otp-intro">El experimento que llevó al rollout (<code>EXP-011</code>, repo
+    <code>product-sparring</code>) concluyó que el OTP <strong>sube la calificación</strong>. Replicamos su
+    medición exacta y da lo mismo que publicó. Pero el resultado depende por completo de cómo se define
+    el denominador.</p>
+
+  <div class="otp-exp">
+    <div class="otp-exp-q">
+      <div class="otp-exp-lbl">Lo que mide su query <span>EXP-011.sql · línea 174</span></div>
+      <code>SAFE_DIVIDE(COUNTIF(flag_calificado = 1 AND flag_otp = 0), <b>COUNTIF(flag_otp = 0)</b>)</code>
+      <p>Ese denominador son <strong>todos</strong> los que pisaron <code>/contacto</code> sin el evento
+        <code>otp_request_sent</code> — hayan enviado el formulario o no. El brazo con OTP, en cambio, solo
+        puede contener a quienes <strong>sí enviaron</strong>, porque el evento se dispara al enviar.</p>
+    </div>
+    <div class="table-container">
+      <table id="otpExpTable"><thead><tr><th>País</th><th>Medición</th><th>Sin OTP</th><th>Con OTP</th><th>Diferencia</th></tr></thead><tbody></tbody></table>
+    </div>
+    <p class="otp-exp-note">
+      <strong>El efecto se desvanece al poner los dos brazos en la misma línea de partida.</strong>
+      Lo que EXP-011 leyó como «el OTP mejora la calificación» es, en su mayor parte, el efecto de
+      <em>haber enviado el formulario</em> — que predice calificar mejor con OTP o sin él.
+      <br><br>
+      <strong>Salvedad honesta:</strong> para condicionar «haber enviado» usamos como proxy «tiene lead
+      creado», y en el brazo tratado el OTP <em>influye</em> en si hay lead. Es condicionar sobre una
+      variable posterior al tratamiento, con su propio sesgo. Por eso esto <strong>no prueba que el efecto
+      sea cero</strong>: prueba que el número es <strong>muy sensible a la definición del denominador</strong>,
+      lo cual ya basta para no sostener una decisión sobre él.
+      <br><br>
+      <strong>Qué hacer:</strong> con la <strong>bandera de asignación</strong> el A/B que corre hoy al 50%
+      se vuelve concluyente. La conclusión de EXP-011 no era descabellada — la señal disponible no daba
+      para tanto.
+    </p>
   </div>
 </div>
 
@@ -1828,7 +1856,7 @@ function otpRender() {
   if (!d.salud) return;
   otpRenderSalud(d.salud);
   otpRenderConv();
-  otpRenderAb(d.ab || {});
+  otpRenderExp(d.ab || {});
 }
 
 
@@ -1934,28 +1962,36 @@ function otpRenderConv() {
   tbody.innerHTML = html;
 }
 
-function otpRenderAb(ab) {
-  const p = webPais();
-  const regs = ab[p] || {};
-  const thead = document.querySelector('#otpAbTable thead tr');
-  const tbody = document.querySelector('#otpAbTable tbody');
-  const orden = ['sin OTP', 'A/B v1', 'rollout 100%', 'degradado SNS', 'falla total', 'apagado', 'A/B v2 (50%)'];
-  thead.innerHTML = '<th>Régimen</th><th>Brazo</th><th>n en /contacto</th><th>→ Características</th><th>→ Registro</th><th>→ Lead</th><th>→ Calificado</th>';
+// Comparación [A] como la mide EXP-011 vs [B] alineando denominadores.
+// [A] calificados / TODOS los de /contacto  → así lo mide su query
+// [B] calificados / los que tienen lead     → ambos brazos condicionados a haber enviado
+function otpRenderExp(ab) {
+  const tbody = document.querySelector('#otpExpTable tbody');
+  if (!tbody) return;
   let html = '';
-  for (const r of orden) {
-    const b = regs[r];
-    if (!b) continue;
-    for (const k of ['sin', 'con']) {
-      const c = b[k];
-      if (!c || !c.contacto) continue;
-      const pct = v => `<span class="p">${(v / c.contacto * 100).toFixed(1)}%</span>`;
-      html += `<tr class="row-stage"><td>${r}</td><td>${k === 'con' ? 'CON OTP' : 'SIN OTP'}</td>` +
-              `<td>${fmt(c.contacto)}</td><td>${pct(c.caract)}</td><td>${pct(c.felic)}</td>` +
-              `<td>${pct(c.lead)}</td><td>${pct(c.calif)}</td></tr>`;
-    }
+  for (const pais of ['CO', 'MX']) {
+    const b = (ab[pais] || {})['A/B v1'];
+    if (!b || !b.con || !b.sin) continue;
+    const pct = (n, d) => d ? n / d * 100 : 0;
+    const filas = [
+      ['fila-a', 'Como la mide EXP-011', pct(b.sin.calif, b.sin.contacto), pct(b.con.calif, b.con.contacto),
+       `denominador = todos los de /contacto (${fmt(b.sin.contacto)} vs ${fmt(b.con.contacto)})`],
+      ['fila-b', 'Alineando denominadores', pct(b.sin.calif, b.sin.lead), pct(b.con.calif, b.con.lead),
+       `denominador = solo los que enviaron (${fmt(b.sin.lead)} vs ${fmt(b.con.lead)})`],
+    ];
+    filas.forEach(([cls, lbl, vs, vc, nota], k) => {
+      const dif = vc - vs;
+      const color = Math.abs(dif) < 1.5 ? 'var(--text-muted-2)' : 'var(--w-green)';
+      html += `<tr class="row-stage ${cls}">` +
+        (k === 0 ? `<td rowspan="2"><strong>${pais === 'CO' ? 'Colombia' : 'México'}</strong></td>` : '') +
+        `<td>${lbl}<span class="wpath">${nota}</span></td>` +
+        `<td>${vs.toFixed(1)}%</td><td>${vc.toFixed(1)}%</td>` +
+        `<td style="color:${color};font-family:ui-monospace,monospace">${dif >= 0 ? '+' : ''}${dif.toFixed(1)}pp</td></tr>`;
+    });
   }
-  tbody.innerHTML = html || '<tr><td colspan="7" style="text-align:center;padding:30px;color:var(--text-muted-2)">Sin datos</td></tr>';
+  tbody.innerHTML = html;
 }
+
 
 function renderWeb() {
   if (!WEB_DATA) return;
