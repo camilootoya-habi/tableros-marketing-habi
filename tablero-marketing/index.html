@@ -264,6 +264,11 @@ body.light #sheet-web .wchip.country { background: #dbeafe; border-color: #3b82f
 #sheet-otp .paso .nota-mecanismo { font-size: 12px; color: var(--text-muted-2); border-top: 1px solid var(--border); padding-top: 12px; }
 #sheet-otp .paso .nota-mecanismo b { color: var(--text); }
 
+#sheet-otp .pendientes { margin: 0 0 12px; padding-left: 20px; }
+#sheet-otp .pendientes li { font-size: 13px; line-height: 1.7; color: var(--text); margin-bottom: 12px; }
+#sheet-otp .pendientes li:last-child { margin-bottom: 0; }
+#sheet-otp .pendientes b { color: var(--text-title); }
+#sheet-otp .pendientes .cifra { font-family: ui-monospace, monospace; color: var(--accent); font-weight: 600; }
 #sheet-otp .conclusion-card { background: rgba(251,191,36,.10); border: 1px solid var(--w-amber);
   border-radius: 10px; padding: 16px 20px; margin: 16px 0 4px; }
 #sheet-otp .conclusion-card h5 { margin: 0 0 10px; font-size: 13px; font-weight: 700; color: var(--w-amber);
@@ -863,8 +868,8 @@ body.light #sheet-web .wchip.country { background: #dbeafe; border-color: #3b82f
         <h4>Qué falta para cerrarlo</h4>
         <p>Hoy corre un A/B al 50%. Con la <strong>bandera de asignación</strong> del lado de producto
           —qué usuarios cayeron en el brazo con OTP, hayan enviado o no— la comparación pasa a ser válida
-          de inmediato y se puede responder la única pregunta que queda abierta:
-          <strong>¿la mejor calidad del lead verificado compensa el ~12% de envíos que se pierden?</strong></p>
+          de inmediato. Quedan dos frentes abiertos:</p>
+        <ol class="pendientes" id="otpPendientes"></ol>
         <p class="cierre">La conclusión de EXP-011 no era descabellada. La señal disponible no daba para tanto.</p>
       </div>
     </section>
@@ -2216,11 +2221,10 @@ function otpRenderExp(ab) {
      <div class="cad-delta rep"><span>Su denominador ya excluye a quien no envió:</span>+${(resRep - resS).toFixed(1)} pp</div>`;
 
   // ── la conclusión, con los números del propio dato ──
-  const box = document.getElementById('otpConclusion');
-  if (!box) return;
   const caidaPp  = resS - resC;
   const caidaRel = caidaPp / resS * 100;
   const repDelta = resRep - resS;
+  const pais_n = pais === 'CO' ? 'Colombia' : 'México';
 
   // señales de "persona real" desde el re-encendido del 2-sep
   const dias = ((WEB_DATA.otp || {}).salud || {})[pais] || [];
@@ -2228,8 +2232,28 @@ function otpRenderExp(ab) {
   const req = v2.reduce((a, d) => a + d.req, 0);
   const reenvio = v2.reduce((a, d) => a + d.reenvio, 0);
   const tope = v2.reduce((a, d) => a + d.tope, 0);
-  const pais_n = pais === 'CO' ? 'Colombia' : 'México';
 
+  // ── los dos frentes abiertos, con las cifras del país seleccionado ──
+  const pend = document.getElementById('otpPendientes');
+  if (pend) {
+    const perdidos = 100 - valida;
+    pend.innerHTML =
+      `<li><b>Cerrar el A/B.</b> ¿La mejor calidad del lead verificado compensa el
+         <span class="cifra">${perdidos.toFixed(1)}%</span> de envíos que se pierden en el paso del OTP
+         — que se traduce en una caída del <span class="cifra">${caidaRel.toFixed(0)}%</span> en el flujo
+         de leads calificados? Es la única pregunta que el dato actual no puede responder.</li>` +
+      (req ? `<li><b>Diagnosticar la fricción del reenvío y quitarla.</b> Desde el re-encendido,
+         <span class="cifra">${fmt(reenvio)}</span> personas pidieron reenviar el código
+         (<span class="cifra">${(reenvio / req * 100).toFixed(0)}%</span>) y
+         <span class="cifra">${fmt(tope)}</span> chocaron contra el tope
+         (<span class="cifra">${(tope / req * 100).toFixed(0)}%</span>). Esa es la fricción que
+         <b>sí está haciendo perder leads de calidad</b>: son personas que quieren entrar y no reciben el
+         SMS. Hace falta el <b>log de entrega de AWS SNS</b> para separar «número inválido» de
+         «mensaje que no llegó», y subir o eliminar el tope mientras tanto.</li>` : '');
+  }
+
+  const box = document.getElementById('otpConclusion');
+  if (!box) return;
   box.innerHTML =
     `<h5>La conclusión</h5>
      <p>El experimento concluyó que el OTP <b>mejora</b> la calificación
