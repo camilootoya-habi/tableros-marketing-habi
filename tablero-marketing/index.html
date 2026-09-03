@@ -442,6 +442,54 @@ body.light #sheet-web .wchip.country { background: #dbeafe; border-color: #3b82f
   </p>
 </div>
 
+<dialog id="helpConv_contacto" class="help-dialog">
+  <h3>Llegan a contacto</h3>
+  <p>Visitantes únicos que <strong>vieron la pantalla de datos de contacto</strong> del formulario.</p>
+  <p><code>COUNT(DISTINCT anonymous_id)</code> sobre <code>{co,mx}_segment_profiles.pages</code> con <code>context_page_path = '/formulario-inmueble/contacto'</code>, filtrando por dominio (<code>habi.co</code> / <code>habi.mx</code>) y agrupando por día en hora local.</p><p>Es el <strong>denominador</strong> de la fila de abajo. Ojo: haber <em>visto</em> la pantalla no es haber <em>enviado</em> el formulario — mucha gente llega y se va sin escribir nada.</p>
+  <p style="opacity:.7">Se agrupa por la temporalidad seleccionada arriba, sobre filas diarias, y se <strong>excluyen los días de falla de infraestructura</strong> (régimen «degradado SNS» y «falla total»): son caídas de AWS SNS, no fricción del OTP. Query: <code>web_query_otp_ab.sql</code>. ⚠️ La agrupación día→período se hace en el navegador, así que alguien activo en dos días distintos cuenta dos veces; es marginal, pero si vas a citar el número en un documento conviene recalcularlo en SQL.</p>
+  <button type="button" class="close-btn" onclick="this.closest('dialog').close()">Cerrar</button>
+</dialog>
+
+<dialog id="helpConv_lead" class="help-dialog">
+  <h3>Crean lead</h3>
+  <p>De los que llegaron a contacto, cuántos terminaron <strong>generando un negocio en Backbone</strong>.</p>
+  <p>Se resuelve por la cadena: <code>anonymous_id</code> → <code>select_content.backbone_uuid</code> → <code>top_funnel.web_global_api_business.deal_uuid</code> → tabla de negocio del país, exigiendo <code>nid</code> no nulo <strong>y que el negocio se haya creado ese mismo día</strong>.</p><p>⚠️ El <code>select_content</code> se ancla al mismo día <strong>en hora local</strong>. <code>DATE()</code> sobre un TIMESTAMP evalúa en UTC y corría la ventana un día para todo el tráfico nocturno: ese bug costaba el 38% de los leads.</p><p>Es la cadena de <em>inner joins</em>: si un eslabón falta, el lead existe pero no se cuenta. La métrica <strong>subestima, nunca infla</strong>.</p>
+  <p style="opacity:.7">Se agrupa por la temporalidad seleccionada arriba, sobre filas diarias, y se <strong>excluyen los días de falla de infraestructura</strong> (régimen «degradado SNS» y «falla total»): son caídas de AWS SNS, no fricción del OTP. Query: <code>web_query_otp_ab.sql</code>. ⚠️ La agrupación día→período se hace en el navegador, así que alguien activo en dos días distintos cuenta dos veces; es marginal, pero si vas a citar el número en un documento conviene recalcularlo en SQL.</p>
+  <button type="button" class="close-btn" onclick="this.closest('dialog').close()">Cerrar</button>
+</dialog>
+
+<dialog id="helpConv_con_c" class="help-dialog">
+  <h3>CON OTP · llegan a contacto</h3>
+  <p>De los que llegaron a contacto, los que <strong>recibieron un código OTP</strong> ese día.</p>
+  <p><code>con_otp = 1</code> si existe el evento <code>otp_request_sent</code> del mismo <code>anonymous_id</code> y el mismo día.</p><p>⚠️ Ese evento <strong>se dispara al enviar el formulario</strong>, no al asignar la variante. Así que esta fila es, en la práctica, «los que enviaron el formulario y les tocó OTP» — no «los asignados al tratamiento». Ver la tarjeta 🥖 de abajo.</p>
+  <p style="opacity:.7">Se agrupa por la temporalidad seleccionada arriba, sobre filas diarias, y se <strong>excluyen los días de falla de infraestructura</strong> (régimen «degradado SNS» y «falla total»): son caídas de AWS SNS, no fricción del OTP. Query: <code>web_query_otp_ab.sql</code>. ⚠️ La agrupación día→período se hace en el navegador, así que alguien activo en dos días distintos cuenta dos veces; es marginal, pero si vas a citar el número en un documento conviene recalcularlo en SQL.</p>
+  <button type="button" class="close-btn" onclick="this.closest('dialog').close()">Cerrar</button>
+</dialog>
+
+<dialog id="helpConv_con_l" class="help-dialog">
+  <h3>CON OTP · crean lead</h3>
+  <p>Misma definición de lead, restringida a los que recibieron OTP.</p>
+  <p>Se mantiene estable en ~88% en todos los períodos, porque el denominador ya está condicionado a haber enviado el formulario. Ese 12% que falta es, en esencia, <strong>quien no logró validar el código</strong>.</p>
+  <p style="opacity:.7">Se agrupa por la temporalidad seleccionada arriba, sobre filas diarias, y se <strong>excluyen los días de falla de infraestructura</strong> (régimen «degradado SNS» y «falla total»): son caídas de AWS SNS, no fricción del OTP. Query: <code>web_query_otp_ab.sql</code>. ⚠️ La agrupación día→período se hace en el navegador, así que alguien activo en dos días distintos cuenta dos veces; es marginal, pero si vas a citar el número en un documento conviene recalcularlo en SQL.</p>
+  <button type="button" class="close-btn" onclick="this.closest('dialog').close()">Cerrar</button>
+</dialog>
+
+<dialog id="helpConv_sin_c" class="help-dialog">
+  <h3>SIN OTP · llegan a contacto</h3>
+  <p>Todos los demás: llegaron a contacto y <strong>no</strong> recibieron código.</p>
+  <p>⚠️ <strong>No es un grupo de control.</strong> Mezcla dos poblaciones muy distintas: quien fue asignado al brazo sin OTP <em>y envió</em> el formulario, y quien simplemente <em>nunca envió nada</em>. Por eso su tasa está deprimida y no se puede restar contra la fila de arriba.</p>
+  <p style="opacity:.7">Se agrupa por la temporalidad seleccionada arriba, sobre filas diarias, y se <strong>excluyen los días de falla de infraestructura</strong> (régimen «degradado SNS» y «falla total»): son caídas de AWS SNS, no fricción del OTP. Query: <code>web_query_otp_ab.sql</code>. ⚠️ La agrupación día→período se hace en el navegador, así que alguien activo en dos días distintos cuenta dos veces; es marginal, pero si vas a citar el número en un documento conviene recalcularlo en SQL.</p>
+  <button type="button" class="close-btn" onclick="this.closest('dialog').close()">Cerrar</button>
+</dialog>
+
+<dialog id="helpConv_sin_l" class="help-dialog">
+  <h3>SIN OTP · crean lead</h3>
+  <p>Misma definición de lead, sobre ese grupo mezclado.</p>
+  <p>Cae de ~81% a ~54% justo cuando el rollout llegó al 100% (14-jul) y se recupera al apagarlo. Eso <strong>no es comportamiento</strong>: durante el rollout total no existe control, así que este grupo pasa a ser únicamente «los que nunca enviaron el formulario». Es el síntoma del sesgo, no un hallazgo.</p>
+  <p style="opacity:.7">Se agrupa por la temporalidad seleccionada arriba, sobre filas diarias, y se <strong>excluyen los días de falla de infraestructura</strong> (régimen «degradado SNS» y «falla total»): son caídas de AWS SNS, no fricción del OTP. Query: <code>web_query_otp_ab.sql</code>. ⚠️ La agrupación día→período se hace en el navegador, así que alguien activo en dos días distintos cuenta dos veces; es marginal, pero si vas a citar el número en un documento conviene recalcularlo en SQL.</p>
+  <button type="button" class="close-btn" onclick="this.closest('dialog').close()">Cerrar</button>
+</dialog>
+
 <dialog id="helpOtp_req" class="help-dialog">
   <h3>Códigos pedidos</h3>
   <p>Visitantes a los que <strong>se les envió un código</strong> ese día. Es el denominador de todo lo demás.</p>
@@ -1875,22 +1923,23 @@ function otpRenderConv() {
   }).join('');
 
   const tot = per => ({ c: acc[per].con.c + acc[per].sin.c, l: acc[per].con.l + acc[per].sin.l });
-  const fila = (lbl, get, cls, pct) => {
+  const fila = (hid, lbl, get, cls, pct) => {
     const vals = periods.map(get);
-    if (!pct) return `<tr class="${cls}"><td></td><td>${lbl}</td>` + vals.map(v => `<td>${fmt(v)}</td>`).join('') + '</tr>';
+    const h = helpCell('helpConv_' + hid);
+    if (!pct) return `<tr class="${cls}">${h}<td>${lbl}</td>` + vals.map(v => `<td>${fmt(v)}</td>`).join('') + '</tr>';
     const dens = periods.map(pct);
-    return `<tr class="${cls}"><td></td><td>${lbl}</td>${heatCells(vals, dens, false)}</tr>`;
+    return `<tr class="${cls}">${h}<td>${lbl}</td>${heatCells(vals, dens, false)}</tr>`;
   };
 
   let html = '';
   html += `<tr class="row-section"><td class="section-title" colspan="2">TOTAL — sin sesgo de brazo</td><td class="section-fill" colspan="${periods.length}"></td></tr>`;
-  html += fila('Llegan a contacto', per => tot(per).c, 'row-total');
-  html += fila('Crean lead', per => tot(per).l, 'row-stage', per => tot(per).c);
+  html += fila('contacto', 'Llegan a contacto', per => tot(per).c, 'row-total');
+  html += fila('lead', 'Crean lead', per => tot(per).l, 'row-stage', per => tot(per).c);
   html += `<tr class="row-section"><td class="section-title" colspan="2">Por brazo — ⚠️ «sin OTP» incluye a quien no envió el formulario</td><td class="section-fill" colspan="${periods.length}"></td></tr>`;
-  html += fila('CON OTP · llegan a contacto', per => acc[per].con.c, 'row-total');
-  html += fila('CON OTP · crean lead', per => acc[per].con.l, 'row-stage', per => acc[per].con.c);
-  html += fila('SIN OTP · llegan a contacto', per => acc[per].sin.c, 'row-total');
-  html += fila('SIN OTP · crean lead', per => acc[per].sin.l, 'row-stage', per => acc[per].sin.c);
+  html += fila('con_c', 'CON OTP · llegan a contacto', per => acc[per].con.c, 'row-total');
+  html += fila('con_l', 'CON OTP · crean lead', per => acc[per].con.l, 'row-stage', per => acc[per].con.c);
+  html += fila('sin_c', 'SIN OTP · llegan a contacto', per => acc[per].sin.c, 'row-total');
+  html += fila('sin_l', 'SIN OTP · crean lead', per => acc[per].sin.l, 'row-stage', per => acc[per].sin.c);
   tbody.innerHTML = html;
 }
 
