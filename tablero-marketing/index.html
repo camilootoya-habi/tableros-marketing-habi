@@ -440,6 +440,78 @@ body.light #sheet-web .wchip.country { background: #dbeafe; border-color: #3b82f
   </p>
 </div>
 
+<dialog id="helpOtp_req" class="help-dialog">
+  <h3>Códigos pedidos</h3>
+  <p>Visitantes a los que <strong>se les envió un código</strong> ese día. Es el denominador de todo lo demás.</p>
+  <p>Evento de Segment: <code>otp_request_sent</code> en <code>{co,mx}_segment_profiles.user_interaction</code>.</p><p>El evento se dispara <strong>al enviar el formulario de contacto</strong>, no al asignar la variante — por eso esta fila también es, en la práctica, el conteo de <strong>envíos del formulario del brazo con OTP</strong>. Es la razón del sesgo explicado en la tarjeta 🥖 de más abajo.</p>
+  <p style="opacity:.7">Se cuenta <strong>por visitante</strong> (<code>anonymous_id</code>), no por evento: primero <code>MAX(IF(event_name = …, 1, 0))</code> agrupando por visitante y día, y luego <code>COUNTIF()</code> sobre esas banderas. Así un reenvío no infla el denominador. Query: <code>web_query_otp_salud.sql</code>.</p>
+  <button type="button" class="close-btn" onclick="this.closest('dialog').close()">Cerrar</button>
+</dialog>
+
+<dialog id="helpOtp_ok" class="help-dialog">
+  <h3>Validan</h3>
+  <p>De los que pidieron código, cuántos <strong>lo escribieron bien</strong> y pasaron.</p>
+  <p>Evento de Segment: <code>otp_validation_success</code> en <code>{co,mx}_segment_profiles.user_interaction</code>.</p><p>Aquí se crea el lead: medido el 2026-09-02, el negocio nace en la base <strong>~110 segundos después</strong> de este evento. Quien valida obtiene lead ~100% de las veces.</p>
+  <p style="opacity:.7">Se cuenta <strong>por visitante</strong> (<code>anonymous_id</code>), no por evento: primero <code>MAX(IF(event_name = …, 1, 0))</code> agrupando por visitante y día, y luego <code>COUNTIF()</code> sobre esas banderas. Así un reenvío no infla el denominador. Query: <code>web_query_otp_salud.sql</code>.</p>
+  <button type="button" class="close-btn" onclick="this.closest('dialog').close()">Cerrar</button>
+</dialog>
+
+<dialog id="helpOtp_tasa" class="help-dialog">
+  <h3>Tasa de validación</h3>
+  <p><strong>Validan / Códigos pedidos.</strong> Es la medida directa del costo del OTP: cada punto que falta es un envío de formulario que no se convirtió en lead.</p>
+  <p>Se colorea contra el baseline de julio (CO 87,5% · MX 80,5%), que es el último período con el rollout al 100% estable y antes de la degradación de AWS SNS: <span style="color:var(--w-green)">verde</span> dentro de 5pp, <span style="color:var(--w-amber)">ámbar</span> hasta 15pp abajo, <span style="color:var(--w-red)">rojo</span> por debajo de eso.</p>
+  <p style="opacity:.7">Se cuenta <strong>por visitante</strong> (<code>anonymous_id</code>), no por evento: primero <code>MAX(IF(event_name = …, 1, 0))</code> agrupando por visitante y día, y luego <code>COUNTIF()</code> sobre esas banderas. Así un reenvío no infla el denominador. Query: <code>web_query_otp_salud.sql</code>.</p>
+  <button type="button" class="close-btn" onclick="this.closest('dialog').close()">Cerrar</button>
+</dialog>
+
+<dialog id="helpOtp_abandona" class="help-dialog">
+  <h3>Abandona sin intentar</h3>
+  <p>Pidieron código y <strong>nunca escribieron nada</strong>: ni bien ni mal.</p>
+  <p>Evento de Segment: <code>(request sin success ni error)</code> en <code>{co,mx}_segment_profiles.user_interaction</code>.</p><p><code>request = 1 AND ok = 0 AND error = 0</code></p><p>⚠️ Es el grupo <strong>ambiguo</strong> y el más grande (63% de los caídos en CO, 77% en MX durante el rollout). Puede ser un número falso — el SMS llegó a un teléfono que no existe — <strong>o</strong> un SMS que nunca se entregó por falla del proveedor. Desde Segment <strong>no se puede distinguir</strong>: hace falta el log de entrega de AWS SNS.</p>
+  <p style="opacity:.7">Se cuenta <strong>por visitante</strong> (<code>anonymous_id</code>), no por evento: primero <code>MAX(IF(event_name = …, 1, 0))</code> agrupando por visitante y día, y luego <code>COUNTIF()</code> sobre esas banderas. Así un reenvío no infla el denominador. Query: <code>web_query_otp_salud.sql</code>.</p>
+  <button type="button" class="close-btn" onclick="this.closest('dialog').close()">Cerrar</button>
+</dialog>
+
+<dialog id="helpOtp_falla" class="help-dialog">
+  <h3>Intenta y falla</h3>
+  <p>Escribieron un código <strong>equivocado</strong> y no llegaron a validar.</p>
+  <p>Evento de Segment: <code>otp_validation_error</code> en <code>{co,mx}_segment_profiles.user_interaction</code>.</p><p><code>request = 1 AND ok = 0 AND error = 1</code></p><p>💡 <strong>Evidencia de persona real.</strong> Un número falso no teclea un código: quien lo hace está presente, intentando entrar, y lo perdimos. Junto con «pide reenvío» e «intentos agotados» forman el grupo que <strong>demuestra</strong> que no era basura.</p>
+  <p style="opacity:.7">Se cuenta <strong>por visitante</strong> (<code>anonymous_id</code>), no por evento: primero <code>MAX(IF(event_name = …, 1, 0))</code> agrupando por visitante y día, y luego <code>COUNTIF()</code> sobre esas banderas. Así un reenvío no infla el denominador. Query: <code>web_query_otp_salud.sql</code>.</p>
+  <button type="button" class="close-btn" onclick="this.closest('dialog').close()">Cerrar</button>
+</dialog>
+
+<dialog id="helpOtp_agotado" class="help-dialog">
+  <h3>Intentos agotados</h3>
+  <p>Se quedaron sin intentos permitidos para escribir el código.</p>
+  <p>Evento de Segment: <code>otp_validation_attempts_exhausted</code> en <code>{co,mx}_segment_profiles.user_interaction</code>.</p><p>Se cuenta el evento con independencia de si hubo <code>request</code>. También es evidencia de persona real: nadie agota intentos por accidente.</p>
+  <p style="opacity:.7">Se cuenta <strong>por visitante</strong> (<code>anonymous_id</code>), no por evento: primero <code>MAX(IF(event_name = …, 1, 0))</code> agrupando por visitante y día, y luego <code>COUNTIF()</code> sobre esas banderas. Así un reenvío no infla el denominador. Query: <code>web_query_otp_salud.sql</code>.</p>
+  <button type="button" class="close-btn" onclick="this.closest('dialog').close()">Cerrar</button>
+</dialog>
+
+<dialog id="helpOtp_reenvio" class="help-dialog">
+  <h3>Pide reenvío</h3>
+  <p>Pidieron que <strong>les mandaran el código otra vez</strong>.</p>
+  <p>Evento de Segment: <code>otp_resend_requested</code> en <code>{co,mx}_segment_profiles.user_interaction</code>.</p><p>💡 <strong>La señal más fuerte de que el SMS no llegó.</strong> Un número falso no pide reenvío. Si esta fila sube, el problema es de <strong>entrega</strong>, no de calidad del lead. Apareció por primera vez el 2026-08-03, justo cuando empezó a agotarse el budget de AWS SNS.</p>
+  <p style="opacity:.7">Se cuenta <strong>por visitante</strong> (<code>anonymous_id</code>), no por evento: primero <code>MAX(IF(event_name = …, 1, 0))</code> agrupando por visitante y día, y luego <code>COUNTIF()</code> sobre esas banderas. Así un reenvío no infla el denominador. Query: <code>web_query_otp_salud.sql</code>.</p>
+  <button type="button" class="close-btn" onclick="this.closest('dialog').close()">Cerrar</button>
+</dialog>
+
+<dialog id="helpOtp_tope" class="help-dialog">
+  <h3>Tope de reenvíos</h3>
+  <p>Chocaron contra el <strong>límite</strong> de reenvíos permitidos y se quedaron sin salida.</p>
+  <p>Evento de Segment: <code>otp_resend_limit_reached</code> en <code>{co,mx}_segment_profiles.user_interaction</code>.</p><p>🚨 <strong>Es la alarma más útil de la tabla.</strong> Que alguien agote los reenvíos significa que pidió el código varias veces y nunca llegó: es una persona real bloqueada por infraestructura. Durante el episodio de SNS (3–14 ago en MX) pasó de 0 a ~40/día.</p>
+  <p style="opacity:.7">Se cuenta <strong>por visitante</strong> (<code>anonymous_id</code>), no por evento: primero <code>MAX(IF(event_name = …, 1, 0))</code> agrupando por visitante y día, y luego <code>COUNTIF()</code> sobre esas banderas. Así un reenvío no infla el denominador. Query: <code>web_query_otp_salud.sql</code>.</p>
+  <button type="button" class="close-btn" onclick="this.closest('dialog').close()">Cerrar</button>
+</dialog>
+
+<dialog id="helpOtp_envio_fallido" class="help-dialog">
+  <h3>Envío fallido</h3>
+  <p>El sistema <strong>no logró enviar</strong> el código. El error es nuestro, no del usuario.</p>
+  <p>Evento de Segment: <code>otp_request_failed</code> en <code>{co,mx}_segment_profiles.user_interaction</code>.</p><p>Volúmenes bajos históricamente (unidades por día), pero si sube es falla directa del proveedor.</p>
+  <p style="opacity:.7">Se cuenta <strong>por visitante</strong> (<code>anonymous_id</code>), no por evento: primero <code>MAX(IF(event_name = …, 1, 0))</code> agrupando por visitante y día, y luego <code>COUNTIF()</code> sobre esas banderas. Así un reenvío no infla el denominador. Query: <code>web_query_otp_salud.sql</code>.</p>
+  <button type="button" class="close-btn" onclick="this.closest('dialog').close()">Cerrar</button>
+</dialog>
+
 <dialog id="helpWebRutas" class="help-dialog">
   <h3>Recorridos dentro del formulario</h3>
   <p>Cada fila es una <strong>secuencia distinta de pasos</strong> seguida por visitantes únicos dentro del formulario, ordenada por cuánta gente la recorrió.</p>
@@ -1763,21 +1835,22 @@ function otpRenderSalud(salud) {
   if (!dias.length) { tbody.innerHTML = ''; return; }
 
   const filas = [
-    ['Códigos pedidos', d => d.req, false],
-    ['Validan', d => d.ok, false],
-    ['Tasa de validación', d => d.req ? d.ok / d.req : 0, true],
-    ['Abandona sin intentar', d => d.abandona, false],
-    ['Intenta y falla', d => d.falla, false],
-    ['Intentos agotados', d => d.agotado, false],
-    ['Pide reenvío', d => d.reenvio, false],
-    ['Tope de reenvíos', d => d.tope, false],
+    ['req',      'Códigos pedidos',       d => d.req, false],
+    ['ok',       'Validan',               d => d.ok, false],
+    ['tasa',     'Tasa de validación',    d => d.req ? d.ok / d.req : 0, true],
+    ['abandona', 'Abandona sin intentar', d => d.abandona, false],
+    ['falla',    'Intenta y falla',       d => d.falla, false],
+    ['agotado',  'Intentos agotados',     d => d.agotado, false],
+    ['reenvio',  'Pide reenvío',          d => d.reenvio, false],
+    ['tope',     'Tope de reenvíos',      d => d.tope, false],
+    ['envio_fallido', 'Envío fallido',    d => d.envio_fallido, false],
   ];
-  thead.innerHTML = '<th></th><th>Día</th>' + dias.map(d => {
+  thead.innerHTML = '<th></th><th>Métrica</th>' + dias.map(d => {
     const alerta = d.regimen.includes('degradado') || d.regimen.includes('falla');
     return `<th${alerta ? ' class="in-progress" title="' + d.regimen + '"' : ''}>${d.dia.slice(5)}</th>`;
   }).join('');
-  tbody.innerHTML = filas.map(([lbl, f, esPct]) =>
-    `<tr class="row-stage"><td></td><td>${lbl}</td>` +
+  tbody.innerHTML = filas.map(([sid, lbl, f, esPct]) =>
+    `<tr class="row-stage">${helpCell('helpOtp_' + sid)}<td>${lbl}</td>` +
     dias.map(d => {
       const v = f(d);
       if (esPct) {
