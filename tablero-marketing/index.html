@@ -229,6 +229,15 @@ body.light #sheet-web .wchip.country { background: #dbeafe; border-color: #3b82f
 #sheet-otp .otp-estado { font-size: 19px; font-weight: 600; margin: 4px 0 10px; color: var(--text-title); }
 #sheet-otp .otp-kv { display: flex; justify-content: space-between; font-size: 12px; color: var(--text); padding: 3px 0; }
 #sheet-otp .otp-kv b { font-family: ui-monospace, monospace; color: var(--text-title); }
+#sheet-otp .otp-panaderia { border-left-color: var(--w-amber); }
+#sheet-otp .otp-pan { margin: 0 0 16px; padding-left: 20px; }
+#sheet-otp .otp-pan li { font-size: 13px; line-height: 1.7; color: var(--text); margin-bottom: 6px; }
+#sheet-otp .otp-mapa { display: grid; gap: 6px; margin-bottom: 16px; }
+#sheet-otp .otp-mapa div { display: grid; grid-template-columns: 190px 24px 1fr; align-items: center;
+  font-size: 12.5px; background: var(--w-card2); border-radius: 6px; padding: 7px 12px; }
+#sheet-otp .otp-mapa div::after { content: '→'; grid-column: 2; color: var(--text-muted-3); text-align: center; }
+#sheet-otp .otp-mapa span { color: var(--text-muted-2); font-style: italic; }
+#sheet-otp .otp-mapa b { grid-column: 3; color: var(--text-title); }
 #sheet-otp .otp-warn { background: rgba(239,68,68,.08); border: 1px solid var(--w-red); border-radius: 10px; padding: 16px 20px; margin-bottom: 14px; }
 #sheet-otp .otp-warn strong { color: var(--w-red); }
 #sheet-otp .otp-warn p { font-size: 12.5px; line-height: 1.6; color: var(--text); margin: 10px 0 0; }
@@ -563,6 +572,38 @@ body.light #sheet-web .wchip.country { background: #dbeafe; border-color: #3b82f
     Las filas por brazo llevan el sesgo descrito abajo — <strong>«sin OTP» incluye a quien nunca envió el
     formulario</strong>, así que su tasa está deprimida y no se puede leer como control.
     Se agrupa por la temporalidad seleccionada; se excluyen los días de falla de infraestructura.</div>
+
+  <div class="wdef otp-panaderia">
+    <h3>🥖 Por qué «con OTP» y «sin OTP» no se pueden comparar</h3>
+    <p class="wdef-lead">Imagina que quieres saber si <strong>hacer fila</strong> en la panadería hace que
+      la gente compre menos pan. Pero solo puedes ver a los que hicieron fila.</p>
+    <ul class="otp-pan">
+      <li>Los que <strong>hicieron fila</strong> casi todos compran pan — para eso hicieron la fila.</li>
+      <li>En «los que <strong>no hicieron fila</strong>» te queda metida toda la gente que solo pasó por
+        la calle, miró la vitrina y siguió de largo.</li>
+      <li>Comparas los dos grupos y te sale que <strong>hacer fila hace comprar más pan</strong>.
+        Obviamente está mal: la fila no te hace comprar, la haces <em>porque ya querías comprar</em>.</li>
+    </ul>
+    <p class="wdef-lead" style="margin-bottom:8px">Acá pasa lo mismo, cambiando las palabras:</p>
+    <div class="otp-mapa">
+      <div><span>hacer fila</span><b>pasar por el OTP</b></div>
+      <div><span>comprar pan</span><b>crear el lead</b></div>
+      <div><span>pasar de largo</span><b>llegar a /contacto y no enviar el formulario</b></div>
+    </div>
+    <p class="wdef-note">
+      <strong>El detalle técnico:</strong> el OTP solo se dispara <strong>al enviar el formulario</strong>.
+      Como la única señal que tenemos es <code>otp_request_sent</code>, el grupo «con OTP» son
+      <em>los que enviaron</em> y el grupo «sin OTP» son <em>todos los demás</em>, incluidos los que nunca
+      enviaron. Los dos grupos no arrancan del mismo punto, así que sus porcentajes no se pueden restar.
+      <br><br>
+      <strong>Cómo se arregla:</strong> con la <strong>bandera de asignación</strong> del lado de producto —
+      qué usuarios cayeron en el brazo con OTP, <em>hayan enviado el formulario o no</em>. Es un solo campo,
+      y con él la comparación pasa a ser válida de inmediato.
+      <br><br>
+      <strong>Mientras tanto, usa la fila TOTAL de la tabla de arriba:</strong> esa no depende del brazo,
+      así que no tiene este problema.
+    </p>
+  </div>
 
   <h2 class="section-heading">Comparación por régimen<span class="wblock-meta"> · ⚠️ ver advertencia</span></h2>
   <div class="otp-warn">
