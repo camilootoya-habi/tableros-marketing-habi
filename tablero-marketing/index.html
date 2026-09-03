@@ -220,8 +220,12 @@ body.light #sheet-web .wchip.country { background: #dbeafe; border-color: #3b82f
 #sheet-web #webRutasTable tbody td:nth-child(2) { position: static; min-width: 420px; max-width: 620px; font-weight: 400; color: var(--text); border-right: 1px solid var(--border); }
 #sheet-web #webRutasTable thead th:nth-child(2) { position: static; }
 #sheet-web #webRutasTable tbody td { text-align: right; }
-#sheet-web .wpath { display: block; font-family: ui-monospace, monospace; font-size: 10px;
-  color: var(--text-muted-3); font-weight: 400; margin-top: 2px; }
+#sheet-web .wcanal-bar { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin: 0 0 12px; }
+#sheet-web .wcanal-chips { display: flex; gap: 6px; flex-wrap: wrap; }
+#sheet-web .wcanal-sel { min-width: 240px; padding: 6px 10px; font-size: 12px; }
+#sheet-web .wtipo { display: inline-block; width: 8px; height: 8px; border-radius: 50%; }
+#sheet-web .wpath { display: inline; font-family: ui-monospace, monospace; font-size: 10px;
+  color: var(--text-muted-3); font-weight: 400; margin-left: 8px; white-space: nowrap; }
 #sheet-web .wdef { background: var(--card); border: 1px solid var(--border); border-left: 3px solid var(--accent);
   border-radius: 10px; padding: 18px 22px; margin: 22px 0 8px; }
 #sheet-web .wdef h3 { margin: 0 0 12px; font-size: 14px; font-weight: 600; color: var(--text-title);
@@ -522,7 +526,24 @@ body.light #sheet-web .wchip.country { background: #dbeafe; border-color: #3b82f
       <span id="webFilterIndicator"></span>
     </div>
 
-    <h2 class="section-heading" style="margin-top:0">Funnel WEB — tráfico a registro por período<span class="wblock-meta" id="webFunnelMeta"></span></h2>
+    <h2 class="section-heading" style="margin-top:0">De dónde llega el tráfico — sesiones por referrer<span class="wblock-meta" id="webRefMeta"></span></h2>
+    <div class="table-container">
+      <table id="webRefTable"><thead><tr><th></th><th>Referrer</th></tr></thead><tbody></tbody></table>
+    </div>
+    <div class="whint">Visitantes <strong>nuevos</strong> por período (cosechas), según el referrer de su
+      <strong>primera</strong> sesión. Host normalizado (se unifican <code>www.</code>, <code>m.</code>, <code>l.</code>).
+      Top 30 hosts; el resto va en <em>(otros referrers)</em>. 🤖 marca buscadores de IA.</div>
+
+    <h2 class="section-heading">Funnel WEB — tráfico a registro por período<span class="wblock-meta" id="webFunnelMeta"></span></h2>
+    <div class="wcanal-bar">
+      <div class="wcanal-chips" id="webCanalChips">
+        <button class="wrbtn active" data-t="todos"     onclick="webSetCanalTipo('todos')">Todos</button>
+        <button class="wrbtn"        data-t="pauta"     onclick="webSetCanalTipo('pauta')">Pauta</button>
+        <button class="wrbtn"        data-t="organico"  onclick="webSetCanalTipo('organico')">Orgánico</button>
+        <button class="wrbtn"        data-t="directo"   onclick="webSetCanalTipo('directo')">Directo</button>
+      </div>
+      <select class="granularity wcanal-sel" id="webCanalSel" onchange="webSetCanal(this.value)"></select>
+    </div>
     <div class="table-container">
       <table id="webFunnelTable"><thead><tr><th></th><th>Etapa</th></tr></thead><tbody></tbody></table>
     </div>
@@ -1575,14 +1596,18 @@ function renderWeb() {
   if (!ct) return;          // el contenedor pudo ser reemplazado por el mensaje de error
   ct.hidden = false;
   webRenderHeader();
+  webLlenarSelectorCanal();
+  webRenderReferrers();
   webRenderTable();
   webRenderRutas();
   document.querySelectorAll('#sheet-web .table-container').forEach(c => { c.scrollLeft = c.scrollWidth; });
 }
 
 function webRenderHeader() {
+  const fc = WEB_CANAL.canal ? ` · ${WEB_CANAL.canal}`
+           : WEB_CANAL.tipo !== 'todos' ? ` · solo ${WEB_CANAL.tipo}` : '';
   document.getElementById('webFunnelMeta').textContent =
-    ` · ${getCountry()} · ${GRAN_LABELS[getGran()]}`;
+    ` · ${getCountry()} · ${GRAN_LABELS[getGran()]}${fc}`;
   const fi = document.getElementById('webFilterIndicator');
   fi.innerHTML = WEB_STATE.clusterValue
     ? `<span class="filter-indicator">Filtro: ${WEB_STATE.clusterDim} = ${WEB_STATE.clusterValue}</span> <button class="clear-filter-btn" onclick="webClearFilter()">Limpiar</button>`
@@ -1591,6 +1616,96 @@ function webRenderHeader() {
 
 // Tabla de tendencia: filas = etapas, columnas = últimos 20 períodos de la
 // temporalidad global. Mismo patrón que "Calificación de leads — cosechas".
+// ── Filtro de canal ──────────────────────────────────────────────────────────
+// Aplica SOLO a la tabla del funnel: es la única de las tres que tiene el corte por
+// canal en el dato. La de referrers ya ES un corte por origen, y la de recorridos
+// no lleva canal (agregarlo multiplicaría las rutas y las volvería ilegibles).
+const WEB_CANAL = { tipo: 'todos', canal: '' };
+
+function webCanalTipo(c) {
+  if (c === 'Directo') return 'directo';
+  if (c === 'Interno' || c === 'Referral') return 'otros';
+  if (c.includes('Orgánico')) return 'organico';
+  return 'pauta';   // viene del registro único de UTM → es campaña
+}
+function webCanalMatch(c) {
+  if (WEB_CANAL.canal) return c === WEB_CANAL.canal;
+  if (WEB_CANAL.tipo === 'todos') return true;
+  return webCanalTipo(c) === WEB_CANAL.tipo;
+}
+function webSetCanalTipo(t) {
+  WEB_CANAL.tipo = t; WEB_CANAL.canal = '';
+  document.querySelectorAll('#webCanalChips .wrbtn').forEach(b => b.classList.toggle('active', b.dataset.t === t));
+  renderWeb();
+}
+function webSetCanal(c) {
+  WEB_CANAL.canal = c;
+  if (c) {
+    WEB_CANAL.tipo = 'todos';
+    document.querySelectorAll('#webCanalChips .wrbtn').forEach(b => b.classList.toggle('active', b.dataset.t === 'todos'));
+  }
+  renderWeb();
+}
+// suma las etapas de todos los canales que pasan el filtro
+function webStageFiltrado(cell, stageId) {
+  if (!cell) return 0;
+  if (WEB_CANAL.tipo === 'todos' && !WEB_CANAL.canal) return cell.totals[stageId] || 0;
+  const m = cell.by_canal_plat || {};
+  let t = 0;
+  for (const c in m) if (webCanalMatch(c)) t += m[c][stageId] || 0;
+  return t;
+}
+function webLlenarSelectorCanal() {
+  const sel = document.getElementById('webCanalSel');
+  if (!sel) return;
+  const tot = {};
+  const g = webGranData();
+  for (const p of g.periods) {
+    const m = (g.by_period[p] || {}).by_canal_plat || {};
+    for (const c in m) tot[c] = (tot[c] || 0) + (m[c].session || 0);
+  }
+  const ord = Object.keys(tot).sort((a, b) => tot[b] - tot[a]);
+  sel.innerHTML = '<option value="">Todos los canales…</option>' +
+    ord.map(c => `<option value="${c}"${c === WEB_CANAL.canal ? ' selected' : ''}>${c} (${wFmtN(tot[c])})</option>`).join('');
+}
+
+const WEB_TIPO_COLOR = { 'Buscador IA': 'var(--w-green)', 'Buscador': 'var(--accent)',
+  'Social': '#f472b6', 'Directo': 'var(--text-muted-2)', 'Interno': 'var(--text-muted-3)',
+  'Correo': '#fbbf24', 'Referral': '#60a5fa' };
+
+function webRenderReferrers() {
+  const b = ((WEB_DATA.referrers || {})[webPais()] || {})[getGran()];
+  const thead = document.querySelector('#webRefTable thead tr');
+  const tbody = document.querySelector('#webRefTable tbody');
+  if (!b || !b.hosts.length) {
+    thead.innerHTML = '<th></th><th>Referrer</th>';
+    tbody.innerHTML = '<tr><td colspan="3" style="text-align:center;padding:40px;color:var(--text-muted-2)">Sin datos</td></tr>';
+    return;
+  }
+  const gran = getGran();
+  const periods = b.periods;
+  const totPeriodo = {};
+  for (const p of periods) totPeriodo[p] = b.hosts.reduce((a, h) => a + (h.vals[p] || 0), 0);
+
+  document.getElementById('webRefMeta').textContent =
+    ` · ${getCountry()} · ${GRAN_LABELS[gran]} · ${b.hosts.length} referrers`;
+
+  thead.innerHTML = '<th></th><th>Referrer</th>' + periods.map(p => {
+    const cur = isCurrentPeriod(p, gran);
+    return `<th${cur ? ' class="in-progress" title="Período en curso — datos parciales"' : ''}>${formatPeriod(p, gran)}</th>`;
+  }).join('');
+
+  tbody.innerHTML = b.hosts.map(h => {
+    const ia = h.tipo === 'Buscador IA';
+    const color = WEB_TIPO_COLOR[h.tipo] || 'var(--text-muted-2)';
+    const vals = periods.map(p => h.vals[p] || 0);
+    const denom = periods.map(p => totPeriodo[p]);
+    return `<tr class="row-stage"><td><span class="wtipo" style="background:${color}" title="${h.tipo}"></span></td>` +
+           `<td>${ia ? '🤖 ' : ''}${h.host}<span class="wpath">${h.tipo}</span></td>` +
+           heatCells(vals, denom, false) + '</tr>';
+  }).join('');
+}
+
 function webRenderTable() {
   const gran = getGran();
   const periods = webPeriods();
@@ -1608,7 +1723,7 @@ function webRenderTable() {
     return `<th${cur ? ' class="in-progress" title="Período en curso — datos parciales"' : ''}>${formatPeriod(p, gran)}</th>`;
   }).join('');
 
-  const val = (p, sid) => wStageValue(webCell(p), sid);
+  const val = (p, sid) => webStageFiltrado(webCell(p), sid);
   // denominador del funnel del formulario: el tope real del form (no el click pagado,
   // que no es comparable entre países ni cubre el tráfico orgánico)
   const denom = periods.map(p => val(p, 'form_top'));
@@ -1623,7 +1738,7 @@ function webRenderTable() {
 
   const bloques = [
     { titulo: null, ids: tronco },
-    { titulo: 'Ramas opcionales — no todos pasan por aquí, su caída no es abandono', ids: ramas },
+    { titulo: 'Ramas opcionales', ids: ramas },
   ];
 
   for (const bloque of bloques) {

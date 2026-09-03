@@ -8,7 +8,7 @@ Cada granularidad viene YA agregada de BigQuery: las métricas son COUNT(DISTINC
 de visitantes y de nids, que NO se pueden sumar entre períodos.
 
 Usage:
-  python3 build_web_data.py clicks.json sessions.json leads.json rutas.json web_data.json
+  python3 build_web_data.py clicks.json sessions.json leads.json rutas.json referrers.json web_data.json
 """
 import json
 import sys
@@ -85,11 +85,12 @@ def zeros():
     return {sid: 0 for sid in STAGE_IDS}
 
 
-def main(clicks_path, sessions_path, leads_path, rutas_path, out_path):
+def main(clicks_path, sessions_path, leads_path, rutas_path, referrers_path, out_path):
     clicks = json.load(open(clicks_path))
     sessions = json.load(open(sessions_path))
     leads = json.load(open(leads_path))
     rutas = json.load(open(rutas_path))
+    referrers = json.load(open(referrers_path))
 
     # store[pais][gran][periodo] -> {"totals": {...}, "by_<dim>": {val: {...}}}
     store = {p: {g: defaultdict(lambda: {"totals": zeros(),
@@ -153,6 +154,25 @@ def main(clicks_path, sessions_path, leads_path, rutas_path, out_path):
                 },
             }
 
+    # --- sesiones por referrer (cosechas) ---
+    # ref[pais][gran] = {periods:[...], hosts:[{host,tipo,total,vals:{periodo:n}}]}
+    rf = {p: {} for p in PAISES}
+    for r in referrers:
+        pais, gran = r["pais"], r["gran"]
+        if pais not in rf:
+            continue
+        b = rf[pais].setdefault(gran, {"periods": set(), "hosts": {}})
+        b["periods"].add(r["periodo"])
+        h = b["hosts"].setdefault(r["host"], {"host": r["host"], "tipo": r["tipo"], "total": 0, "vals": {}})
+        n = int(r["sesiones"])
+        h["vals"][r["periodo"]] = h["vals"].get(r["periodo"], 0) + n
+        h["total"] += n
+    for pais in rf:
+        for gran, b in rf[pais].items():
+            b["periods"] = sorted(b["periods"])
+            b["hosts"] = sorted(b["hosts"].values(), key=lambda x: -x["total"])
+    out["referrers"] = rf
+
     # --- recorridos reales dentro del formulario (último período cerrado) ---
     rt = {p: {} for p in PAISES}
     for r in rutas:
@@ -184,7 +204,7 @@ def main(clicks_path, sessions_path, leads_path, rutas_path, out_path):
 
 
 if __name__ == "__main__":
-    if len(sys.argv) != 6:
+    if len(sys.argv) != 7:
         print(__doc__)
         sys.exit(1)
     main(*sys.argv[1:])

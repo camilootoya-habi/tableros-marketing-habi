@@ -525,10 +525,20 @@ jobs:
         run: |
           bq query --use_legacy_sql=false --format=json --max_rows=500000 < tablero-marketing/web_query_leads.sql > /tmp/tmweb_leads.json
 
+      - name: Query tablero-marketing/web — rutas (CO+MX)
+        if: always()
+        run: |
+          bq query --use_legacy_sql=false --format=json --max_rows=100000 < tablero-marketing/web_query_rutas.sql > /tmp/tmweb_rutas.json
+
+      - name: Query tablero-marketing/web — referrers (CO+MX)
+        if: always()
+        run: |
+          bq query --use_legacy_sql=false --format=json --max_rows=500000 < tablero-marketing/web_query_referrers.sql > /tmp/tmweb_ref.json
+
       - name: Build tablero-marketing/web_data.json
         if: always()
         run: |
-          python3 tablero-marketing/build_web_data.py /tmp/tmweb_clicks.json /tmp/tmweb_sessions.json /tmp/tmweb_leads.json tablero-marketing/web_data.json
+          python3 tablero-marketing/build_web_data.py /tmp/tmweb_clicks.json /tmp/tmweb_sessions.json /tmp/tmweb_leads.json /tmp/tmweb_rutas.json /tmp/tmweb_ref.json tablero-marketing/web_data.json
 
       - name: Auto-discovery — correr queries de tableros nuevos (líderes)
         if: always()
