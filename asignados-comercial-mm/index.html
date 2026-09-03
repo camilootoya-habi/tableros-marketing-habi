@@ -21,6 +21,15 @@
   *{margin:0;padding:0;box-sizing:border-box}
   body{font-family:'Segoe UI',system-ui,-apple-system,sans-serif;background:var(--bg);color:var(--text);padding:28px 24px 70px;font-size:14px}
   .wrap{max-width:1060px;margin:0 auto}
+  .hojas{display:flex;gap:6px;margin:14px 0 0;border-bottom:2px solid var(--border);padding-bottom:0}
+  .hoja-btn{background:none;border:none;border-bottom:2px solid transparent;margin-bottom:-2px;
+    color:var(--mut2);font-size:13.5px;font-weight:600;padding:8px 14px;cursor:pointer;font-family:inherit}
+  .hoja-btn:hover{color:var(--title)}
+  .hoja-btn.on{color:var(--mm);border-bottom-color:var(--mm)}
+  .hoja{display:none} .hoja.on{display:block}
+  .vacio{background:var(--card);border:1px dashed var(--border2);border-radius:8px;padding:44px 26px;
+    text-align:center;color:var(--mut3);margin-top:22px}
+  .vacio strong{display:block;font-size:15px;color:var(--mut2);margin-bottom:8px}
   .back-link{display:inline-flex;align-items:center;gap:6px;padding:6px 12px;background:var(--card);
     border:1px solid var(--border);border-radius:6px;color:var(--mut2);text-decoration:none;font-size:13px;margin-bottom:16px}
   .back-link:hover{color:var(--mm);border-color:var(--mm)}
@@ -97,10 +106,17 @@
 <div class="top">
   <div>
     <h1>¿Se gatilla la cláusula del 80%?</h1>
-    <div class="sub">Asignados a comercial de Market Maker · México · ciclo 29-jul → 25-ago 2026 · 4 ciclos comerciales miércoles→martes</div>
+    <div class="sub">Asignados a comercial de Market Maker · ciclo 29-jul → 25-ago 2026 · 4 ciclos comerciales miércoles→martes</div>
   </div>
   <button class="theme" id="tb" onclick="tg()">☀️</button>
 </div>
+
+<div class="hojas">
+  <button class="hoja-btn on" id="btn-mx" onclick="hoja('mx')">México</button>
+  <button class="hoja-btn"    id="btn-co" onclick="hoja('co')">Colombia</button>
+</div>
+
+<div class="hoja on" id="hoja-mx">
 
 <div class="verdict">
   <div class="q">Respuesta corta</div>
@@ -258,6 +274,64 @@ cierre terminaron recibiendo un comercial después:</p>
   perdido para este ciclo — y por la tendencia, probablemente perdido del todo.</p>
 </div>
 
+<h3 style="margin-top:26px">Los leads que GABI todavía tiene, y dónde están parados</h3>
+<p>Esta es la lista para revisar en la reunión: <strong>552 leads</strong> que marketing asignó desde el 1-jul,
+que GABI recibió, que ya pasaron el parámetro de 6 días, que <strong>siguen en manos de GABI hoy</strong> y que
+todavía no tienen asignación comercial. La mediana lleva <strong>15 días</strong> y el más viejo, 60.</p>
+
+<div class="g2">
+  <div class="panel">
+    <h3>Qué GABI los tiene</h3>
+    <div class="tw" style="margin-top:0;border:none"><table style="min-width:0"><tbody>
+      <tr class="tot"><td><code>gabi ibuyer</code> — Market Maker</td><td>531</td><td>96,2%</td></tr>
+      <tr><td><code>gabi inmobiliaria</code></td><td>21</td><td>3,8%</td></tr>
+    </tbody></table></div>
+    <div class="cap">El propietario del negocio en HubSpot es <code>juanquinones@habi.co</code> en los 531 y
+    <code>iagabi@habi.co</code> en los 21.</div>
+  </div>
+  <div class="panel">
+    <h3>Dónde están parados</h3>
+    <div class="tw" style="margin-top:0;border:none"><table style="min-width:0"><tbody>
+      <tr class="tot"><td>MM- Asignados / <strong>No gestionado</strong></td><td>449</td><td>81,3%</td></tr>
+      <tr><td>Sin ODN / Validaciones iniciales</td><td>64</td><td>11,6%</td></tr>
+      <tr><td>Inmo- Asignados / No gestionado</td><td>21</td><td>3,8%</td></tr>
+      <tr><td>Otras etapas</td><td>18</td><td>3,3%</td></tr>
+    </tbody></table></div>
+    <div class="cap">No es un problema de calificación: el <strong>72,5% califica para los dos productos</strong>
+    y el 21,4% para ibuyer.</div>
+  </div>
+</div>
+
+<div class="box warn">
+  <span class="l">La pregunta concreta para la reunión</span>
+  <p><strong>Cuatro de cada cinco están en la etapa “No gestionado” con macro-etapa “MM- Asignados”.</strong>
+  Es una contradicción interna del sistema: por un lado el registro los marca como asignados a Market Maker, por
+  otro no existe la fila de primera asignación comercial y el propietario del negocio sigue siendo GABI.</p>
+  <p>La pregunta es directa: <strong>¿por qué 531 leads llevan una mediana de 15 días en GABI iBuyer sin
+  liberarse, cuando el parámetro histórico es 6?</strong> Y si hay una razón, si se corrige o si es el nuevo
+  comportamiento esperado.</p>
+</div>
+
+<div class="box">
+  <span class="l">Definición de “atascado en GABI” — las cinco condiciones</span>
+  <p>Un lead cuenta como atascado solo si cumple las cinco:</p>
+  <ul style="margin-top:7px">
+    <li>Está en el indicador de asignados marketing del WBR.</li>
+    <li>GABI lo recibió: tiene fila con <code>tipo='gabi'</code> en el seguimiento.</li>
+    <li>No tiene fila de <code>Primer Asignación comercial</code> con <code>aplica_asignacion</code>.</li>
+    <li>Pasaron 6 días o más desde la asignación de marketing.</li>
+    <li><strong>Sigue en manos de GABI hoy</strong>: su <code>equipo_actual</code> es <code>gabi ibuyer</code> o
+    <code>gabi inmobiliaria</code>.</li>
+  </ul>
+  <p style="margin-top:8px">La quinta condición importa. Sin ella el query devuelve 562 leads, pero
+  <strong>10 de esos ya están con un comercial real</strong> —de inmobiliaria 1 y 2, inmo ciudades y
+  guadalajara—: cambiaron de propietario en HubSpot sin que se creara la fila de primera asignación comercial,
+  así que la tercera condición sola los marca atascados cuando no lo están. Quedan 552.</p>
+  <p>El query está en <code>query_atascados_gabi_mx.sql</code>. Trae el <code>hubspot_owner_id</code> del negocio
+  y el <code>propietario_actual</code> del seguimiento por separado, más una bandera
+  <code>owner_coincide</code> — en estos 552 coinciden los dos en el 100% de los casos.</p>
+</div>
+
 <h2><span class="num">4</span>Las bolsas: dónde quedaron los leads que no llegaron a MM</h2>
 <p>Seguí los 3.791 leads que marketing asignó en el ciclo hasta su primera asignación comercial. Los cinco
 destinos son excluyentes y suman la cohorte completa.</p>
@@ -398,12 +472,29 @@ insumo para trabajarlo</strong>, y la meta de cierres se le fijó asumiendo que 
   </div>
 </details>
 
+</div><!-- /hoja-mx -->
+
+<div class="hoja" id="hoja-co">
+  <div class="vacio">
+    <strong>Colombia — pendiente</strong>
+    El mismo análisis para CO todavía no está construido.<br>
+    Requiere las tablas equivalentes de asignación comercial de Colombia y sus propios ciclos comerciales.
+  </div>
+</div><!-- /hoja-co -->
+
 <footer>
   Datos de BigQuery al 03-sep-2026. Ciclo 29-jul → 25-ago 2026, cuatro ciclos comerciales de miércoles a martes.
 </footer>
 </div>
 
 <script>
+function hoja(id){
+  for(const k of ['mx','co']){
+    document.getElementById('hoja-'+k).classList.toggle('on', k===id);
+    document.getElementById('btn-'+k).classList.toggle('on', k===id);
+  }
+  if(id==='mx') render();   // Chart.js necesita el contenedor visible para medir
+}
 function tg(){const l=document.body.classList.toggle('light');
   localStorage.setItem('diag-theme',l?'light':'dark');document.getElementById('tb').textContent=l?'☀️':'🌙';render();}
 if(localStorage.getItem('diag-theme')==='dark'){document.body.classList.remove('light');document.getElementById('tb').textContent='🌙';}
