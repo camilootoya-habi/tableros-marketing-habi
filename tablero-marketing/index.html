@@ -520,13 +520,13 @@ body.light #sheet-web .wchip.country { background: #dbeafe; border-color: #3b82f
 
 <div class="sheet" id="sheet-traf" hidden>
   <div class="wcanal-bar">
-    <div class="wcanal-chips" id="webCanalChips">
+    <div class="wcanal-chips">
       <button class="wrbtn active" data-t="todos"    onclick="webSetCanalTipo('todos')">Todos</button>
       <button class="wrbtn"        data-t="pauta"    onclick="webSetCanalTipo('pauta')">Pauta</button>
       <button class="wrbtn"        data-t="organico" onclick="webSetCanalTipo('organico')">Orgánico</button>
       <button class="wrbtn"        data-t="directo"  onclick="webSetCanalTipo('directo')">Directo</button>
     </div>
-    <select class="granularity wcanal-sel" id="webCanalSel" onchange="webSetCanal(this.value)"></select>
+    <select class="granularity wcanal-sel" onchange="webSetCanal(this.value)"></select>
     <label class="wnuevas"><input type="checkbox" id="webSoloNuevas" onchange="renderWeb()"> Solo sesiones nuevas</label>
   </div>
 
@@ -550,6 +550,16 @@ body.light #sheet-web .wchip.country { background: #dbeafe; border-color: #3b82f
   <div id="webContent" hidden>
     <div class="wheader-row">
       <span id="webFilterIndicator"></span>
+    </div>
+
+    <div class="wcanal-bar">
+      <div class="wcanal-chips">
+        <button class="wrbtn active" data-t="todos"    onclick="webSetCanalTipo('todos')">Todos</button>
+        <button class="wrbtn"        data-t="pauta"    onclick="webSetCanalTipo('pauta')">Pauta</button>
+        <button class="wrbtn"        data-t="organico" onclick="webSetCanalTipo('organico')">Orgánico</button>
+        <button class="wrbtn"        data-t="directo"  onclick="webSetCanalTipo('directo')">Directo</button>
+      </div>
+      <select class="granularity wcanal-sel" onchange="webSetCanal(this.value)"></select>
     </div>
 
     <h2 class="section-heading" style="margin-top:0">Funnel WEB — tráfico a registro por período<span class="wblock-meta" id="webFunnelMeta"></span></h2>
@@ -1642,17 +1652,22 @@ function webCanalMatch(c) {
   if (WEB_CANAL.tipo === 'todos') return true;
   return webCanalTipo(c) === WEB_CANAL.tipo;
 }
+// las dos hojas (Tráfico y Funnel WEB) comparten el mismo filtro: cambiarlo en una
+// lo cambia en la otra, para que no se lean números de canales distintos por descuido
+function webSincronizarBarras() {
+  document.querySelectorAll('.wcanal-chips .wrbtn').forEach(b =>
+    b.classList.toggle('active', !WEB_CANAL.canal && b.dataset.t === WEB_CANAL.tipo));
+  document.querySelectorAll('.wcanal-sel').forEach(sel => { sel.value = WEB_CANAL.canal; });
+}
 function webSetCanalTipo(t) {
   WEB_CANAL.tipo = t; WEB_CANAL.canal = '';
-  document.querySelectorAll('#webCanalChips .wrbtn').forEach(b => b.classList.toggle('active', b.dataset.t === t));
+  webSincronizarBarras();
   renderWeb();
 }
 function webSetCanal(c) {
   WEB_CANAL.canal = c;
-  if (c) {
-    WEB_CANAL.tipo = 'todos';
-    document.querySelectorAll('#webCanalChips .wrbtn').forEach(b => b.classList.toggle('active', b.dataset.t === 'todos'));
-  }
+  if (c) WEB_CANAL.tipo = 'todos';
+  webSincronizarBarras();
   renderWeb();
 }
 // suma las etapas de todos los canales que pasan el filtro
@@ -1665,15 +1680,17 @@ function webStageFiltrado(cell, stageId) {
   return t;
 }
 function webLlenarSelectorCanal() {
-  const sel = document.getElementById('webCanalSel');
-  if (!sel) return;
+  const sels = document.querySelectorAll('.wcanal-sel');
+  if (!sels.length) return;
+  // las opciones salen de la hoja de Tráfico, que es el universo más amplio de canales
   const b = ((WEB_DATA.referrers || {})[webPais()] || {})[getGran()];
   if (!b) return;
   const tot = {};
   for (const c in b.canales) tot[c] = Object.values(b.canales[c]).reduce((a, v) => a + v, 0);
   const ord = Object.keys(tot).sort((a, b2) => tot[b2] - tot[a]);
-  sel.innerHTML = '<option value="">Todos los canales…</option>' +
-    ord.map(c => `<option value="${c}"${c === WEB_CANAL.canal ? ' selected' : ''}>${c} (${wFmtN(tot[c])})</option>`).join('');
+  const html = '<option value="">Todos los canales…</option>' +
+    ord.map(c => `<option value="${c}">${c} (${wFmtN(tot[c])})</option>`).join('');
+  sels.forEach(sel => { sel.innerHTML = html; sel.value = WEB_CANAL.canal; });
 }
 
 const WEB_TIPO_COLOR = { 'Buscador IA': 'var(--w-green)', 'Buscador': 'var(--accent)',
