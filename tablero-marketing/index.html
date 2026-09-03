@@ -220,11 +220,12 @@ body.light #sheet-web .wchip.country { background: #dbeafe; border-color: #3b82f
 #sheet-web #webRutasTable tbody td:nth-child(2) { position: static; min-width: 420px; max-width: 620px; font-weight: 400; color: var(--text); border-right: 1px solid var(--border); }
 #sheet-web #webRutasTable thead th:nth-child(2) { position: static; }
 #sheet-web #webRutasTable tbody td { text-align: right; }
-#sheet-web .wcanal-bar { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin: 0 0 12px; }
-#sheet-web .wcanal-chips { display: flex; gap: 6px; flex-wrap: wrap; }
-#sheet-web .wcanal-sel { min-width: 240px; padding: 6px 10px; font-size: 12px; }
-#sheet-web .wtipo { display: inline-block; width: 8px; height: 8px; border-radius: 50%; }
-#sheet-web .wpath { display: inline; font-family: ui-monospace, monospace; font-size: 10px;
+#sheet-traf .wnuevas { font-size: 12px; color: var(--text-muted-2); display: inline-flex; align-items: center; gap: 6px; cursor: pointer; }
+#sheet-traf .wcanal-bar, #sheet-web .wcanal-bar { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin: 0 0 12px; }
+#sheet-traf .wcanal-chips, #sheet-web .wcanal-chips { display: flex; gap: 6px; flex-wrap: wrap; }
+#sheet-traf .wcanal-sel, #sheet-web .wcanal-sel { min-width: 240px; padding: 6px 10px; font-size: 12px; }
+#sheet-web .wtipo, #sheet-traf .wtipo { display: inline-block; width: 8px; height: 8px; border-radius: 50%; }
+#sheet-web .wpath, #sheet-traf .wpath { display: inline; font-family: ui-monospace, monospace; font-size: 10px;
   color: var(--text-muted-3); font-weight: 400; margin-left: 8px; white-space: nowrap; }
 #sheet-web .wdef { background: var(--card); border: 1px solid var(--border); border-left: 3px solid var(--accent);
   border-radius: 10px; padding: 18px 22px; margin: 22px 0 8px; }
@@ -244,10 +245,10 @@ body.light #sheet-web .wchip.country { background: #dbeafe; border-color: #3b82f
   border-top: 1px solid var(--border); padding-top: 12px; margin: 0; }
 #sheet-web .wdef .wdef-note strong { color: var(--text); }
 #sheet-web .wrutas-filter { display: flex; gap: 6px; margin-bottom: 12px; flex-wrap: wrap; }
-#sheet-web .wrbtn { background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 7px 12px; cursor: pointer; font-size: 12px; color: var(--text-muted-2); transition: all 0.15s; }
+#sheet-web .wrbtn, #sheet-traf .wrbtn { background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 7px 12px; cursor: pointer; font-size: 12px; color: var(--text-muted-2); transition: all 0.15s; }
 #sheet-web .wrbtn:hover:not(.active) { border-color: var(--accent); color: var(--text-title); }
 #sheet-web .wrbtn.active { background: var(--accent); color: var(--accent-on); border-color: var(--accent); font-weight: 600; }
-#sheet-web .whint { font-size: 11px; color: var(--text-muted-2); margin-top: 8px; font-style: italic; }
+#sheet-web .whint, #sheet-traf .whint { font-size: 11px; color: var(--text-muted-2); margin-top: 8px; font-style: italic; }
 #sheet-web .filter-indicator { background: rgba(129, 140, 248, 0.15); border: 1px solid var(--accent); border-radius: 6px; padding: 4px 10px; font-size: 11px; color: var(--accent); font-family: ui-monospace, monospace; }
 #sheet-web .clear-filter-btn { background: transparent; border: 1px solid var(--border); border-radius: 6px; padding: 4px 10px; color: var(--text-muted-2); font-size: 11px; cursor: pointer; }
 #sheet-web .clear-filter-btn:hover { color: var(--text-title); border-color: var(--accent); }
@@ -266,6 +267,7 @@ body.light #sheet-web .wchip.country { background: #dbeafe; border-color: #3b82f
   <div class="tabnav">
     <button class="tab active" data-sheet="cal" onclick="goSheet('cal')">Calificación de leads</button>
     <button class="tab" data-sheet="asg" onclick="goSheet('asg')">Asignación de leads</button>
+    <button class="tab" data-sheet="traf" onclick="goSheet('traf')">Tráfico</button>
     <button class="tab" data-sheet="web" onclick="goSheet('web')">Funnel WEB</button>
   </div>
 </nav>
@@ -516,6 +518,30 @@ body.light #sheet-web .wchip.country { background: #dbeafe; border-color: #3b82f
   <button type="button" class="close-btn" onclick="this.closest('dialog').close()">Cerrar</button>
 </dialog>
 
+<div class="sheet" id="sheet-traf" hidden>
+  <div class="wcanal-bar">
+    <div class="wcanal-chips" id="webCanalChips">
+      <button class="wrbtn active" data-t="todos"    onclick="webSetCanalTipo('todos')">Todos</button>
+      <button class="wrbtn"        data-t="pauta"    onclick="webSetCanalTipo('pauta')">Pauta</button>
+      <button class="wrbtn"        data-t="organico" onclick="webSetCanalTipo('organico')">Orgánico</button>
+      <button class="wrbtn"        data-t="directo"  onclick="webSetCanalTipo('directo')">Directo</button>
+    </div>
+    <select class="granularity wcanal-sel" id="webCanalSel" onchange="webSetCanal(this.value)"></select>
+    <label class="wnuevas"><input type="checkbox" id="webSoloNuevas" onchange="renderWeb()"> Solo sesiones nuevas</label>
+  </div>
+
+  <h2 class="section-heading" style="margin-top:0">Sesiones por referrer<span class="wblock-meta" id="webRefMeta"></span></h2>
+  <div class="table-container">
+    <table id="webRefTable"><thead><tr><th></th><th>Referrer</th></tr></thead><tbody></tbody></table>
+  </div>
+  <div class="whint"><strong>Sesiones</strong>, no visitantes: incluye a quien vuelve. Una sesión se corta
+    tras <strong>30 min</strong> de inactividad (Segment no trae <code>session_id</code>). El referrer y el canal
+    son los del <strong>primer evento de cada sesión</strong>. Host normalizado (<code>www.</code>/<code>m.</code>/<code>l.</code>);
+    top 30 + <em>(otros referrers)</em>. 🤖 = buscador de IA (siempre visible, sin importar volumen).
+    <br>⚠️ <code>anonymous_id</code> es una <strong>cookie de navegador</strong>, no una persona: celular y
+    computador son dos visitantes, y borrar cookies crea uno nuevo.</div>
+</div>
+
 <div class="sheet" id="sheet-web" hidden>
   <div id="webBody">
     <div class="sheet-empty" id="webLoading">Cargando datos del funnel WEB…</div>
@@ -526,24 +552,7 @@ body.light #sheet-web .wchip.country { background: #dbeafe; border-color: #3b82f
       <span id="webFilterIndicator"></span>
     </div>
 
-    <h2 class="section-heading" style="margin-top:0">De dónde llega el tráfico — sesiones por referrer<span class="wblock-meta" id="webRefMeta"></span></h2>
-    <div class="table-container">
-      <table id="webRefTable"><thead><tr><th></th><th>Referrer</th></tr></thead><tbody></tbody></table>
-    </div>
-    <div class="whint">Visitantes <strong>nuevos</strong> por período (cosechas), según el referrer de su
-      <strong>primera</strong> sesión. Host normalizado (se unifican <code>www.</code>, <code>m.</code>, <code>l.</code>).
-      Top 30 hosts; el resto va en <em>(otros referrers)</em>. 🤖 marca buscadores de IA.</div>
-
-    <h2 class="section-heading">Funnel WEB — tráfico a registro por período<span class="wblock-meta" id="webFunnelMeta"></span></h2>
-    <div class="wcanal-bar">
-      <div class="wcanal-chips" id="webCanalChips">
-        <button class="wrbtn active" data-t="todos"     onclick="webSetCanalTipo('todos')">Todos</button>
-        <button class="wrbtn"        data-t="pauta"     onclick="webSetCanalTipo('pauta')">Pauta</button>
-        <button class="wrbtn"        data-t="organico"  onclick="webSetCanalTipo('organico')">Orgánico</button>
-        <button class="wrbtn"        data-t="directo"   onclick="webSetCanalTipo('directo')">Directo</button>
-      </div>
-      <select class="granularity wcanal-sel" id="webCanalSel" onchange="webSetCanal(this.value)"></select>
-    </div>
+    <h2 class="section-heading" style="margin-top:0">Funnel WEB — tráfico a registro por período<span class="wblock-meta" id="webFunnelMeta"></span></h2>
     <div class="table-container">
       <table id="webFunnelTable"><thead><tr><th></th><th>Etapa</th></tr></thead><tbody></tbody></table>
     </div>
@@ -1504,10 +1513,10 @@ function goSheet(name) {
   if (ctrls) ctrls.hidden = false;
   const fuentesCard = document.getElementById('filterBar');
   if (fuentesCard && fuentesCard.closest('.control-card')) {
-    fuentesCard.closest('.control-card').hidden = (name === 'web');
+    fuentesCard.closest('.control-card').hidden = (name === 'web' || name === 'traf');
   }
   if (name === 'asg') renderFlow();
-  if (name === 'web') loadWebSheet();
+  if (name === 'web' || name === 'traf') loadWebSheet();
   location.hash = name;
   window.scrollTo(0, 0);
 }
@@ -1658,13 +1667,11 @@ function webStageFiltrado(cell, stageId) {
 function webLlenarSelectorCanal() {
   const sel = document.getElementById('webCanalSel');
   if (!sel) return;
+  const b = ((WEB_DATA.referrers || {})[webPais()] || {})[getGran()];
+  if (!b) return;
   const tot = {};
-  const g = webGranData();
-  for (const p of g.periods) {
-    const m = (g.by_period[p] || {}).by_canal_plat || {};
-    for (const c in m) tot[c] = (tot[c] || 0) + (m[c].session || 0);
-  }
-  const ord = Object.keys(tot).sort((a, b) => tot[b] - tot[a]);
+  for (const c in b.canales) tot[c] = Object.values(b.canales[c]).reduce((a, v) => a + v, 0);
+  const ord = Object.keys(tot).sort((a, b2) => tot[b2] - tot[a]);
   sel.innerHTML = '<option value="">Todos los canales…</option>' +
     ord.map(c => `<option value="${c}"${c === WEB_CANAL.canal ? ' selected' : ''}>${c} (${wFmtN(tot[c])})</option>`).join('');
 }
@@ -1684,25 +1691,44 @@ function webRenderReferrers() {
   }
   const gran = getGran();
   const periods = b.periods;
-  const totPeriodo = {};
-  for (const p of periods) totPeriodo[p] = b.hosts.reduce((a, h) => a + (h.vals[p] || 0), 0);
+  const soloNuevas = (document.getElementById('webSoloNuevas') || {}).checked;
 
+  // valor de un host en un período, respetando el filtro de canal
+  const valor = (h, p) => {
+    if (soloNuevas) return h.nuevas[p] || 0;   // "nuevas" no se corta por canal
+    if (WEB_CANAL.tipo === 'todos' && !WEB_CANAL.canal) return h.vals[p] || 0;
+    let t = 0;
+    for (const c in h.porCanal) if (webCanalMatch(c)) t += h.porCanal[c][p] || 0;
+    return t;
+  };
+
+  const filas = b.hosts.map(h => ({ h, vals: periods.map(p => valor(h, p)) }))
+                       .filter(x => x.vals.some(v => v > 0))
+                       .sort((a, c) => c.vals.reduce((s, v) => s + v, 0) - a.vals.reduce((s, v) => s + v, 0));
+  const totPeriodo = periods.map((p, i) => filas.reduce((a, f) => a + f.vals[i], 0));
+  const granTotal = totPeriodo.reduce((a, v) => a + v, 0);
+
+  const fc = WEB_CANAL.canal ? ` · ${WEB_CANAL.canal}`
+           : WEB_CANAL.tipo !== 'todos' ? ` · solo ${WEB_CANAL.tipo}` : '';
   document.getElementById('webRefMeta').textContent =
-    ` · ${getCountry()} · ${GRAN_LABELS[gran]} · ${b.hosts.length} referrers`;
+    ` · ${getCountry()} · ${GRAN_LABELS[gran]}${fc} · ${fmt(granTotal)} ${soloNuevas ? 'sesiones nuevas' : 'sesiones'}`;
 
   thead.innerHTML = '<th></th><th>Referrer</th>' + periods.map(p => {
     const cur = isCurrentPeriod(p, gran);
     return `<th${cur ? ' class="in-progress" title="Período en curso — datos parciales"' : ''}>${formatPeriod(p, gran)}</th>`;
   }).join('');
 
-  tbody.innerHTML = b.hosts.map(h => {
+  if (!filas.length) {
+    tbody.innerHTML = '<tr><td colspan="3" style="text-align:center;padding:40px;color:var(--text-muted-2)">Ningún referrer con ese filtro</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = filas.map(({ h, vals }) => {
     const ia = h.tipo === 'Buscador IA';
     const color = WEB_TIPO_COLOR[h.tipo] || 'var(--text-muted-2)';
-    const vals = periods.map(p => h.vals[p] || 0);
-    const denom = periods.map(p => totPeriodo[p]);
     return `<tr class="row-stage"><td><span class="wtipo" style="background:${color}" title="${h.tipo}"></span></td>` +
            `<td>${ia ? '🤖 ' : ''}${h.host}<span class="wpath">${h.tipo}</span></td>` +
-           heatCells(vals, denom, false) + '</tr>';
+           heatCells(vals, totPeriodo, false) + '</tr>';
   }).join('');
 }
 
@@ -1859,6 +1885,7 @@ Promise.all([
   const h = (location.hash || '').replace('#', '');
   if (h === 'asg') goSheet('asg');
   else if (h === 'web') goSheet('web');
+  else if (h === 'traf') goSheet('traf');
 }).catch(() => {
   document.querySelector('#funnelTable tbody').innerHTML = '<tr><td colspan="2" style="padding:40px;color:#f87171;text-align:center">No se encontró data.json</td></tr>';
 });

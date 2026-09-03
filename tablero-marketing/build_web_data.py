@@ -154,19 +154,25 @@ def main(clicks_path, sessions_path, leads_path, rutas_path, referrers_path, out
                 },
             }
 
-    # --- sesiones por referrer (cosechas) ---
-    # ref[pais][gran] = {periods:[...], hosts:[{host,tipo,total,vals:{periodo:n}}]}
+    # --- TRÁFICO: sesiones por referrer y canal (no cosechas: incluye recurrentes) ---
+    # rf[pais][gran] = {periods, hosts:[{host,tipo,total,vals,nuevas,porCanal}], canales:{...}}
     rf = {p: {} for p in PAISES}
     for r in referrers:
         pais, gran = r["pais"], r["gran"]
         if pais not in rf:
             continue
-        b = rf[pais].setdefault(gran, {"periods": set(), "hosts": {}})
-        b["periods"].add(r["periodo"])
-        h = b["hosts"].setdefault(r["host"], {"host": r["host"], "tipo": r["tipo"], "total": 0, "vals": {}})
-        n = int(r["sesiones"])
-        h["vals"][r["periodo"]] = h["vals"].get(r["periodo"], 0) + n
-        h["total"] += n
+        b = rf[pais].setdefault(gran, {"periods": set(), "hosts": {}, "canales": {}})
+        per, ses, nue, canal = r["periodo"], int(r["sesiones"]), int(r["sesiones_nuevas"]), r["canal"]
+        b["periods"].add(per)
+        h = b["hosts"].setdefault(r["host"], {"host": r["host"], "tipo": r["tipo"], "total": 0,
+                                              "vals": {}, "nuevas": {}, "porCanal": {}})
+        h["vals"][per] = h["vals"].get(per, 0) + ses
+        h["nuevas"][per] = h["nuevas"].get(per, 0) + nue
+        h["total"] += ses
+        h["porCanal"].setdefault(canal, {})
+        h["porCanal"][canal][per] = h["porCanal"][canal].get(per, 0) + ses
+        b["canales"].setdefault(canal, {})
+        b["canales"][canal][per] = b["canales"][canal].get(per, 0) + ses
     for pais in rf:
         for gran, b in rf[pais].items():
             b["periods"] = sorted(b["periods"])
