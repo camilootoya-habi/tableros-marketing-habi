@@ -497,17 +497,6 @@ jobs:
         run: |
           python3 prioridad-mm/build_data.py /tmp/prioridad-mm-raw.json prioridad-mm/data.json
 
-      - name: Query BigQuery — funnel-fuentes (CO)
-        if: always()
-        run: |
-          bq query --use_legacy_sql=false --format=json --max_rows=100000 \
-            < funnel-fuentes/query.sql > /tmp/funnel-fuentes-raw.json
-
-      - name: Build funnel-fuentes/data.json
-        if: always()
-        run: |
-          python3 scripts/funnel_fuentes_to_json.py /tmp/funnel-fuentes-raw.json funnel-fuentes/data.json
-
       - name: Query BigQuery — calificados-mm-inmo (CO + MX)
         if: always()
         run: |
@@ -519,25 +508,27 @@ jobs:
         run: |
           python3 calificados-mm-inmo/build_data.py /tmp/calificados-mm-inmo-raw.json calificados-mm-inmo/data.json
 
-      - name: Query funnel-web-mx — clicks (MX)
+      # Hoja "Funnel WEB" de tablero-marketing (migrada desde funnel-web-mx, 2026-09-02).
+      # Know-how de los puentes de datos: docs/marketing/puentes-datos-web.md
+      - name: Query tablero-marketing/web — clicks (MX)
         if: always()
         run: |
-          bq query --use_legacy_sql=false --format=json --max_rows=200000 < funnel-web-mx/query_clicks.sql > /tmp/wfmx_clicks.json
+          bq query --use_legacy_sql=false --format=json --max_rows=200000 < tablero-marketing/web_query_clicks.sql > /tmp/tmweb_clicks.json
 
-      - name: Query funnel-web-mx — sessions (MX)
+      - name: Query tablero-marketing/web — sessions (MX)
         if: always()
         run: |
-          bq query --use_legacy_sql=false --format=json --max_rows=500000 < funnel-web-mx/query_sessions.sql > /tmp/wfmx_sessions.json
+          bq query --use_legacy_sql=false --format=json --max_rows=500000 < tablero-marketing/web_query_sessions.sql > /tmp/tmweb_sessions.json
 
-      - name: Query funnel-web-mx — leads (MX)
+      - name: Query tablero-marketing/web — leads (MX)
         if: always()
         run: |
-          bq query --use_legacy_sql=false --format=json --max_rows=500000 < funnel-web-mx/query_leads.sql > /tmp/wfmx_leads.json
+          bq query --use_legacy_sql=false --format=json --max_rows=500000 < tablero-marketing/web_query_leads.sql > /tmp/tmweb_leads.json
 
-      - name: Build funnel-web-mx/data.json
+      - name: Build tablero-marketing/web_data.json
         if: always()
         run: |
-          python3 funnel-web-mx/build_data.py /tmp/wfmx_clicks.json /tmp/wfmx_sessions.json /tmp/wfmx_leads.json funnel-web-mx/data.json
+          python3 tablero-marketing/build_web_data.py /tmp/tmweb_clicks.json /tmp/tmweb_sessions.json /tmp/tmweb_leads.json tablero-marketing/web_data.json
 
       - name: Auto-discovery — correr queries de tableros nuevos (líderes)
         if: always()

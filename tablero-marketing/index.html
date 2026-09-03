@@ -170,6 +170,88 @@
   .tab[disabled] { opacity: .5; cursor: not-allowed; }
   .sheet-empty { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 40px;
     text-align: center; color: var(--text-muted-2); font-size: 14px; line-height: 1.6; }
+
+/* ===== Hoja "Funnel WEB" (migrada desde funnel-web-mx, 2026-09-02) =====
+   Todo namespaced bajo #sheet-web. Las clases .tab/.tabs NO se reutilizan
+   Los tokens de color de funnel-web-mx se alias-ean a los del tablero. */
+#sheet-web {
+  --w-card2: #0b1220; --w-amber: #f59e0b; --w-red: #ef4444; --w-green: #22c55e;
+  --w-drop-low-bg: #1e293b; --w-drop-mid-bg: #78350f; --w-drop-high-bg: #7f1d1d; --w-drop-gain-bg: #14532d;
+}
+body.light #sheet-web {
+  --w-card2: #f8fafc; --w-amber: #b45309; --w-red: #dc2626; --w-green: #16a34a;
+  --w-drop-low-bg: #f1f5f9; --w-drop-mid-bg: #fef3c7; --w-drop-high-bg: #fee2e2; --w-drop-gain-bg: #dcfce7;
+}
+
+#sheet-web .wheader-row { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; flex-wrap: wrap; }
+#sheet-web .wchip { background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 6px 12px; font-size: 12px; color: var(--text); }
+#sheet-web .wchip.country { background: #1e3a8a; border-color: #3b82f6; color: #f8fafc; }
+body.light #sheet-web .wchip.country { background: #dbeafe; border-color: #3b82f6; color: #1e3a8a; }
+#sheet-web .wchip.fresh { font-family: ui-monospace, monospace; }
+
+#sheet-web .week-row { display: flex; gap: 6px; margin-bottom: 24px; flex-wrap: wrap; }
+#sheet-web .week-pill { background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 8px 12px; cursor: pointer; font-size: 13px; color: var(--text); transition: all 0.15s; }
+#sheet-web .week-pill.active { background: var(--accent); color: var(--accent-on); border-color: var(--accent); font-weight: 600; }
+#sheet-web .week-pill:hover:not(.active) { border-color: var(--accent); }
+
+#sheet-web .wblock { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 20px; margin-bottom: 20px; }
+#sheet-web .wblock-title { margin: 0 0 16px; font-size: 16px; font-weight: 600; display: flex; align-items: center; gap: 8px; color: var(--text-title); }
+#sheet-web .wblock-meta { color: var(--text-muted-2); font-size: 12px; font-weight: 400; }
+
+#sheet-web .stage-row { display: grid; grid-template-columns: 250px 1fr 110px 90px; gap: 12px; align-items: center; padding: 9px 6px; border-bottom: 1px solid var(--border); cursor: pointer; transition: background 0.1s; }
+#sheet-web .stage-row:last-child { border-bottom: none; }
+#sheet-web .stage-row:hover { background: rgba(129, 140, 248, 0.05); }
+#sheet-web .stage-row.active { background: rgba(129, 140, 248, 0.15); }
+#sheet-web .stage-label { font-size: 13px; color: var(--text); }
+#sheet-web .stage-bar-wrap { background: var(--w-card2); border-radius: 4px; height: 18px; overflow: hidden; position: relative; }
+#sheet-web .stage-bar { background: linear-gradient(90deg, var(--accent), #6366f1); height: 100%; transition: width 0.4s; }
+#sheet-web .stage-value { font-family: ui-monospace, monospace; font-size: 13px; text-align: right; color: var(--text-title); }
+#sheet-web .stage-drop { font-size: 11px; padding: 3px 8px; border-radius: 4px; text-align: center; font-family: ui-monospace, monospace; }
+#sheet-web .drop-low { background: var(--w-drop-low-bg); color: var(--text-muted-2); }
+#sheet-web .drop-mid { background: var(--w-drop-mid-bg); color: var(--w-amber); }
+#sheet-web .drop-high { background: var(--w-drop-high-bg); color: var(--w-red); }
+#sheet-web .drop-gain { background: var(--w-drop-gain-bg); color: var(--w-green); }
+
+
+#sheet-web .wcountry { display: inline-flex; gap: 4px; background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 3px; }
+#sheet-web .wcbtn { background: transparent; border: none; border-radius: 13px; padding: 5px 14px; cursor: pointer; font-size: 12px; color: var(--text-muted-2); transition: all 0.15s; }
+#sheet-web .wcbtn:hover:not(.active) { color: var(--text-title); }
+#sheet-web .wcbtn.active { background: var(--accent); color: var(--accent-on); font-weight: 600; }
+#sheet-web #webRutasTable tbody td:nth-child(2) { position: static; min-width: 420px; max-width: 620px; font-weight: 400; color: var(--text); border-right: 1px solid var(--border); }
+#sheet-web #webRutasTable thead th:nth-child(2) { position: static; }
+#sheet-web #webRutasTable tbody td { text-align: right; }
+#sheet-web .wpath { display: block; font-family: ui-monospace, monospace; font-size: 10px;
+  color: var(--text-muted-3); font-weight: 400; margin-top: 2px; }
+#sheet-web .wdef { background: var(--card); border: 1px solid var(--border); border-left: 3px solid var(--accent);
+  border-radius: 10px; padding: 18px 22px; margin: 22px 0 8px; }
+#sheet-web .wdef h3 { margin: 0 0 12px; font-size: 14px; font-weight: 600; color: var(--text-title);
+  display: flex; align-items: center; gap: 8px; }
+#sheet-web .wdef .wdef-lead { font-size: 13px; line-height: 1.6; color: var(--text); margin: 0 0 14px; }
+#sheet-web .wdef .wdef-chain { display: flex; flex-wrap: wrap; align-items: center; gap: 6px;
+  font-family: ui-monospace, monospace; font-size: 11.5px; margin: 0 0 16px; }
+#sheet-web .wdef .wdef-chain span.k { background: var(--w-card2); border: 1px solid var(--border);
+  border-radius: 5px; padding: 4px 9px; color: var(--accent); white-space: nowrap; }
+#sheet-web .wdef .wdef-chain span.a { color: var(--text-muted-2); }
+#sheet-web .wdef ol { margin: 0 0 14px; padding-left: 20px; }
+#sheet-web .wdef li { font-size: 12.5px; line-height: 1.65; color: var(--text); margin-bottom: 5px; }
+#sheet-web .wdef code { background: var(--w-card2); border-radius: 4px; padding: 1px 5px;
+  font-size: 11.5px; color: var(--text-title); }
+#sheet-web .wdef .wdef-note { font-size: 11.5px; line-height: 1.6; color: var(--text-muted-2);
+  border-top: 1px solid var(--border); padding-top: 12px; margin: 0; }
+#sheet-web .wdef .wdef-note strong { color: var(--text); }
+#sheet-web .wrutas-filter { display: flex; gap: 6px; margin-bottom: 12px; flex-wrap: wrap; }
+#sheet-web .wrbtn { background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 7px 12px; cursor: pointer; font-size: 12px; color: var(--text-muted-2); transition: all 0.15s; }
+#sheet-web .wrbtn:hover:not(.active) { border-color: var(--accent); color: var(--text-title); }
+#sheet-web .wrbtn.active { background: var(--accent); color: var(--accent-on); border-color: var(--accent); font-weight: 600; }
+#sheet-web .whint { font-size: 11px; color: var(--text-muted-2); margin-top: 8px; font-style: italic; }
+#sheet-web .filter-indicator { background: rgba(129, 140, 248, 0.15); border: 1px solid var(--accent); border-radius: 6px; padding: 4px 10px; font-size: 11px; color: var(--accent); font-family: ui-monospace, monospace; }
+#sheet-web .clear-filter-btn { background: transparent; border: 1px solid var(--border); border-radius: 6px; padding: 4px 10px; color: var(--text-muted-2); font-size: 11px; cursor: pointer; }
+#sheet-web .clear-filter-btn:hover { color: var(--text-title); border-color: var(--accent); }
+
+@media (max-width: 900px) {
+    #sheet-web .stage-row { grid-template-columns: 1fr 90px 70px; }
+  #sheet-web .stage-bar-wrap { display: none; }
+}
 </style>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 </head>
@@ -180,6 +262,7 @@
   <div class="tabnav">
     <button class="tab active" data-sheet="cal" onclick="goSheet('cal')">Calificación de leads</button>
     <button class="tab" data-sheet="asg" onclick="goSheet('asg')">Asignación de leads</button>
+    <button class="tab" data-sheet="web" onclick="goSheet('web')">Funnel WEB</button>
   </div>
 </nav>
 
@@ -326,6 +409,175 @@
     <span class="fpartial">Las cajas con asterisco maduran</span>: a 14 días el paso GABI → comercial humano
     va en ~73% y a 28 días llega a ~93%.
   </p>
+</div>
+
+<dialog id="helpWebRutas" class="help-dialog">
+  <h3>Recorridos dentro del formulario</h3>
+  <p>Cada fila es una <strong>secuencia distinta de pasos</strong> seguida por visitantes únicos dentro del formulario, ordenada por cuánta gente la recorrió.</p>
+  <p>Se arma con los eventos de página de Segment ordenados por timestamp. Se <strong>colapsan las repeticiones consecutivas</strong> del mismo paso (recargas), pero se <strong>conservan los retrocesos</strong>: si alguien vuelve al inicio desde contacto, aparece como <code>Contacto → Inicio</code>.</p>
+  <p>Se muestra el <strong>último período cerrado</strong> de la temporalidad seleccionada, no el que está en curso: un período a medias corta los recorridos por la mitad e inventa abandonos que no existen.</p>
+  <p>⚠️ El orden de los pasos <strong>no es el mismo en los dos países</strong> (medido sobre recorridos reales el 2026-09-02). En ambos, sin embargo, <strong>Contacto va a mitad del formulario</strong>, no al final: después quedan 2-3 pasos más antes de <code>FIN</code>.</p>
+  <p>Las rutas que terminan en <code>FIN</code> son registros completados.</p>
+  <button type="button" class="close-btn" onclick="this.closest('dialog').close()">Cerrar</button>
+</dialog>
+
+<dialog id="helpWebEtapa" class="help-dialog">
+  <h3>Funnel WEB — etapas</h3>
+  <p><strong>La tabla es de cosechas.</strong> Cada visitante se asigna a <strong>una sola columna</strong>: el período de su <strong>primera sesión</strong> en el sitio. Las etapas cuentan si esa persona las alcanzó <strong>alguna vez</strong>, sin importar cuándo.</p>
+  <p>Por eso el % <strong>sí es conversión directa</strong>: todas las filas de una columna son exactamente la misma gente. Antes se contaban únicos por período, y alguien que entraba el domingo y llegaba a Contacto el lunes sumaba en dos columnas distintas.</p>
+  <p>Dos consecuencias: <strong>Sesión Segment</strong> pasa a ser <em>visitantes nuevos</em> del período (un recurrente se queda en su cosecha original), y las <strong>cosechas recientes maduran</strong> — alguien de hoy todavía puede convertir, así que el período en curso siempre se ve peor de lo que terminará. La conversión es rápida (~16 min de punta a punta), así que madura en horas.</p>
+  <p>Todas las filas salen de <code>{co,mx}_segment_profiles.pages</code> y cuentan <code>COUNT(DISTINCT anonymous_id)</code>. Como son únicos, <strong>no se pueden sumar entre períodos</strong>: cada temporalidad se calcula por separado en BigQuery.</p>
+  <p>⚠️ Los pasos <strong>no son estrictamente secuenciales</strong>. El formulario tiene ramas opcionales, así que una etapa puede tener más visitantes que la anterior. Lee cada fila contra <strong>Inicio del formulario</strong> (el denominador), no contra la fila de arriba.</p>
+  <p>La atribución de canal y device se fija con el <strong>primer evento</strong> del visitante en la ventana, para que no cambie al cambiar de temporalidad.</p>
+  <button type="button" class="close-btn" onclick="this.closest('dialog').close()">Cerrar</button>
+</dialog>
+
+<dialog id="helpWeb_session" class="help-dialog">
+  <h3>Sesión Segment</h3>
+  <p>Visitantes únicos que dispararon <strong>cualquier</strong> evento de página en el sitio durante el período.</p>
+  <p>Filtra por dominio: <code>habi.co</code> en Colombia, <code>habi.mx</code> en México. No exige haber entrado al formulario — es el universo de tráfico que Segment alcanza a ver.</p>
+  <p style="opacity:.7">Métrica: <code>COUNT(DISTINCT anonymous_id)</code> sobre <code>segment_profiles.pages</code>. El % es sobre <strong>Inicio del formulario</strong> del mismo período.</p>
+  <button type="button" class="close-btn" onclick="this.closest('dialog').close()">Cerrar</button>
+</dialog>
+
+<dialog id="helpWeb_form_top" class="help-dialog">
+  <h3>Inicio del formulario</h3>
+  <p>Visitantes que abrieron el <strong>primer paso</strong> del formulario de registro de inmueble.</p>
+  <p>La URL <strong>no es la misma en los dos países</strong>:</p><ul><li>Colombia: <code>/formulario-inmueble/direccion</code></li><li>México: <code>/formulario-inmueble/inicio</code></li></ul><p>Es el <strong>denominador</strong> de todos los porcentajes de la tabla: es el punto donde el usuario declara intención de registrar un inmueble.</p>
+  <p style="opacity:.7">Métrica: <code>COUNT(DISTINCT anonymous_id)</code> sobre <code>segment_profiles.pages</code>. El % es sobre <strong>Inicio del formulario</strong> del mismo período.</p>
+  <button type="button" class="close-btn" onclick="this.closest('dialog').close()">Cerrar</button>
+</dialog>
+
+<dialog id="helpWeb_zona" class="help-dialog">
+  <h3>Inmuebles / zona</h3>
+  <p>Paso donde se muestran inmuebles de la zona.</p>
+  <p><code>/formulario-inmueble/inmuebles-zona</code> en ambos países.</p>
+  <p style="opacity:.7">Métrica: <code>COUNT(DISTINCT anonymous_id)</code> sobre <code>segment_profiles.pages</code>. El % es sobre <strong>Inicio del formulario</strong> del mismo período.</p>
+  <button type="button" class="close-btn" onclick="this.closest('dialog').close()">Cerrar</button>
+</dialog>
+
+<dialog id="helpWeb_confirmar_ubicacion" class="help-dialog">
+  <h3>Confirmar ubicación</h3>
+  <p>Paso de confirmación de la ubicación del inmueble en el mapa.</p>
+  <p>⚠️ La URL lleva sufijo en México:</p><ul><li>Colombia: <code>/formulario-inmueble/confirmar-ubicacion</code></li><li>México: <code>/formulario-inmueble/confirmar-ubicacion-mx</code></li></ul>
+  <p style="opacity:.7">Métrica: <code>COUNT(DISTINCT anonymous_id)</code> sobre <code>segment_profiles.pages</code>. El % es sobre <strong>Inicio del formulario</strong> del mismo período.</p>
+  <button type="button" class="close-btn" onclick="this.closest('dialog').close()">Cerrar</button>
+</dialog>
+
+<dialog id="helpWeb_datos_inmueble" class="help-dialog">
+  <h3>Datos del inmueble</h3>
+  <p>Paso de captura de los datos básicos del inmueble.</p>
+  <p><code>/formulario-inmueble/datos-inmueble</code> en ambos países.</p>
+  <p style="opacity:.7">Métrica: <code>COUNT(DISTINCT anonymous_id)</code> sobre <code>segment_profiles.pages</code>. El % es sobre <strong>Inicio del formulario</strong> del mismo período.</p>
+  <button type="button" class="close-btn" onclick="this.closest('dialog').close()">Cerrar</button>
+</dialog>
+
+<dialog id="helpWeb_caracteristicas" class="help-dialog">
+  <h3>Características</h3>
+  <p>Paso de captura de características (área, habitaciones, baños…).</p>
+  <p><code>/formulario-inmueble/caracteristicas</code> en ambos países.</p>
+  <p style="opacity:.7">Métrica: <code>COUNT(DISTINCT anonymous_id)</code> sobre <code>segment_profiles.pages</code>. El % es sobre <strong>Inicio del formulario</strong> del mismo período.</p>
+  <button type="button" class="close-btn" onclick="this.closest('dialog').close()">Cerrar</button>
+</dialog>
+
+<dialog id="helpWeb_ultimos_detalles" class="help-dialog">
+  <h3>Últimos detalles</h3>
+  <p>Paso final de detalles antes del contacto.</p>
+  <p><code>/formulario-inmueble/ultimos-detalles</code> en ambos países.</p>
+  <p style="opacity:.7">Métrica: <code>COUNT(DISTINCT anonymous_id)</code> sobre <code>segment_profiles.pages</code>. El % es sobre <strong>Inicio del formulario</strong> del mismo período.</p>
+  <button type="button" class="close-btn" onclick="this.closest('dialog').close()">Cerrar</button>
+</dialog>
+
+<dialog id="helpWeb_sugerencias" class="help-dialog">
+  <h3>Sugerencias</h3>
+  <p>Paso de sugerencias de propiedades. <strong>Es una rama opcional</strong>: no todos los usuarios pasan por acá.</p>
+  <p>Colombia: <code>/formulario-inmueble/sugerencias</code></p><p>México agrupa <strong>dos</strong> URLs: <code>/sugerencias-de-propiedades</code> y <code>/editar-sugerencias</code>.</p><p>Por ser opcional, la etapa siguiente (Contacto) suele tener <strong>más</strong> visitantes que esta. No es un error del dato.</p>
+  <p style="opacity:.7">Métrica: <code>COUNT(DISTINCT anonymous_id)</code> sobre <code>segment_profiles.pages</code>. El % es sobre <strong>Inicio del formulario</strong> del mismo período.</p>
+  <button type="button" class="close-btn" onclick="this.closest('dialog').close()">Cerrar</button>
+</dialog>
+
+<dialog id="helpWeb_contacto" class="help-dialog">
+  <h3>Contacto</h3>
+  <p>Paso donde el usuario entrega su teléfono. <strong>Es el paso anterior al OTP.</strong></p>
+  <p><code>/formulario-inmueble/contacto</code> en ambos países.</p><p>La transición <strong>Contacto → Form completado</strong> es donde vive la verificación por SMS (OTP), activa al 100% entre el 2026-07-14 y el 2026-08-20. Es la única transición de la tabla donde numerador y denominador son la misma gente medida por el mismo sistema, así que es la lectura limpia del efecto del OTP.</p>
+  <p style="opacity:.7">Métrica: <code>COUNT(DISTINCT anonymous_id)</code> sobre <code>segment_profiles.pages</code>. El % es sobre <strong>Inicio del formulario</strong> del mismo período.</p>
+  <button type="button" class="close-btn" onclick="this.closest('dialog').close()">Cerrar</button>
+</dialog>
+
+<dialog id="helpWeb_felicitaciones" class="help-dialog">
+  <h3>Form completado</h3>
+  <p>Visitantes que llegaron a la pantalla final del formulario: <strong>registro completado</strong>.</p>
+  <p><code>/formulario-inmueble/felicitaciones</code> en ambos países.</p><p>⚠️ No confundir con “lead creado en backbone”: el negocio se crea <strong>antes</strong> del OTP, así que contar deals da ~99% sobre Contacto y esconde por completo la fricción del formulario. Esta etapa es el registro terminado desde la perspectiva del usuario.</p>
+  <p style="opacity:.7">Métrica: <code>COUNT(DISTINCT anonymous_id)</code> sobre <code>segment_profiles.pages</code>. El % es sobre <strong>Inicio del formulario</strong> del mismo período.</p>
+  <button type="button" class="close-btn" onclick="this.closest('dialog').close()">Cerrar</button>
+</dialog>
+
+<div class="sheet" id="sheet-web" hidden>
+  <div id="webBody">
+    <div class="sheet-empty" id="webLoading">Cargando datos del funnel WEB…</div>
+  </div>
+
+  <div id="webContent" hidden>
+    <div class="wheader-row">
+      <span id="webFilterIndicator"></span>
+    </div>
+
+    <h2 class="section-heading" style="margin-top:0">Funnel WEB — tráfico a registro por período<span class="wblock-meta" id="webFunnelMeta"></span></h2>
+    <div class="table-container">
+      <table id="webFunnelTable"><thead><tr><th></th><th>Etapa</th></tr></thead><tbody></tbody></table>
+    </div>
+    <div class="whint"><strong>Cosechas:</strong> cada columna agrupa a los visitantes por el período de su <strong>primera sesión</strong>, y las etapas cuentan si la alcanzaron alguna vez — así el % es conversión directa de la misma gente. Últimos 20 períodos de la temporalidad seleccionada.
+      Todas las filas salen de <code>{co,mx}_segment_profiles.pages</code> y cuentan
+      <strong>visitantes únicos</strong>. El % es sobre <strong>Inicio del formulario</strong>.
+      ⚠️ Los pasos no son estrictamente secuenciales: el formulario tiene ramas, así que una
+      etapa puede superar a la anterior.</div>
+
+    <div class="wdef">
+      <h3>📌 Qué contamos como «crea lead»</h3>
+      <p class="wdef-lead">
+        El lead <strong>no se crea al entrar a Contacto</strong>: se crea al <strong>enviar el formulario
+        de contacto y superar el OTP</strong>, unos ~110 segundos después de validar el código
+        (medido 2026-09-02). Por eso quien se queda en <code>Contacto</code> casi nunca genera lead.
+      </p>
+      <div class="wdef-chain">
+        <span class="k">anonymous_id</span><span class="a">→</span>
+        <span class="k">select_content.backbone_uuid</span><span class="a">→</span>
+        <span class="k">web_global_api_business.deal_uuid</span><span class="a">→</span>
+        <span class="k">nid</span>
+      </div>
+      <p class="wdef-lead" style="margin-bottom:8px">Un visitante cuenta como <strong>«crea lead»</strong> si se cumplen las cuatro condiciones:</p>
+      <ol>
+        <li>Emitió un <code>select_content</code> con <code>backbone_uuid</code> <strong>durante los días de su recorrido</strong>.</li>
+        <li>Ese uuid resuelve a un <code>deal_uuid</code> en <code>top_funnel.web_global_api_business</code>.</li>
+        <li>Ese negocio existe en la tabla del país y tiene <code>nid</code> no nulo (ya sincronizó a HubSpot).</li>
+        <li>El negocio fue <strong>creado dentro de la ventana del recorrido</strong> — no basta con que la persona tenga un negocio de antes.</li>
+      </ol>
+      <p class="wdef-note">
+        <strong>Límites.</strong> Es una cadena de <em>inner joins</em>: si algún eslabón falta, el lead existe
+        pero no lo contamos — la métrica <strong>subestima, nunca infla</strong>. Exige <code>nid</code>, así que un
+        negocio recién creado que aún no sincroniza a HubSpot no aparece (afecta sobre todo al período más
+        reciente). Y cuenta por visitante-día: dos negocios el mismo día cuentan como uno.
+        <br><br>
+        <strong>Control de sanidad:</strong> el recorrido «solo <code>Inicio</code>» marca <strong>0,0%</strong>.
+        Si la definición estuviera inflada, los falsos positivos aparecerían justo ahí.
+      </p>
+    </div>
+
+    <h2 class="section-heading">Recorridos dentro del formulario<span class="wblock-meta" id="webRutasMeta"></span></h2>
+    <div class="wrutas-filter" id="webRutasFilter">
+      <button class="wrbtn active" data-f="todos"  onclick="webSetRutaFiltro('todos')">Todos los recorridos</button>
+      <button class="wrbtn"        data-f="fin"    onclick="webSetRutaFiltro('fin')">Solo los que llegan a FIN</button>
+      <button class="wrbtn"        data-f="lead"   onclick="webSetRutaFiltro('lead')">Solo los que crean lead</button>
+    </div>
+    <div class="table-container">
+      <table id="webRutasTable"><thead><tr><th></th><th>Recorrido</th></tr></thead><tbody></tbody></table>
+    </div>
+    <div class="whint">Secuencia real de pasos de cada visitante único, de mayor a menor tráfico.
+      Se colapsan recargas del mismo paso, pero <strong>se conservan los retrocesos</strong>
+      (<code>Contacto → Inicio</code> es un recorrido distinto de <code>Inicio → Contacto</code>).
+      Top 40 del <strong>último período cerrado</strong> — el período en curso daría recorridos truncados.</div>
+
+  </div>
 </div>
 
 <dialog id="helpCosecha" class="help-dialog">
@@ -578,6 +830,7 @@ function onCountryChange() {
   document.getElementById('countryTitle').textContent = getCountry();
   document.getElementById('chkAll').checked = true;
   buildFuenteCheckboxes();
+  webOnCountryChanged();   // los clusters de la hoja WEB no son comparables entre países
   onUpdate();
 }
 
@@ -988,9 +1241,11 @@ function onUpdate() {
     clearAntifunnelCharts();
     clearQualityCharts();
     renderFlow();
+    if (WEB_DATA) renderWeb();
     return;
   }
   renderFlow();   // la hoja de Asignación también depende de país y fuentes
+  if (WEB_DATA) renderWeb();   // la hoja WEB depende de país y temporalidad
   const g = getGran();
   let rows = aggregate(g, country, sel);
   if (g !== 'Y') rows = rows.slice(-SHOW_COUNT);
@@ -1222,10 +1477,249 @@ function goSheet(name) {
   // la temporalidad no aplica al flujo (ventana fija de 14 días); país y fuentes sí
   const gran = document.getElementById('granSelect');
   if (gran && gran.closest('.control-card')) gran.closest('.control-card').hidden = (name === 'asg');
+  // la hoja WEB usa país + temporalidad globales, pero NO el filtro de fuentes
+  // (por definición es solo fuente WEB)
+  const ctrls = document.querySelector('.controls');
+  if (ctrls) ctrls.hidden = false;
+  const fuentesCard = document.getElementById('filterBar');
+  if (fuentesCard && fuentesCard.closest('.control-card')) {
+    fuentesCard.closest('.control-card').hidden = (name === 'web');
+  }
   if (name === 'asg') renderFlow();
+  if (name === 'web') loadWebSheet();
   location.hash = name;
   window.scrollTo(0, 0);
 }
+
+// ===== hoja Funnel WEB — carga lazy (data.json propio, ~4 MB) =====
+let WEB_DATA = null;
+let WEB_LOADING = false;
+
+function loadWebSheet() {
+  if (WEB_DATA || WEB_LOADING) { renderWeb(); return; }
+  WEB_LOADING = true;
+  fetch('web_data.json')
+    .then(r => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+    .then(d => { WEB_DATA = d; WEB_LOADING = false; renderWeb(); })
+    .catch(err => {
+      WEB_LOADING = false;
+      document.getElementById('webBody').innerHTML =
+        '<div class="sheet-empty" style="color:#f87171">No se pudo cargar web_data.json (' + err.message + ')</div>';
+    });
+}
+
+// --- estado y helpers de la hoja WEB (portados de funnel-web-mx) ---
+const WEB_STATE = { stageId: null, clusterDim: null, clusterValue: null };
+
+function wFmtN(n) {
+  if (n === null || n === undefined) return '—';
+  if (n >= 1e6) return (n / 1e6).toFixed(1) + 'M';
+  if (n >= 1e3) return (n / 1e3).toFixed(1) + 'k';
+  return String(n);
+}
+function wFmtAgo(iso) {
+  const t = new Date(iso).getTime();
+  if (isNaN(t)) return iso;
+  const diffMin = Math.round((Date.now() - t) / 60000);
+  if (diffMin < 60) return `hace ${diffMin}m`;
+  const h = Math.round(diffMin / 60);
+  if (h < 48) return `hace ${h}h`;
+  return `hace ${Math.round(h / 24)}d`;
+}
+function wFmtRange(weekStart) {
+  const d = new Date(weekStart + 'T00:00:00Z');
+  const end = new Date(d.getTime() + 6 * 86400000);
+  const f = dt => String(dt.getUTCDate()).padStart(2, '0') + '/' + String(dt.getUTCMonth() + 1).padStart(2, '0');
+  return `${f(d)} – ${f(end)}`;
+}
+function wDropClass(pct) {
+  if (pct === null) return 'drop-low';
+  if (pct < 0) return 'drop-gain';
+  if (pct < 30) return 'drop-low';
+  if (pct < 70) return 'drop-mid';
+  return 'drop-high';
+}
+// país y temporalidad salen de los controles GLOBALES del tablero (no duplicamos selector)
+function webPais() { return getCountry() === 'Colombia' ? 'CO' : 'MX'; }
+function webGranData() {
+  if (!WEB_DATA) return { periods: [], by_period: {} };
+  const c = WEB_DATA.by_country[webPais()];
+  return (c && c.by_gran[getGran()]) || { periods: [], by_period: {} };
+}
+function webPeriods() { return webGranData().periods; }
+function webCell(p) { return webGranData().by_period[p]; }
+// los cortes geográficos solo existen en la granularidad `geo_gran` (ver build_web_data.py)
+function webGeoAvailable() { return getGran() === (WEB_DATA && WEB_DATA.geo_gran); }
+function wStageValue(weekData, stageId) {
+  if (!weekData) return 0;
+  if (WEB_STATE.clusterDim && WEB_STATE.clusterValue) {
+    const cluster = weekData['by_' + WEB_STATE.clusterDim] || {};
+    return (cluster[WEB_STATE.clusterValue] || {})[stageId] || 0;
+  }
+  return weekData.totals[stageId] || 0;
+}
+function webOnCountryChanged() {
+  WEB_STATE.clusterDim = null; WEB_STATE.clusterValue = null;
+}
+function webClearFilter() {
+  WEB_STATE.clusterDim = null;
+  WEB_STATE.clusterValue = null;
+  renderWeb();
+}
+
+function renderWeb() {
+  if (!WEB_DATA) return;
+  const ld = document.getElementById('webLoading');
+  const ct = document.getElementById('webContent');
+  if (ld) ld.hidden = true;
+  if (!ct) return;          // el contenedor pudo ser reemplazado por el mensaje de error
+  ct.hidden = false;
+  webRenderHeader();
+  webRenderTable();
+  webRenderRutas();
+  document.querySelectorAll('#sheet-web .table-container').forEach(c => { c.scrollLeft = c.scrollWidth; });
+}
+
+function webRenderHeader() {
+  document.getElementById('webFunnelMeta').textContent =
+    ` · ${getCountry()} · ${GRAN_LABELS[getGran()]}`;
+  const fi = document.getElementById('webFilterIndicator');
+  fi.innerHTML = WEB_STATE.clusterValue
+    ? `<span class="filter-indicator">Filtro: ${WEB_STATE.clusterDim} = ${WEB_STATE.clusterValue}</span> <button class="clear-filter-btn" onclick="webClearFilter()">Limpiar</button>`
+    : '';
+}
+
+// Tabla de tendencia: filas = etapas, columnas = últimos 20 períodos de la
+// temporalidad global. Mismo patrón que "Calificación de leads — cosechas".
+function webRenderTable() {
+  const gran = getGran();
+  const periods = webPeriods();
+  const thead = document.querySelector('#webFunnelTable thead tr');
+  const tbody = document.querySelector('#webFunnelTable tbody');
+
+  if (!periods.length) {
+    thead.innerHTML = '<th></th><th>Etapa</th>';
+    tbody.innerHTML = '<tr><td colspan="3" style="text-align:center;padding:40px;color:var(--text-muted-2)">Sin datos para esta combinación</td></tr>';
+    return;
+  }
+
+  thead.innerHTML = `<th></th><th>Etapa<button type="button" class="help-btn" onclick="document.getElementById('helpWebEtapa').showModal()" aria-label="Ayuda">?</button></th>` + periods.map(p => {
+    const cur = isCurrentPeriod(p, gran);
+    return `<th${cur ? ' class="in-progress" title="Período en curso — datos parciales"' : ''}>${formatPeriod(p, gran)}</th>`;
+  }).join('');
+
+  const val = (p, sid) => wStageValue(webCell(p), sid);
+  // denominador del funnel del formulario: el tope real del form (no el click pagado,
+  // que no es comparable entre países ni cubre el tráfico orgánico)
+  const denom = periods.map(p => val(p, 'form_top'));
+
+  let html = '';
+  // TRONCO (pasos por los que pasa >=85% de quien completa) y RAMAS opcionales, en el
+  // orden real medido por país. Ver build_web_data.py.
+  const pais = webPais();
+  const tronco = (WEB_DATA.tronco || WEB_TABLE_STAGES).filter(id => WEB_TABLE_STAGES.includes(id));
+  const ramas = ((WEB_DATA.ramas || {})[pais] || []).filter(id => WEB_TABLE_STAGES.includes(id));
+  const byId = id => WEB_DATA.stages.find(x => x.id === id);
+
+  const bloques = [
+    { titulo: null, ids: tronco },
+    { titulo: 'Ramas opcionales — no todos pasan por aquí, su caída no es abandono', ids: ramas },
+  ];
+
+  for (const bloque of bloques) {
+    if (!bloque.ids.length) continue;
+    if (bloque.titulo) {
+      html += `<tr class="row-section"><td class="section-title" colspan="2">${bloque.titulo}</td>` +
+              `<td class="section-fill" colspan="${periods.length}"></td></tr>`;
+    }
+  for (const st of bloque.ids.map(byId).filter(Boolean)) {
+    const vals = periods.map(p => val(p, st.id));
+    const supported = !WEB_STATE.clusterDim || st.supports.includes(WEB_STATE.clusterDim);
+    const dim = (WEB_STATE.clusterDim && WEB_GEO_DIMS.has(WEB_STATE.clusterDim) && !webGeoAvailable());
+    const muted = (!supported || dim) ? ' style="opacity:.4"' : '';
+
+    const help = helpCell('helpWeb_' + st.id);
+    const ruta = ((WEB_DATA.paths || {})[pais] || {})[st.id];
+    const etiqueta = st.label + (ruta ? `<span class="wpath">${ruta}</span>` : '');
+    if (st.id === 'session' || st.id === 'form_top') {
+      // arriba del formulario no hay denominador honesto → solo volumen
+      html += `<tr class="row-total"${muted}>${help}<td>${etiqueta}</td>` +
+              vals.map(v => `<td>${fmt(v)}</td>`).join('') + '</tr>';
+    } else {
+      html += `<tr class="row-stage"${muted}>${help}<td>${etiqueta}</td>${heatCells(vals, denom, false)}</tr>`;
+    }
+  }
+  }
+  tbody.innerHTML = html;
+}
+
+const WEB_GEO_DIMS = new Set(['ciudad', 'zona_grande', 'zona_mediana']);
+
+// Recorridos reales: tabla ordenada por tráfico, del último período CERRADO.
+let WEB_RUTA_FILTRO = 'todos';
+function webSetRutaFiltro(f) {
+  WEB_RUTA_FILTRO = f;
+  document.querySelectorAll('#webRutasFilter .wrbtn').forEach(b => b.classList.toggle('active', b.dataset.f === f));
+  webRenderRutas();
+}
+
+function webRenderRutas() {
+  const thead = document.querySelector('#webRutasTable thead tr');
+  const tbody = document.querySelector('#webRutasTable tbody');
+  const meta  = document.getElementById('webRutasMeta');
+  const b = ((WEB_DATA.rutas || {})[webPais()] || {})[getGran()];
+
+  if (!b || !b.filas.length) {
+    meta.textContent = '';
+    thead.innerHTML = '<th></th><th>Recorrido</th>';
+    tbody.innerHTML = '<tr><td colspan="3" style="text-align:center;padding:40px;color:var(--text-muted-2)">Sin recorridos para esta temporalidad</td></tr>';
+    return;
+  }
+
+  // el filtro cambia QUÉ rutas se muestran y contra qué total se calcula el %
+  const F = WEB_RUTA_FILTRO;
+  const filas = b.filas.filter(f => F === 'fin' ? f.fin : F === 'lead' ? f.lead > 0 : true)
+                       .sort((a, c) => F === 'lead' ? c.lead - a.lead : c.n - a.n);
+  const total = F === 'fin' ? (b.total_fin || 0) : F === 'lead' ? (b.total_lead || 0) : b.total;
+  const etiqueta = F === 'fin' ? 'llegan a FIN' : F === 'lead' ? 'crean lead' : 'visitantes';
+
+  meta.textContent = ` · ${formatPeriod(b.periodo, getGran())} · ${fmt(total)} ${etiqueta}` +
+    (F !== 'todos' ? ` de ${fmt(b.total)} (${(total / b.total * 100).toFixed(1)}%)` : '');
+
+  thead.innerHTML = `<th></th><th>Recorrido<button type="button" class="help-btn" onclick="document.getElementById('helpWebRutas').showModal()" aria-label="Ayuda">?</button></th>` +
+    '<th>Pasos</th><th>Visitantes</th><th>Crean lead</th><th>% que crea lead</th><th>% del total</th><th>Acum.</th>';
+
+  if (!filas.length) {
+    tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:40px;color:var(--text-muted-2)">Ningún recorrido cumple el filtro en este período</td></tr>';
+    return;
+  }
+
+  let acum = 0;
+  tbody.innerHTML = filas.map(f => {
+    const base = F === 'lead' ? f.lead : f.n;
+    const pct = total > 0 ? base / total * 100 : 0;
+    acum += pct;
+    const tasaLead = f.n > 0 ? f.lead / f.n * 100 : 0;
+    const ruta = f.fin
+      ? f.ruta.replace(/FIN$/, '<strong style="color:var(--w-green)">FIN</strong>')
+      : f.ruta;
+    return `<tr class="row-stage">${helpCell('helpWebRutas')}` +
+           `<td style="white-space:normal;line-height:1.5">${ruta}</td>` +
+           `<td>${f.pasos}</td><td>${fmt(f.n)}</td><td>${fmt(f.lead)}</td>` +
+           `<td><span class="p" style="color:${tasaLead >= 50 ? 'var(--w-green)' : 'var(--text-muted-2)'}">${tasaLead.toFixed(1)}%</span></td>` +
+           `<td><span class="p" style="color:var(--accent)">${pct.toFixed(2)}%</span></td>` +
+           `<td><span class="p">${acum.toFixed(1)}%</span></td></tr>`;
+  }).join('');
+}
+
+// La TABLA muestra solo las etapas que vienen de {co,mx}_segment_profiles.pages:
+// misma unidad (anonymous_id único) y mismo sistema de medición en todas las filas.
+// `click` viene del reporte de pauta y lead/calificado/asignado de la base de negocio
+// (nid) — se siguen calculando y viven en el JSON (los usan los clusters y la capa OTP),
+// pero mezclarlos como filas de un mismo funnel hace que no sean comparables.
+const WEB_TABLE_STAGES = ['session', 'form_top', 'zona', 'confirmar_ubicacion', 'datos_inmueble',
+  'caracteristicas', 'ultimos_detalles', 'sugerencias', 'contacto', 'felicitaciones'];
+
 
 // Init
 Promise.all([
@@ -1249,6 +1743,7 @@ Promise.all([
   onUpdate();
   const h = (location.hash || '').replace('#', '');
   if (h === 'asg') goSheet('asg');
+  else if (h === 'web') goSheet('web');
 }).catch(() => {
   document.querySelector('#funnelTable tbody').innerHTML = '<tr><td colspan="2" style="padding:40px;color:#f87171;text-align:center">No se encontró data.json</td></tr>';
 });
