@@ -231,17 +231,53 @@ body.light #sheet-web .wchip.country { background: #dbeafe; border-color: #3b82f
 #sheet-otp .otp-kv b { font-family: ui-monospace, monospace; color: var(--text-title); }
 #sheet-otp .otp-intro { font-size: 13px; line-height: 1.65; color: var(--text); max-width: 860px; margin: 0 0 6px; }
 #sheet-otp #otpConvMeta { display: block; font-size: 12px; color: var(--text-muted-2); margin-bottom: 10px; }
-#sheet-otp .otp-exp { background: var(--card); border: 1px solid var(--border); border-left: 3px solid var(--accent); border-radius: 10px; padding: 18px 22px; }
-#sheet-otp .otp-exp-q { margin-bottom: 16px; }
-#sheet-otp .otp-exp-lbl { font-size: 12px; font-weight: 600; color: var(--text-title); margin-bottom: 8px; }
-#sheet-otp .otp-exp-lbl span { font-weight: 400; color: var(--text-muted-3); font-family: ui-monospace, monospace; margin-left: 8px; }
-#sheet-otp .otp-exp-q code { display: block; background: var(--w-card2); border-radius: 6px; padding: 10px 12px; font-size: 11.5px; line-height: 1.5; color: var(--text); overflow-x: auto; }
-#sheet-otp .otp-exp-q code b { color: var(--w-amber); }
-#sheet-otp .otp-exp-q p { font-size: 12.5px; line-height: 1.6; color: var(--text); margin: 10px 0 0; }
-#sheet-otp .otp-exp-note { font-size: 12.5px; line-height: 1.65; color: var(--text-muted-2); border-top: 1px solid var(--border); padding-top: 14px; margin: 16px 0 0; }
-#sheet-otp .otp-exp-note strong { color: var(--text); }
-#sheet-otp .otp-exp .fila-a td { color: var(--text-muted-2); }
-#sheet-otp .otp-exp .fila-b td { font-weight: 600; }
+#sheet-otp .otp-arg { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 4px 26px 22px; }
+#sheet-otp .paso { display: grid; grid-template-columns: 30px 1fr; gap: 18px; padding: 22px 0; border-bottom: 1px solid var(--border); }
+#sheet-otp .paso:last-child { border-bottom: none; }
+#sheet-otp .paso-n { font-family: ui-monospace, monospace; font-size: 12px; font-weight: 700; color: var(--accent);
+  border: 1px solid var(--accent); border-radius: 50%; width: 26px; height: 26px; display: flex;
+  align-items: center; justify-content: center; margin-top: 2px; }
+#sheet-otp .paso h4 { margin: 0 0 10px; font-size: 15px; font-weight: 600; color: var(--text-title); }
+#sheet-otp .paso p { font-size: 13px; line-height: 1.65; color: var(--text); margin: 0 0 12px; max-width: 780px; }
+#sheet-otp .paso p:last-child { margin-bottom: 0; }
+#sheet-otp .paso code { background: var(--w-card2); border-radius: 4px; padding: 1px 5px; font-size: 11.5px; }
+#sheet-otp .paso code.sql { display: block; padding: 10px 12px; margin-bottom: 14px; overflow-x: auto; line-height: 1.5; }
+#sheet-otp .paso code.sql b { color: var(--w-amber); }
+#sheet-otp .paso .conclusion { color: var(--text-muted-2); }
+#sheet-otp .paso .prueba { background: var(--w-card2); border-left: 2px solid var(--accent); border-radius: 0 6px 6px 0; padding: 12px 14px; }
+#sheet-otp .paso .prueba b { color: var(--accent); }
+#sheet-otp .paso .cierre { color: var(--text-muted-2); font-style: italic; border-top: 1px solid var(--border); padding-top: 12px; }
+#sheet-otp .paso .nota-mecanismo { font-size: 12px; color: var(--text-muted-2); border-top: 1px solid var(--border); padding-top: 12px; }
+#sheet-otp .paso .nota-mecanismo b { color: var(--text); }
+
+#sheet-otp .grupos { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 12px; margin-bottom: 14px; }
+#sheet-otp .grupo { border: 1px solid var(--border); border-radius: 8px; padding: 13px 15px; }
+#sheet-otp .grupo.tratado { border-color: var(--accent); }
+#sheet-otp .grupo.control { border-color: var(--w-amber); }
+#sheet-otp .grupo-t { font-size: 12px; font-weight: 600; margin-bottom: 6px; }
+#sheet-otp .grupo.tratado .grupo-t { color: var(--accent); }
+#sheet-otp .grupo.control .grupo-t { color: var(--w-amber); }
+#sheet-otp .grupo p { font-size: 12.5px; margin: 0; }
+
+/* la cadena multiplicativa: el elemento que hace visible el argumento */
+#sheet-otp .cadena { display: grid; gap: 10px; margin-bottom: 14px; }
+#sheet-otp .cad-fila { display: grid; grid-template-columns: 86px 1fr 18px 1fr 18px 100px; gap: 10px; align-items: stretch; }
+#sheet-otp .cad-brazo { display: flex; align-items: center; font-size: 12px; font-weight: 600; color: var(--text-muted-2); }
+#sheet-otp .cad-op { display: flex; align-items: center; justify-content: center; font-family: ui-monospace, monospace; color: var(--text-muted-3); }
+#sheet-otp .cad-term { background: var(--w-card2); border: 1px solid var(--border); border-radius: 7px; padding: 9px 12px; }
+#sheet-otp .cad-term .k { display: block; font-size: 10.5px; color: var(--text-muted-2); text-transform: uppercase; letter-spacing: .04em; }
+#sheet-otp .cad-term .v { font-family: ui-monospace, monospace; font-size: 17px; color: var(--text-title); }
+#sheet-otp .cad-term.res { border-color: var(--border-strong); }
+#sheet-otp .cad-fila.con .cad-term.tocado { border-color: var(--w-amber); }
+#sheet-otp .cad-fila.con .cad-term.tocado .v { color: var(--w-amber); }
+#sheet-otp .cad-fila.con .cad-term.res .v { color: var(--w-red); }
+#sheet-otp .cad-delta { grid-column: 1 / -1; text-align: right; font-family: ui-monospace, monospace; font-size: 13px;
+  color: var(--w-red); border-top: 1px dashed var(--border-strong); padding-top: 9px; }
+#sheet-otp .cad-delta span { color: var(--text-muted-2); font-family: inherit; margin-right: 8px; }
+@media (max-width: 720px) {
+  #sheet-otp .cad-fila { grid-template-columns: 1fr; }
+  #sheet-otp .cad-op { display: none; }
+}
 #sheet-otp .otp-panaderia { border-left-color: var(--w-amber); }
 #sheet-otp .otp-pan { margin: 0 0 16px; padding-left: 20px; }
 #sheet-otp .otp-pan li { font-size: 13px; line-height: 1.7; color: var(--text); margin-bottom: 6px; }
@@ -723,38 +759,78 @@ body.light #sheet-web .wchip.country { background: #dbeafe; border-color: #3b82f
     de cualquier comparación. Últimos 30 días.</div>
 
 
-  <h2 class="section-heading">Qué midió EXP-011 y qué pasa al alinear el denominador</h2>
-  <p class="otp-intro">El experimento que llevó al rollout (<code>EXP-011</code>, repo
-    <code>product-sparring</code>) concluyó que el OTP <strong>sube la calificación</strong>. Replicamos su
-    medición exacta y da lo mismo que publicó. Pero el resultado depende por completo de cómo se define
-    el denominador.</p>
+  <h2 class="section-heading">Cómo se midió el impacto del OTP, y por qué el número engaña</h2>
 
-  <div class="otp-exp">
-    <div class="otp-exp-q">
-      <div class="otp-exp-lbl">Lo que mide su query <span>EXP-011.sql · línea 174</span></div>
-      <code>SAFE_DIVIDE(COUNTIF(flag_calificado = 1 AND flag_otp = 0), <b>COUNTIF(flag_otp = 0)</b>)</code>
-      <p>Ese denominador son <strong>todos</strong> los que pisaron <code>/contacto</code> sin el evento
-        <code>otp_request_sent</code> — hayan enviado el formulario o no. El brazo con OTP, en cambio, solo
-        puede contener a quienes <strong>sí enviaron</strong>, porque el evento se dispara al enviar.</p>
-    </div>
-    <div class="table-container">
-      <table id="otpExpTable"><thead><tr><th>País</th><th>Medición</th><th>Sin OTP</th><th>Con OTP</th><th>Diferencia</th></tr></thead><tbody></tbody></table>
-    </div>
-    <p class="otp-exp-note">
-      <strong>El efecto se desvanece al poner los dos brazos en la misma línea de partida.</strong>
-      Lo que EXP-011 leyó como «el OTP mejora la calificación» es, en su mayor parte, el efecto de
-      <em>haber enviado el formulario</em> — que predice calificar mejor con OTP o sin él.
-      <br><br>
-      <strong>Salvedad honesta:</strong> para condicionar «haber enviado» usamos como proxy «tiene lead
-      creado», y en el brazo tratado el OTP <em>influye</em> en si hay lead. Es condicionar sobre una
-      variable posterior al tratamiento, con su propio sesgo. Por eso esto <strong>no prueba que el efecto
-      sea cero</strong>: prueba que el número es <strong>muy sensible a la definición del denominador</strong>,
-      lo cual ya basta para no sostener una decisión sobre él.
-      <br><br>
-      <strong>Qué hacer:</strong> con la <strong>bandera de asignación</strong> el A/B que corre hoy al 50%
-      se vuelve concluyente. La conclusión de EXP-011 no era descabellada — la señal disponible no daba
-      para tanto.
-    </p>
+  <div class="otp-arg">
+
+    <section class="paso">
+      <div class="paso-n">1</div>
+      <div class="paso-cuerpo">
+        <h4>Qué midió el equipo</h4>
+        <p>El experimento que llevó al rollout (<code>EXP-011</code>) comparó, entre quienes llegan a la
+          pantalla de contacto, <strong>qué porcentaje termina calificando</strong> — con OTP contra sin OTP.</p>
+        <code class="sql">SAFE_DIVIDE(COUNTIF(flag_calificado = 1 AND flag_otp = 0), <b>COUNTIF(flag_otp = 0)</b>)</code>
+        <div class="table-container">
+          <table id="otpExpTable"><thead><tr><th>País</th><th>Sin OTP</th><th>Con OTP</th><th>Diferencia</th></tr></thead><tbody></tbody></table>
+        </div>
+        <p class="conclusion">→ La conclusión fue: <strong>el OTP mejora la calificación</strong>, así que se
+          llevó al 100% el 14 de julio.</p>
+      </div>
+    </section>
+
+    <section class="paso">
+      <div class="paso-n">2</div>
+      <div class="paso-cuerpo">
+        <h4>El error: los dos grupos no son comparables</h4>
+        <p>El OTP <strong>solo se dispara al enviar el formulario</strong>. Y la única señal disponible es
+          el evento <code>otp_request_sent</code>. Eso parte la población en dos grupos que no arrancan
+          del mismo punto:</p>
+        <div class="grupos">
+          <div class="grupo tratado">
+            <div class="grupo-t">Grupo «con OTP»</div>
+            <p>Solo puede contener a quienes <strong>enviaron</strong> el formulario. Si no enviaste, el
+              evento nunca existió.</p>
+          </div>
+          <div class="grupo control">
+            <div class="grupo-t">Grupo «sin OTP»</div>
+            <p>Todos los demás: los asignados al control <strong>y también</strong> los que llegaron a la
+              pantalla y <strong>nunca escribieron nada</strong>.</p>
+          </div>
+        </div>
+        <p class="prueba"><b>La prueba:</b> durante el rollout al 100% (14-jul → 19-ago) no existía brazo
+          de control. Aun así aparecen <strong>3.737 personas «sin OTP»</strong> en Colombia — y
+          <strong>ninguna vio el modal del OTP</strong>, contra el 99,98% del otro grupo. No son un
+          control: son gente que no envió el formulario.</p>
+        <p>Comparar sus porcentajes es comparar «los que enviaron» contra «los que enviaron más los que
+          no». El segundo grupo arrastra un lastre que el primero no tiene, y por eso sale peor.</p>
+      </div>
+    </section>
+
+    <section class="paso">
+      <div class="paso-n">3</div>
+      <div class="paso-cuerpo">
+        <h4>Cómo se mide el impacto real</h4>
+        <p>El tramo tiene <strong>dos pasos encadenados</strong>, y el OTP solo toca el segundo:</p>
+        <div class="cadena" id="otpCadena"></div>
+        <p class="nota-mecanismo"><b>Por qué la tasa de envío es la misma en ambos:</b> el OTP aparece
+          <em>después</em> de darle enviar, así que no puede cambiar cuánta gente le da enviar. Es un
+          argumento de mecanismo, no una medición — la tasa de envío sí varía en el tiempo por otras
+          razones (81,2% antes del OTP, 76,5% durante el apagado en CO).</p>
+      </div>
+    </section>
+
+    <section class="paso">
+      <div class="paso-n">4</div>
+      <div class="paso-cuerpo">
+        <h4>Qué falta para cerrarlo</h4>
+        <p>Hoy corre un A/B al 50%. Con la <strong>bandera de asignación</strong> del lado de producto
+          —qué usuarios cayeron en el brazo con OTP, hayan enviado o no— la comparación pasa a ser válida
+          de inmediato y se puede responder la única pregunta que queda abierta:
+          <strong>¿la mejor calidad del lead verificado compensa el ~12% de envíos que se pierden?</strong></p>
+        <p class="cierre">La conclusión de EXP-011 no era descabellada. La señal disponible no daba para tanto.</p>
+      </div>
+    </section>
+
   </div>
 </div>
 
@@ -1965,32 +2041,57 @@ function otpRenderConv() {
 // Comparación [A] como la mide EXP-011 vs [B] alineando denominadores.
 // [A] calificados / TODOS los de /contacto  → así lo mide su query
 // [B] calificados / los que tienen lead     → ambos brazos condicionados a haber enviado
+// [1] la tabla como la midió EXP-011, y [3] la cadena multiplicativa.
+// Los números salen del dato, no están escritos a mano, para que sigan vivos con el cron.
 function otpRenderExp(ab) {
   const tbody = document.querySelector('#otpExpTable tbody');
-  if (!tbody) return;
-  let html = '';
-  for (const pais of ['CO', 'MX']) {
-    const b = (ab[pais] || {})['A/B v1'];
-    if (!b || !b.con || !b.sin) continue;
-    const pct = (n, d) => d ? n / d * 100 : 0;
-    const filas = [
-      ['fila-a', 'Como la mide EXP-011', pct(b.sin.calif, b.sin.contacto), pct(b.con.calif, b.con.contacto),
-       `denominador = todos los de /contacto (${fmt(b.sin.contacto)} vs ${fmt(b.con.contacto)})`],
-      ['fila-b', 'Alineando denominadores', pct(b.sin.calif, b.sin.lead), pct(b.con.calif, b.con.lead),
-       `denominador = solo los que enviaron (${fmt(b.sin.lead)} vs ${fmt(b.con.lead)})`],
-    ];
-    filas.forEach(([cls, lbl, vs, vc, nota], k) => {
-      const dif = vc - vs;
-      const color = Math.abs(dif) < 1.5 ? 'var(--text-muted-2)' : 'var(--w-green)';
-      html += `<tr class="row-stage ${cls}">` +
-        (k === 0 ? `<td rowspan="2"><strong>${pais === 'CO' ? 'Colombia' : 'México'}</strong></td>` : '') +
-        `<td>${lbl}<span class="wpath">${nota}</span></td>` +
-        `<td>${vs.toFixed(1)}%</td><td>${vc.toFixed(1)}%</td>` +
-        `<td style="color:${color};font-family:ui-monospace,monospace">${dif >= 0 ? '+' : ''}${dif.toFixed(1)}pp</td></tr>`;
-    });
+  if (tbody) {
+    let html = '';
+    for (const pais of ['CO', 'MX']) {
+      const b = (ab[pais] || {})['A/B v1'];
+      if (!b || !b.con || !b.sin) continue;
+      const vs = b.sin.calif / b.sin.contacto * 100, vc = b.con.calif / b.con.contacto * 100;
+      html += `<tr class="row-stage"><td><strong>${pais === 'CO' ? 'Colombia' : 'México'}</strong></td>` +
+              `<td>${vs.toFixed(1)}%</td><td>${vc.toFixed(1)}%</td>` +
+              `<td style="color:var(--w-green);font-family:ui-monospace,monospace">+${(vc - vs).toFixed(1)}pp</td></tr>`;
+    }
+    tbody.innerHTML = html;
   }
-  tbody.innerHTML = html;
+
+  const cad = document.getElementById('otpCadena');
+  if (!cad) return;
+  const pais = webPais();
+  const pre = (ab[pais] || {})['sin OTP'];           // antes del OTP: todos control
+  const roll = (ab[pais] || {})['rollout 100%'];     // brazo tratado: denominador = los que enviaron
+  if (!pre || !pre.sin || !roll || !roll.con) { cad.innerHTML = ''; return; }
+
+  // sin OTP, enviar el formulario ⇒ lead. Así que contacto→lead ES la tasa de envío.
+  const envio = pre.sin.lead / pre.sin.contacto * 100;
+  // con OTP, el denominador ya son los que enviaron. Así que esto ES la tasa de validación.
+  const valida = roll.con.lead / roll.con.contacto * 100;
+  const sinOtp = envio, conOtp = envio * valida / 100;
+
+  const term = (k, v, cls) => `<div class="cad-term ${cls || ''}"><span class="k">${k}</span><span class="v">${v}</span></div>`;
+  cad.innerHTML =
+    `<div class="cad-fila sin">
+       <div class="cad-brazo">SIN OTP</div>
+       ${term('contacto → envío', envio.toFixed(1) + '%')}
+       <div class="cad-op">×</div>
+       ${term('envío → lead', '100%')}
+       <div class="cad-op">=</div>
+       ${term('contacto → lead', sinOtp.toFixed(1) + '%', 'res')}
+     </div>
+     <div class="cad-fila con">
+       <div class="cad-brazo">CON OTP</div>
+       ${term('contacto → envío', envio.toFixed(1) + '%')}
+       <div class="cad-op">×</div>
+       ${term('envío → lead', valida.toFixed(1) + '%', 'tocado')}
+       <div class="cad-op">=</div>
+       ${term('contacto → lead', conOtp.toFixed(1) + '%', 'res')}
+     </div>
+     <div class="cad-delta"><span>El OTP solo toca el segundo paso:</span>${(conOtp - sinOtp).toFixed(1)} pp</div>`;
 }
+
 
 
 function renderWeb() {
