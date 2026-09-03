@@ -230,7 +230,7 @@ body.light #sheet-web .wchip.country { background: #dbeafe; border-color: #3b82f
 #sheet-otp .otp-kv { display: flex; justify-content: space-between; font-size: 12px; color: var(--text); padding: 3px 0; }
 #sheet-otp .otp-kv b { font-family: ui-monospace, monospace; color: var(--text-title); }
 #sheet-otp .otp-intro { font-size: 13px; line-height: 1.65; color: var(--text); max-width: 860px; margin: 0 0 6px; }
-#sheet-otp #otpConvMeta { display: block; font-size: 12px; color: var(--text-muted-2); margin-bottom: 10px; }
+#sheet-otp #otpConvMeta, #sheet-otp #otpSaludMeta { display: block; font-size: 12px; color: var(--text-muted-2); margin-bottom: 10px; }
 /* Esta tabla NO tiene celda de ayuda ni columna sticky: hay que neutralizar las
    reglas globales de .table-container pensadas para las tablas del funnel, que
    fuerzan la 1a columna a 36px y hacen sticky la 2a. */
@@ -386,9 +386,9 @@ body.light #sheet-web .wchip.country { background: #dbeafe; border-color: #3b82f
     <div class="control-label">Temporalidad <button type="button" class="help-btn" onclick="document.getElementById('helpGran').showModal()" aria-label="Explicación de temporalidades">?</button></div>
     <select class="granularity" id="granSelect" onchange="onUpdate()">
       <option value="D">Diario</option>
-      <option value="W" selected>Semanal (lun-dom)</option>
+      <option value="W">Semanal (lun-dom)</option>
       <option value="C">Ciclo comercial (mié-mar)</option>
-      <option value="M">Mensual</option>
+      <option value="M" selected>Mensual</option>
       <option value="Q">Trimestral</option>
       <option value="Y">Anual</option>
     </select>
@@ -769,14 +769,15 @@ body.light #sheet-web .wchip.country { background: #dbeafe; border-color: #3b82f
     <div class="qc-card"><div class="qc-title">Share con OTP<br>de los que llegan a contacto</div><div class="qc-wrap"><canvas id="otpChShare"></canvas></div></div>
   </div>
 
-  <h2 class="section-heading">Salud del OTP — serie diaria<span class="wblock-meta" id="otpSaludMeta"></span></h2>
+  <h2 class="section-heading">Salud del OTP</h2>
+  <div class="wblock-meta" id="otpSaludMeta"></div>
   <div class="table-container">
     <table id="otpSaludTable"><thead><tr><th></th><th>Día</th></tr></thead><tbody></tbody></table>
   </div>
   <div class="whint">Por <strong>visitante</strong>, no por evento (un reenvío no debe inflar el denominador).
     <strong>Tasa</strong> = valida / pidió código. Régimen sombreado: los días marcados ⚠️ son
     <strong>falla de infraestructura</strong> (budget de AWS SNS), no fricción del OTP, y deben excluirse
-    de cualquier comparación. Últimos 30 días.</div>
+    de cualquier comparación; los períodos que los contienen van resaltados en el encabezado.</div>
 
 
   <h2 class="section-heading">Cómo se midió el impacto del OTP, y por qué el número engaña</h2>
@@ -1964,32 +1965,50 @@ function otpRender() {
 
 
 function otpRenderSalud(salud) {
-  const p = webPais();
-  const dias = (salud[p] || []).slice(-30);
+  const p = webPais(), gran = getGran();
   const thead = document.querySelector('#otpSaludTable thead tr');
   const tbody = document.querySelector('#otpSaludTable tbody');
-  document.getElementById('otpSaludMeta').textContent = ` · ${getCountry()} · últimos ${dias.length} días`;
-  if (!dias.length) { tbody.innerHTML = ''; return; }
+
+  // Los días se agregan al período elegido: los contadores se suman y la tasa se calcula
+  // como cociente de sumas (no promedio de tasas, que pesaría igual un día flojo).
+  // ⚠️ Se cuenta por visitante y día: quien pidió código en dos días suma dos veces.
+  const acc = {};
+  for (const d of (salud[p] || [])) {
+    const per = otpPeriodo(d.dia, gran);
+    const a = acc[per] || (acc[per] = { req: 0, ok: 0, abandona: 0, falla: 0, agotado: 0,
+                                        reenvio: 0, tope: 0, envio_fallido: 0, alerta: false, regs: {} });
+    for (const k of ['req', 'ok', 'abandona', 'falla', 'agotado', 'reenvio', 'tope', 'envio_fallido']) a[k] += d[k];
+    if (d.regimen.indexOf('degradado') >= 0 || d.regimen.indexOf('falla') >= 0) a.alerta = true;
+    a.regs[d.regimen] = (a.regs[d.regimen] || 0) + Math.max(d.req, 1);
+  }
+  const periods = Object.keys(acc).sort().slice(-SHOW_COUNT);
+
+  document.getElementById('otpSaludMeta').textContent =
+    ` · ${getCountry()} · ${GRAN_LABELS[gran]} · últimos ${periods.length} períodos`;
+  if (!periods.length) { tbody.innerHTML = ''; return; }
 
   const filas = [
-    ['req',      'Códigos pedidos',       d => d.req, false],
-    ['ok',       'Validan',               d => d.ok, false],
-    ['tasa',     'Tasa de validación',    d => d.req ? d.ok / d.req : 0, true],
-    ['abandona', 'Abandona sin intentar', d => d.abandona, false],
-    ['falla',    'Intenta y falla',       d => d.falla, false],
-    ['agotado',  'Intentos agotados',     d => d.agotado, false],
-    ['reenvio',  'Pide reenvío',          d => d.reenvio, false],
-    ['tope',     'Tope de reenvíos',      d => d.tope, false],
-    ['envio_fallido', 'Envío fallido',    d => d.envio_fallido, false],
+    ['req',      'Códigos pedidos',       a => a.req, false],
+    ['ok',       'Validan',               a => a.ok, false],
+    ['tasa',     'Tasa de validación',    a => a.req ? a.ok / a.req : 0, true],
+    ['abandona', 'Abandona sin intentar', a => a.abandona, false],
+    ['falla',    'Intenta y falla',       a => a.falla, false],
+    ['agotado',  'Intentos agotados',     a => a.agotado, false],
+    ['reenvio',  'Pide reenvío',          a => a.reenvio, false],
+    ['tope',     'Tope de reenvíos',      a => a.tope, false],
+    ['envio_fallido', 'Envío fallido',    a => a.envio_fallido, false],
   ];
-  thead.innerHTML = '<th></th><th>Métrica</th>' + dias.map(d => {
-    const alerta = d.regimen.includes('degradado') || d.regimen.includes('falla');
-    return `<th${alerta ? ' class="in-progress" title="' + d.regimen + '"' : ''}>${d.dia.slice(5)}</th>`;
+  thead.innerHTML = '<th></th><th>Métrica</th>' + periods.map(per => {
+    const a = acc[per];
+    const dom = Object.keys(a.regs).sort((x, y) => a.regs[y] - a.regs[x])[0] || '';
+    return `<th${a.alerta ? ' class="in-progress"' : ''} title="${dom}">${formatPeriod(per, gran)}</th>`;
   }).join('');
   tbody.innerHTML = filas.map(([sid, lbl, f, esPct]) =>
     `<tr class="row-stage">${helpCell('helpOtp_' + sid)}<td>${lbl}</td>` +
-    dias.map(d => {
-      const v = f(d);
+    periods.map(per => {
+      const a = acc[per];
+      if (!a.req) return '<td>—</td>';
+      const v = f(a);
       if (esPct) {
         const c = v >= OTP_BASELINE[p] - 0.05 ? 'var(--w-green)' : v >= OTP_BASELINE[p] - 0.15 ? 'var(--w-amber)' : 'var(--w-red)';
         return `<td><span class="p" style="color:${c}">${(v * 100).toFixed(0)}%</span></td>`;
