@@ -557,10 +557,22 @@ body.light #sheet-web .wchip.country { background: #dbeafe; border-color: #3b82f
 </dialog>
 
 <dialog id="helpConv_lead" class="help-dialog">
-  <h3>Crean lead</h3>
-  <p>De los que llegaron a contacto, cuántos terminaron <strong>generando un negocio en Backbone</strong>.</p>
-  <p>Cadena: <code>anonymous_id</code> → <code>select_content.backbone_uuid</code> → <code>web_global_api_business.deal_uuid</code> → tabla de negocio, con <code>nid</code> no nulo y el negocio creado ese mismo día.</p><p>⚠️ El anclaje es en <strong>hora local</strong>: <code>DATE()</code> sobre un TIMESTAMP evalúa en UTC y corría la ventana un día para el tráfico nocturno — ese bug costaba el 38% de los leads.</p><p><strong>Es la conversión total del tramo</strong> y el número que hay que mirar: no depende del brazo asignado, así que no lo toca el sesgo de medición.</p>
-  <p style="opacity:.7">Se agrupa por la temporalidad seleccionada, sobre filas diarias, y se <strong>excluyen los días de falla de infraestructura</strong> (AWS SNS). Query: <code>web_query_otp_ab.sql</code>. ⚠️ La agrupación día→período se hace en el navegador: alguien activo en dos días distintos cuenta dos veces.</p>
+  <h3>Llegan a contacto → crean lead</h3>
+  <p>De los que <strong>vieron la pantalla</strong> de contacto, cuántos terminaron generando un negocio en Backbone.</p>
+  <p>Cadena: <code>anonymous_id</code> → <code>select_content.backbone_uuid</code> → <code>web_global_api_business.deal_uuid</code> → tabla de negocio, con <code>nid</code> no nulo y el negocio creado ese mismo día.</p>
+  <p>⚠️ El anclaje es en <strong>hora local</strong>: <code>DATE()</code> sobre un TIMESTAMP evalúa en UTC y corría la ventana un día para el tráfico nocturno — ese bug costaba el 38% de los leads.</p>
+  <p><strong>Es la conversión total del tramo</strong> y no depende del brazo asignado, así que no la toca el sesgo de medición. Mezcla dos efectos: cuánta gente envía y cuánta sobrevive al OTP.</p>
+  <p style="opacity:.7">Se agrupa por la temporalidad seleccionada y se excluyen los días de falla de infraestructura (AWS SNS). Query: <code>web_query_otp_ab.sql</code>.</p>
+  <button type="button" class="close-btn" onclick="this.closest('dialog').close()">Cerrar</button>
+</dialog>
+
+<dialog id="helpConv_lead_env" class="help-dialog">
+  <h3>Envían formulario → crean lead</h3>
+  <p>Mismo numerador, pero sobre <strong>los que efectivamente enviaron</strong>. Aísla el único paso donde el OTP puede interponerse.</p>
+  <p><strong>Sin OTP este ratio es ~100%:</strong> entre darle enviar y que Backbone cree el negocio no hay nada más. Cualquier punto que falte del 100% es, por construcción, <strong>alguien que no logró validar el código</strong>.</p>
+  <p>Por eso esta fila es la lectura más limpia del costo del OTP, y se puede contrastar con la tasa de validación de la tabla de Salud: deberían coincidir.</p>
+  <p>⚠️ Es un <strong>promedio ponderado</strong> de los dos brazos. Si en un período solo el 50% pasa por OTP, la caída se ve a la mitad. Para el efecto puro sobre el brazo tratado, mirar la gráfica «Envían con OTP → crean lead».</p>
+  <p style="opacity:.7">Denominador inferido: brazo con OTP (enviaron todos) + brazo sin OTP con lead. Ver la fila «Envían el formulario de contacto».</p>
   <button type="button" class="close-btn" onclick="this.closest('dialog').close()">Cerrar</button>
 </dialog>
 
@@ -2134,7 +2146,8 @@ function otpRenderConv() {
   html += fila('envian',   'Envían el formulario de contacto', env, 'row-stage', per => tot(per).c);
   html += fila('con_otp',  'De los que envían · pasaron por OTP', envCon, 'row-stage', env);
   html += fila('sin_otp',  'De los que envían · no pasaron por OTP', envSin, 'row-stage', env);
-  html += fila('lead',     'Crean lead', per => tot(per).l, 'row-total', per => tot(per).c);
+  html += fila('lead',     'Llegan a contacto → crean lead', per => tot(per).l, 'row-total', per => tot(per).c);
+  html += fila('lead_env', 'Envían formulario → crean lead',  per => tot(per).l, 'row-total', env);
   tbody.innerHTML = html;
 
   // ── fila de gráficas: volumen, conversión total y share con OTP ────────────
