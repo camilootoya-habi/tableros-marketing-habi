@@ -27,6 +27,15 @@
   .hoja-btn:hover{color:var(--title)}
   .hoja-btn.on{color:var(--mm);border-bottom-color:var(--mm)}
   .hoja{display:none} .hoja.on{display:block}
+  .ir{background:none;border:none;color:var(--mm);font:inherit;font-size:13px;font-weight:600;
+    cursor:pointer;padding:0;text-decoration:underline;text-underline-offset:3px}
+  .ev{display:grid;gap:10px;margin-top:13px}
+  .ev-i{background:var(--card);border:1px solid var(--border);border-left:3px solid var(--gabi);
+    border-radius:0 7px 7px 0;padding:13px 16px}
+  .ev-i .t{font-size:13px;font-weight:650;color:var(--title);margin-bottom:5px}
+  .ev-i .d{font-family:ui-monospace,'SF Mono',Menlo,monospace;font-size:12.5px;color:var(--mut);
+    font-variant-numeric:tabular-nums}
+  .ev-i .d b{color:var(--gabi)}
   .vacio{background:var(--card);border:1px dashed var(--border2);border-radius:8px;padding:44px 26px;
     text-align:center;color:var(--mut3);margin-top:22px}
   .vacio strong{display:block;font-size:15px;color:var(--mut2);margin-bottom:8px}
@@ -105,25 +114,213 @@
 
 <div class="top">
   <div>
-    <h1>¿Se gatilla la cláusula del 80%?</h1>
+    <h1>¿Se activa la cláusula del 80%?</h1>
     <div class="sub">Asignados a comercial de Market Maker · ciclo 29-jul → 25-ago 2026 · 4 ciclos comerciales miércoles→martes</div>
   </div>
   <button class="theme" id="tb" onclick="tg()">☀️</button>
 </div>
 
 <div class="hojas">
-  <button class="hoja-btn on" id="btn-mx" onclick="hoja('mx')">México</button>
-  <button class="hoja-btn"    id="btn-co" onclick="hoja('co')">Colombia</button>
+  <button class="hoja-btn on" id="btn-mxr" onclick="hoja('mxr')">México · resumen</button>
+  <button class="hoja-btn"    id="btn-mx"  onclick="hoja('mx')">México · completo</button>
+  <button class="hoja-btn"    id="btn-cor" onclick="hoja('cor')">Colombia · resumen</button>
+  <button class="hoja-btn"    id="btn-co"  onclick="hoja('co')">Colombia · completo</button>
 </div>
 
-<div class="hoja on" id="hoja-mx">
+<div class="hoja on" id="hoja-mxr">
+
+<div class="verdict">
+  <div class="q">La decisión</div>
+  <div class="ans">El indicador cerró en <strong>69,5%</strong> de la meta, por debajo del 80%.
+  Sumando el diferencial del Descartador —que aplica sin discusión— sube a <strong>75,7%</strong>, y
+  <strong>la cláusula se activa igual</strong>. Solo se cruza el umbral si además se reconoce la cola de GABI:
+  <strong>81,2%</strong>. La decisión se reduce a definir eso.</div>
+</div>
+
+<div class="kpis">
+  <div class="kpi"><div class="k">Meta de leads asignados</div><div class="v">4.300</div>
+    <div class="s">real <strong>3.792</strong> · 88,2%</div></div>
+  <div class="kpi"><div class="k">Meta asignados comercial</div><div class="v">3.556</div>
+    <div class="s">4.300 × 83% de conversión</div></div>
+  <div class="kpi al"><div class="k">Real asignados comercial MM</div><div class="v">2.470</div>
+    <div class="s">69,5% · faltaron 1.086</div></div>
+  <div class="kpi al"><div class="k">Conversión real</div><div class="v">65,2%</div>
+    <div class="s">contra 83% asumido</div></div>
+</div>
+
+<h2><span class="num">1</span>De dónde salen los 1.086 leads faltantes</h2>
+<div class="tw"><table>
+  <thead><tr><th>Causa</th><th>Leads</th><th>% del hueco</th></tr></thead>
+  <tbody>
+    <tr><td>Volumen de marketing — entregó 508 menos, al 83% asumido</td><td>422</td><td>38,9%</td></tr>
+    <tr class="tot"><td><span class="dot" style="background:var(--sus)"></span>Descartador — exceso sobre su norma de 56 por ciclo</td><td>221</td><td>20,3%</td></tr>
+    <tr class="tot"><td><span class="dot" style="background:var(--gabi)"></span>Cola vencida en GABI — exceso sobre su norma de 95</td><td>197</td><td>18,1%</td></tr>
+    <tr><td>Resto — principalmente Inmobiliaria, que sí recibió comercial</td><td>246</td><td>22,7%</td></tr>
+    <tr class="tot"><td>Total</td><td>1.086</td><td>100%</td></tr>
+  </tbody>
+</table></div>
+<p>Marketing explica el 38,9%. Las dos bolsas resaltadas son las que están en discusión: son leads que nunca
+llegaron a un comercial de Market Maker por un cambio en el reparto, no por desempeño del equipo.</p>
+
+<h2><span class="num">2</span>Cumplimiento según lo que se cuente</h2>
+<div class="panel"><div class="ch" style="height:170px"><canvas id="rEsc"></canvas></div>
+  <div class="cap">La línea vertical es el umbral del 80% del esquema de comisiones.</div></div>
+<div class="tw"><table>
+  <thead><tr><th>Qué se cuenta</th><th>Total</th><th>vs meta</th><th>¿≥ 80%?</th></tr></thead>
+  <tbody>
+    <tr><td>Solo comercial de Market Maker</td><td>2.470</td><td>69,5%</td><td class="no">no</td></tr>
+    <tr><td>+ diferencial del Descartador — aplica sin discusión</td><td>2.691</td><td>75,7%</td><td class="no">no</td></tr>
+    <tr class="si"><td>+ diferencial del Descartador y de la cola de GABI</td><td>2.888</td><td>81,2%</td><td class="yes">sí</td></tr>
+    <tr class="si"><td>+ las dos bolsas completas</td><td>3.039</td><td>85,5%</td><td class="yes">sí</td></tr>
+  </tbody>
+</table></div>
+<p><strong>Ninguna bolsa cruza el umbral por separado</strong>: el Descartador llega a 75,7% con su diferencial
+y a 77,2% completo, y la cola de GABI sola a 77,7%. Se necesitan las dos, y entonces da igual si se cuentan
+completas o solo su exceso — ambos caminos cruzan el 80%.</p>
+
+<h2><span class="num">3</span>Por qué estas dos bolsas son atípicas</h2>
+<div class="ev">
+  <div class="ev-i">
+    <div class="t">El Descartador se quintuplicó</div>
+    <div class="d">leads por ciclo &nbsp; 54 · 56 · 57 · 168 · <b>277</b></div>
+  </div>
+  <div class="ev-i">
+    <div class="t">La cola de GABI siempre existió, pero antes se rescataba</div>
+    <div class="d">% de la cola rescatada &nbsp; 79,5% · 89,9% · 90,1% · 88,2% · <b>44,2%</b></div>
+  </div>
+  <div class="ev-i">
+    <div class="t">Y sigue quieta hoy: 552 leads sin liberar</div>
+    <div class="d">mediana <b>15 días</b> en GABI &nbsp;·&nbsp; parámetro histórico 6 días &nbsp;·&nbsp; el más viejo, 60</div>
+  </div>
+</div>
+
+<h2><span class="num">4</span>Recomendación</h2>
+
+<div class="box key">
+  <span class="l">1 · El diferencial del Descartador se suma, sin condiciones</span>
+  <p>Esa bolsa aplica sí o sí. Son <strong>221 leads calificados</strong> que no deberíamos estar perdiendo ahí:
+  el 72,5% califica para los dos productos y el 21,4% para ibuyer. Y la bolsa ya incorpora los arreglos que el
+  propio equipo comercial pidió, así que gestionar el Descartador es lo que mejora la conversión del comercial
+  — no es una responsabilidad que se le pueda devolver al equipo.</p>
+  <p>Con esa suma el cumplimiento pasa de 69,5% a <strong>75,7%</strong>.</p>
+</div>
+
+<div class="box warn">
+  <span class="l">2 · Pero eso solo no cruza el umbral: la decisión depende de GABI</span>
+  <p>Sumando el Descartador se llega a 75,7%, y contándolo completo a 77,2%. <strong>En los dos casos la
+  cláusula se activa.</strong> El umbral solo se cruza si además se reconoce la bolsa de GABI: con el
+  diferencial, 81,2%; con la bolsa completa, 85,5%.</p>
+  <p>Así que la pregunta de la reunión es una sola: <strong>¿los 197 leads de exceso en la cola de GABI son un
+  problema real o tienen una explicación de Producto?</strong> Hoy siguen ahí 552 leads con una mediana de 15
+  días contra un parámetro de 6, y la cola dejó de rescatarse: 44,2% contra un histórico de 79% a 90%.</p>
+</div>
+
+<div class="tw"><table>
+  <thead><tr><th>Según lo que se defina sobre GABI</th><th>Total</th><th>Cumplimiento</th><th>¿Se activa la cláusula?</th></tr></thead>
+  <tbody>
+    <tr><td><strong>No suma</strong> — tiene explicación de Producto</td><td>2.691</td><td>75,7%</td><td class="no">sí · requiere presupuesto adicional</td></tr>
+    <tr class="si"><td><strong>Sí suma</strong> — es un problema real</td><td>2.888</td><td>81,2%</td><td class="yes">no · sin presupuesto adicional</td></tr>
+  </tbody>
+</table></div>
+<p>El diferencial del Descartador ya está incluido en los dos escenarios.</p>
+
+<p style="margin-top:22px"><button class="ir" onclick="hoja('mx')">Ver el análisis completo, con la evidencia y el método →</button></p>
+
+</div>
+
+<div class="hoja" id="hoja-cor">
+
+<div class="verdict">
+  <div class="q">La decisión</div>
+  <div class="ans">Con la definición oficial del líder comercial el ciclo cerró en <strong>73,0%</strong>.
+  Incluyendo todas las bolsas de definición llega a <strong>79,2%</strong>, a ocho décimas del umbral.
+  <strong>Solo sumando el Descartador se cruza: 83,7%.</strong></div>
+  <p>Esos 0,8 puntos son <strong>38 leads</strong>. En CO la decisión se juega en cómo se define el indicador,
+  no en el tamaño de las bolsas.</p>
+</div>
+
+<div class="kpis">
+  <div class="kpi"><div class="k">Meta de leads asignados</div><div class="v">5.500</div>
+    <div class="s">real <strong>4.762</strong> · 86,6%</div></div>
+  <div class="kpi"><div class="k">Meta asignados comercial</div><div class="v">4.675</div>
+    <div class="s">5.500 × 85% de conversión</div></div>
+  <div class="kpi al"><div class="k">Base del líder comercial</div><div class="v">3.415</div>
+    <div class="s">73,0% · faltaron 1.260</div></div>
+  <div class="kpi al"><div class="k">MM completo</div><div class="v">3.701</div>
+    <div class="s">79,2% · a 38 leads del umbral</div></div>
+</div>
+
+<h2><span class="num">1</span>De dónde salen los 1.260 leads faltantes</h2>
+<div class="tw"><table>
+  <thead><tr><th>Causa</th><th>Leads</th><th>% del hueco</th></tr></thead>
+  <tbody>
+    <tr><td>Volumen de marketing — entregó 738 menos, al 85% asumido</td><td>627</td><td>49,8%</td></tr>
+    <tr class="tot"><td><span class="dot" style="background:var(--gabi)"></span>Los 5 filtros del líder comercial</td><td>286</td><td>22,7%</td></tr>
+    <tr class="tot"><td><span class="dot" style="background:var(--sus)"></span>Descartador — owners del equipo de producto</td><td>212</td><td>16,8%</td></tr>
+    <tr><td>Resto sin atribuir</td><td>135</td><td>10,7%</td></tr>
+    <tr class="tot"><td>Total</td><td>1.260</td><td>100%</td></tr>
+  </tbody>
+</table></div>
+<p>Marketing explica la mitad del faltante — bastante más que en México, donde pesaba 38,9%. La otra mitad
+depende de decisiones de definición.</p>
+
+<h2><span class="num">2</span>Cumplimiento según lo que se cuente</h2>
+<div class="panel"><div class="ch" style="height:190px"><canvas id="corEsc"></canvas></div>
+  <div class="cap">La línea vertical es el umbral del 80%.</div></div>
+<div class="tw"><table>
+  <thead><tr><th>Qué se cuenta</th><th>Total</th><th>vs meta</th><th>¿≥ 80%?</th></tr></thead>
+  <tbody>
+    <tr><td>Base del líder · los 5 filtros activos</td><td>3.415</td><td>73,0%</td><td class="no">no</td></tr>
+    <tr><td>+ incluir sin prioridad</td><td>3.569</td><td>76,3%</td><td class="no">no</td></tr>
+    <tr><td>+ incluir todas las bolsas de filtro = MM completo</td><td>3.701</td><td>79,2%</td><td class="no">no · por 38</td></tr>
+    <tr class="si"><td><strong>MM completo + Descartador</strong></td><td>3.913</td><td>83,7%</td><td class="yes">sí</td></tr>
+  </tbody>
+</table></div>
+
+<h2><span class="num">3</span>Tres cosas que hay que saber antes de decidir</h2>
+<div class="ev">
+  <div class="ev-i">
+    <div class="t">Los filtros se solapan: sumar bolsas engaña</div>
+    <div class="d">quitar solo el filtro de prioridad suma <b>154</b> leads, no 277 — los 112 de Broker y comercial siguen bloqueados por su propio filtro</div>
+  </div>
+  <div class="ev-i">
+    <div class="t">El deterioro viene de tres ciclos atrás</div>
+    <div class="d">MM sobre asignados de marketing &nbsp; 81,1% · 74,6% · 72,9% · 72,7% · <b>68,4%</b></div>
+  </div>
+  <div class="ev-i">
+    <div class="t">La cola de GABI en CO sí se rescata, a diferencia de México</div>
+    <div class="d">al día 21 el ciclo va en <b>98,0%</b>, igual que los anteriores &nbsp;·&nbsp; en México el rescate cayó a 44,2%</div>
+  </div>
+</div>
+
+<h2><span class="num">4</span>Recomendación</h2>
+<div class="box key">
+  <span class="l">1 · El Descartador se suma, mismo criterio que en México</span>
+  <p>Son 212 leads que fueron a owners del equipo de producto, no a comerciales de Market Maker. El propio líder
+  ya los excluye de su denominador, así que hay acuerdo en que no son asignaciones comerciales. <strong>Es la
+  única bolsa que cruza el umbral</strong>, y lleva el cumplimiento de 79,2% a 83,7%.</p>
+</div>
+<div class="box warn">
+  <span class="l">2 · Falta definir la bolsa de sin prioridad, y son dos decisiones</span>
+  <p>Los 277 leads sí llegaron a un comercial de Market Maker y el equipo los tuvo para trabajar, así que la
+  evidencia apunta a incluirlos. Pero 112 de ellos son de Broker y comercial, fuentes que el líder excluye por
+  definición y que nunca reciben prioridad. <strong>Incluir los sin prioridad sin resolver antes el criterio de
+  fuentes cambia dos cosas a la vez.</strong></p>
+</div>
+
+<p style="margin-top:22px"><button class="ir" onclick="hoja('co')">Ver el análisis completo, con la evidencia y el método →</button></p>
+
+</div>
+
+<div class="hoja" id="hoja-mx">
 
 <div class="verdict">
   <div class="q">Respuesta corta</div>
   <div class="ans">Sí, sobre el número medido: 2.470 asignados contra una meta de 3.556 es <strong>69,5%</strong>.
-  Pero 569 de los 1.086 leads faltantes se explican por dos cambios de enrutamiento identificables, ocurridos
-  arriba del comercial, y si se reconocen el cumplimiento sube a <strong>85,5%</strong> y la cláusula no
-  se gatilla.</div>
+  De los 1.086 leads faltantes, 569 se explican por dos cambios de enrutamiento ocurridos arriba del comercial.
+  El diferencial del Descartador aplica sin discusión y lleva el cumplimiento a <strong>75,7%</strong>, pero
+  <strong>no alcanza el umbral</strong>. Reconociendo además la cola de GABI sube a <strong>81,2%</strong> y la
+  cláusula no se activa: <strong>ahí está toda la decisión</strong>.</div>
   <p>Ninguna de las dos bolsas alcanza por separado: contando solo el Descartador quedan en 77,2% y contando solo
   GABI en 77,7%. <strong>Se necesitan las dos para cruzar el umbral</strong>, así que la decisión es una sola:
   ¿son ambas atribuibles a la operación y no al equipo comercial?</p>
@@ -426,23 +623,45 @@ todavía sin comercial hoy. Los dos son <strong>cambios en cómo se reparten los
 insumo para trabajarlo</strong>, y la meta de cierres se le fijó asumiendo que sí lo tendría.</p>
 
 <div class="tw"><table>
-  <thead><tr><th>Opción</th><th>Cumplimiento que se reconoce</th><th>Efecto en comisiones</th></tr></thead>
+  <thead><tr><th>Opción</th><th>Qué se cuenta</th><th>Total</th><th>Cumplimiento</th><th>Efecto en comisiones</th></tr></thead>
   <tbody>
-    <tr><td><strong>A · Sobre el número medido</strong><br><span style="font-size:11.5px;color:var(--mut3)">se aplica la cláusula tal como está escrita, sin considerar los cambios de enrutamiento</span></td>
-        <td>69,5%</td><td style="text-align:left;font-family:inherit">Se baja la meta de cierres y se reconoce sobrecumplimiento. <strong>Requiere presupuesto adicional.</strong></td></tr>
-    <tr class="si"><td><strong>B · Ajustado por los dos cambios</strong><br><span style="font-size:11.5px;color:var(--mut3)">recomendada</span></td>
-        <td>81,2% a 85,5%</td><td style="text-align:left;font-family:inherit">No se gatilla la cláusula. Las comisiones se pagan contra la meta original. <strong>Sin presupuesto adicional.</strong></td></tr>
-    <tr><td><strong>C · Ajustado por uno solo de los dos cambios</strong><br><span style="font-size:11.5px;color:var(--mut3)">el Descartador o la cola de GABI, no ambos</span></td>
-        <td>75,0% a 77,7%</td><td style="text-align:left;font-family:inherit">Se gatilla igual. No existe como punto medio: ninguno de los dos cambios alcanza por separado.</td></tr>
+    <tr><td><strong>A</strong></td><td style="text-align:left;font-family:inherit">Solo el número medido</td>
+        <td>2.470</td><td>69,5%</td>
+        <td style="text-align:left;font-family:inherit">Se activa. Se baja la meta de cierres y se reconoce sobrecumplimiento. <strong>Requiere presupuesto adicional.</strong></td></tr>
+    <tr><td><strong>B</strong></td><td style="text-align:left;font-family:inherit">+ diferencial del Descartador (221)</td>
+        <td>2.691</td><td>75,7%</td>
+        <td style="text-align:left;font-family:inherit">Se activa igual. <strong>Requiere presupuesto adicional.</strong></td></tr>
+    <tr class="si"><td><strong>C</strong></td><td style="text-align:left;font-family:inherit">+ diferencial del Descartador y de la cola de GABI (418)</td>
+        <td>2.888</td><td>81,2%</td>
+        <td style="text-align:left;font-family:inherit">No se activa. Las comisiones se pagan contra la meta original. <strong>Sin presupuesto adicional.</strong></td></tr>
+    <tr><td><strong>D</strong></td><td style="text-align:left;font-family:inherit">+ las dos bolsas completas (569)</td>
+        <td>3.039</td><td>85,5%</td>
+        <td style="text-align:left;font-family:inherit">No se activa. Es la versión menos conservadora de C.</td></tr>
   </tbody>
 </table></div>
 
 <div class="box key">
-  <span class="l">Recomendación</span>
-  <p><strong>Opción B.</strong> El umbral del 80% existe para proteger al equipo comercial de un insumo
-  insuficiente. Aquí el insumo bajó porque <strong>cambió el reparto de leads arriba</strong>, no porque
-  el equipo rindiera menos. Los 569 leads son trazables uno por uno y se puede señalar exactamente a dónde
-  fueron.</p>
+  <span class="l">1 · El diferencial del Descartador se suma, sin condiciones</span>
+  <p>Esa bolsa aplica sí o sí, y no está en discusión. Son <strong>221 leads calificados</strong> por encima de
+  la norma histórica de 56 por ciclo, y no deberíamos estar perdiendo leads calificados ahí: el 72,5% califica
+  para los dos productos y el 21,4% para ibuyer.</p>
+  <p>La bolsa ya incorpora los arreglos que el propio equipo comercial pidió, así que <strong>gestionar el
+  Descartador es lo que mejora la conversión del comercial</strong>, no algo que se le pueda devolver al equipo
+  como responsabilidad. Sumarlo lleva el cumplimiento de 69,5% a 75,7%.</p>
+</div>
+
+<div class="box warn">
+  <span class="l">2 · La decisión de comisiones depende de GABI, no del Descartador</span>
+  <p>Con el Descartador sumado se llega a 75,7%, y contándolo completo a 77,2%. <strong>En los dos casos la
+  cláusula se activa</strong>: el Descartador por sí solo no alcanza el umbral. El 80% solo se cruza si además
+  se reconoce la cola de GABI — 81,2% con el diferencial, 85,5% con las bolsas completas.</p>
+  <p>Entonces la decisión se reduce a una pregunta para Producto: <strong>¿los 197 leads de exceso en la cola de
+  GABI son un problema real o tienen una explicación?</strong> Lo que hay sobre la mesa: 552 leads siguen sin
+  liberar con una mediana de 15 días contra un parámetro de 6, el 81,3% está en la etapa “No gestionado” con
+  macro-etapa “MM- Asignados”, y la cola dejó de rescatarse — 44,2% este ciclo contra 79% a 90% en los cuatro
+  anteriores.</p>
+  <p><strong>Si esa cola es un problema real, la opción es C y no hay presupuesto adicional. Si tiene una
+  explicación de Producto que la justifique, la opción es B y sí lo hay.</strong></p>
 </div>
 
 <details>
@@ -475,11 +694,194 @@ insumo para trabajarlo</strong>, y la meta de cierres se le fijó asumiendo que 
 </div><!-- /hoja-mx -->
 
 <div class="hoja" id="hoja-co">
-  <div class="vacio">
-    <strong>Colombia — pendiente</strong>
-    El mismo análisis para CO todavía no está construido.<br>
-    Requiere las tablas equivalentes de asignación comercial de Colombia y sus propios ciclos comerciales.
-  </div>
+
+<div class="verdict">
+  <div class="q">La decisión</div>
+  <div class="ans">Con la definición oficial del líder comercial el ciclo cerró en <strong>73,0%</strong> de la
+  meta. Incluyendo todas las bolsas de definición llega a <strong>79,2%</strong> — a ocho décimas del umbral.
+  <strong>Solo sumando el Descartador se cruza: 83,7%.</strong></div>
+  <p>CO es un caso más ajustado que México: esos 0,8 puntos son <strong>38 leads</strong>, así que la decisión
+  se juega en cómo se define el indicador, no en el tamaño de las bolsas.</p>
+</div>
+
+<div class="kpis">
+  <div class="kpi"><div class="k">Meta de leads asignados</div><div class="v">5.500</div>
+    <div class="s">real <strong>4.762</strong> · 86,6% · faltaron 738</div></div>
+  <div class="kpi"><div class="k">Meta asignados comercial</div><div class="v">4.675</div>
+    <div class="s">5.500 × 85% de conversión</div></div>
+  <div class="kpi al"><div class="k">Base del líder comercial</div><div class="v">3.415</div>
+    <div class="s">73,0% · faltaron 1.260</div></div>
+  <div class="kpi al"><div class="k">MM completo</div><div class="v">3.701</div>
+    <div class="s">79,2% · a 38 leads del umbral</div></div>
+</div>
+
+<h2><span class="num">1</span>La definición oficial de CO y en qué se diferencia de México</h2>
+<p>CO tiene una definición propia, del líder comercial, que México no tiene. Parte de
+<code>bi_co.seguimiento_asignacion_ibuyer_co</code> con
+<code>tipo_asignacion_comercial = 'Primer Asignación comercial'</code> y le aplica cinco filtros. Esa columna ya
+salta los bots de cola por sí sola: si el lead cayó primero en un bot, marca como primera asignación la del
+comercial real.</p>
+
+<div class="tw"><table>
+  <thead><tr><th>Pieza</th><th>México</th><th>Colombia</th></tr></thead>
+  <tbody>
+    <tr><td>Tabla de asignación</td><td style="text-align:left;font-family:inherit"><code>bi_mx.seguimiento_asignacion_ibuyer</code></td><td style="text-align:left;font-family:inherit"><code>bi_co.seguimiento_asignacion_ibuyer_co</code></td></tr>
+    <tr><td>Separar MM de Inmobiliaria</td><td style="text-align:left;font-family:inherit">por <code>equipo_inicial</code></td><td style="text-align:left;font-family:inherit">por <code>equipo_inicial</code>, más el filtro de prioridad que los saca implícitamente</td></tr>
+    <tr><td>Descartador</td><td style="text-align:left;font-family:inherit"><code>asignacion bo</code> — 100% Susana</td><td style="text-align:left;font-family:inherit"><code>asignacion bo</code> <strong>o</strong> lista de 5 owners de producto</td></tr>
+    <tr><td>Filtros adicionales</td><td style="text-align:left;font-family:inherit">ninguno</td><td style="text-align:left;font-family:inherit"><strong>cinco</strong>: prioridad, fuente, referido, lote, zona</td></tr>
+    <tr><td>Bolsas en disputa</td><td style="text-align:left;font-family:inherit">2</td><td style="text-align:left;font-family:inherit"><strong>5</strong></td></tr>
+  </tbody>
+</table></div>
+
+<div class="box">
+  <span class="l">Por qué el Descartador de CO necesita las dos condiciones</span>
+  <p>Ninguna sola alcanza. <code>susanaescobar</code> (657 leads) y <code>juancampos</code> (75) sí están
+  marcados como <code>asignacion bo</code>, pero <strong><code>danieljaramillo</code> está en
+  <code>sin equipo</code></strong>. Y al revés, <code>asignacion bo</code> contiene cuatro owners más que no
+  están en la lista del líder: <code>gustavorubiano</code>, <code>juanpalacios</code>,
+  <code>juanvalencia</code> y <code>estebancastelblanco</code>, 30 leads entre los cuatro.</p>
+</div>
+
+<h2><span class="num">2</span>Cuánto del hueco es de marketing</h2>
+<p>Marketing entregó 4.762 de una meta de 5.500: <strong>86,6%</strong>, faltaron 738 leads. Al 85% de
+conversión que se asumió al fijar la meta, esos 738 valían <strong>627 asignados comerciales</strong>.</p>
+<div class="tw"><table>
+  <thead><tr><th>Descomposición del hueco comercial</th><th>Leads</th><th>% del hueco</th></tr></thead>
+  <tbody>
+    <tr><td>Hueco total: 4.675 − 3.415</td><td>1.260</td><td>100%</td></tr>
+    <tr><td>Atribuible al volumen de marketing (738 × 85%)</td><td>627</td><td>49,8%</td></tr>
+    <tr class="tot"><td>Hueco restante, a explicar por las bolsas de definición</td><td>633</td><td>50,2%</td></tr>
+  </tbody>
+</table></div>
+<p>En CO marketing pesa la mitad del faltante, más que en México, donde explicaba el 38,9%. De los 633 restantes,
+las bolsas de definición cubren 498: los cinco filtros aportan 286 y el Descartador 212.</p>
+
+<h2><span class="num">3</span>Las cinco bolsas, y por qué no se pueden sumar</h2>
+<p>Los filtros del líder <strong>se solapan entre sí</strong>. Presentarlos como bolsas excluyentes escondería el
+efecto real: al quitar un filtro, los leads se mueven a otra bolsa y el indicador no sube lo que uno esperaría.
+Por eso se miden como filtros independientes, cada uno sobre el mismo universo de 3.701 leads de MM.</p>
+
+<div class="tw"><table>
+  <thead><tr><th>Filtro del líder</th><th>Leads que excluye</th><th>De esos, también sin prioridad</th></tr></thead>
+  <tbody>
+    <tr class="tot"><td>Sin prioridad de gestión MM</td><td>277</td><td>—</td></tr>
+    <tr><td>Fuente Broker / comercial / Ventana</td><td>112</td><td><strong>112 · el 100%</strong></td></tr>
+    <tr><td>Campaña con “referido”</td><td>12</td><td>11 · el 92%</td></tr>
+    <tr><td>Lote en la blacklist de 433 ids</td><td>9</td><td>1</td></tr>
+    <tr><td>Zonas que no compramos</td><td>0</td><td>—</td></tr>
+  </tbody>
+</table></div>
+
+<div class="box warn">
+  <span class="l">La trampa del solape</span>
+  <p><strong>Los 112 leads de Broker y comercial no tienen prioridad. Ninguno.</strong> Tiene lógica: la
+  prioridad A/B/C la asigna el modelo sobre leads de marketing, y esas dos fuentes entran por fuera de ese flujo,
+  así que nadie las tipifica.</p>
+  <p>La consecuencia práctica: si se decide incluir los sin prioridad pero se deja el filtro de fuente,
+  <strong>el indicador sube 154 leads, no 277</strong>. Los 112 de fuente y 11 de referido siguen bloqueados por
+  sus propios filtros. Una tabla de bolsas excluyentes habría prometido 277 y entregado 154.</p>
+</div>
+
+<h2><span class="num">4</span>Cuánto tarda GABI en liberar en Colombia</h2>
+<p>Mismo método que en México: la curva de liberación fija el parámetro y la cola se mide contra él.</p>
+<div class="panel"><div class="ch" style="height:240px"><canvas id="coCurva"></canvas></div>
+  <div class="cap">Cada punto cuenta solo leads con al menos N días de exposición, para que los ciclos sean comparables.</div></div>
+
+<div class="box warn">
+  <span class="l">El parámetro de CO es 5 días, uno menos que México</span>
+  <p>En los ciclos C-1, C-2 y C-3 la curva <strong>se aplana en el día 5</strong> con 97,6%, 97,6% y 94,0%, y de
+  ahí en adelante no gana casi nada. En el ciclo actual, al día 5 solo estaba liberado el <strong>91,7%</strong>.</p>
+  <p>Pero a diferencia de México, <strong>la cola de CO se sigue rescatando</strong>: al día 21 el ciclo actual va
+  en 98,0%, igual que los anteriores. En México ese rescate se derrumbó de 80–90% a 44,2%. Acá el problema es más
+  de arranque lento que de leads perdidos.</p>
+</div>
+
+<div class="tw"><table>
+  <thead><tr><th>Ciclo</th><th>A · marketing</th><th>MM al cierre</th><th>Inmo</th><th>Descartador</th><th>Cola al cierre</th><th>% rescatado</th><th>MM/A</th></tr></thead>
+  <tbody>
+    <tr><td>C-4 · 08abr – 05may</td><td>4.859</td><td>3.939</td><td>123</td><td>27</td><td>770</td><td>87,8%</td><td>81,1%</td></tr>
+    <tr><td>C-3 · 06may – 02jun</td><td>4.940</td><td>3.686</td><td>466</td><td>153</td><td>635</td><td>85,8%</td><td>74,6%</td></tr>
+    <tr><td>C-2 · 03jun – 30jun</td><td>4.014</td><td>2.928</td><td>455</td><td>94</td><td>537</td><td>81,9%</td><td>72,9%</td></tr>
+    <tr><td>C-1 · 01jul – 28jul</td><td>4.596</td><td>3.340</td><td>517</td><td>144</td><td>595</td><td>81,2%</td><td>72,7%</td></tr>
+    <tr class="tot"><td>C0 · 29jul – 25ago</td><td>4.762</td><td>3.257</td><td>470</td><td>209</td><td>826</td><td class="no">53,3%</td><td>68,4%</td></tr>
+  </tbody>
+</table></div>
+<p>El deterioro de CO es real y viene de tres ciclos atrás: MM/A cae de 81,1% a 68,4%, el Descartador se
+multiplica por ocho y el rescate de la cola pasa de 87,8% a 53,3%. Es el mismo patrón de México, con dos ciclos
+de retraso.</p>
+
+<h3 style="margin-top:26px">Los leads que hoy siguen sin liberar</h3>
+<div class="tw"><table>
+  <thead><tr><th>Etapa del negocio en el seguimiento</th><th>Leads</th></tr></thead>
+  <tbody>
+    <tr class="tot"><td><strong>No gestionado</strong></td><td>370</td></tr>
+    <tr><td>Sin fila en el seguimiento de GABI</td><td>215</td></tr>
+    <tr><td>Asignado</td><td>24</td></tr>
+    <tr><td>Cita agendada</td><td>12</td></tr>
+    <tr><td>Perfilado / Descartado</td><td>5</td></tr>
+  </tbody>
+</table></div>
+<p>Mismo síntoma que en México: la etapa dominante es <strong>“No gestionado”</strong>. Pero en CO hay 215 leads
+sin ninguna fila en el seguimiento de GABI, un 34% del total — allá eran 42. Esa diferencia hay que entenderla
+antes de darle peso a la cola de CO.</p>
+
+<h2><span class="num">5</span>Escenarios contra el umbral del 80%</h2>
+<div class="panel"><div class="ch" style="height:250px"><canvas id="coEsc"></canvas></div>
+  <div class="cap">La línea vertical es el umbral del 80%. Cada barra es un total real, no una suma de bolsas.</div></div>
+<div class="tw"><table>
+  <thead><tr><th>Qué se cuenta</th><th>Total</th><th>vs meta 4.675</th><th>¿≥ 80%?</th></tr></thead>
+  <tbody>
+    <tr><td>Base del líder · los 5 filtros activos</td><td>3.415</td><td>73,0%</td><td class="no">no</td></tr>
+    <tr><td>+ incluir sin prioridad (los otros filtros siguen)</td><td>3.569</td><td>76,3%</td><td class="no">no</td></tr>
+    <tr><td>+ incluir además fuente Broker / comercial / Ventana</td><td>3.680</td><td>78,7%</td><td class="no">no</td></tr>
+    <tr><td>+ incluir referido, lote y zona = <strong>MM completo</strong></td><td>3.701</td><td>79,2%</td><td class="no">no · por 38 leads</td></tr>
+    <tr><td>Base del líder + Descartador</td><td>3.519</td><td>75,3%</td><td class="no">no</td></tr>
+    <tr class="si"><td><strong>MM completo + Descartador</strong></td><td>3.913</td><td>83,7%</td><td class="yes">sí</td></tr>
+    <tr class="si"><td>MM completo + Descartador + cola de GABI</td><td>4.739</td><td>101,4%</td><td class="yes">sí</td></tr>
+  </tbody>
+</table></div>
+
+<div class="box warn">
+  <span class="l">Dos interacciones que no son obvias en la tabla</span>
+  <p><strong>El Descartador no aporta lo mismo según dónde se sume.</strong> Sobre la base del líder aporta solo
+  104 de sus 212 leads, porque los otros 108 no tienen prioridad y el filtro los sigue bloqueando. Sobre MM
+  completo aporta los 212. Por eso “base + Descartador” da 75,3% y no lo que sugeriría una suma.</p>
+  <p><strong>Y el margen es de 38 leads.</strong> MM completo queda en 79,2%, a ocho décimas del umbral.
+  Cualquier ajuste menor de definición —un lote más en la blacklist, una fuente reclasificada— cambia el
+  resultado. La hoja de México nunca estuvo tan cerca del filo.</p>
+</div>
+
+<h2><span class="num">6</span>Decisión</h2>
+<p>A diferencia de México, en CO el faltante no se explica por un cambio operativo sino por <strong>cómo está
+definido el indicador</strong>. Marketing aporta la mitad del hueco (627 de 1.260) y la otra mitad depende de
+qué bolsas se cuenten.</p>
+
+<div class="box key">
+  <span class="l">1 · El Descartador se suma, con el mismo criterio que en México</span>
+  <p>Son 212 leads que fueron a owners del equipo de producto, no a comerciales de Market Maker. El propio líder
+  comercial ya los excluye de su denominador por lista de owners, así que hay acuerdo en que no son asignaciones
+  comerciales — la discusión es solo si cuentan como insumo entregado al equipo, y no lo son.</p>
+</div>
+
+<div class="box warn">
+  <span class="l">2 · La bolsa de sin prioridad parece que debe incluirse, pero hay que definirla</span>
+  <p>Son leads que <strong>sí llegaron a un comercial de Market Maker</strong> y el equipo los tuvo para
+  trabajar, con tipificación o sin ella. Por eso la evidencia apunta a incluirlos. Pero la decisión no es una
+  sola: 112 de los 277 son de Broker y comercial, fuentes que el líder excluye por definición del indicador y que
+  nunca reciben prioridad. Incluir los sin prioridad sin resolver antes el criterio de fuentes cambia dos cosas
+  a la vez.</p>
+</div>
+
+<div class="box">
+  <span class="l">3 · Lo que hay que definir para cerrar</span>
+  <ul style="margin-top:7px">
+    <li><strong>¿Los 277 sin prioridad cuentan como asignados?</strong> Sin ellos no se cruza el umbral en ningún escenario que no incluya el Descartador.</li>
+    <li><strong>¿Broker y comercial son fuentes válidas del indicador?</strong> De la respuesta dependen 112 de esos 277.</li>
+    <li><strong>¿La blacklist de 433 lotes y las 5 zonas siguen vigentes?</strong> Aportan 9 leads este ciclo, pero son criterios que nadie revisó.</li>
+    <li><strong>¿Los 215 leads sin fila en el seguimiento de GABI son un problema de datos o de proceso?</strong> Es el 34% de la cola de CO y no tiene equivalente en México.</li>
+  </ul>
+</div>
+
 </div><!-- /hoja-co -->
 
 <footer>
@@ -489,14 +891,23 @@ insumo para trabajarlo</strong>, y la meta de cierres se le fijó asumiendo que 
 
 <script>
 function hoja(id){
-  for(const k of ['mx','co']){
+  for(const k of ['mxr','mx','cor','co']){
     document.getElementById('hoja-'+k).classList.toggle('on', k===id);
     document.getElementById('btn-'+k).classList.toggle('on', k===id);
   }
-  if(id==='mx') render();   // Chart.js necesita el contenedor visible para medir
+  window.scrollTo({top:0,behavior:'instant'});
+  pinta();   // Chart.js necesita el contenedor visible para medir: se pinta al mostrar
+}
+function pinta(){
+  const act = document.querySelector('.hoja.on');
+  if(!act) return;
+  if(act.id==='hoja-mxr') renderResumen();
+  else if(act.id==='hoja-mx') render();
+  else if(act.id==='hoja-cor') renderCoResumen();
+  else if(act.id==='hoja-co') renderCo();
 }
 function tg(){const l=document.body.classList.toggle('light');
-  localStorage.setItem('diag-theme',l?'light':'dark');document.getElementById('tb').textContent=l?'☀️':'🌙';render();}
+  localStorage.setItem('diag-theme',l?'light':'dark');document.getElementById('tb').textContent=l?'☀️':'🌙';pinta();}
 if(localStorage.getItem('diag-theme')==='dark'){document.body.classList.remove('light');document.getElementById('tb').textContent='🌙';}
 else{document.getElementById('tb').textContent='☀️';}
 const cv=n=>getComputedStyle(document.body).getPropertyValue(n).trim();
@@ -532,6 +943,77 @@ const umbral80={id:'u80',beforeDatasetsDraw(ch){const{ctx,chartArea,scales}=ch;c
 const piso96={id:'p96',beforeDatasetsDraw(ch){const{ctx,chartArea,scales}=ch;const y=scales.y.getPixelForValue(96);
   if(y<chartArea.top||y>chartArea.bottom)return;ctx.save();ctx.strokeStyle=cv('--mut3');ctx.lineWidth=1.5;ctx.setLineDash([5,4]);
   ctx.beginPath();ctx.moveTo(chartArea.left,y);ctx.lineTo(chartArea.right,y);ctx.stroke();ctx.restore();}};
+
+// ---------- Colombia ----------
+const CO_ESC=[{k:'Base del líder',v:73.0},{k:'+ sin prioridad',v:76.3},
+              {k:'+ fuente Broker/comercial',v:78.7},{k:'MM completo',v:79.2},
+              {k:'Base + Descartador',v:75.3},{k:'MM completo + Descartador',v:83.7}];
+const CO_ESC_R=[{k:'Base del líder',v:73.0},{k:'+ sin prioridad',v:76.3},
+                {k:'MM completo',v:79.2},{k:'MM completo + Descartador',v:83.7}];
+const CO_DIAS=[1,2,3,4,5,6,7,9,14,21];
+const CO_CURVA={
+  'C-4 · abr':[14.7,15.3,16.0,61.2,76.8,89.4,94.3,94.5,95.3,97.7],
+  'C-3 · may':[15.4,29.2,33.9,78.2,94.0,97.0,98.0,98.0,98.2,98.2],
+  'C-2 · jun':[13.1,29.9,35.9,79.5,97.6,97.6,97.6,97.6,97.6,97.6],
+  'C-1 · jul':[14.0,32.3,44.0,84.7,97.6,97.6,97.6,97.6,97.6,97.6],
+  'C0 · ago' :[14.2,34.2,61.1,85.8,91.7,91.9,91.9,91.9,94.0,98.0]};
+
+function escChart(id, datos, arr){
+  const grid=cv('--border'), tick=cv('--mut2'), card=cv('--card');
+  return new Chart(document.getElementById(id),{type:'bar',
+    data:{labels:datos.map(x=>x.k),datasets:[{label:'cumplimiento',data:datos.map(x=>x.v),
+      backgroundColor:datos.map(x=>x.v>=80?cv('--ok'):cv('--otro')),borderRadius:3}]},
+    options:{responsive:true,maintainAspectRatio:false,indexAxis:'y',
+      plugins:{legend:{display:false},
+        tooltip:{backgroundColor:card,titleColor:cv('--title'),bodyColor:cv('--mut'),borderColor:cv('--border2'),
+          borderWidth:1,padding:10,cornerRadius:5,callbacks:{label:c=>` ${String(c.parsed.x).replace('.',',')}% de la meta`}}},
+      scales:{x:{beginAtZero:true,max:95,grid:{color:grid},ticks:{color:tick,font:{size:10},callback:v=>v+'%'}},
+              y:{grid:{display:false},ticks:{color:tick,font:{size:10.5}}}}},
+    plugins:[umbral80]});
+}
+let chartsCoR=[];
+function renderCoResumen(){
+  chartsCoR.forEach(c=>c&&c.destroy()); chartsCoR=[];
+  chartsCoR.push(escChart('corEsc', CO_ESC_R));
+}
+let chartsCo=[];
+function renderCo(){
+  chartsCo.forEach(c=>c&&c.destroy()); chartsCo=[];
+  const grid=cv('--border'), tick=cv('--mut2'), card=cv('--card');
+  const ramp=['--otro','--otro','--otro','--inmo','--gabi'];
+  chartsCo.push(new Chart(document.getElementById('coCurva'),{type:'line',
+    data:{labels:CO_DIAS.map(d=>'d'+d),datasets:Object.keys(CO_CURVA).map((k,i)=>({
+      label:k,data:CO_CURVA[k],borderColor:cv(ramp[i]),backgroundColor:cv(ramp[i]),
+      borderWidth:i===4?3:1.8,borderDash:i<3?[4,3]:[],tension:.2,
+      pointRadius:i===4?4:2.5,pointHoverRadius:7,pointBorderColor:card,pointBorderWidth:1.5}))},
+    options:{responsive:true,maintainAspectRatio:false,interaction:{mode:'index',intersect:false},
+      plugins:{legend:{position:'bottom',labels:{color:tick,boxWidth:10,boxHeight:10,padding:12,usePointStyle:true,pointStyle:'rectRounded',font:{size:11}}},
+        tooltip:{backgroundColor:card,titleColor:cv('--title'),bodyColor:cv('--mut'),borderColor:cv('--border2'),
+          borderWidth:1,padding:10,cornerRadius:5,callbacks:{label:c=>` ${c.dataset.label}: ${String(c.parsed.y).replace('.',',')}%`}}},
+      scales:{x:{grid:{display:false},ticks:{color:tick,font:{size:10.5}}},
+              y:{beginAtZero:false,min:10,max:100,grid:{color:grid},border:{display:false},
+                 ticks:{color:tick,font:{size:10},callback:v=>v+'%'}}}}}));
+  chartsCo.push(escChart('coEsc', CO_ESC));
+}
+
+let chartsR=[];
+function renderResumen(){
+  chartsR.forEach(c=>c&&c.destroy()); chartsR=[];
+  const grid=cv('--border'), tick=cv('--mut2'), card=cv('--card');
+  const ESC_R=[{k:'Solo MM',v:69.5},{k:'+ exceso de las dos bolsas',v:81.2},{k:'+ las dos bolsas completas',v:85.5}];
+  chartsR.push(new Chart(document.getElementById('rEsc'),{type:'bar',
+    data:{labels:ESC_R.map(x=>x.k),datasets:[{label:'cumplimiento',data:ESC_R.map(x=>x.v),
+      backgroundColor:ESC_R.map(x=>x.v>=80?cv('--ok'):cv('--otro')),borderRadius:3}]},
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:false},
+        tooltip:{backgroundColor:card,titleColor:cv('--title'),bodyColor:cv('--mut'),borderColor:cv('--border2'),
+          borderWidth:1,padding:10,cornerRadius:5,
+          callbacks:{label:c=>` ${String(c.parsed.x).replace('.',',')}% de la meta`}}},
+      indexAxis:'y',
+      scales:{x:{beginAtZero:true,max:95,grid:{color:grid},ticks:{color:tick,font:{size:10},callback:v=>v+'%'}},
+              y:{grid:{display:false},ticks:{color:tick,font:{size:11}}}}},
+    plugins:[umbral80]}));
+}
 
 let charts=[];
 function render(){
@@ -595,7 +1077,7 @@ function render(){
         y:{grid:{display:false},ticks:{color:tick,font:{size:10.5}}}}},
     plugins:[umbral80]}));
 }
-render();
+pinta();
 </script>
 </body>
 </html>
