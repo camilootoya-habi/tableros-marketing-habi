@@ -40,18 +40,34 @@ recuperación que traen `kind` vacío. Un teléfono tiene **una** ruta: la de su
 Verificado el 7-sep: 265 compra_directa (plantilla `ventanas_compra_co_v1`), 61 tibio
 (`ventanas_tibio_co_v1`), 652 nocontesta (`ventanas_nocontesta_co_v1`).
 
+**Deuda de DDL (`flujo`).** La columna la escribe el receptor (`hubspot_leads/webhook.py:186`) y
+existe en Neon. En el DDL versionado (`db/schema.sql`) está declarada desde el commit `117acb5`
+del 27-ago (`ALTER TABLE ventanas_hs_inbound ADD COLUMN IF NOT EXISTS flujo text`) **solo en las
+ramas `feat/whatsapp-sdr-agent` y `feat/sevende-dev`**; falta en `master`, `build/v1`,
+`feat/agente-sdr-dev`, `feat/brokermatch` y `feat/neon-transfer-optim`. El endpoint de §5.2 va en
+la rama del agente, que ya la tiene. Llevar el ALTER a `master` queda anotado como deuda de la
+sesión VENTANAS; no bloquea este cambio.
+
 ### 3.3 Exclusiones
 - `action LIKE 'DRY:%'` se excluye **siempre** (pruebas en seco).
 - `action LIKE 'RECUPERADO_%'` (tandas manuales del 26, 28 y 31-ago, 441 filas) se excluye del
   **bloque 1** porque no son POSTs del workflow de HubSpot y el bloque 1 mide a HubSpot. **Sí**
   cuentan para asignar cohorte y ruta en el bloque 3: esa gente entró al pipeline ese día.
-  El tooltip de "POSTs recibidos" lo dice.
+  Para que los denominadores no se crucen, el bloque 3 tiene su **propia columna "Cohorte"**
+  (fila 3b: teléfonos con primer POST ese día, recuperados incluidos) y la conversión total
+  (fila 19) divide por ella, nunca por "Personas nuevas" del bloque 1. La fila "Recuperados"
+  (3c) muestra cuántos de la cohorte entraron por tanda manual. El tooltip de "POSTs
+  recibidos" y el de "Cohorte" lo explican.
 
 ### 3.4 Semáforo
 - **Referencia** (fila al pie): mediana de los **últimos 7 días hábiles maduros** de cada
   columna, por ruta seleccionada. Se calcula en el build, no en el navegador.
 - **Rojo por caída**: celda **< 30 %** de su referencia. Aplica solo a columnas de volumen y de
-  conversión: filas 1, 2, 3, 7, 11, 12, 13, 14, 19. Si la referencia es 0 no se pinta.
+  conversión: filas 1, 2, 3, 3b, 7, 11, 12, 13, 14, 19. Si la referencia es 0 no se pinta.
+  **HOY queda exento de esta regla**: el día está incompleto hasta la noche y a las 10 am
+  cualquier día normal está por debajo del 30 % de la mediana. Para HOY solo aplica la regla
+  de silencio (fila 6) y las de falla (>0). El día de ayer entra a la regla solo si ya es
+  día completo (siempre lo es en el build de 9:30).
 - **Rojo por falla** (>0): SIN_DIRECCION, NO_TEMPLATE, SEND_FAIL, BAD_PHONE (fila 5), Rechazos
   de Infobip (9), Deal falló (16), Errores del agente (24), Plantilla no APPROVED (25).
 - **Gris** (guarda, informativo): TERMINAL, CAP_DIARIO, FUERA_HORARIO, DEDUP.
@@ -86,6 +102,8 @@ La ruta de un envío es la ruta del teléfono (§3.2).
 ### Bloque 3 · Embudo por cohorte (fila = día del primer POST del teléfono, incluye RECUPERADO)
 | # | Métrica | Cálculo |
 |---|---|---|
+| 3b | Cohorte | teléfonos cuyo primer POST no `DRY:` (incluye `RECUPERADO_%`) es ese día. Es el denominador de todo el bloque. En días sin recuperación coincide con la fila 3 |
+| 3c | Recuperados | de la cohorte, teléfonos cuyo primer POST es una fila `RECUPERADO_%`. Informativa, en gris |
 | 11 | Respondieron | teléfonos de la cohorte con turno `role='user'` y `campaign='ventanas'` en `agent_thread` **∪** con `responded_at` no nulo en `contact_status`. La unión es obligatoria: los clics de botón no llegan al agente |
 | 12 | Consintieron | `ventanas_intake.consent = true`. % sobre 11 |
 | 13 | Entrevista completa | `completed_at IS NOT NULL AND step IS NULL`. % sobre 12 |
@@ -94,7 +112,7 @@ La ruta de un envío es la ruta del teléfono (§3.2).
 | 16 | Deal falló | `resultado='BACKBONE_FAILED'`. Rojo siempre; `http_code`s en el tooltip |
 | 17 | Handoff a Dapta | teléfonos en `ventanas_dapta_handoff`, dos sub-columnas: `SIN_RESPUESTA_24H` (salida normal) y `PIDE_LLAMADA` (intención positiva) |
 | 18 | Opt-out | teléfonos con `action_taken='CLOSE_OPT_OUT'` en `agent_thread`. Rojo si > 5 % de 11 |
-| 19 | Conversión total | 14 ÷ 3 (deal completo sobre personas nuevas). Solo cohortes maduras; en inmaduras la celda dice "·" |
+| 19 | Conversión total | 14 ÷ 3b (deal completo sobre **cohorte**, no sobre personas nuevas del bloque 1). Solo cohortes maduras; en inmaduras la celda dice "·" |
 | 20 | Horas a deal | mediana de `lead_fired_at − primer POST`, en horas, por cohorte |
 
 Cada columna 11–14 lleva debajo, en pequeño, el % sobre la columna anterior.
@@ -132,7 +150,7 @@ Salida en `data.json` bajo `ventanas.control`:
 ```
 donde B1 = `{posts, personas, nuevas, dedup_pct, bloqueos:{action:n}, ultimo_post:"HH:MM"}`,
 B2 = `{primer_envio, seguimientos, rechazos}`,
-B3 = `{respondieron, consintieron, entrevista_completa, deal_completo, deal_parcial, deal_fallo, deal_fallo_codes:[..], handoff_sin_respuesta, handoff_pide_llamada, optout, conversion_total, horas_a_deal}`.
+B3 = `{cohorte, recuperados, respondieron, consintieron, entrevista_completa, deal_completo, deal_parcial, deal_fallo, deal_fallo_codes:[..], handoff_sin_respuesta, handoff_pide_llamada, optout, conversion_total, horas_a_deal}`.
 `dias` trae los últimos **20 días hábiles** más hoy y los fines de semana intermedios (marcados
 `habil:false`, se muestran atenuados para que el eje de fechas no mienta).
 
@@ -163,8 +181,10 @@ control segmentado (`.seg .winbtn.sm`, igual al de rango del embudo). Toda métr
   Las columnas semanales (10, 25) no van en esta tabla: van en una mini-tabla "Semanal" a la
   derecha de la franja del bloque 4.
 - **Franja bloque 4**: 5 celdas tipo KPI (21–25), con el semáforo de §3.4.
-- **Gráfica de volumen** (Chart.js): barras **apiladas** de personas nuevas por día, una serie
-  por ruta, colores fijos por ruta validados en claro y oscuro. Fines de semana atenuados.
+- **Gráfica de volumen** (Chart.js): barras **apiladas** por día: una serie por ruta con las
+  personas nuevas de HubSpot (fila 3) más una serie gris "Recuperados" (fila 3c). Así la
+  altura total es la cohorte (fila 3b) y las dos gráficas cubren los mismos días. Colores fijos
+  por ruta validados en claro y oscuro. Fines de semana atenuados.
 - **Gráfica de calidad**: líneas de conversión total (fila 19) por cohorte **madura**, una por
   ruta, eje en %; cohortes inmaduras no se dibujan. Un solo eje.
 
@@ -178,8 +198,9 @@ control segmentado (`.seg .winbtn.sm`, igual al de rango del embudo). Toda métr
 
 ## 7. Pruebas
 - Python: `tests/test_ventanas_control.py` con fixtures de 10–20 filas: ruta (los 3 casos +
-  kind vacío con gestión WhatsApp), cohorte y madurez, unión de "Respondieron", deal completo
-  vs parcial, mediana de referencia con fines de semana intermedios, semáforo (<30 %, fallas,
+  kind vacío con gestión WhatsApp), cohorte y madurez, cohorte con recuperados (3b ≥ 3, y la
+  fila 19 divide por 3b), unión de "Respondieron", deal completo vs parcial, mediana de
+  referencia con fines de semana intermedios, semáforo (<30 % sin pintar HOY, fallas,
   silencio, opt-out 5 %).
 - Contrato: test nuevo en marketing-loop-sellers para `/api/ventanas/control-hoy`.
 - Visual: captura headless en claro y oscuro, pestaña Ventanas, antes del commit.
