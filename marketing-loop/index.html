@@ -1097,7 +1097,7 @@ function renderSerie(){
     plugins:[_barLabels],
     data:{labels:d.rows.map(r=>r.lab), datasets:d.series.map(x=>x.line
       ? {type:'line', label:x.lab, data:d.rows.map(r=>r[x.k]), borderColor:col[x.k], backgroundColor:col[x.k],
-         borderWidth:2, tension:.3, pointRadius:3, pointHoverRadius:5, order:0}
+         borderWidth:2, tension:.3, pointRadius:3, pointHoverRadius:5, order:0, yAxisID:'y2'}
       : {label:x.lab, data:d.rows.map(r=>r[x.k]), backgroundColor:col[x.k], borderRadius:4, borderSkipped:'bottom',
          maxBarThickness:28, order:1, _labels:!!x.labels})},
     options:{responsive:true, maintainAspectRatio:false, interaction:{mode:'index', intersect:false},
@@ -1106,7 +1106,13 @@ function renderSerie(){
         label:c=>' '+c.dataset.label+': '+fmt(c.parsed.y),
         afterBody:items=>{ const r=d.rows[items[0].dataIndex]; return d.extra.map(([l,k])=>l+': '+fmt(r[k])); }}}},
       scales:{x:{ticks:{color:tick, maxRotation:0, autoSkip:true, maxTicksLimit:14}, grid:{display:false}, border:{display:false}},
-        y:{beginAtZero:true, ticks:{color:tick, precision:0, maxTicksLimit:6}, grid:{color:grid}, border:{display:false}}}}});
+        y:{beginAtZero:true, position:'left', ticks:{color:tick, precision:0, maxTicksLimit:6}, grid:{color:grid}, border:{display:false},
+           title:{display:true, text:d.series.filter(x=>!x.line).map(x=>x.lab).join(' · '), color:tick, font:{size:11}}},
+        // La línea (volumen) va en un eje derecho propio, pedido así: las barras quedan legibles
+        // en el izquierdo. Los ejes NO son comparables entre sí; el título de cada uno lo dice.
+        y2:{beginAtZero:true, position:'right', ticks:{color:col[d.series.find(x=>x.line).k], precision:0, maxTicksLimit:6},
+           grid:{drawOnChartArea:false}, border:{display:false},
+           title:{display:true, text:d.series.find(x=>x.line).lab, color:col[d.series.find(x=>x.line).k], font:{size:11}}}}}});
 }
 function renderAgentePanel(){ /* absorbido por renderSerie (pestaña "Agente IA") */ }
 
