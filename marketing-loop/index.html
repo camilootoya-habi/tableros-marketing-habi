@@ -310,6 +310,10 @@
   .flab{font-size:13px;font-weight:500;color:var(--text-muted)}
   .fval{font-weight:600;font-size:30px;letter-spacing:-0.5px;font-variant-numeric:tabular-nums;
     line-height:1.05;white-space:nowrap;color:var(--text-title)}
+  .fprev{font-size:11.5px;color:var(--text-muted);font-variant-numeric:tabular-nums;white-space:nowrap;
+    margin:-2px 0 2px}
+  .fprev b{font-weight:600}
+  .fprev .up{color:var(--ok)} .fprev .down{color:var(--bad)}
   .fbar{height:10px;background:var(--barbg);border-radius:9999px;overflow:hidden}
   .fbar>div{height:100%;border-radius:9999px}
   .fsplit{font-size:11.5px;color:var(--text-muted);font-variant-numeric:tabular-nums;
@@ -933,16 +937,29 @@ function renderEmbudo(){
   const R=(P[canalSel]||{})[rangoFunnel]||{};
   const bq=((D.panel_bq||{})[country]||{})[_RANGO_BQ[rangoFunnel]]||{};
   const soloVent = canalSel==='ventanas';
+  const RP=R.prev||{}, bqP=bq.prev||{};
   const citas   = soloVent?0:(+bq.citas||0);
   const cierres = soloVent?0:((+bq.cierres_mm||0)+(+bq.cierres_inmo||0));
+  const citasP  = soloVent?0:(+bqP.citas||0);
+  const cierresP= soloVent?0:((+bqP.cierres_mm||0)+(+bqP.cierres_inmo||0));
   const sp=(k)=>{ if(canalSel!=='agregado') return ''; const w=((P.web||{})[rangoFunnel]||{})[k]||0, v=((P.ventanas||{})[rangoFunnel]||{})[k]||0;
     return 'Web '+fmt(w)+' · Ventanas '+fmt(v); };
+  // prev = periodo contiguo del mismo largo justo antes (hoy → ayer). Solo se pinta si el
+  // data.json ya lo trae; un build viejo simplemente no muestra la línea.
+  const hayPrev = !!(R.prev || bq.prev);
   const pasos=[
-    {lab:'Envíos entregados', val:+R.entregados||0, color:'var(--accent)', split:sp('entregados')},
-    {lab:'Leads re-asignados', val:+R.reasignados||0, color:'#A855F7', split:sp('reasignados')},
-    {lab:'Citas agendadas', val:citas, color:'#2DD4BF', split:''},
-    {lab:'Cierres', val:cierres, color:'var(--ok)', split:''},
+    {lab:'Envíos entregados', val:+R.entregados||0, prev:+RP.entregados||0, color:'var(--accent)', split:sp('entregados')},
+    {lab:'Leads re-asignados', val:+R.reasignados||0, prev:+RP.reasignados||0, color:'#A855F7', split:sp('reasignados')},
+    {lab:'Citas agendadas', val:citas, prev:citasP, color:'#2DD4BF', split:''},
+    {lab:'Cierres', val:cierres, prev:cierresP, color:'var(--ok)', split:''},
   ];
+  const prevLbl = rangoFunnel==='hoy' ? 'ayer' : 'periodo anterior';
+  const prevHtml=(s)=>{
+    if(!hayPrev) return '';
+    let d='';
+    if(s.prev>0){ const p=(s.val-s.prev)/s.prev*100; const cls=p>0?'up':(p<0?'down':'');
+      d=` <span class="${cls}">${p>0?'+':''}${Math.round(p)}%</span>`; }
+    return `<div class="fprev">${prevLbl} <b>${fmt(s.prev)}</b>${d}</div>`; };
   const base=pasos[0].val||1;
   const tabs=['hoy','7','30','90'].map(r=>`<button type="button" class="winbtn sm${r===rangoFunnel?' active':''}" onclick="setRango('${r}')">${r==='hoy'?'Hoy':r+' d'}</button>`).join('');
   const cuerpo=pasos.map((s,i)=>{
@@ -953,6 +970,7 @@ function renderEmbudo(){
       <div class="fbody">
         <div class="flab">${s.lab}</div>
         <div class="fval">${fmt(s.val)}</div>
+        ${prevHtml(s)}
         <div class="fbar"><div style="width:${ancho}%;background:${s.color}"></div></div>
         ${s.split?`<div class="fsplit">${s.split}</div>`:''}
       </div>

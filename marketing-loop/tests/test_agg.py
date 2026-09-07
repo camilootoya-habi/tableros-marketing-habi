@@ -107,3 +107,36 @@ def test_merge_neon_undeliverable_overrides_but_keeps_seen():
     mbm = {"m1": {"status": "delivered", "error_name": "No Error (code 0)", "seen": True}}
     agg.merge_neon_delivery(mbm, {"m1": {"status": "undeliverable", "error_name": "EC_X (code 5)"}})
     assert mbm["m1"]["status"] == "undeliverable" and mbm["m1"]["seen"] is True
+
+
+# ---- Panel: periodo actual vs periodo inmediatamente anterior ----
+import datetime as _dt
+from agg import rango_periodos, panel_bq_shape
+
+def test_rango_periodos_hoy_vs_ayer():
+    r = rango_periodos(_dt.date(2026, 9, 7), 0)
+    assert r == {"ini": "2026-09-07", "fin": "2026-09-07",
+                 "prev_ini": "2026-09-06", "prev_fin": "2026-09-06"}
+
+def test_rango_periodos_7d_es_contiguo_y_del_mismo_largo():
+    r = rango_periodos(_dt.date(2026, 9, 7), 6)   # 7 días incluyendo hoy
+    assert r == {"ini": "2026-09-01", "fin": "2026-09-07",
+                 "prev_ini": "2026-08-25", "prev_fin": "2026-08-31"}
+
+def test_panel_bq_shape_anida_prev_por_pais_y_rango():
+    rows = [
+        {"pais": "CO", "dias": 7, "citas": 27, "cierres_mm": 0, "cierres_inmo": 2,
+         "citas_prev": 30, "cierres_mm_prev": 1, "cierres_inmo_prev": None},
+        {"pais": "MX", "dias": 0, "citas": "7", "cierres_mm": 0, "cierres_inmo": 0,
+         "citas_prev": 5, "cierres_mm_prev": 0, "cierres_inmo_prev": 0},
+    ]
+    out = panel_bq_shape(rows)
+    assert out["CO"]["7"] == {"citas": 27, "cierres_mm": 0, "cierres_inmo": 2,
+                              "prev": {"citas": 30, "cierres_mm": 1, "cierres_inmo": 0}}
+    assert out["MX"]["0"]["citas"] == 7 and out["MX"]["0"]["prev"]["citas"] == 5
+    assert out["CO"].keys() == {"7"} and out["MX"].keys() == {"0"}
+
+def test_panel_bq_shape_sin_prev_en_filas_viejas():
+    # query viejo (sin columnas *_prev) → prev en 0, no explota
+    out = panel_bq_shape([{"pais": "CO", "dias": 30, "citas": 1, "cierres_mm": 0, "cierres_inmo": 0}])
+    assert out["CO"]["30"]["prev"] == {"citas": 0, "cierres_mm": 0, "cierres_inmo": 0}

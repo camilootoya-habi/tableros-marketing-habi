@@ -409,41 +409,54 @@ def build_country(pais):
     # traen campaign NULL (el sender del loop todavía no la escribe), así que "web" = todo lo
     # que NO es ventanas — que es exactamente lo que significa hoy.
     _rangos = {"hoy": 0, "7": 6, "30": 29, "90": 89}
-    def _desde(nd):
-        return (_hoy_l - datetime.timedelta(days=nd)).isoformat()
+    # Cada rango trae también `prev`: el periodo contiguo del mismo largo justo antes
+    # (hoy vs ayer, 7d vs los 7 anteriores...), para el comparativo del embudo.
+    _lim = {k: agg.rango_periodos(_hoy_l, nd) for k, nd in _rangos.items()}
+    def _bucket_rango(f, k):
+        """'cur' si f cae en el rango k, 'prev' si cae en el periodo anterior, None si no."""
+        L = _lim[k]
+        if L["ini"] <= f <= L["fin"]: return "cur"
+        if L["prev_ini"] <= f <= L["prev_fin"]: return "prev"
+        return None
     _canal_de = lambda r: "ventanas" if (r.get("campaign") == "ventanas") else "web"
-    panel = {c: {k: {"entregados": 0, "enviados": 0, "reasignados": 0} for k in _rangos}
+    _vacio = lambda: {"entregados": 0, "enviados": 0, "reasignados": 0}
+    panel = {c: {k: {**_vacio(), "prev": _vacio()} for k in _rangos}
              for c in ("agregado", "web", "ventanas")}
+    def _dst(c, k, b):
+        return panel[c][k] if b == "cur" else panel[c][k]["prev"]
     for r in sl_cosecha:
         f = (r.get("attempted_at") or "")[:10]
         if not f: continue
         m = mbm.get(r.get("message_id") or "")
         entregado = bool(m and m.get("status") == "delivered")
         cn = _canal_de(r)
-        for k, nd in _rangos.items():
-            if f >= _desde(nd):
-                for dst in (panel[cn][k], panel["agregado"][k]):
-                    dst["enviados"] += 1
-                    if entregado: dst["entregados"] += 1
+        for k in _rangos:
+            b = _bucket_rango(f, k)
+            if not b: continue
+            for c in (cn, "agregado"):
+                _dst(c, k, b)["enviados"] += 1
+                if entregado: _dst(c, k, b)["entregados"] += 1
     # Leads re-asignados por canal. El loop los crea vía `recreation`; ventanas NO pasa por ahí
     # —su lead lo dispara el agente— así que se cuentan sus BACKBONE en agent_thread. Darlos por
     # 0, como estaba antes, escondía que la campaña ya está generando leads.
     for rr in rec:
         f = str(rr.get("created_at") or "")[:10]
         if not f: continue
-        for k, nd in _rangos.items():
-            if f >= _desde(nd):
-                panel["web"][k]["reasignados"] += 1
-                panel["agregado"][k]["reasignados"] += 1
+        for k in _rangos:
+            b = _bucket_rango(f, k)
+            if not b: continue
+            _dst("web", k, b)["reasignados"] += 1
+            _dst("agregado", k, b)["reasignados"] += 1
     _vent = N._rows(
         "SELECT (ts AT TIME ZONE %s)::date::text AS f, count(DISTINCT phone) AS n "
         "FROM agent_thread WHERE country=%s AND campaign='ventanas' "
         "  AND action_taken IN ('BACKBONE','BACKBONE_SANITIZED') GROUP BY 1", (N.TZ[pais], pais))
     for r in _vent:
-        for k, nd in _rangos.items():
-            if r["f"] >= _desde(nd):
-                panel["ventanas"][k]["reasignados"] += int(r["n"] or 0)
-                panel["agregado"][k]["reasignados"] += int(r["n"] or 0)
+        for k in _rangos:
+            b = _bucket_rango(r["f"], k)
+            if not b: continue
+            _dst("ventanas", k, b)["reasignados"] += int(r["n"] or 0)
+            _dst("agregado", k, b)["reasignados"] += int(r["n"] or 0)
     # Serie del loop y del agente por día, para las dos tablas del panel
     _rec_dia = {}
     for rr in rec:
@@ -820,9 +833,7 @@ data={
   "plantillas": {"MX": mx["plantillas"], "CO": co["plantillas"]},
   "reasignados_dia": {"MX": mx["reasignados_dia"], "CO": co["reasignados_dia"]},
   # citas y cierres por rango, indexados pais -> rango
-  "panel_bq": (lambda rows: {p: {str(r["dias"]): {k: int(r[k] or 0) for k in ("citas","cierres_mm","cierres_inmo")}
-                                 for r in rows if r["pais"] == p}
-                             for p in ("MX","CO")})(q("query_panel.sql")),
+  "panel_bq": agg.panel_bq_shape(q("query_panel.sql")),
   "kpis": {r["pais"]: r for r in q("query_kpis.sql")},
   "cosecha_agente": {"MX": mx["cosecha_agente"], "CO": co["cosecha_agente"]},
   "agente_conversaciones": {"MX": mx["agente_conversaciones"], "CO": co["agente_conversaciones"]},

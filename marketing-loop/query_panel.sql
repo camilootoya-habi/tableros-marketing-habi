@@ -14,11 +14,16 @@ WITH d AS (
   QUALIFY ROW_NUMBER() OVER (PARTITION BY nid ORDER BY createdate DESC)=1
 ),
 r AS (SELECT * FROM UNNEST([0,7,30,90]) AS dias)
+-- Cada rango es una ventana de (dias+1) días que termina hoy. *_prev = la ventana contigua
+-- del mismo largo justo antes (hoy vs ayer, 7 → los 8 días previos, ...), para el comparativo.
 SELECT
   d.pais, r.dias,
   COUNTIF(d.f_cita >= DATE_SUB(CURRENT_DATE(), INTERVAL r.dias DAY)) AS citas,
   COUNTIF(d.f_mm   >= DATE_SUB(CURRENT_DATE(), INTERVAL r.dias DAY)) AS cierres_mm,
-  COUNTIF(d.f_inmo >= DATE_SUB(CURRENT_DATE(), INTERVAL r.dias DAY)) AS cierres_inmo
+  COUNTIF(d.f_inmo >= DATE_SUB(CURRENT_DATE(), INTERVAL r.dias DAY)) AS cierres_inmo,
+  COUNTIF(d.f_cita BETWEEN DATE_SUB(CURRENT_DATE(), INTERVAL 2*r.dias+1 DAY) AND DATE_SUB(CURRENT_DATE(), INTERVAL r.dias+1 DAY)) AS citas_prev,
+  COUNTIF(d.f_mm   BETWEEN DATE_SUB(CURRENT_DATE(), INTERVAL 2*r.dias+1 DAY) AND DATE_SUB(CURRENT_DATE(), INTERVAL r.dias+1 DAY)) AS cierres_mm_prev,
+  COUNTIF(d.f_inmo BETWEEN DATE_SUB(CURRENT_DATE(), INTERVAL 2*r.dias+1 DAY) AND DATE_SUB(CURRENT_DATE(), INTERVAL r.dias+1 DAY)) AS cierres_inmo_prev
 FROM d CROSS JOIN r
 GROUP BY d.pais, r.dias
 ORDER BY d.pais, r.dias
