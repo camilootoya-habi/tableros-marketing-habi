@@ -79,6 +79,16 @@
   .ch.tall{height:280px}
   .leg{display:flex;flex-wrap:wrap;gap:6px 18px;font-size:12.5px;color:var(--text-muted);margin:2px 0 10px}
   .leg i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:6px;vertical-align:-1px}
+  .info{display:inline-flex;width:14px;height:14px;border-radius:50%;background:var(--border-strong);color:var(--card);
+    font-size:9.5px;font-weight:800;font-style:normal;align-items:center;justify-content:center;cursor:help;margin-left:5px;
+    vertical-align:1px;position:relative;outline:none}
+  .info:hover,.info:focus{background:var(--accent);color:var(--accent-on)}
+  .info::after{content:attr(data-tip);position:absolute;left:50%;bottom:calc(100% + 8px);transform:translateX(-50%);
+    width:max-content;max-width:300px;white-space:normal;background:var(--text-title);color:var(--card);font-size:12px;
+    font-weight:400;line-height:1.45;padding:8px 11px;border-radius:8px;box-shadow:var(--shadow);opacity:0;visibility:hidden;
+    pointer-events:none;transition:opacity .12s;z-index:40;text-align:left}
+  .info:hover::after,.info:focus::after{opacity:1;visibility:visible}
+  .leg i.ln{height:3px;width:16px;border-radius:2px;vertical-align:3px}
   .tbltoggle{margin-top:10px}
   .linkbtn{background:none;border:0;padding:0;color:var(--text-muted);font-size:12.5px;cursor:pointer;text-decoration:underline dotted}
   .linkbtn:hover{color:var(--text)}
@@ -958,10 +968,10 @@ function renderEmbudo(){
   // data.json ya lo trae; un build viejo simplemente no muestra la línea.
   const hayPrev = !!(R.prev || bq.prev);
   const pasos=[
-    {lab:'Envíos entregados', val:+R.entregados||0, prev:+RP.entregados||0, color:'var(--accent)', split:sp('entregados')},
-    {lab:'Leads re-asignados', val:+R.reasignados||0, prev:+RP.reasignados||0, color:'#A855F7', split:sp('reasignados')},
-    {lab:'Citas agendadas', val:citas, prev:citasP, color:'#2DD4BF', split:''},
-    {lab:'Cierres', val:cierres, prev:cierresP, color:'var(--ok)', split:''},
+    {lab:'Envíos entregados'+I('f_ent'), val:+R.entregados||0, prev:+RP.entregados||0, color:'var(--accent)', split:sp('entregados')},
+    {lab:'Leads re-asignados'+I('f_re'), val:+R.reasignados||0, prev:+RP.reasignados||0, color:'#A855F7', split:sp('reasignados')},
+    {lab:'Citas agendadas'+I('f_cita'), val:citas, prev:citasP, color:'#2DD4BF', split:''},
+    {lab:'Cierres'+I('f_cie'), val:cierres, prev:cierresP, color:'var(--ok)', split:''},
   ];
   const prevLbl = rangoFunnel==='hoy' ? 'ayer' : 'periodo anterior';
   const prevHtml=(s)=>{
@@ -1002,9 +1012,35 @@ function _dia(b){ if(!/^\d{4}-\d{2}-\d{2}$/.test(b)) return b;
 // Serie del loop / Agente IA: una card, dos pestañas, una gráfica de barras agrupadas por
 // periodo (Temporalidad). Colores fijos por ENTIDAD (no por posición): re-asignados = acento,
 // interesados = teal, atendidos = ámbar. Validados (dataviz) en claro y oscuro.
+// Cómo se calcula cada métrica (la "i" al lado del nombre).
+const MET_HELP={
+  env:'Mensajes de reactivación enviados (aceptados por Infobip) en el periodo, por fecha de envío. Fuente: send_log (Neon), un registro por intento.',
+  ent:'Envíos que llegaron al celular (estado DELIVERED). Se cruza el message_id de cada envío con el estado de entrega de Infobip (mart + API /logs) y la entrega persistida en Neon.',
+  lei:'Apertura: entregados con marca de lectura (SEEN) reportada por WhatsApp vía Infobip. El día en curso llega con rezago y WhatsApp no la reporta en todos los casos.',
+  inte:'Destinatarios que respondieron con el botón «Estoy interesado» del mensaje (payload INTERESADO). Fuente: mart inbound de Infobip. Es el objetivo del envío.',
+  re:'Leads re-asignados: interesados cuyo lead se recreó en el backbone (nuevo negocio en HubSpot con UTM reinteresados) y pasó a gestión comercial. Por fecha de creación.',
+  pinte:'Interesados ÷ Entregados del periodo mostrado.',
+  at:'Conversaciones de texto libre atendidas por el agente IA en vivo: teléfonos únicos con al menos un turno del agente ese día (los modos SHADOW no cuentan).',
+  ainte:'Conversaciones donde el agente detectó intención de vender (intent = INTERESTED) durante el diálogo.',
+  are:'Conversaciones que el agente cerró disparando el lead al backbone (acción BACKBONE): el lead quedó recreado y asignado.',
+  pconv:'Re-asignados ÷ Atendidos, sobre toda la serie del agente.',
+  f_ent:'Mensajes del loop entregados (DELIVERED) en el rango, por fecha de envío. Agregado = Web + Ventanas.',
+  f_re:'Leads recreados en el backbone en el rango: los del loop vía recreation y los de Ventanas vía BACKBONE del agente.',
+  f_cita:'Negocios con UTM reinteresados cuya fecha_de_visita cae en el rango (HubSpot deals).',
+  f_cie:'Dos líneas sumadas: compra directa (Cierre - Comprado, por closedate) + captación de la red de aliados (contrato/mandato firmado). No son el mismo evento.'};
+const I=k=>MET_HELP[k]?`<span class="info" tabindex="0" data-tip="${MET_HELP[k].replace(/"/g,'&quot;')}">i</span>`:'';
 let serieTabSel='loop', serieChart=null, serieTablaVisible=false;
+// re-asignados = acento · interesados = teal · leídos/apertura = ámbar · volumen (línea) = neutro.
 const _SERIE_COL=()=>document.body.classList.contains('dark')
-  ? {re:'#9F67F5', inte:'#0D9488', at:'#D97706'} : {re:'#7E22CE', inte:'#0D9488', at:'#D97706'};
+  ? {re:'#9F67F5', inte:'#0D9488', lei:'#D97706', env:'#D6D0DD', at:'#D6D0DD'}
+  : {re:'#7E22CE', inte:'#0D9488', lei:'#D97706', env:'#525252', at:'#525252'};
+// Etiqueta con el valor encima de las barras marcadas con _labels (re-asignados: son pocos
+// frente al volumen de la línea y sin la cifra no se leen).
+const _barLabels={id:'barLabels',afterDatasetsDraw(ch,_a,o){const {ctx}=ch;
+  ch.data.datasets.forEach((ds,i)=>{ if(!ds._labels) return; const m=ch.getDatasetMeta(i); if(m.hidden) return;
+    ctx.save(); ctx.font='600 11px system-ui,-apple-system,sans-serif'; ctx.fillStyle=o.color||'#404040';
+    ctx.textAlign='center'; ctx.textBaseline='bottom';
+    m.data.forEach((b,j)=>{ const v=ds.data[j]; if(v>0) ctx.fillText(fmt(v), b.x, b.y-3); }); ctx.restore(); });}};
 const _GRAN_LBL={dia:'Diario',semana:'Semanal',mes:'Mensual'};
 function setSerieTab(t){ serieTabSel=t;
   document.querySelectorAll('#serieSeg [data-st]').forEach(b=>b.classList.toggle('active', b.dataset.st===t));
@@ -1018,27 +1054,27 @@ function _reasigPorBucket(buckets, rec){
     out[b]=keys.filter(d=>d>=b && d<nx).reduce((a,d)=>a+(+rec[d]||0),0); });
   return out;
 }
-function _kpis(items){ return `<div class="akpis">${items.map(([l,v])=>`<div><div class="flab">${l}</div><div class="fval">${v}</div></div>`).join('')}</div>`; }
+function _kpis(items){ return `<div class="akpis">${items.map(([l,v,k])=>`<div><div class="flab">${l}${I(k)}</div><div class="fval">${v}</div></div>`).join('')}</div>`; }
 function _serieDatos(){
   if(serieTabSel==='loop'){
     const raw=(((D.cosecha||{})[country]||{})[cicloTipo]||[]).slice(-14);
     const rec=_reasigPorBucket(raw.map(r=>r.bucket), (D.reasignados_dia||{})[country]||{});
-    const rows=raw.map(r=>({lab:_dia(r.bucket), env:+r.enviados||0, ent:+r.entregados||0, inte:+r.interesados||0, re:rec[r.bucket]||0}));
-    const t=rows.reduce((a,r)=>({env:a.env+r.env,ent:a.ent+r.ent,inte:a.inte+r.inte,re:a.re+r.re}),{env:0,ent:0,inte:0,re:0});
+    const rows=raw.map(r=>({lab:_dia(r.bucket), env:+r.enviados||0, ent:+r.entregados||0, lei:+r.leidos||0, inte:+r.interesados||0, re:rec[r.bucket]||0}));
+    const t=rows.reduce((a,r)=>({env:a.env+r.env,ent:a.ent+r.ent,lei:a.lei+r.lei,inte:a.inte+r.inte,re:a.re+r.re}),{env:0,ent:0,lei:0,inte:0,re:0});
     return {titulo:'Serie del loop', sub:'Envíos, entregas y conversión · '+_GRAN_LBL[cicloTipo]+' · solo reactivación',
-      kpis:[['Envíos',fmt(t.env)],['Entregados',fmt(t.ent)],['Interesados',fmt(t.inte)],['Re-asignados',fmt(t.re)],['% interesados',t.ent>0?pct(t.inte/t.ent*100):'·']],
-      series:[{k:'inte',lab:'Interesados'},{k:'re',lab:'Re-asignados'}], extra:[['Envíos','env'],['Entregados','ent']], rows,
-      tabla:`<table><thead><tr><th>Día</th><th style="text-align:right">Envíos</th><th style="text-align:right">Entregados</th>
+      kpis:[['Envíos',fmt(t.env),'env'],['Entregados',fmt(t.ent),'ent'],['Leídos',fmt(t.lei),'lei'],['Interesados',fmt(t.inte),'inte'],['Re-asignados',fmt(t.re),'re'],['% interesados',t.ent>0?pct(t.inte/t.ent*100):'·','pinte']],
+      series:[{k:'env',lab:'Envíos',line:true},{k:'lei',lab:'Leídos (apertura)'},{k:'re',lab:'Re-asignados',labels:true}], extra:[['Entregados','ent'],['Interesados','inte']], rows,
+      tabla:`<table><thead><tr><th>Día</th><th style="text-align:right">Envíos</th><th style="text-align:right">Entregados</th><th style="text-align:right">Leídos</th>
         <th style="text-align:right">Interesados</th><th style="text-align:right">Re-asignados</th></tr></thead><tbody>
-        ${rows.map(r=>`<tr><td>${r.lab}</td><td style="text-align:right">${fmt(r.env)}</td><td style="text-align:right">${fmt(r.ent)}</td>
+        ${rows.map(r=>`<tr><td>${r.lab}</td><td style="text-align:right">${fmt(r.env)}</td><td style="text-align:right">${fmt(r.ent)}</td><td style="text-align:right">${fmt(r.lei)}</td>
         <td style="text-align:right"><b>${fmt(r.inte)}</b></td><td style="text-align:right;color:var(--accent);font-weight:600">${fmt(r.re)}</td></tr>`).join('')}</tbody></table>`};
   }
   const serie=((D.agente_ia||{})[country]||[]);
   const tot=serie.reduce((a,r)=>({at:a.at+(+r.conversaciones||0), inte:a.inte+(+r.interesados||0), re:a.re+(+r.reasignados||0)}),{at:0,inte:0,re:0});
   const rows=serie.slice(-14).map(r=>({lab:_dia(r.fecha), at:+r.conversaciones||0, inte:+r.interesados||0, re:+r.reasignados||0}));
   return {titulo:'Solo agente IA', sub:'Respuestas de texto libre · '+_GRAN_LBL[cicloTipo]+' · todas las campañas',
-    kpis:[['Atendidos',fmt(tot.at)],['Interesados',fmt(tot.inte)],['Re-asignados',fmt(tot.re)],['% conversión',tot.at>0?pct(tot.re/tot.at*100):'·']],
-    series:[{k:'at',lab:'Atendidos'},{k:'inte',lab:'Interesados'},{k:'re',lab:'Re-asignados'}], extra:[], rows,
+    kpis:[['Atendidos',fmt(tot.at),'at'],['Interesados',fmt(tot.inte),'ainte'],['Re-asignados',fmt(tot.re),'are'],['% conversión',tot.at>0?pct(tot.re/tot.at*100):'·','pconv']],
+    series:[{k:'at',lab:'Atendidos',line:true},{k:'inte',lab:'Interesados'},{k:'re',lab:'Re-asignados',labels:true}], extra:[], rows,
     tabla:`<table><thead><tr><th>Día</th><th style="text-align:right">Atendidos</th><th style="text-align:right">Interesados</th>
       <th style="text-align:right">Re-asignados</th><th style="text-align:right">% conv.</th></tr></thead><tbody>
       ${rows.map(r=>`<tr><td>${r.lab}</td><td style="text-align:right">${fmt(r.at)}</td><td style="text-align:right">${fmt(r.inte)}</td>
@@ -1050,7 +1086,7 @@ function renderSerie(){
   document.getElementById('serieTitle').textContent=d.titulo;
   document.getElementById('serieSub').textContent=d.sub;
   document.getElementById('serieKpis').innerHTML=_kpis(d.kpis);
-  document.getElementById('serieLeg').innerHTML=d.series.map(x=>`<span><i style="background:${col[x.k]}"></i>${x.lab}</span>`).join('');
+  document.getElementById('serieLeg').innerHTML=d.series.map(x=>`<span><i class="${x.line?'ln':''}" style="background:${col[x.k]}"></i>${x.lab}</span>`).join('');
   const tab=document.getElementById('serieTab'), btn=document.getElementById('serieTblBtn');
   tab.hidden=!serieTablaVisible; tab.innerHTML=serieTablaVisible?d.tabla:''; btn.textContent=serieTablaVisible?'Ocultar tabla':'Ver tabla';
   if(serieChart){ serieChart.destroy(); serieChart=null; }
@@ -1058,11 +1094,15 @@ function renderSerie(){
   if(!d.rows.length){ return; }
   const tick=dark?'#9A92A5':'#737373', grid=dark?'#2E2836':'#EEEEEE';
   serieChart=new Chart(el,{type:'bar',
-    data:{labels:d.rows.map(r=>r.lab), datasets:d.series.map(x=>({label:x.lab, data:d.rows.map(r=>r[x.k]),
-      backgroundColor:col[x.k], borderRadius:4, borderSkipped:'bottom', maxBarThickness:28}))},
+    plugins:[_barLabels],
+    data:{labels:d.rows.map(r=>r.lab), datasets:d.series.map(x=>x.line
+      ? {type:'line', label:x.lab, data:d.rows.map(r=>r[x.k]), borderColor:col[x.k], backgroundColor:col[x.k],
+         borderWidth:2, tension:.3, pointRadius:3, pointHoverRadius:5, order:0}
+      : {label:x.lab, data:d.rows.map(r=>r[x.k]), backgroundColor:col[x.k], borderRadius:4, borderSkipped:'bottom',
+         maxBarThickness:28, order:1, _labels:!!x.labels})},
     options:{responsive:true, maintainAspectRatio:false, interaction:{mode:'index', intersect:false},
       datasets:{bar:{categoryPercentage:.7, barPercentage:.85}},
-      plugins:{legend:{display:false}, tooltip:{callbacks:{
+      plugins:{legend:{display:false}, barLabels:{color:dark?'#D6D0DD':'#404040'}, tooltip:{callbacks:{
         label:c=>' '+c.dataset.label+': '+fmt(c.parsed.y),
         afterBody:items=>{ const r=d.rows[items[0].dataIndex]; return d.extra.map(([l,k])=>l+': '+fmt(r[k])); }}}},
       scales:{x:{ticks:{color:tick, maxRotation:0, autoSkip:true, maxTicksLimit:14}, grid:{display:false}, border:{display:false}},
