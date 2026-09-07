@@ -7,6 +7,7 @@ Uso: python3 build_data.py   (corre desde la carpeta del tablero; requiere NEON_
 bq autenticado y opcionalmente META_ACCESS_TOKEN / INFOBIP_*_API_KEY como respaldo)."""
 import json, os, subprocess, datetime, re
 import agg, sources_neon as N, sources_mart as M, sources_infobip as I
+import ventanas_control
 
 def _SNC():
     """Conexión cruda a la misma base del tablero (para queries con CTEs y FILTER)."""
@@ -829,7 +830,8 @@ data={
   "panel": {"MX": mx["panel"], "CO": co["panel"]},
   # OJO: acá NO va `ejecuciones` (nombre, nid, teléfono). data.json es público y se
   # descarga sin auth; esos datos los sirve /api/ventanas/ejecuciones detrás del token.
-  "ventanas": {**ventanas_metricas(), "serie": ventanas_serie()},
+  "ventanas": {**ventanas_metricas(), "serie": ventanas_serie(),
+               "control": ventanas_control.control(co["plantillas"], M)},
   "plantillas": {"MX": mx["plantillas"], "CO": co["plantillas"]},
   "reasignados_dia": {"MX": mx["reasignados_dia"], "CO": co["reasignados_dia"]},
   # citas y cierres por rango, indexados pais -> rango
