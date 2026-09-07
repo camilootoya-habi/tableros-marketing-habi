@@ -1382,15 +1382,16 @@ function renderEjecuciones(){
     ⏳ gris no es error: es una etapa que todavía no ocurrió.</p>
   </section>`;
 }
-// Ventanas · la única gráfica del panel: usuarios por día. Barras = recibidos por el webhook
-// (eje izquierdo); líneas = respondieron, completaron el registro y bajas (eje derecho, con
-// ticks del color de las líneas: los dos ejes NO son comparables entre sí).
+// Ventanas · la única gráfica del panel: usuarios por día. Línea = recibidos por el webhook
+// (eje derecho, ticks del color de la línea: los dos ejes NO son comparables); barras = una
+// apilada con respondieron + completaron el registro y otra aparte con bajas (eje izquierdo).
 let ventSerieChart=null, ventSerieTabla=false;
-const _VS=[['recibidos','Usuarios recibidos (webhook)','vs1',true],['respondieron','Respondieron','vs2'],
-           ['completaron','Completaron el registro','vs3'],['bajas','Se dieron de baja','vs4']];
+// [clave, etiqueta, ayuda, tipo]  tipo: 'line' | 'a' (barra apilada) | 'b' (barra aparte)
+const _VS=[['recibidos','Usuarios recibidos (webhook)','vs1','line'],['respondieron','Respondieron','vs2','a'],
+           ['completaron','Completaron el registro','vs3','a'],['bajas','Se dieron de baja','vs4','b']];
 const _VS_COL=()=>document.body.classList.contains('dark')
-  ? {recibidos:'#6B6475', respondieron:'#0D9488', completaron:'#9F67F5', bajas:'#D97706'}
-  : {recibidos:'#A3A3A3', respondieron:'#0D9488', completaron:'#7E22CE', bajas:'#D97706'};
+  ? {recibidos:'#D6D0DD', respondieron:'#0D9488', completaron:'#9F67F5', bajas:'#D97706'}
+  : {recibidos:'#525252', respondieron:'#0D9488', completaron:'#7E22CE', bajas:'#D97706'};
 function toggleVentSerieTabla(){ ventSerieTabla=!ventSerieTabla; renderVentanasPanel(); }
 // Recorta los días vacíos del arranque (el programa empezó el 19-ago): sin dato no hay nada que leer.
 function _serieVent(){ const S=((D.ventanas||{}).serie||[]); const i=S.findIndex(s=>_VS.some(([k])=>s[k]>0)); return i<0?S:S.slice(Math.max(0,i-1)); }
@@ -1398,7 +1399,7 @@ function renderSerieVentanas(){
   const S=_serieVent();
   if(!S.length) return '';
   const col=_VS_COL();
-  const leg=_VS.map(([k,lab,h,bar])=>`<span><i class="${bar?'':'ln'}" style="background:${col[k]}"></i>${lab}${I(h)}</span>`).join('');
+  const leg=_VS.map(([k,lab,h,t])=>`<span><i class="${t==='line'?'ln':''}" style="background:${col[k]}"></i>${lab}${I(h)}</span>`).join('');
   const tabla=!ventSerieTabla?'':`<div class="tbl-wrap ftab" style="margin-top:10px"><table><thead><tr><th>Día</th>${_VS.map(([k,lab])=>`<th style="text-align:right">${lab}</th>`).join('')}</tr></thead>
     <tbody>${[...S].reverse().map(s=>`<tr><td>${_dia(s.fecha)}</td>${_VS.map(([k])=>`<td style="text-align:right">${fmt(s[k]||0)}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`;
   return `<section class="card-sec">
@@ -1414,19 +1415,20 @@ function drawSerieVentanas(){
   if(ventSerieChart){ ventSerieChart.destroy(); ventSerieChart=null; }
   if(!el||!window.Chart) return;
   const S=_serieVent(), col=_VS_COL(), dark=document.body.classList.contains('dark');
-  const tick=dark?'#9A92A5':'#737373', grid=dark?'#2E2836':'#EEEEEE', lineCol=col.respondieron;
+  const tick=dark?'#9A92A5':'#737373', grid=dark?'#2E2836':'#EEEEEE', lineCol=col.recibidos;
   ventSerieChart=new Chart(el,{type:'bar',
-    data:{labels:S.map(s=>_dia(s.fecha)), datasets:_VS.map(([k,lab,h,bar])=>bar
-      ? {label:lab, data:S.map(s=>s[k]||0), backgroundColor:col[k], borderRadius:4, borderSkipped:'bottom', maxBarThickness:26, order:1, yAxisID:'y'}
-      : {type:'line', label:lab, data:S.map(s=>s[k]||0), borderColor:col[k], backgroundColor:col[k],
-         borderWidth:2, tension:.3, pointRadius:3, pointHoverRadius:5, order:0, yAxisID:'y2'})},
+    data:{labels:S.map(s=>_dia(s.fecha)), datasets:_VS.map(([k,lab,h,t])=>t==='line'
+      ? {type:'line', label:lab, data:S.map(s=>s[k]||0), borderColor:col[k], backgroundColor:col[k],
+         borderWidth:2, tension:.3, pointRadius:3, pointHoverRadius:5, order:0, yAxisID:'y2'}
+      : {label:lab, data:S.map(s=>s[k]||0), backgroundColor:col[k], stack:t, borderRadius:3, maxBarThickness:22, order:1, yAxisID:'y'})},
     options:{responsive:true, maintainAspectRatio:false, interaction:{mode:'index', intersect:false},
+      datasets:{bar:{categoryPercentage:.7, barPercentage:.9}},
       plugins:{legend:{display:false}, tooltip:{callbacks:{label:c=>' '+c.dataset.label+': '+fmt(c.parsed.y)}}},
-      scales:{x:{ticks:{color:tick, maxRotation:0, autoSkip:true, maxTicksLimit:15}, grid:{display:false}, border:{display:false}},
-        y:{beginAtZero:true, position:'left', ticks:{color:tick, precision:0, maxTicksLimit:6}, grid:{color:grid}, border:{display:false},
-           title:{display:true, text:'Usuarios recibidos', color:tick, font:{size:11}}},
+      scales:{x:{stacked:true, ticks:{color:tick, maxRotation:0, autoSkip:true, maxTicksLimit:15}, grid:{display:false}, border:{display:false}},
+        y:{stacked:true, beginAtZero:true, position:'left', ticks:{color:tick, precision:0, maxTicksLimit:6}, grid:{color:grid}, border:{display:false},
+           title:{display:true, text:'Respondieron + Completaron · Bajas', color:tick, font:{size:11}}},
         y2:{beginAtZero:true, position:'right', ticks:{color:lineCol, precision:0, maxTicksLimit:6}, grid:{drawOnChartArea:false}, border:{display:false},
-           title:{display:true, text:'Respondieron · Completaron · Bajas', color:lineCol, font:{size:11}}}}}});
+           title:{display:true, text:'Usuarios recibidos', color:lineCol, font:{size:11}}}}}});
 }
 
 let rangoVent='7';
