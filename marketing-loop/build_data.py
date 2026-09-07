@@ -645,26 +645,53 @@ def ventanas_ejecuciones(dias=30):
     return out
 
 
-def ventanas_serie(dias=14):
-    """Llegadas, enviadas, respuestas y deals por día (calendario de Bogotá)."""
+def ventanas_serie(dias=30):
+    """Serie diaria de Ventanas (calendario de Bogotá), todos los días del rango aunque sean 0.
+    Las cuatro métricas de la gráfica del panel, cada una por la fecha de SU evento:
+      recibidos    = teléfonos distintos que mandó el webhook de HubSpot ese día (sin DRY y sin las
+                     tandas manuales RECUPERADO_*, que no vienen del workflow)
+      respondieron = teléfonos con respuesta ese día: texto libre al agente ∪ clic de botón
+                     (contact_status.responded_at) cuyo último envío aceptado fue de ventanas
+      completaron  = entrevistas con completed_at ese día (ventanas_intake)
+      bajas        = teléfonos con CLOSE_OPT_OUT del agente ese día
+    Se conservan llegadas/enviadas/respuestas/deals por compatibilidad."""
     TZ = "America/Bogota"
-    def _serie(sql):
-        return {r["d"]: int(r["n"]) for r in N._rows(sql, (int(dias),))}
-    lleg = _serie(f"SELECT (received_at AT TIME ZONE '{TZ}')::date::text d, count(*) n "
-                  "FROM ventanas_hs_inbound WHERE action NOT LIKE 'DRY:%%' "
-                  "AND received_at > now() - make_interval(days => %s) GROUP BY 1")
-    env = _serie(f"SELECT (attempted_at AT TIME ZONE '{TZ}')::date::text d, count(*) n "
-                 "FROM send_log WHERE template LIKE 'ventanas%%' AND accepted "
-                 "AND attempted_at > now() - make_interval(days => %s) GROUP BY 1")
-    resp = _serie(f"SELECT (ts AT TIME ZONE '{TZ}')::date::text d, count(DISTINCT phone) n "
-                  "FROM agent_thread WHERE campaign='ventanas' AND role='user' "
-                  "AND ts > now() - make_interval(days => %s) GROUP BY 1")
-    deal = _serie(f"SELECT (ts AT TIME ZONE '{TZ}')::date::text d, count(DISTINCT phone) n "
-                  "FROM agent_thread WHERE campaign='ventanas' AND action_taken='BACKBONE' "
-                  "AND ts > now() - make_interval(days => %s) GROUP BY 1")
-    dias_set = sorted(set(lleg) | set(env) | set(resp) | set(deal))
+    def _serie(sql, nargs=1):
+        return {r["d"]: int(r["n"]) for r in N._rows(sql, tuple([int(dias)] * nargs))}
+    def _d(col): return f"({col} AT TIME ZONE '{TZ}')::date::text"
+    win = "> now() - make_interval(days => %s)"
+    lleg = _serie(f"SELECT {_d('received_at')} d, count(*) n FROM ventanas_hs_inbound "
+                  f"WHERE action NOT LIKE 'DRY:%%' AND received_at {win} GROUP BY 1")
+    env = _serie(f"SELECT {_d('attempted_at')} d, count(*) n FROM send_log "
+                 f"WHERE template LIKE 'ventanas%%' AND accepted AND attempted_at {win} GROUP BY 1")
+    resp = _serie(f"SELECT {_d('ts')} d, count(DISTINCT phone) n FROM agent_thread "
+                  f"WHERE campaign='ventanas' AND role='user' AND ts {win} GROUP BY 1")
+    deal = _serie(f"SELECT {_d('ts')} d, count(DISTINCT phone) n FROM agent_thread "
+                  f"WHERE campaign='ventanas' AND action_taken='BACKBONE' AND ts {win} GROUP BY 1")
+    recib = _serie(f"SELECT {_d('received_at')} d, count(DISTINCT phone) n FROM ventanas_hs_inbound "
+                   f"WHERE action NOT LIKE 'DRY:%%' AND action NOT LIKE 'RECUPERADO%%' AND phone IS NOT NULL "
+                   f"AND received_at {win} GROUP BY 1")
+    respondieron = _serie(f"""
+        SELECT d, count(DISTINCT phone) n FROM (
+          SELECT phone, {_d('ts')} d FROM agent_thread
+          WHERE campaign='ventanas' AND role='user' AND ts {win}
+          UNION
+          SELECT cs.phone, {_d('cs.responded_at')} d FROM contact_status cs
+          JOIN (SELECT DISTINCT ON (phone) phone, template FROM send_log WHERE accepted
+                ORDER BY phone, attempted_at DESC) u ON u.phone = cs.phone
+          WHERE cs.responded_at IS NOT NULL AND u.template LIKE 'ventanas%%' AND cs.responded_at {win}
+        ) t GROUP BY 1""", nargs=2)
+    compl = _serie(f"SELECT {_d('completed_at')} d, count(*) n FROM ventanas_intake "
+                   f"WHERE country='CO' AND completed_at IS NOT NULL AND completed_at {win} GROUP BY 1")
+    bajas = _serie(f"SELECT {_d('ts')} d, count(DISTINCT phone) n FROM agent_thread "
+                   f"WHERE campaign='ventanas' AND action_taken='CLOSE_OPT_OUT' AND ts {win} GROUP BY 1")
+    from zoneinfo import ZoneInfo
+    hoy = datetime.datetime.now(ZoneInfo(TZ)).date()
+    fechas = [(hoy - datetime.timedelta(days=k)).isoformat() for k in range(int(dias) - 1, -1, -1)]
     return [{"fecha": d, "llegadas": lleg.get(d, 0), "enviadas": env.get(d, 0),
-             "respuestas": resp.get(d, 0), "deals": deal.get(d, 0)} for d in dias_set]
+             "respuestas": resp.get(d, 0), "deals": deal.get(d, 0),
+             "recibidos": recib.get(d, 0), "respondieron": respondieron.get(d, 0),
+             "completaron": compl.get(d, 0), "bajas": bajas.get(d, 0)} for d in fechas]
 
 
 def ventanas_metricas():

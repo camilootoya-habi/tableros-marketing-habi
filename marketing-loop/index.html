@@ -1027,6 +1027,10 @@ const MET_HELP={
   f_ent:'Mensajes del loop entregados (DELIVERED) en el rango, por fecha de envío. Agregado = Web + Ventanas.',
   f_re:'Leads recreados en el backbone en el rango: los del loop vía recreation y los de Ventanas vía BACKBONE del agente.',
   f_cita:'Negocios con UTM reinteresados cuya fecha_de_visita cae en el rango (HubSpot deals).',
+  vs1:'Teléfonos distintos que el webhook de HubSpot mandó al receptor ese día (ventanas_hs_inbound). Excluye pruebas DRY y las tandas manuales de recuperación.',
+  vs2:'Teléfonos que respondieron ese día: texto libre al agente (agent_thread, campaign ventanas) unido con clics de botón (contact_status.responded_at) cuyo último envío fue de ventanas. La unión es obligatoria: los clics nunca llegan al agente.',
+  vs3:'Entrevistas que quedaron completas ese día: completed_at de ventanas_intake.',
+  vs4:'Teléfonos a los que el agente cerró con CLOSE_OPT_OUT ese día: pidieron no ser contactados.',
   f_cie:'Dos líneas sumadas: compra directa (Cierre - Comprado, por closedate) + captación de la red de aliados (contrato/mandato firmado). No son el mismo evento.'};
 const I=k=>MET_HELP[k]?`<span class="info" tabindex="0" data-tip="${MET_HELP[k].replace(/"/g,'&quot;')}">i</span>`:'';
 let serieTabSel='loop', serieChart=null, serieTablaVisible=false;
@@ -1378,16 +1382,51 @@ function renderEjecuciones(){
     ⏳ gris no es error: es una etapa que todavía no ocurrió.</p>
   </section>`;
 }
+// Ventanas · la única gráfica del panel: usuarios por día. Barras = recibidos por el webhook
+// (eje izquierdo); líneas = respondieron, completaron el registro y bajas (eje derecho, con
+// ticks del color de las líneas: los dos ejes NO son comparables entre sí).
+let ventSerieChart=null, ventSerieTabla=false;
+const _VS=[['recibidos','Usuarios recibidos (webhook)','vs1',true],['respondieron','Respondieron','vs2'],
+           ['completaron','Completaron el registro','vs3'],['bajas','Se dieron de baja','vs4']];
+const _VS_COL=()=>document.body.classList.contains('dark')
+  ? {recibidos:'#6B6475', respondieron:'#0D9488', completaron:'#9F67F5', bajas:'#D97706'}
+  : {recibidos:'#A3A3A3', respondieron:'#0D9488', completaron:'#7E22CE', bajas:'#D97706'};
+function toggleVentSerieTabla(){ ventSerieTabla=!ventSerieTabla; renderVentanasPanel(); }
+// Recorta los días vacíos del arranque (el programa empezó el 19-ago): sin dato no hay nada que leer.
+function _serieVent(){ const S=((D.ventanas||{}).serie||[]); const i=S.findIndex(s=>_VS.some(([k])=>s[k]>0)); return i<0?S:S.slice(Math.max(0,i-1)); }
 function renderSerieVentanas(){
-  const S=((D.ventanas||{}).serie||[]).slice(-14);
+  const S=_serieVent();
   if(!S.length) return '';
+  const col=_VS_COL();
+  const leg=_VS.map(([k,lab,h,bar])=>`<span><i class="${bar?'':'ln'}" style="background:${col[k]}"></i>${lab}${I(h)}</span>`).join('');
+  const tabla=!ventSerieTabla?'':`<div class="tbl-wrap ftab" style="margin-top:10px"><table><thead><tr><th>Día</th>${_VS.map(([k,lab])=>`<th style="text-align:right">${lab}</th>`).join('')}</tr></thead>
+    <tbody>${[...S].reverse().map(s=>`<tr><td>${_dia(s.fecha)}</td>${_VS.map(([k])=>`<td style="text-align:right">${fmt(s[k]||0)}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`;
   return `<section class="card-sec">
-    <div class="tabletitle">Serie diaria</div><span class="sub">últimos 14 días · día calendario de Bogotá</span>
-    <div class="tbl-wrap ftab"><table><thead><tr><th>Día</th>${S.map(s=>`<th style="text-align:right">${escx(s.fecha.slice(5))}</th>`).join('')}</tr></thead>
-      <tbody>
-      ${[['Llegadas','llegadas','row-total'],['Enviadas','enviadas',''],['Respuestas','respuestas',''],['Deals','deals','row-loop']]
-        .map(([lab,k,cls])=>`<tr class="${cls}"><td>${lab}</td>${S.map(s=>`<td style="text-align:right">${fmt(s[k])}</td>`).join('')}</tr>`).join('')}
-      </tbody></table></div></section>`;
+    <div class="tabletitle">Usuarios por día</div>
+    <span class="sub">recibidos por el webhook, respondieron, completaron el registro y bajas · últimos ${S.length} días · día calendario de Bogotá</span>
+    <div class="leg" style="margin-top:10px">${leg}</div>
+    <div class="ch tall"><canvas id="c_vent_serie"></canvas></div>
+    <div class="tbltoggle"><button type="button" class="linkbtn" onclick="toggleVentSerieTabla()">${ventSerieTabla?'Ocultar tabla':'Ver tabla'}</button></div>
+    ${tabla}</section>`;
+}
+function drawSerieVentanas(){
+  const el=document.getElementById('c_vent_serie');
+  if(ventSerieChart){ ventSerieChart.destroy(); ventSerieChart=null; }
+  if(!el||!window.Chart) return;
+  const S=_serieVent(), col=_VS_COL(), dark=document.body.classList.contains('dark');
+  const tick=dark?'#9A92A5':'#737373', grid=dark?'#2E2836':'#EEEEEE', lineCol=col.respondieron;
+  ventSerieChart=new Chart(el,{type:'bar',
+    data:{labels:S.map(s=>_dia(s.fecha)), datasets:_VS.map(([k,lab,h,bar])=>bar
+      ? {label:lab, data:S.map(s=>s[k]||0), backgroundColor:col[k], borderRadius:4, borderSkipped:'bottom', maxBarThickness:26, order:1, yAxisID:'y'}
+      : {type:'line', label:lab, data:S.map(s=>s[k]||0), borderColor:col[k], backgroundColor:col[k],
+         borderWidth:2, tension:.3, pointRadius:3, pointHoverRadius:5, order:0, yAxisID:'y2'})},
+    options:{responsive:true, maintainAspectRatio:false, interaction:{mode:'index', intersect:false},
+      plugins:{legend:{display:false}, tooltip:{callbacks:{label:c=>' '+c.dataset.label+': '+fmt(c.parsed.y)}}},
+      scales:{x:{ticks:{color:tick, maxRotation:0, autoSkip:true, maxTicksLimit:15}, grid:{display:false}, border:{display:false}},
+        y:{beginAtZero:true, position:'left', ticks:{color:tick, precision:0, maxTicksLimit:6}, grid:{color:grid}, border:{display:false},
+           title:{display:true, text:'Usuarios recibidos', color:tick, font:{size:11}}},
+        y2:{beginAtZero:true, position:'right', ticks:{color:lineCol, precision:0, maxTicksLimit:6}, grid:{drawOnChartArea:false}, border:{display:false},
+           title:{display:true, text:'Respondieron · Completaron · Bajas', color:lineCol, font:{size:11}}}}}});
 }
 
 let rangoVent='7';
@@ -1486,6 +1525,7 @@ function renderVentanasPanel(){
     <div class="tbl-wrap ftab"><table><thead><tr><th>Motivo</th><th style="text-align:right">Contactos</th></tr></thead>
       <tbody>${S.map(s=>`<tr><td>${escx(s.motivo)}</td><td style="text-align:right">${fmt(s.n)}</td></tr>`).join('')}</tbody></table></div>
   </section>`;
+  drawSerieVentanas();
 }
 
 // ===== ENVÍO: perilla por país =====
@@ -2265,7 +2305,7 @@ function renderCosechaTabla(elId, srcKey, vacio){
 function applyTheme(t){const dark=t==='dark';document.body.classList.toggle('dark',dark);
   const _tb=document.getElementById('themeBtn').querySelector('span');
   if(_tb) _tb.textContent=dark?'Claro':'Oscuro';
-  if(window.Chart && D){ renderPorHoraChart(); renderSerie(); }}
+  if(window.Chart && D){ renderPorHoraChart(); renderSerie(); drawSerieVentanas(); }}
 document.getElementById('themeBtn').onclick=()=>{const n=document.body.classList.contains('dark')?'light':'dark';try{localStorage.setItem('ml-theme',n);}catch(e){}applyTheme(n);};
 applyTheme((()=>{try{return localStorage.getItem('ml-theme')||'light';}catch(e){return 'light';}})());
 // Auto-refresco: el tablero se reconstruye cada 10 min (cron del repo), así que re-pedir
