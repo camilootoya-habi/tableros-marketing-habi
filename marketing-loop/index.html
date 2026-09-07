@@ -76,6 +76,12 @@
   .tbl-wrap{overflow-x:auto}
   .tabletitle{font-size:16px;color:var(--text-title);font-weight:700;margin:24px 0 10px;display:flex;align-items:center;gap:6px}
   .ch{position:relative;height:180px}
+  .ch.tall{height:280px}
+  .leg{display:flex;flex-wrap:wrap;gap:6px 18px;font-size:12.5px;color:var(--text-muted);margin:2px 0 10px}
+  .leg i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:6px;vertical-align:-1px}
+  .tbltoggle{margin-top:10px}
+  .linkbtn{background:none;border:0;padding:0;color:var(--text-muted);font-size:12.5px;cursor:pointer;text-decoration:underline dotted}
+  .linkbtn:hover{color:var(--text)}
   /* Evolución diaria: 5 columnas × 2 filas, ajustadas al viewport (borde a borde, sin scroll) */
   .g5{grid-template-columns:repeat(5,1fr);gap:12px}
   .g5 .panel{padding:12px 13px 10px}
@@ -457,17 +463,21 @@
   <div id="panelLoop">
   <section class="card-sec" id="embudoCard"></section>
 
-  <div class="grid2">
-    <section class="card-sec">
-      <div class="tabletitle">Serie del loop</div>
-      <span class="sub" id="serieSub"></span>
-      <div class="tbl-wrap ftab" id="serieTab"></div>
-    </section>
-    <section class="card-sec">
-      <div class="tabletitle"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-3px"><path d="M12 2v4M8 6h8a3 3 0 0 1 3 3v8a3 3 0 0 1-3 3H8a3 3 0 0 1-3-3V9a3 3 0 0 1 3-3zM9 12h.01M15 12h.01"></path></svg> Solo agente IA</div>
-      <span class="sub" id="agenteSub"></span>
-      <div id="agenteKpis"></div>
-      <div class="tbl-wrap ftab" id="agenteTab"></div>
+  <section class="card-sec" id="serieCard">
+    <div class="cardhead">
+      <div><div class="tabletitle" id="serieTitle">Serie del loop</div>
+      <span class="sub" id="serieSub"></span></div>
+      <div class="seg" id="serieSeg">
+        <button type="button" class="winbtn sm active" data-st="loop" onclick="setSerieTab('loop')">Serie del loop</button>
+        <button type="button" class="winbtn sm" data-st="agente" onclick="setSerieTab('agente')">Agente IA</button>
+      </div>
+    </div>
+    <div id="serieKpis"></div>
+    <div class="leg" id="serieLeg"></div>
+    <div class="ch tall"><canvas id="c_serie"></canvas></div>
+    <div class="tbltoggle"><button type="button" class="linkbtn" id="serieTblBtn" onclick="toggleSerieTabla()">Ver tabla</button></div>
+    <div class="tbl-wrap ftab" id="serieTab" hidden></div>
+  </section>
     </section>
   </div>
 
@@ -989,48 +999,76 @@ function renderEmbudo(){
 const _DIAS=['dom','lun','mar','mié','jue','vie','sáb'];
 function _dia(b){ if(!/^\d{4}-\d{2}-\d{2}$/.test(b)) return b;
   const d=new Date(b+'T12:00:00'); return _DIAS[d.getDay()]+' '+d.getDate(); }
-function renderSerie(){
-  const el=document.getElementById('serieTab'); if(!el) return;
-  const raw=((D.cosecha||{})[country]||{})[cicloTipo]||[];
-  const rec=(D.reasignados_dia||{})[country]||{};
-  const sub=document.getElementById('serieSub');
-  if(sub) sub.textContent='Envíos, entregas y conversión · '+({dia:'Diario',semana:'Semanal',mes:'Mensual'}[cicloTipo])+' · solo reactivación';
-  if(!raw.length){ el.innerHTML='<p class="note">Sin datos.</p>'; return; }
-  const arr=raw.slice(-14);
-  el.innerHTML=`<table><thead><tr><th>Día</th><th style="text-align:right">Envíos</th><th style="text-align:right">Entregados</th>
-    <th style="text-align:right">Interesados</th><th style="text-align:right">Re-asignados</th></tr></thead><tbody>
-    ${arr.map(r=>`<tr><td>${_dia(r.bucket)}</td>
-      <td style="text-align:right">${fmt(+r.enviados||0)}</td>
-      <td style="text-align:right">${fmt(+r.entregados||0)}</td>
-      <td style="text-align:right"><b>${fmt(+r.interesados||0)}</b></td>
-      <td style="text-align:right;color:var(--accent);font-weight:600">${fmt(+(rec[r.bucket]||0))}</td></tr>`).join('')}
-  </tbody></table>`;
+// Serie del loop / Agente IA: una card, dos pestañas, una gráfica de barras agrupadas por
+// periodo (Temporalidad). Colores fijos por ENTIDAD (no por posición): re-asignados = acento,
+// interesados = teal, atendidos = ámbar. Validados (dataviz) en claro y oscuro.
+let serieTabSel='loop', serieChart=null, serieTablaVisible=false;
+const _SERIE_COL=()=>document.body.classList.contains('dark')
+  ? {re:'#9F67F5', inte:'#0D9488', at:'#D97706'} : {re:'#7E22CE', inte:'#0D9488', at:'#D97706'};
+const _GRAN_LBL={dia:'Diario',semana:'Semanal',mes:'Mensual'};
+function setSerieTab(t){ serieTabSel=t;
+  document.querySelectorAll('#serieSeg [data-st]').forEach(b=>b.classList.toggle('active', b.dataset.st===t));
+  renderSerie(); }
+function toggleSerieTabla(){ serieTablaVisible=!serieTablaVisible; renderSerie(); }
+// Re-asignados por bucket: reasignados_dia viene por DÍA; para semana/mes se suman los días
+// que caen entre este bucket y el siguiente (antes solo casaba el día exacto del bucket).
+function _reasigPorBucket(buckets, rec){
+  const out={}; const keys=Object.keys(rec).sort();
+  buckets.forEach((b,i)=>{ const nx=buckets[i+1]||'9999-12-31';
+    out[b]=keys.filter(d=>d>=b && d<nx).reduce((a,d)=>a+(+rec[d]||0),0); });
+  return out;
 }
-
-function renderAgentePanel(){
-  const tab=document.getElementById('agenteTab'), kpi=document.getElementById('agenteKpis');
-  if(!tab||!kpi) return;
+function _kpis(items){ return `<div class="akpis">${items.map(([l,v])=>`<div><div class="flab">${l}</div><div class="fval">${v}</div></div>`).join('')}</div>`; }
+function _serieDatos(){
+  if(serieTabSel==='loop'){
+    const raw=(((D.cosecha||{})[country]||{})[cicloTipo]||[]).slice(-14);
+    const rec=_reasigPorBucket(raw.map(r=>r.bucket), (D.reasignados_dia||{})[country]||{});
+    const rows=raw.map(r=>({lab:_dia(r.bucket), env:+r.enviados||0, ent:+r.entregados||0, inte:+r.interesados||0, re:rec[r.bucket]||0}));
+    const t=rows.reduce((a,r)=>({env:a.env+r.env,ent:a.ent+r.ent,inte:a.inte+r.inte,re:a.re+r.re}),{env:0,ent:0,inte:0,re:0});
+    return {titulo:'Serie del loop', sub:'Envíos, entregas y conversión · '+_GRAN_LBL[cicloTipo]+' · solo reactivación',
+      kpis:[['Envíos',fmt(t.env)],['Entregados',fmt(t.ent)],['Interesados',fmt(t.inte)],['Re-asignados',fmt(t.re)],['% interesados',t.ent>0?pct(t.inte/t.ent*100):'·']],
+      series:[{k:'inte',lab:'Interesados'},{k:'re',lab:'Re-asignados'}], extra:[['Envíos','env'],['Entregados','ent']], rows,
+      tabla:`<table><thead><tr><th>Día</th><th style="text-align:right">Envíos</th><th style="text-align:right">Entregados</th>
+        <th style="text-align:right">Interesados</th><th style="text-align:right">Re-asignados</th></tr></thead><tbody>
+        ${rows.map(r=>`<tr><td>${r.lab}</td><td style="text-align:right">${fmt(r.env)}</td><td style="text-align:right">${fmt(r.ent)}</td>
+        <td style="text-align:right"><b>${fmt(r.inte)}</b></td><td style="text-align:right;color:var(--accent);font-weight:600">${fmt(r.re)}</td></tr>`).join('')}</tbody></table>`};
+  }
   const serie=((D.agente_ia||{})[country]||[]);
-  const sub=document.getElementById('agenteSub');
-  if(sub) sub.textContent='Respuestas de texto libre · '+({dia:'Diario',semana:'Semanal',mes:'Mensual'}[cicloTipo])+' · todas las campañas';
-  const tot=serie.reduce((a,r)=>({at:a.at+(+r.conversaciones||0), in:a.in+(+r.interesados||0), re:a.re+(+r.reasignados||0)}),{at:0,in:0,re:0});
-  const conv=tot.at>0?pct(tot.re/tot.at*100):'·';
-  kpi.innerHTML=`<div class="akpis">
-    <div><div class="flab">Atendidos</div><div class="fval">${fmt(tot.at)}</div></div>
-    <div><div class="flab">Interesados</div><div class="fval">${fmt(tot.in)}</div></div>
-    <div><div class="flab">Re-asignados</div><div class="fval">${fmt(tot.re)}</div></div>
-    <div><div class="flab">% conversión</div><div class="fval">${conv}</div></div>
-  </div>`;
-  const arr=serie.slice(-14);
-  tab.innerHTML=`<table><thead><tr><th>Día</th><th style="text-align:right">Atendidos</th><th style="text-align:right">Interesados</th>
-    <th style="text-align:right">Re-asignados</th><th style="text-align:right">% conv.</th></tr></thead><tbody>
-    ${arr.map(r=>{const a=+r.conversaciones||0,re=+r.reasignados||0;
-      return `<tr><td>${_dia(r.fecha)}</td><td style="text-align:right">${fmt(a)}</td>
-      <td style="text-align:right">${fmt(+r.interesados||0)}</td>
-      <td style="text-align:right;color:var(--accent);font-weight:600">${fmt(re)}</td>
-      <td style="text-align:right">${a>0?pct(re/a*100):'·'}</td></tr>`;}).join('')}
-  </tbody></table>`;
+  const tot=serie.reduce((a,r)=>({at:a.at+(+r.conversaciones||0), inte:a.inte+(+r.interesados||0), re:a.re+(+r.reasignados||0)}),{at:0,inte:0,re:0});
+  const rows=serie.slice(-14).map(r=>({lab:_dia(r.fecha), at:+r.conversaciones||0, inte:+r.interesados||0, re:+r.reasignados||0}));
+  return {titulo:'Solo agente IA', sub:'Respuestas de texto libre · '+_GRAN_LBL[cicloTipo]+' · todas las campañas',
+    kpis:[['Atendidos',fmt(tot.at)],['Interesados',fmt(tot.inte)],['Re-asignados',fmt(tot.re)],['% conversión',tot.at>0?pct(tot.re/tot.at*100):'·']],
+    series:[{k:'at',lab:'Atendidos'},{k:'inte',lab:'Interesados'},{k:'re',lab:'Re-asignados'}], extra:[], rows,
+    tabla:`<table><thead><tr><th>Día</th><th style="text-align:right">Atendidos</th><th style="text-align:right">Interesados</th>
+      <th style="text-align:right">Re-asignados</th><th style="text-align:right">% conv.</th></tr></thead><tbody>
+      ${rows.map(r=>`<tr><td>${r.lab}</td><td style="text-align:right">${fmt(r.at)}</td><td style="text-align:right">${fmt(r.inte)}</td>
+      <td style="text-align:right;color:var(--accent);font-weight:600">${fmt(r.re)}</td><td style="text-align:right">${r.at>0?pct(r.re/r.at*100):'·'}</td></tr>`).join('')}</tbody></table>`};
 }
+function renderSerie(){
+  const card=document.getElementById('serieCard'); if(!card) return;
+  const d=_serieDatos(), col=_SERIE_COL(), dark=document.body.classList.contains('dark');
+  document.getElementById('serieTitle').textContent=d.titulo;
+  document.getElementById('serieSub').textContent=d.sub;
+  document.getElementById('serieKpis').innerHTML=_kpis(d.kpis);
+  document.getElementById('serieLeg').innerHTML=d.series.map(x=>`<span><i style="background:${col[x.k]}"></i>${x.lab}</span>`).join('');
+  const tab=document.getElementById('serieTab'), btn=document.getElementById('serieTblBtn');
+  tab.hidden=!serieTablaVisible; tab.innerHTML=serieTablaVisible?d.tabla:''; btn.textContent=serieTablaVisible?'Ocultar tabla':'Ver tabla';
+  if(serieChart){ serieChart.destroy(); serieChart=null; }
+  const el=document.getElementById('c_serie'); if(!el||!window.Chart) return;
+  if(!d.rows.length){ return; }
+  const tick=dark?'#9A92A5':'#737373', grid=dark?'#2E2836':'#EEEEEE';
+  serieChart=new Chart(el,{type:'bar',
+    data:{labels:d.rows.map(r=>r.lab), datasets:d.series.map(x=>({label:x.lab, data:d.rows.map(r=>r[x.k]),
+      backgroundColor:col[x.k], borderRadius:4, borderSkipped:'bottom', maxBarThickness:28}))},
+    options:{responsive:true, maintainAspectRatio:false, interaction:{mode:'index', intersect:false},
+      datasets:{bar:{categoryPercentage:.7, barPercentage:.85}},
+      plugins:{legend:{display:false}, tooltip:{callbacks:{
+        label:c=>' '+c.dataset.label+': '+fmt(c.parsed.y),
+        afterBody:items=>{ const r=d.rows[items[0].dataIndex]; return d.extra.map(([l,k])=>l+': '+fmt(r[k])); }}}},
+      scales:{x:{ticks:{color:tick, maxRotation:0, autoSkip:true, maxTicksLimit:14}, grid:{display:false}, border:{display:false}},
+        y:{beginAtZero:true, ticks:{color:tick, precision:0, maxTicksLimit:6}, grid:{color:grid}, border:{display:false}}}}});
+}
+function renderAgentePanel(){ /* absorbido por renderSerie (pestaña "Agente IA") */ }
 
 // Puerta del token, reutilizable. Antes cada pantalla que lo necesitaba mandaba al Inbox a
 // buscarlo: una indirección tonta, porque el token es el mismo para todas.
@@ -2181,7 +2219,7 @@ function renderCosechaTabla(elId, srcKey, vacio){
 function applyTheme(t){const dark=t==='dark';document.body.classList.toggle('dark',dark);
   const _tb=document.getElementById('themeBtn').querySelector('span');
   if(_tb) _tb.textContent=dark?'Claro':'Oscuro';
-  if(window.Chart && D){ renderPorHoraChart(); }}
+  if(window.Chart && D){ renderPorHoraChart(); renderSerie(); }}
 document.getElementById('themeBtn').onclick=()=>{const n=document.body.classList.contains('dark')?'light':'dark';try{localStorage.setItem('ml-theme',n);}catch(e){}applyTheme(n);};
 applyTheme((()=>{try{return localStorage.getItem('ml-theme')||'light';}catch(e){return 'light';}})());
 // Auto-refresco: el tablero se reconstruye cada 10 min (cron del repo), así que re-pedir
