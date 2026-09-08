@@ -1028,11 +1028,18 @@ const MET_HELP={
   f_re:'Leads recreados en el backbone en el rango: los del loop vía recreation y los de Ventanas vía BACKBONE del agente.',
   f_cita:'Negocios con UTM reinteresados cuya fecha_de_visita cae en el rango (HubSpot deals).',
   vs1:'Teléfonos distintos que el webhook de HubSpot mandó al receptor ese día (ventanas_hs_inbound). Excluye pruebas DRY y las tandas manuales de recuperación.',
-  vs2:'Teléfonos que respondieron ese día: texto libre al agente (agent_thread, campaign ventanas) unido con clics de botón (contact_status.responded_at) cuyo último envío fue de ventanas. La unión es obligatoria: los clics nunca llegan al agente.',
+  vs2:'Teléfonos cuya PRIMERA respuesta fue ese día (cada persona cuenta una sola vez, así la suma coincide con el embudo): texto libre al agente (agent_thread, campaign ventanas) unido con clics de botón (contact_status.responded_at) cuyo último envío fue de ventanas. La unión es obligatoria: los clics nunca llegan al agente.',
   vs3:'Entrevistas que quedaron completas ese día: completed_at de ventanas_intake.',
   vs4:'Teléfonos a los que el agente cerró con CLOSE_OPT_OUT ese día: pidieron no ser contactados.',
+  ve1:'Teléfonos distintos que el webhook de HubSpot mandó al receptor en el rango (ventanas_hs_inbound). Excluye pruebas DRY y las tandas manuales RECUPERADO_*. Misma regla que la gráfica Usuarios por día.',
+  ve2:'Personas distintas con al menos un envío de plantilla ventanas% aceptado por Infobip en el rango (send_log). Incluye a quien entró por tanda de recuperación, por eso puede acercarse o superar a Personas recibidas. Aceptada no es entregada: la entrega real vive en el mart de BigQuery.',
+  ve3:'Personas distintas que respondieron en el rango: texto libre al agente (agent_thread) unido con clics de botón (contact_status.responded_at) cuyo último envío fue de ventanas.',
+  ve4:'Personas distintas con al menos un turno propio hacia el agente en el rango (agent_thread, role user, campaign ventanas).',
+  ve5:'Personas con resultado BACKBONE en la bitácora ventanas_backbone_intento (desde el 1 de septiembre). Es la única fuente de deal en todo el panel e incluye los disparados por el reloj de 72 h con la entrevista a medias. Fallaron = BACKBONE_FAILED sin un BACKBONE posterior.',
+  ve6:'Entrevistas con completed_at en ventanas_intake: la captura terminó, con o sin deal.',
   f_cie:'Dos líneas sumadas: compra directa (Cierre - Comprado, por closedate) + captación de la red de aliados (contrato/mandato firmado). No son el mismo evento.'};
 const I=k=>MET_HELP[k]?`<span class="info" tabindex="0" data-tip="${MET_HELP[k].replace(/"/g,'&quot;')}">i</span>`:'';
+const IH=I;   // alias: renderVentanasPanel tiene un `I` local (intake) que tapa el helper
 let serieTabSel='loop', serieChart=null, serieTablaVisible=false;
 // re-asignados = acento · interesados = teal · leídos/apertura = ámbar · volumen (línea) = neutro.
 const _SERIE_COL=()=>document.body.classList.contains('dark')
@@ -1447,11 +1454,11 @@ function renderVentanasPanel(){
   const R=(V.rangos||{})[rangoVent]||{};
   const tabs=['hoy','7','30'].map(r=>`<button type="button" class="winbtn sm${r===rangoVent?' active':''}" onclick="setRangoVent('${r}')">${r==='hoy'?'Hoy':r+' d'}</button>`).join('');
   const pasos=[
-    {lab:'Leads recibidos', k:'recibidos', color:'var(--accent)', pie:'POST del workflow de HubSpot'},
-    {lab:'Plantillas enviadas', k:'enviadas', color:'#A855F7', pie:'Infobip las aceptó — no es entrega'},
-    {lab:'Respondieron', k:'respondieron', color:'#2DD4BF', pie:'botón + texto libre'},
-    {lab:'Atendidos por el agente', k:'atendidos', color:'#0EA5E9', pie:'personas, no turnos'},
-    {lab:'Deal creado', k:'deal_creado', color:'var(--ok)', pie:(+R.deal_fallo||0)+' fallaron'},
+    {lab:'Personas recibidas'+IH('ve1'), k:'recibidos', color:'var(--accent)', pie:'teléfonos distintos · webhook, sin recuperados'},
+    {lab:'Plantillas enviadas'+IH('ve2'), k:'enviadas', color:'#A855F7', pie:'personas · Infobip aceptó, no es entrega'},
+    {lab:'Respondieron'+IH('ve3'), k:'respondieron', color:'#2DD4BF', pie:'botón + texto libre · personas'},
+    {lab:'Atendidos por el agente'+IH('ve4'), k:'atendidos', color:'#0EA5E9', pie:'personas, no turnos'},
+    {lab:'Deal creado'+IH('ve5'), k:'deal_creado', color:'var(--ok)', pie:(+R.deal_fallo||0)+' fallaron · bitácora del backbone'},
   ];
   const base=+R[pasos[0].k]||1;
   const emb=pasos.map((s,i)=>{
@@ -1487,10 +1494,12 @@ function renderVentanasPanel(){
       <span class="sub">de lead de HubSpot a deal · ${_RANGO_VENT[rangoVent]} · Colombia</span></div>
       <div class="seg">${tabs}</div></div>
     <div class="funnel">${emb}</div>
-    <p class="note">La campaña se atribuye por el <b>prefijo de la plantilla</b>, la misma regla con la que el agente decide qué guion usar.
+    <div class="akpis" style="margin:16px 0 0;max-width:280px"><div><div class="flab">Se dieron de baja${IH('vs4')}</div><div class="fval">${fmt(R.bajas||0)}</div></div></div>
+    <p class="note"><b>Personas recibidas</b> son teléfonos distintos que mandó el webhook, sin pruebas en seco ni tandas de recuperación: la misma regla de la gráfica de abajo.
     <b>Enviadas</b> significa que Infobip aceptó el mensaje, no que llegó: la entrega real vive en el mart de BigQuery, fuera de esta base.
     <b>Respondieron</b> une los clics de botón (que procesa el bot y nunca llegan al agente) con el texto libre; medido con una sola fuente, el porcentaje llegó a dar 733%.
-    La ventana cuenta por <b>cuándo respondió</b>, no por cuándo se le escribió: es actividad, no tasa por cohorte.</p>
+    <b>Deal creado</b> sale de la bitácora de intentos al backbone (desde el 1 de septiembre) e incluye los que disparó el reloj de 72 h sin turno del agente.
+    La ventana cuenta por <b>cuándo pasó cada cosa</b>, no por cuándo se le escribió: es actividad, no tasa por cohorte.</p>
   </section>
 
   <div class="grid2">
@@ -1509,8 +1518,8 @@ function renderVentanasPanel(){
       <div class="akpis">
         <div><div class="flab">Esperando consentimiento</div><div class="fval">${fmt(I.esperando_consent||0)}</div></div>
         <div><div class="flab">En entrevista</div><div class="fval">${fmt(I.en_entrevista||0)}</div></div>
-        <div><div class="flab">Completadas</div><div class="fval">${fmt(I.completadas||0)}</div></div>
-        <div><div class="flab">Con deal</div><div class="fval">${fmt(I.con_deal||0)}</div></div>
+        <div><div class="flab">Completadas${IH('ve6')}</div><div class="fval">${fmt(I.completadas||0)}</div></div>
+        <div><div class="flab">Con deal${IH('ve5')}</div><div class="fval">${fmt(I.con_deal||0)}</div></div>
       </div>
       <p class="note">Las <b>${fmt(I.cerradas_sin_deal||0)}</b> cerradas sin deal incluyen a quien no autorizó el tratamiento de datos: sin consentimiento no se crea lead, y eso es cumplimiento de la Ley 1581, no una falla.
       Reenganchadas: ${fmt(I.reenganchadas||0)}.</p>

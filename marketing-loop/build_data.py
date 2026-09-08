@@ -650,8 +650,8 @@ def ventanas_serie(dias=30):
     Las cuatro métricas de la gráfica del panel, cada una por la fecha de SU evento:
       recibidos    = teléfonos distintos que mandó el webhook de HubSpot ese día (sin DRY y sin las
                      tandas manuales RECUPERADO_*, que no vienen del workflow)
-      respondieron = teléfonos con respuesta ese día: texto libre al agente ∪ clic de botón
-                     (contact_status.responded_at) cuyo último envío aceptado fue de ventanas
+      respondieron = teléfonos cuya PRIMERA respuesta fue ese día: texto libre al agente ∪ clic de
+                     botón (contact_status.responded_at) cuyo último envío aceptado fue de ventanas
       completaron  = entrevistas con completed_at ese día (ventanas_intake)
       bajas        = teléfonos con CLOSE_OPT_OUT del agente ese día
     Se conservan llegadas/enviadas/respuestas/deals por compatibilidad."""
@@ -671,16 +671,20 @@ def ventanas_serie(dias=30):
     recib = _serie(f"SELECT {_d('received_at')} d, count(DISTINCT phone) n FROM ventanas_hs_inbound "
                    f"WHERE action NOT LIKE 'DRY:%%' AND action NOT LIKE 'RECUPERADO%%' AND phone IS NOT NULL "
                    f"AND received_at {win} GROUP BY 1")
+    # PRIMERA respuesta por persona (8-sep): cada teléfono cuenta solo el día que respondió por
+    # primera vez, así la suma de la serie coincide con el "Respondieron" del embudo (personas
+    # distintas). Sin ventana adentro: la primera respuesta es la de la historia, no la del rango.
     respondieron = _serie(f"""
-        SELECT d, count(DISTINCT phone) n FROM (
-          SELECT phone, {_d('ts')} d FROM agent_thread
-          WHERE campaign='ventanas' AND role='user' AND ts {win}
-          UNION
-          SELECT cs.phone, {_d('cs.responded_at')} d FROM contact_status cs
-          JOIN (SELECT DISTINCT ON (phone) phone, template FROM send_log WHERE accepted
-                ORDER BY phone, attempted_at DESC) u ON u.phone = cs.phone
-          WHERE cs.responded_at IS NOT NULL AND u.template LIKE 'ventanas%%' AND cs.responded_at {win}
-        ) t GROUP BY 1""", nargs=2)
+        SELECT d, count(*) n FROM (
+          SELECT phone, min(d) d FROM (
+            SELECT phone, {_d('ts')} d FROM agent_thread WHERE campaign='ventanas' AND role='user'
+            UNION
+            SELECT cs.phone, {_d('cs.responded_at')} d FROM contact_status cs
+            JOIN (SELECT DISTINCT ON (phone) phone, template FROM send_log WHERE accepted
+                  ORDER BY phone, attempted_at DESC) u ON u.phone = cs.phone
+            WHERE cs.responded_at IS NOT NULL AND u.template LIKE 'ventanas%%'
+          ) t GROUP BY phone
+        ) f GROUP BY 1""", nargs=0)
     compl = _serie(f"SELECT {_d('completed_at')} d, count(*) n FROM ventanas_intake "
                    f"WHERE country='CO' AND completed_at IS NOT NULL AND completed_at {win} GROUP BY 1")
     bajas = _serie(f"SELECT {_d('ts')} d, count(DISTINCT phone) n FROM agent_thread "
@@ -721,11 +725,17 @@ def ventanas_metricas():
 
     with _SNC() as c:
         for k, d in ventanas_dias.items():
+            # Personas recibidas: teléfonos distintos que mandó el WEBHOOK. Sin DRY y sin las
+            # tandas manuales RECUPERADO_* (no vienen del workflow). Misma regla que la gráfica
+            # "Usuarios por día" (8-sep): antes contaba POSTs y daba 1.859 vs 1.135 personas.
             recibidos = list(c.execute(
-                "SELECT count(*) FROM ventanas_hs_inbound "
-                "WHERE action NOT LIKE 'DRY:%%' AND " + _desde("received_at", d)))[0][0]
+                "SELECT count(DISTINCT phone) FROM ventanas_hs_inbound "
+                "WHERE action NOT LIKE 'DRY:%%' AND action NOT LIKE 'RECUPERADO%%' "
+                "AND phone IS NOT NULL AND " + _desde("received_at", d)))[0][0]
+            # Personas con al menos un envío aceptado (no filas): con filas, los reenganches hacían
+            # que "enviadas" superara a "personas recibidas" (105 % a 7 días el 8-sep).
             enviadas = list(c.execute(
-                "SELECT count(*) FROM send_log "
+                "SELECT count(DISTINCT phone) FROM send_log "
                 "WHERE template LIKE 'ventanas%%' AND accepted AND " + _desde("attempted_at", d)))[0][0]
             # Respondieron = clicks de botón (contact_status) UNIDO a texto libre (agent_thread).
             respondieron = list(c.execute(
@@ -746,17 +756,24 @@ def ventanas_metricas():
             atendidos = list(c.execute(
                 "SELECT count(DISTINCT phone) FROM agent_thread "
                 "WHERE campaign='ventanas' AND role='user' AND " + _desde("ts", d)))[0][0]
+            # Deal: UNA sola fuente en todo el panel, la bitácora ventanas_backbone_intento (desde el
+            # 1-sep). Incluye los deals disparados por el reloj de 72 h, que no pasan por un turno
+            # del agente (agent_thread los omitía: 34 vs 44). Fallo = BACKBONE_FAILED sin un
+            # BACKBONE posterior del mismo teléfono.
             deal_ok = list(c.execute(
-                "SELECT count(DISTINCT phone) FROM agent_thread "
-                "WHERE campaign='ventanas' AND action_taken IN ('BACKBONE','BACKBONE_SANITIZED') "
-                "AND " + _desde("ts", d)))[0][0]
+                "SELECT count(DISTINCT phone) FROM ventanas_backbone_intento "
+                "WHERE country='CO' AND resultado='BACKBONE' AND " + _desde("created_at", d)))[0][0]
             deal_no = list(c.execute(
+                "SELECT count(DISTINCT b.phone) FROM ventanas_backbone_intento b "
+                "WHERE b.country='CO' AND b.resultado='BACKBONE_FAILED' AND " + _desde("b.created_at", d) +
+                " AND NOT EXISTS (SELECT 1 FROM ventanas_backbone_intento b2 "
+                "                 WHERE b2.phone=b.phone AND b2.resultado='BACKBONE')"))[0][0]
+            bajas = list(c.execute(
                 "SELECT count(DISTINCT phone) FROM agent_thread "
-                "WHERE campaign='ventanas' AND action_taken='BACKBONE_FAILED' "
-                "AND " + _desde("ts", d)))[0][0]
+                "WHERE campaign='ventanas' AND action_taken='CLOSE_OPT_OUT' AND " + _desde("ts", d)))[0][0]
             out["rangos"][k] = {"recibidos": recibidos, "enviadas": enviadas,
                                 "respondieron": respondieron, "atendidos": atendidos,
-                                "deal_creado": deal_ok, "deal_fallo": deal_no}
+                                "deal_creado": deal_ok, "deal_fallo": deal_no, "bajas": bajas}
 
         # Desenlace de cada POST del webhook. TERMINAL y DEDUP son GUARDAS funcionando, no
         # fallas: van glosadas, no en rojo. Rojo solo lo que es config rota o rechazo real.
@@ -775,8 +792,11 @@ def ventanas_metricas():
             "SELECT count(*) FILTER (WHERE step='consent') AS esperando_consent,"
             "       count(*) FILTER (WHERE consent AND step IS NOT NULL AND completed_at IS NULL) AS en_entrevista,"
             "       count(*) FILTER (WHERE completed_at IS NOT NULL) AS completadas,"
-            "       count(*) FILTER (WHERE lead_fired_at IS NOT NULL) AS con_deal,"
-            "       count(*) FILTER (WHERE completed_at IS NOT NULL AND lead_fired_at IS NULL) AS cerradas_sin_deal,"
+            "       count(*) FILTER (WHERE phone IN (SELECT phone FROM ventanas_backbone_intento "
+            "                                       WHERE country='CO' AND resultado='BACKBONE')) AS con_deal,"
+            "       count(*) FILTER (WHERE completed_at IS NOT NULL AND phone NOT IN ("
+            "                          SELECT phone FROM ventanas_backbone_intento "
+            "                          WHERE country='CO' AND resultado='BACKBONE')) AS cerradas_sin_deal,"
             "       count(*) FILTER (WHERE reengage_count > 0) AS reenganchadas "
             "FROM ventanas_intake WHERE country='CO'"))[0]
         out["intake"] = dict(zip(("esperando_consent", "en_entrevista", "completadas",
