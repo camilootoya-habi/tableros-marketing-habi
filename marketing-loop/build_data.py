@@ -645,167 +645,115 @@ def ventanas_ejecuciones(dias=30):
     return out
 
 
+# Corte de Ventanas por RUTA (8-sep): 'directa' = el teléfono entró por el flujo compra_wa
+# (primer contacto por WhatsApp, 27-ago); 'normal' = todo lo demás (no contesta y tibio).
+# La ruta es del TELÉFONO, por su primer POST no DRY; quien no tiene POST (envío suelto) es normal.
+VENT_TZ = "America/Bogota"
+VENT_RUTAS = ("total", "directa", "normal")
+_RUTA_CTE = ("ruta AS (SELECT DISTINCT ON (phone) phone, "
+             "  CASE WHEN flujo='compra_wa' THEN 'directa' ELSE 'normal' END AS r "
+             "  FROM ventanas_hs_inbound WHERE action NOT LIKE 'DRY:%%' AND phone IS NOT NULL "
+             "  ORDER BY phone, received_at)")
+# Teléfonos que respondieron: texto libre al agente ∪ clic de botón (contact_status) cuyo último
+# envío aceptado fue de ventanas. `ts` es el momento de la respuesta.
+_RESP_UNION = (f"SELECT phone, ts FROM agent_thread WHERE campaign='ventanas' AND role='user' "
+               f"UNION ALL "
+               f"SELECT cs.phone, cs.responded_at AS ts FROM contact_status cs "
+               f"JOIN (SELECT DISTINCT ON (phone) phone, template FROM send_log WHERE accepted "
+               f"      ORDER BY phone, attempted_at DESC) u ON u.phone = cs.phone "
+               f"WHERE cs.responded_at IS NOT NULL AND u.template LIKE 'ventanas%%'")
+# Cada métrica = (fuente de teléfonos con su timestamp).  count(DISTINCT phone) por ruta y rango/día.
+_VENT_MET = {
+    "recibidos":    ("SELECT phone, received_at AS ts FROM ventanas_hs_inbound "
+                     "WHERE action NOT LIKE 'DRY:%%' AND action NOT LIKE 'RECUPERADO%%' AND phone IS NOT NULL"),
+    "enviadas":     "SELECT phone, attempted_at AS ts FROM send_log WHERE template LIKE 'ventanas%%' AND accepted",
+    "respondieron": _RESP_UNION,
+    "atendidos":    "SELECT phone, ts FROM agent_thread WHERE campaign='ventanas' AND role='user'",
+    "deal_creado":  "SELECT phone, created_at AS ts FROM ventanas_backbone_intento WHERE country='CO' AND resultado='BACKBONE'",
+    "deal_fallo":   ("SELECT b.phone, b.created_at AS ts FROM ventanas_backbone_intento b "
+                     "WHERE b.country='CO' AND b.resultado='BACKBONE_FAILED' AND NOT EXISTS ("
+                     "  SELECT 1 FROM ventanas_backbone_intento b2 WHERE b2.phone=b.phone AND b2.resultado='BACKBONE')"),
+    "bajas":        "SELECT phone, ts FROM agent_thread WHERE campaign='ventanas' AND action_taken='CLOSE_OPT_OUT'",
+    "dapta":        "SELECT phone, sent_at AS ts FROM ventanas_dapta_handoff WHERE country='CO'",
+    "completaron":  "SELECT phone, completed_at AS ts FROM ventanas_intake WHERE country='CO' AND completed_at IS NOT NULL",
+}
+
+
+def _vent_por_ruta(c, fuente, cond_ts):
+    """{ruta: personas distintas} de `fuente` cuyo ts cumple `cond_ts`; 'total' = suma."""
+    rows = list(c.execute(
+        f"WITH {_RUTA_CTE}, base AS (SELECT DISTINCT f.phone FROM ({fuente}) f WHERE {cond_ts}) "
+        f"SELECT coalesce(r.r,'normal') AS ruta, count(*) FROM base b LEFT JOIN ruta r ON r.phone=b.phone GROUP BY 1"))
+    out = {"directa": 0, "normal": 0}
+    for ruta, n in rows:
+        out[ruta] = int(n)
+    out["total"] = out["directa"] + out["normal"]
+    return out
+
+
 def ventanas_serie(dias=30):
-    """Serie diaria de Ventanas (calendario de Bogotá), todos los días del rango aunque sean 0.
-    Las cuatro métricas de la gráfica del panel, cada una por la fecha de SU evento:
-      recibidos    = teléfonos distintos que mandó el webhook de HubSpot ese día (sin DRY y sin las
-                     tandas manuales RECUPERADO_*, que no vienen del workflow)
-      respondieron = teléfonos cuya PRIMERA respuesta fue ese día: texto libre al agente ∪ clic de
-                     botón (contact_status.responded_at) cuyo último envío aceptado fue de ventanas
-      completaron  = entrevistas con completed_at ese día (ventanas_intake)
+    """Serie diaria de Ventanas (calendario de Bogotá), todos los días del rango aunque sean 0,
+    por ruta ('total' / 'directa' / 'normal'). Métricas de la gráfica "Usuarios por día", cada
+    una por la fecha de SU evento:
+      recibidos    = teléfonos distintos que mandó el webhook ese día (sin DRY ni RECUPERADO_*)
+      respondieron = teléfonos cuya PRIMERA respuesta de la historia fue ese día (texto libre al
+                     agente ∪ clic de botón), así la suma coincide con el embudo
+      completaron  = entrevistas con completed_at ese día
       bajas        = teléfonos con CLOSE_OPT_OUT del agente ese día
-    Se conservan llegadas/enviadas/respuestas/deals por compatibilidad."""
-    TZ = "America/Bogota"
-    def _serie(sql, nargs=1):
-        return {r["d"]: int(r["n"]) for r in N._rows(sql, tuple([int(dias)] * nargs))}
-    def _d(col): return f"({col} AT TIME ZONE '{TZ}')::date::text"
-    win = "> now() - make_interval(days => %s)"
-    lleg = _serie(f"SELECT {_d('received_at')} d, count(*) n FROM ventanas_hs_inbound "
-                  f"WHERE action NOT LIKE 'DRY:%%' AND received_at {win} GROUP BY 1")
-    env = _serie(f"SELECT {_d('attempted_at')} d, count(*) n FROM send_log "
-                 f"WHERE template LIKE 'ventanas%%' AND accepted AND attempted_at {win} GROUP BY 1")
-    resp = _serie(f"SELECT {_d('ts')} d, count(DISTINCT phone) n FROM agent_thread "
-                  f"WHERE campaign='ventanas' AND role='user' AND ts {win} GROUP BY 1")
-    deal = _serie(f"SELECT {_d('ts')} d, count(DISTINCT phone) n FROM agent_thread "
-                  f"WHERE campaign='ventanas' AND action_taken='BACKBONE' AND ts {win} GROUP BY 1")
-    recib = _serie(f"SELECT {_d('received_at')} d, count(DISTINCT phone) n FROM ventanas_hs_inbound "
-                   f"WHERE action NOT LIKE 'DRY:%%' AND action NOT LIKE 'RECUPERADO%%' AND phone IS NOT NULL "
-                   f"AND received_at {win} GROUP BY 1")
-    # PRIMERA respuesta por persona (8-sep): cada teléfono cuenta solo el día que respondió por
-    # primera vez, así la suma de la serie coincide con el "Respondieron" del embudo (personas
-    # distintas). Sin ventana adentro: la primera respuesta es la de la historia, no la del rango.
-    respondieron = _serie(f"""
-        SELECT d, count(*) n FROM (
-          SELECT phone, min(d) d FROM (
-            SELECT phone, {_d('ts')} d FROM agent_thread WHERE campaign='ventanas' AND role='user'
-            UNION
-            SELECT cs.phone, {_d('cs.responded_at')} d FROM contact_status cs
-            JOIN (SELECT DISTINCT ON (phone) phone, template FROM send_log WHERE accepted
-                  ORDER BY phone, attempted_at DESC) u ON u.phone = cs.phone
-            WHERE cs.responded_at IS NOT NULL AND u.template LIKE 'ventanas%%'
-          ) t GROUP BY phone
-        ) f GROUP BY 1""", nargs=0)
-    compl = _serie(f"SELECT {_d('completed_at')} d, count(*) n FROM ventanas_intake "
-                   f"WHERE country='CO' AND completed_at IS NOT NULL AND completed_at {win} GROUP BY 1")
-    bajas = _serie(f"SELECT {_d('ts')} d, count(DISTINCT phone) n FROM agent_thread "
-                   f"WHERE campaign='ventanas' AND action_taken='CLOSE_OPT_OUT' AND ts {win} GROUP BY 1")
+      dapta        = teléfonos enviados a Dapta ese día (ventanas_dapta_handoff)
+    Cada día trae además las métricas de 'total' aplanadas, por compatibilidad."""
     from zoneinfo import ZoneInfo
-    hoy = datetime.datetime.now(ZoneInfo(TZ)).date()
+    dia = lambda col: f"({col} AT TIME ZONE '{VENT_TZ}')::date::text"
+    def por_dia(fuente):
+        rows = N._rows(
+            f"WITH {_RUTA_CTE}, base AS (SELECT DISTINCT f.phone, {dia('f.ts')} AS d FROM ({fuente}) f "
+            f"                          WHERE f.ts > now() - make_interval(days => %s)) "
+            f"SELECT b.d, coalesce(r.r,'normal') AS ruta, count(*) AS n "
+            f"FROM base b LEFT JOIN ruta r ON r.phone=b.phone GROUP BY 1,2", (int(dias),))
+        out = {}
+        for r in rows:
+            out.setdefault(r["d"], {"directa": 0, "normal": 0})[r["ruta"]] = int(r["n"])
+        return out
+    primera = f"SELECT phone, min(ts) AS ts FROM ({_RESP_UNION}) t GROUP BY phone"
+    met = {"recibidos": por_dia(_VENT_MET["recibidos"]), "respondieron": por_dia(primera),
+           "completaron": por_dia(_VENT_MET["completaron"]), "bajas": por_dia(_VENT_MET["bajas"]),
+           "dapta": por_dia(_VENT_MET["dapta"])}
+    hoy = datetime.datetime.now(ZoneInfo(VENT_TZ)).date()
     fechas = [(hoy - datetime.timedelta(days=k)).isoformat() for k in range(int(dias) - 1, -1, -1)]
-    return [{"fecha": d, "llegadas": lleg.get(d, 0), "enviadas": env.get(d, 0),
-             "respuestas": resp.get(d, 0), "deals": deal.get(d, 0),
-             "recibidos": recib.get(d, 0), "respondieron": respondieron.get(d, 0),
-             "completaron": compl.get(d, 0), "bajas": bajas.get(d, 0)} for d in fechas]
+    serie = []
+    for d in fechas:
+        fila = {"fecha": d}
+        for ruta in VENT_RUTAS:
+            fila[ruta] = {}
+            for m, por in met.items():
+                v = por.get(d, {})
+                fila[ruta][m] = (v.get("directa", 0) + v.get("normal", 0)) if ruta == "total" else v.get(ruta, 0)
+        fila.update(fila["total"])          # compat: recibidos/respondieron/... aplanados = total
+        serie.append(fila)
+    return serie
 
 
 def ventanas_metricas():
-    """Embudo del programa VENTANAS, según el spec de esa sesión (26-ago-2026).
-
-    Ventanas es SOLO CO y no comparte semántica con el loop, así que no se puede medir con
-    las mismas piezas:
-      · La atribución de campaña es por PREFIJO DEL TEMPLATE ('ventanas%'), la misma regla que
-        usa el agente para enrutar la respuesta. Si el tablero usara otra, mostraría una
-        campaña mientras el agente contesta con otra.
-      · `accepted` significa "Infobip aceptó", NO "llegó al teléfono": la entrega real vive en
-        el mart de BigQuery. Por eso acá se rotula "enviadas" y nunca "entregadas".
-      · "Respondieron" necesita UNIR contact_status (clicks de botón, que procesa el bot y
-        nunca llegan a agent_thread) con agent_thread (texto libre, tiempo real). Medido con
-        una sola fuente, el porcentaje anidado llegó a dar 733%.
-      · `ventanas_hs_inbound.action LIKE 'DRY:%'` son pruebas en seco: se excluyen SIEMPRE.
-      · El día es calendario de America/Bogota, no UTC.
-    """
-    TZ = "America/Bogota"
+    """Embudo de VENTANAS por rango (hoy / 7 / 30) y por ruta (total / directa / normal).
+    Ventanas es SOLO CO. Reglas (8-sep, unificadas con la gráfica):
+      · Todo son PERSONAS distintas (count(DISTINCT phone)), nunca filas.
+      · Recibidos = webhook sin DRY ni RECUPERADO_*. Enviadas = Infobip aceptó (no es entrega).
+      · Respondieron = clics de botón ∪ texto libre (una sola fuente daba 733 %).
+      · Deal = bitácora ventanas_backbone_intento (desde 1-sep), incluye los del reloj de 72 h.
+      · La ventana es por CUÁNDO pasó cada cosa (actividad), no por cohorte.
+    `rangos` = total aplanado (compat); `rutas` = {ruta: {rango: {...}}}."""
     ventanas_dias = {"hoy": 0, "7": 7, "30": 30}
-    out = {"rangos": {}, "acciones": [], "intake": {}, "supresion": [], "pais": "CO"}
-
-    def _desde(sql_col, dias):
+    def _cond(dias):
         if dias == 0:
-            return f"({sql_col} AT TIME ZONE '{TZ}')::date = (now() AT TIME ZONE '{TZ}')::date"
-        return f"{sql_col} > now() - interval '{int(dias)} days'"
-
+            return f"(f.ts AT TIME ZONE '{VENT_TZ}')::date = (now() AT TIME ZONE '{VENT_TZ}')::date"
+        return f"f.ts > now() - interval '{int(dias)} days'"
+    rutas = {r: {} for r in VENT_RUTAS}
     with _SNC() as c:
         for k, d in ventanas_dias.items():
-            # Personas recibidas: teléfonos distintos que mandó el WEBHOOK. Sin DRY y sin las
-            # tandas manuales RECUPERADO_* (no vienen del workflow). Misma regla que la gráfica
-            # "Usuarios por día" (8-sep): antes contaba POSTs y daba 1.859 vs 1.135 personas.
-            recibidos = list(c.execute(
-                "SELECT count(DISTINCT phone) FROM ventanas_hs_inbound "
-                "WHERE action NOT LIKE 'DRY:%%' AND action NOT LIKE 'RECUPERADO%%' "
-                "AND phone IS NOT NULL AND " + _desde("received_at", d)))[0][0]
-            # Personas con al menos un envío aceptado (no filas): con filas, los reenganches hacían
-            # que "enviadas" superara a "personas recibidas" (105 % a 7 días el 8-sep).
-            enviadas = list(c.execute(
-                "SELECT count(DISTINCT phone) FROM send_log "
-                "WHERE template LIKE 'ventanas%%' AND accepted AND " + _desde("attempted_at", d)))[0][0]
-            # Respondieron = clicks de botón (contact_status) UNIDO a texto libre (agent_thread).
-            respondieron = list(c.execute(
-                "WITH ultimo_envio AS ("
-                "  SELECT DISTINCT ON (phone) phone,"
-                "         CASE WHEN template LIKE 'ventanas%%' THEN 'ventanas' ELSE 'otra' END AS campania"
-                "  FROM send_log WHERE accepted ORDER BY phone, attempted_at DESC),"
-                "por_boton AS ("
-                "  SELECT cs.phone, u.campania, cs.responded_at AS cuando"
-                "  FROM contact_status cs JOIN ultimo_envio u ON u.phone = cs.phone"
-                "  WHERE cs.responded_at IS NOT NULL),"
-                "por_texto AS ("
-                "  SELECT phone, 'ventanas' AS campania, ts AS cuando"
-                "  FROM agent_thread WHERE campaign = 'ventanas' AND role = 'user')"
-                "SELECT count(DISTINCT phone) FROM ("
-                "  SELECT * FROM por_boton UNION SELECT * FROM por_texto) t "
-                "WHERE campania = 'ventanas' AND " + _desde("cuando", d)))[0][0]
-            atendidos = list(c.execute(
-                "SELECT count(DISTINCT phone) FROM agent_thread "
-                "WHERE campaign='ventanas' AND role='user' AND " + _desde("ts", d)))[0][0]
-            # Deal: UNA sola fuente en todo el panel, la bitácora ventanas_backbone_intento (desde el
-            # 1-sep). Incluye los deals disparados por el reloj de 72 h, que no pasan por un turno
-            # del agente (agent_thread los omitía: 34 vs 44). Fallo = BACKBONE_FAILED sin un
-            # BACKBONE posterior del mismo teléfono.
-            deal_ok = list(c.execute(
-                "SELECT count(DISTINCT phone) FROM ventanas_backbone_intento "
-                "WHERE country='CO' AND resultado='BACKBONE' AND " + _desde("created_at", d)))[0][0]
-            deal_no = list(c.execute(
-                "SELECT count(DISTINCT b.phone) FROM ventanas_backbone_intento b "
-                "WHERE b.country='CO' AND b.resultado='BACKBONE_FAILED' AND " + _desde("b.created_at", d) +
-                " AND NOT EXISTS (SELECT 1 FROM ventanas_backbone_intento b2 "
-                "                 WHERE b2.phone=b.phone AND b2.resultado='BACKBONE')"))[0][0]
-            bajas = list(c.execute(
-                "SELECT count(DISTINCT phone) FROM agent_thread "
-                "WHERE campaign='ventanas' AND action_taken='CLOSE_OPT_OUT' AND " + _desde("ts", d)))[0][0]
-            out["rangos"][k] = {"recibidos": recibidos, "enviadas": enviadas,
-                                "respondieron": respondieron, "atendidos": atendidos,
-                                "deal_creado": deal_ok, "deal_fallo": deal_no, "bajas": bajas}
-
-        # Desenlace de cada POST del webhook. TERMINAL y DEDUP son GUARDAS funcionando, no
-        # fallas: van glosadas, no en rojo. Rojo solo lo que es config rota o rechazo real.
-        PROBLEMA = {"SEND_FAIL", "NO_TEMPLATE", "TEMPLATE_NO_VENTANAS", "SIN_DIRECCION", "BAD_PHONE"}
-        GUARDA = {"DEDUP", "TERMINAL", "PROGRAMA_AJENO"}
-        for r in c.execute(
-                "SELECT action, count(*) FROM ventanas_hs_inbound "
-                "WHERE action NOT LIKE 'DRY:%%' GROUP BY 1 ORDER BY 2 DESC"):
-            a = r[0] or "(sin action)"
-            out["acciones"].append({"action": a, "n": r[1],
-                                    "tipo": "ok" if a == "SENT" else
-                                            ("problema" if a in PROBLEMA else
-                                             ("guarda" if a in GUARDA else "otro"))})
-
-        fila = list(c.execute(
-            "SELECT count(*) FILTER (WHERE step='consent') AS esperando_consent,"
-            "       count(*) FILTER (WHERE consent AND step IS NOT NULL AND completed_at IS NULL) AS en_entrevista,"
-            "       count(*) FILTER (WHERE completed_at IS NOT NULL) AS completadas,"
-            "       count(*) FILTER (WHERE phone IN (SELECT phone FROM ventanas_backbone_intento "
-            "                                       WHERE country='CO' AND resultado='BACKBONE')) AS con_deal,"
-            "       count(*) FILTER (WHERE completed_at IS NOT NULL AND phone NOT IN ("
-            "                          SELECT phone FROM ventanas_backbone_intento "
-            "                          WHERE country='CO' AND resultado='BACKBONE')) AS cerradas_sin_deal,"
-            "       count(*) FILTER (WHERE reengage_count > 0) AS reenganchadas "
-            "FROM ventanas_intake WHERE country='CO'"))[0]
-        out["intake"] = dict(zip(("esperando_consent", "en_entrevista", "completadas",
-                                  "con_deal", "cerradas_sin_deal", "reenganchadas"), map(int, fila)))
-
-        for r in c.execute("SELECT motivo, count(*) FROM ventanas_supresion "
-                           "WHERE country='CO' GROUP BY 1 ORDER BY 2 DESC LIMIT 10"):
-            out["supresion"].append({"motivo": r[0] or "(sin motivo)", "n": r[1]})
-    return out
+            por = {m: _vent_por_ruta(c, fuente, _cond(d)) for m, fuente in _VENT_MET.items()}
+            for r in VENT_RUTAS:
+                rutas[r][k] = {m: por[m][r] for m in _VENT_MET}
+    return {"rangos": rutas["total"], "rutas": rutas, "pais": "CO"}
 
 
 def agente_acciones(pais, dias=30):

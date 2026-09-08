@@ -489,7 +489,6 @@
     <div class="tbl-wrap ftab" id="serieTab" hidden></div>
   </section>
     </section>
-  </div>
 
   <section class="card-sec">
     <div class="tabletitle">Errores de entrega <button type="button" class="help-btn" onclick="openHelp('err')" aria-label="Explicación">?</button></div>
@@ -509,6 +508,7 @@
     <div style="position:relative;height:300px"><canvas id="c_porhora"></canvas></div>
     <p class="note" id="porhoraNote"></p>
   </section>
+  </div><!-- /panelLoop: las tres cards de arriba son del loop y se ocultan con Ventanas (8-sep) -->
 
   </div>
 
@@ -1037,6 +1037,7 @@ const MET_HELP={
   ve4:'Personas distintas con al menos un turno propio hacia el agente en el rango (agent_thread, role user, campaign ventanas).',
   ve5:'Personas con resultado BACKBONE en la bitácora ventanas_backbone_intento (desde el 1 de septiembre). Es la única fuente de deal en todo el panel e incluye los disparados por el reloj de 72 h con la entrevista a medias. Fallaron = BACKBONE_FAILED sin un BACKBONE posterior.',
   ve6:'Entrevistas con completed_at en ventanas_intake: la captura terminó, con o sin deal.',
+  vs5:'Teléfonos enviados a Dapta ese día o en el rango (ventanas_dapta_handoff): SIN_RESPUESTA_24H es la salida normal de quien no contestó; PIDE_LLAMADA es intención positiva.',
   f_cie:'Dos líneas sumadas: compra directa (Cierre - Comprado, por closedate) + captación de la red de aliados (contrato/mandato firmado). No son el mismo evento.'};
 const I=k=>MET_HELP[k]?`<span class="info" tabindex="0" data-tip="${MET_HELP[k].replace(/"/g,'&quot;')}">i</span>`:'';
 const IH=I;   // alias: renderVentanasPanel tiene un `I` local (intake) que tapa el helper
@@ -1395,23 +1396,26 @@ function renderEjecuciones(){
 let ventSerieChart=null, ventSerieTabla=false;
 // [clave, etiqueta, ayuda, tipo]  tipo: 'line' | 'a' (barra apilada) | 'b' (barra aparte)
 const _VS=[['recibidos','Usuarios recibidos (webhook)','vs1','line'],['respondieron','Respondieron','vs2','a'],
-           ['completaron','Completaron el registro','vs3','a'],['bajas','Se dieron de baja','vs4','b']];
+           ['completaron','Completaron el registro','vs3','a'],['bajas','Se dieron de baja','vs4','b'],
+           ['dapta','Enviados a Dapta','vs5','c']];
 const _VS_COL=()=>document.body.classList.contains('dark')
-  ? {recibidos:'#D6D0DD', respondieron:'#0D9488', completaron:'#9F67F5', bajas:'#D97706'}
-  : {recibidos:'#525252', respondieron:'#0D9488', completaron:'#7E22CE', bajas:'#D97706'};
+  ? {recibidos:'#D6D0DD', respondieron:'#0D9488', completaron:'#9F67F5', bajas:'#D97706', dapta:'#3B82F6'}
+  : {recibidos:'#525252', respondieron:'#0D9488', completaron:'#7E22CE', bajas:'#D97706', dapta:'#2563EB'};
+// Valor de una métrica en el día, para la ruta seleccionada (total/directa/normal).
+const _vsv=(s,k)=>+(((s[ventRutaSel]||s)[k])||0);
 function toggleVentSerieTabla(){ ventSerieTabla=!ventSerieTabla; renderVentanasPanel(); }
 // Recorta los días vacíos del arranque (el programa empezó el 19-ago): sin dato no hay nada que leer.
-function _serieVent(){ const S=((D.ventanas||{}).serie||[]); const i=S.findIndex(s=>_VS.some(([k])=>s[k]>0)); return i<0?S:S.slice(Math.max(0,i-1)); }
+function _serieVent(){ const S=((D.ventanas||{}).serie||[]); const i=S.findIndex(s=>_VS.some(([k])=>_vsv(s,k)>0)); return i<0?S:S.slice(Math.max(0,i-1)); }
 function renderSerieVentanas(){
   const S=_serieVent();
   if(!S.length) return '';
   const col=_VS_COL();
   const leg=_VS.map(([k,lab,h,t])=>`<span><i class="${t==='line'?'ln':''}" style="background:${col[k]}"></i>${lab}${I(h)}</span>`).join('');
   const tabla=!ventSerieTabla?'':`<div class="tbl-wrap ftab" style="margin-top:10px"><table><thead><tr><th>Día</th>${_VS.map(([k,lab])=>`<th style="text-align:right">${lab}</th>`).join('')}</tr></thead>
-    <tbody>${[...S].reverse().map(s=>`<tr><td>${_dia(s.fecha)}</td>${_VS.map(([k])=>`<td style="text-align:right">${fmt(s[k]||0)}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`;
+    <tbody>${[...S].reverse().map(s=>`<tr><td>${_dia(s.fecha)}</td>${_VS.map(([k])=>`<td style="text-align:right">${fmt(_vsv(s,k))}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`;
   return `<section class="card-sec">
     <div class="tabletitle">Usuarios por día</div>
-    <span class="sub">recibidos por el webhook, respondieron, completaron el registro y bajas · últimos ${S.length} días · día calendario de Bogotá</span>
+    <span class="sub">recibidos por el webhook, respondieron, completaron el registro, bajas y enviados a Dapta · ${_VRUTA_LBL[ventRutaSel]} · últimos ${S.length} días · día calendario de Bogotá</span>
     <div class="leg" style="margin-top:10px">${leg}</div>
     <div class="ch tall"><canvas id="c_vent_serie"></canvas></div>
     <div class="tbltoggle"><button type="button" class="linkbtn" onclick="toggleVentSerieTabla()">${ventSerieTabla?'Ocultar tabla':'Ver tabla'}</button></div>
@@ -1425,15 +1429,15 @@ function drawSerieVentanas(){
   const tick=dark?'#9A92A5':'#737373', grid=dark?'#2E2836':'#EEEEEE', lineCol=col.recibidos;
   ventSerieChart=new Chart(el,{type:'bar',
     data:{labels:S.map(s=>_dia(s.fecha)), datasets:_VS.map(([k,lab,h,t])=>t==='line'
-      ? {type:'line', label:lab, data:S.map(s=>s[k]||0), borderColor:col[k], backgroundColor:col[k],
+      ? {type:'line', label:lab, data:S.map(s=>_vsv(s,k)), borderColor:col[k], backgroundColor:col[k],
          borderWidth:2, tension:.3, pointRadius:3, pointHoverRadius:5, order:0, yAxisID:'y2'}
-      : {label:lab, data:S.map(s=>s[k]||0), backgroundColor:col[k], stack:t, borderRadius:3, maxBarThickness:22, order:1, yAxisID:'y'})},
+      : {label:lab, data:S.map(s=>_vsv(s,k)), backgroundColor:col[k], stack:t, borderRadius:3, maxBarThickness:22, order:1, yAxisID:'y'})},
     options:{responsive:true, maintainAspectRatio:false, interaction:{mode:'index', intersect:false},
       datasets:{bar:{categoryPercentage:.7, barPercentage:.9}},
       plugins:{legend:{display:false}, tooltip:{callbacks:{label:c=>' '+c.dataset.label+': '+fmt(c.parsed.y)}}},
       scales:{x:{stacked:true, ticks:{color:tick, maxRotation:0, autoSkip:true, maxTicksLimit:15}, grid:{display:false}, border:{display:false}},
         y:{stacked:true, beginAtZero:true, position:'left', ticks:{color:tick, precision:0, maxTicksLimit:6}, grid:{color:grid}, border:{display:false},
-           title:{display:true, text:'Respondieron + Completaron · Bajas', color:tick, font:{size:11}}},
+           title:{display:true, text:'Respondieron + Completaron · Bajas · Dapta', color:tick, font:{size:11}}},
         y2:{beginAtZero:true, position:'right', ticks:{color:lineCol, precision:0, maxTicksLimit:6}, grid:{drawOnChartArea:false}, border:{display:false},
            title:{display:true, text:'Usuarios recibidos', color:lineCol, font:{size:11}}}}}});
 }
@@ -1443,16 +1447,20 @@ const _RANGO_VENT={hoy:'Hoy','7':'Últimos 7 días','30':'Últimos 30 días'};
 function setRangoVent(r){ rangoVent=r; renderVentanasPanel(); }
 // Ventanas es SOLO CO (así lo dice su propia sesión): un panel por país acá no agrega nada
 // y puede mezclar líneas, así que con MX seleccionado se dice y no se inventan cifras.
+let ventRutaSel='total';
+const _VRUTA_LBL={total:'Total ventanas', directa:'Ventanas direct', normal:'Ventanas normal'};
+function setVentRuta(r){ ventRutaSel=r; renderVentanasPanel(); }
+// Panel de Ventanas (8-sep): SOLO el embudo y la gráfica "Usuarios por día", ambos con el corte
+// Total / Direct (flujo compra_wa) / Normal. Ventanas opera solo en Colombia: en México el panel
+// va en blanco. Las demás cards (desenlace, entrevista, conversaciones, supresión, alertas,
+// ejecuciones) siguen calculadas o definidas, pero no se pintan aquí.
 function renderVentanasPanel(){
   const el=document.getElementById('panelVentanas'); if(!el) return;
   const V=D.ventanas||{};
-  if(country!=='CO'){
-    el.innerHTML='<section class="card-sec"><div class="tabletitle">Ventanas opera solo en Colombia</div>'
-      +'<span class="sub">no hay programa de ventanas en México: cambia el país arriba para ver sus métricas</span></section>';
-    return;
-  }
-  const R=(V.rangos||{})[rangoVent]||{};
+  if(country!=='CO'){ el.innerHTML=''; if(ventSerieChart){ ventSerieChart.destroy(); ventSerieChart=null; } return; }
+  const R=(((V.rutas||{})[ventRutaSel])||V.rangos||{})[rangoVent]||{};
   const tabs=['hoy','7','30'].map(r=>`<button type="button" class="winbtn sm${r===rangoVent?' active':''}" onclick="setRangoVent('${r}')">${r==='hoy'?'Hoy':r+' d'}</button>`).join('');
+  const rutaSeg=`<div class="seg" style="margin-bottom:20px">${Object.keys(_VRUTA_LBL).map(r=>`<button type="button" class="winbtn${r===ventRutaSel?' active':''}" onclick="setVentRuta('${r}')">${_VRUTA_LBL[r]}</button>`).join('')}</div>`;
   const pasos=[
     {lab:'Personas recibidas'+IH('ve1'), k:'recibidos', color:'var(--accent)', pie:'teléfonos distintos · webhook, sin recuperados'},
     {lab:'Plantillas enviadas'+IH('ve2'), k:'enviadas', color:'#A855F7', pie:'personas · Infobip aceptó, no es entrega'},
@@ -1472,70 +1480,26 @@ function renderVentanasPanel(){
       ${conv!==null?`<div class="fconv">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"></path></svg>
         <span class="fpill">${conv}</span></div>`:''}</div>`;}).join('');
-
-  const A=(V.acciones||[]);
-  const clase={ok:'row-loop',problema:'row-orange',guarda:'row-stage',otro:'row-stage'};
-  const glosa={SENT:'plantilla enviada', DEDUP:'ya se le escribió hace menos de 7 días',
-    TERMINAL:'está en baja o ya vendió — nunca recontactar', SIN_DIRECCION:'el payload no trajo dirección',
-    SEND_FAIL:'Infobip rechazó el envío', NO_TEMPLATE:'falta la variable de plantilla',
-    TEMPLATE_NO_VENTANAS:'la plantilla no lleva el prefijo ventanas', PROGRAMA_AJENO:'el payload declaró otro programa',
-    BAD_PHONE:'teléfono inválido'};
-  const I=V.intake||{}, S=V.supresion||[];
-  const selVista=`<div class="seg" style="margin-bottom:20px">
-      <button type="button" class="winbtn${ventVista==='funnel'?' active':''}" onclick="setVentVista('funnel')">Funnel</button>
-      <button type="button" class="winbtn${ventVista==='ejec'?' active':''}" onclick="setVentVista('ejec')">Ejecuciones</button>
-    </div>`;
-  const franja=renderAlertas();
-  if(ventVista==='ejec'){ el.innerHTML=franja+selVista+renderEjecuciones()+renderConversaciones(); return; }
-  el.innerHTML=franja+selVista+`
+  el.innerHTML=rutaSeg+`
   <section class="card-sec">
     <div class="cardhead"><div>
       <div class="tabletitle">Embudo de Ventanas</div>
-      <span class="sub">de lead de HubSpot a deal · ${_RANGO_VENT[rangoVent]} · Colombia</span></div>
+      <span class="sub">de lead de HubSpot a deal · ${_RANGO_VENT[rangoVent]} · ${_VRUTA_LBL[ventRutaSel]} · Colombia</span></div>
       <div class="seg">${tabs}</div></div>
     <div class="funnel">${emb}</div>
-    <div class="akpis" style="margin:16px 0 0;max-width:280px"><div><div class="flab">Se dieron de baja${IH('vs4')}</div><div class="fval">${fmt(R.bajas||0)}</div></div></div>
+    <div class="akpis" style="margin:16px 0 0;max-width:560px">
+      <div><div class="flab">Se dieron de baja${IH('vs4')}</div><div class="fval">${fmt(R.bajas||0)}</div></div>
+      <div><div class="flab">Enviados a Dapta${IH('vs5')}</div><div class="fval">${fmt(R.dapta||0)}</div></div>
+    </div>
     <p class="note"><b>Personas recibidas</b> son teléfonos distintos que mandó el webhook, sin pruebas en seco ni tandas de recuperación: la misma regla de la gráfica de abajo.
+    <b>Direct</b> = entró por el flujo compra_wa (primer contacto por WhatsApp); <b>Normal</b> = el resto (no contesta y tibio). La ruta es del teléfono, por su primer POST.
     <b>Enviadas</b> significa que Infobip aceptó el mensaje, no que llegó: la entrega real vive en el mart de BigQuery, fuera de esta base.
     <b>Respondieron</b> une los clics de botón (que procesa el bot y nunca llegan al agente) con el texto libre; medido con una sola fuente, el porcentaje llegó a dar 733%.
     <b>Deal creado</b> sale de la bitácora de intentos al backbone (desde el 1 de septiembre) e incluye los que disparó el reloj de 72 h sin turno del agente.
     La ventana cuenta por <b>cuándo pasó cada cosa</b>, no por cuándo se le escribió: es actividad, no tasa por cohorte.</p>
   </section>
 
-  <div class="grid2">
-    <section class="card-sec">
-      <div class="tabletitle">Desenlace de los leads de HubSpot</div>
-      <span class="sub">qué pasó con cada POST del workflow · pruebas en seco excluidas</span>
-      <div class="tbl-wrap ftab"><table><thead><tr><th>Desenlace</th><th style="text-align:right">Leads</th></tr></thead>
-        <tbody>${A.length?A.map(a=>`<tr class="${clase[a.tipo]||''}"><td>${escx(a.action)}<span class="muted" style="font-weight:400"> — ${escx(glosa[a.action]||'')}</span></td>
-          <td style="text-align:right">${fmt(a.n)}</td></tr>`).join(''):'<tr><td colspan="2">Sin leads todavía.</td></tr>'}</tbody></table></div>
-      <p class="note"><b>DEDUP</b> y <b>TERMINAL</b> no son fallas: son las guardas funcionando. En rojo solo lo que es configuración rota o rechazo real.</p>
-    </section>
-
-    <section class="card-sec">
-      <div class="tabletitle">Entrevista</div>
-      <span class="sub">captura conversacional del inmueble · desde el 25 de agosto</span>
-      <div class="akpis">
-        <div><div class="flab">Esperando consentimiento</div><div class="fval">${fmt(I.esperando_consent||0)}</div></div>
-        <div><div class="flab">En entrevista</div><div class="fval">${fmt(I.en_entrevista||0)}</div></div>
-        <div><div class="flab">Completadas${IH('ve6')}</div><div class="fval">${fmt(I.completadas||0)}</div></div>
-        <div><div class="flab">Con deal${IH('ve5')}</div><div class="fval">${fmt(I.con_deal||0)}</div></div>
-      </div>
-      <p class="note">Las <b>${fmt(I.cerradas_sin_deal||0)}</b> cerradas sin deal incluyen a quien no autorizó el tratamiento de datos: sin consentimiento no se crea lead, y eso es cumplimiento de la Ley 1581, no una falla.
-      Reenganchadas: ${fmt(I.reenganchadas||0)}.</p>
-    </section>
-  </div>
-
-  ${renderSerieVentanas()}
-
-  ${renderConversaciones()}
-
-  <section class="card-sec">
-    <div class="tabletitle">A quién no se le escribe</div>
-    <span class="sub">supresión antes de enviar · por motivo</span>
-    <div class="tbl-wrap ftab"><table><thead><tr><th>Motivo</th><th style="text-align:right">Contactos</th></tr></thead>
-      <tbody>${S.map(s=>`<tr><td>${escx(s.motivo)}</td><td style="text-align:right">${fmt(s.n)}</td></tr>`).join('')}</tbody></table></div>
-  </section>`;
+  ${renderSerieVentanas()}`;
   drawSerieVentanas();
 }
 
