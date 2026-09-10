@@ -25,7 +25,13 @@
 --   y ya no, no aparece aquí — eso lo mide la fila "Error de consistencia MM" de la hoja
 --   de Calificación, que es otra cosa.
 --
--- Salida: una fila por lead. {c, nid, fecha_creacion, fuente, pipeline, owner,
+-- ⚠️ EL LINK A HUBSPOT NO SE ARMA CON EL NID. Verificado 2026-09-10: para el mismo lead,
+--   nid = 64925904172 pero el id del negocio en HubSpot es deal_id = 4470320. Son números
+--   distintos. `hs_object_id` existe como columna pero está 100% vacía (0 de 5,7M filas),
+--   así que el único id utilizable es `deal_id` de `hubspot.deals`, que cubre el 53%
+--   (3,0M de 5,7M nids). Los que no lo tienen se muestran sin link.
+--
+-- Salida: una fila por lead. {c, nid, deal_id, fecha_creacion, fuente, pipeline, owner,
 --                             estado_mm, estado_inmo}
 
 WITH
@@ -74,6 +80,15 @@ WITH
       AND DATE(fecha_creacion) >= DATE_SUB(CURRENT_DATE(), INTERVAL 30 DAY)
   ),
 
+  -- id del negocio en HubSpot, para armar el link. No es el nid.
+  deals AS (
+    SELECT CAST(nid AS STRING) AS nid,
+           CAST(ANY_VALUE(deal_id) AS STRING) AS deal_id
+    FROM `sellers-main-prod.hubspot.deals`
+    WHERE nid IS NOT NULL AND deal_id IS NOT NULL
+    GROUP BY nid
+  ),
+
   -- último pipeline y último owner conocidos, de `historical`
   hs AS (
     SELECT
@@ -92,6 +107,7 @@ WITH
 SELECT
   n.c,
   n.nid,
+  d.deal_id,
   t.fecha_creacion,
   t.fuente,
   COALESCE(p.label, CONCAT('(', IFNULL(hs.pipeline_id, 'sin pipeline'), ')')) AS pipeline,
@@ -102,6 +118,7 @@ FROM negocios n
 JOIN tig t            ON t.c = n.c AND t.nid = n.nid
 LEFT JOIN cal_inmo ci ON ci.c = n.c AND ci.nid = n.nid
 LEFT JOIN hs          ON hs.nid = n.nid
+LEFT JOIN deals d     ON d.nid = n.nid
 LEFT JOIN `sellers-main-prod.hubspot.deal_pipelines` p ON p.id = hs.pipeline_id
 WHERE n.estado_mm_id IN (20, 63)   -- califica para MM
   AND ci.nid IS NULL               -- y nunca calificó para Inmo

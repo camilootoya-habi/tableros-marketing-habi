@@ -394,7 +394,6 @@ body.light #sheet-web .wchip.country { background: #dbeafe; border-color: #3b82f
     <button class="tab active" data-sheet="cal" onclick="goSheet('cal')">Calificación de leads</button>
     <button class="tab" data-sheet="asg" onclick="goSheet('asg')">Asignación de leads</button>
     <button class="tab" data-sheet="com" onclick="goSheet('com')">Asignado a comercial</button>
-    <button class="tab" data-sheet="bbx" onclick="goSheet('bbx')">Error de Buybox</button>
     <button class="tab" data-sheet="traf" onclick="goSheet('traf')">Tráfico WEB</button>
     <button class="tab" data-sheet="web" onclick="goSheet('web')">Funnel WEB</button>
     <button class="tab" data-sheet="otp" onclick="goSheet('otp')">OTP WEB</button>
@@ -2351,6 +2350,24 @@ function renderAsgMm() {
 // ── Hoja "Error de Buybox" · detalle ─────────────────────────────────────────
 // Lista, no serie: una fila por lead. Solo respeta el filtro de país; la
 // temporalidad no aplica porque la ventana es fija en 30 días.
+// Link al negocio en HubSpot.
+// ⚠️ NO se arma con el NID. Verificado 2026-09-10: para el mismo lead el nid es
+// 64925904172 y el id del negocio en HubSpot es deal_id 4470320 — números distintos.
+// (`hs_object_id` existe como columna pero está 100% vacía.) En los 1.645 leads de esta
+// lista el deal_id está al 100%, así que el link sale para todos.
+//
+// Falta el PORTAL ID de la cuenta de HubSpot de Habi, que no está en ninguna tabla de BQ.
+// Se saca de cualquier URL de un negocio abierto en HubSpot:
+//   https://app.hubspot.com/contacts/<PORTAL_ID>/deal/<deal_id>
+// Poner ese número abajo y el link se activa solo. Mientras esté vacío, la columna
+// muestra el deal_id en gris en vez de un link roto.
+const HUBSPOT_PORTAL_ID = '';
+
+function hubspotDealUrl(dealId) {
+  if (!dealId || !HUBSPOT_PORTAL_ID) return null;
+  return `https://app.hubspot.com/contacts/${HUBSPOT_PORTAL_ID}/deal/${dealId}`;
+}
+
 function renderBuybox() {
   const thead = document.querySelector('#bbxDetalleTable thead tr');
   const tbody = document.querySelector('#bbxDetalleTable tbody');
@@ -2363,7 +2380,7 @@ function renderBuybox() {
   const cols = [
     ['nid', 'NID'], ['fecha_creacion', 'Creado'], ['fuente', 'Fuente'],
     ['pipeline', 'Pipeline'], ['owner', 'Owner (HubSpot)'],
-    ['estado_mm', 'Estado MM'], ['estado_inmo', 'Estado Inmo']
+    ['estado_mm', 'Estado MM'], ['estado_inmo', 'Estado Inmo'], ['_hs', 'HubSpot']
   ];
   thead.innerHTML = cols.map(([, t]) => `<th>${t}</th>`).join('');
 
@@ -2377,8 +2394,15 @@ function renderBuybox() {
   const esc = x => String(x ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;');
   // Tope de render: la lista es para trabajar, no para hacer scroll infinito.
   const TOPE = 500;
+  const celda = (k, r) => {
+    if (k !== '_hs') return `<td>${esc(r[k])}</td>`;
+    const url = hubspotDealUrl(r.deal_id);
+    return url
+      ? `<td><a class="link-detalle" href="${esc(url)}" target="_blank" rel="noopener">Abrir &nearr;</a></td>`
+      : `<td><span class="sindato">${r.deal_id ? esc(r.deal_id) : '—'}</span></td>`;
+  };
   tbody.innerHTML = filas.slice(0, TOPE)
-    .map(r => '<tr>' + cols.map(([k]) => `<td>${esc(r[k])}</td>`).join('') + '</tr>').join('');
+    .map(r => '<tr>' + cols.map(([k]) => celda(k, r)).join('') + '</tr>').join('');
   if (cnt) {
     cnt.textContent = filas.length > TOPE
       ? `${fmt(filas.length)} leads en ${country}; se muestran los ${fmt(TOPE)} más recientes. `
@@ -2933,6 +2957,17 @@ function otpRenderExp(ab) {
 // El doble requestAnimationFrame es a propósito: el primero deja que el navegador aplique
 // el innerHTML recién escrito y calcule scrollWidth, el segundo hace el scroll con el ancho
 // ya definitivo. Con uno solo, las tablas anchas se quedan a medio camino.
+// El botón "atrás" del navegador cambia el hash pero no dispara nada por sí solo.
+// Con esto vuelve a la hoja anterior — que desde el detalle de Buybox es Calificación,
+// porque es la única vía de entrada. Aplica a todas las hojas, no solo a esa.
+// La guarda evita el bucle: goSheet escribe el hash, y eso volvería a disparar esto.
+window.addEventListener('hashchange', () => {
+  const h = (location.hash || '').replace('#', '') || 'cal';
+  const activa = document.querySelector('.sheet:not([hidden])');
+  if (activa && activa.id === 'sheet-' + h) return;
+  goSheet(h);
+});
+
 function scrollTablasDerecha() {
   requestAnimationFrame(() => requestAnimationFrame(() => {
     document.querySelectorAll('.table-container')
@@ -3246,7 +3281,6 @@ Promise.all([
   const h = (location.hash || '').replace('#', '');
   if (h === 'asg') goSheet('asg');
   else if (h === 'com') goSheet('com');
-  else if (h === 'bbx') goSheet('bbx');
   else if (h === 'web') goSheet('web');
   else if (h === 'traf') goSheet('traf');
   else if (h === 'otp') goSheet('otp');
