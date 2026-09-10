@@ -1891,6 +1891,7 @@ function onUpdate() {
     renderFlow();
     renderAsgMm();   // no depende del filtro de fuentes, así que se pinta igual
     if (WEB_DATA) renderWeb();
+    scrollTablasDerecha();   // las de asignados sí quedaron con columnas
     return;
   }
   renderFlow();   // la hoja de Asignación también depende de país y fuentes
@@ -1900,6 +1901,9 @@ function onUpdate() {
   let rows = aggregate(g, country, sel);
   if (g !== 'Y') rows = rows.slice(-SHOW_COUNT);
   render(rows, g);
+  // Cambiar país o temporalidad reemplaza todas las columnas, así que hay que volver a
+  // pegar las tablas a la derecha: si no, quedan donde estaba el scroll de las anteriores.
+  scrollTablasDerecha();
 }
 
 function render(rows, gran) {
@@ -2330,7 +2334,8 @@ function goSheet(name) {
       (name === 'web' || name === 'traf' || name === 'otp' || name === 'asg');
   }
   if (name === 'asg') renderAsgMm();
-  if (name === 'web' || name === 'traf' || name === 'otp') { loadWebSheet(); scrollTablasDerecha(); }
+  if (name === 'web' || name === 'traf' || name === 'otp') loadWebSheet();
+  scrollTablasDerecha();   // toda hoja abre mostrando los períodos más recientes
   location.hash = name;
   window.scrollTo(0, 0);
 }
@@ -2725,11 +2730,17 @@ function otpRenderExp(ab) {
 // Se hace en rAF porque justo después de innerHTML el navegador todavía no ha medido
 // el contenido, y scrollWidth vendría en 0. Las hojas ocultas se saltan (miden 0) y se
 // reposicionan al mostrarlas desde goSheet().
+// Todas las tablas del tablero arrancan pegadas a la derecha: las columnas van en orden
+// cronológico, así que lo último es lo que interesa ver primero. Sin esto hay que
+// arrastrar 20 columnas cada vez que se abre una hoja o se cambia la temporalidad.
+// El doble requestAnimationFrame es a propósito: el primero deja que el navegador aplique
+// el innerHTML recién escrito y calcule scrollWidth, el segundo hace el scroll con el ancho
+// ya definitivo. Con uno solo, las tablas anchas se quedan a medio camino.
 function scrollTablasDerecha() {
-  requestAnimationFrame(() => {
-    document.querySelectorAll('#sheet-web .table-container, #sheet-traf .table-container, #sheet-otp .table-container')
+  requestAnimationFrame(() => requestAnimationFrame(() => {
+    document.querySelectorAll('.table-container')
       .forEach(c => { if (c.scrollWidth > c.clientWidth) c.scrollLeft = c.scrollWidth; });
-  });
+  }));
 }
 
 function renderWeb() {
