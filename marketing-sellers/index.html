@@ -510,7 +510,21 @@ body.light #sheet-web .wchip.country { background: #dbeafe; border-color: #3b82f
 </div><!-- /sheet-cal -->
 
 <div class="sheet" id="sheet-asg" hidden>
-  <h2 class="section-heading" style="margin-top:0">Asignados Market Maker — por fecha de primera asignación</h2>
+  <h2 class="section-heading" style="margin-top:0">Definiciones oficiales del WBR</h2>
+  <div class="table-container">
+    <table id="asgOficialTable"><thead><tr><th>Asignados — cifra oficial</th></tr></thead><tbody></tbody></table>
+  </div>
+  <p class="fnote">
+    Estas son las cifras <strong>citables</strong>: cuadran con el WBR y con el OKR. Si un número de las
+    tablas de abajo no coincide con uno de aquí, manda este.
+    <strong>Market Maker</strong> sale del mart oficial con las 6 fuentes de marketing.
+    <strong>Inmobiliaria</strong> es la suma de las prioridades <strong>A + B</strong> — no el total de la
+    tabla de asignación, que trae ~11% de filas sin prioridad que el WBR no cuenta.
+    <span class="fpartial">Las semanas recientes se mueven</span>: la prioridad de Inmo es un snapshot que se
+    reescribe, así que un lead sin prioridad hoy puede aparecer como A o B mañana. Solo Colombia.
+  </p>
+
+  <h2 class="section-heading">Asignados Market Maker — por fecha de primera asignación</h2>
   <div class="table-container">
     <table id="asgMmTable"><thead><tr><th>Asignados Market Maker</th></tr></thead><tbody></tbody></table>
   </div>
@@ -520,10 +534,82 @@ body.light #sheet-web .wchip.country { background: #dbeafe; border-color: #3b82f
     <strong>Directo por primera vez</strong> = nunca había entrado a Inmobiliaria antes.
     <strong>Venía de Inmo</strong> = su primera entrada a Inmobiliaria es anterior a la de MM.
     <span class="fpartial">El período en curso va corto</span>: <code>hubspot.historical</code> tiene ~5 h de rezago.
-    La fila <strong>Mart oficial (WBR)</strong> es solo de contraste y <strong>no</strong> es la suma de las
-    anteriores — es otro universo (ver el <code>?</code>). Solo Colombia por ahora.
+    ⚠️ El total de esta tabla <strong>no</strong> es la cifra oficial y no cuadra con la tabla de arriba: son
+    universos distintos, y difieren entre −12,5% y +28% por mes. El mart no puede descomponerse (ver el <code>?</code>).
+  </p>
+
+  <h2 class="section-heading">Asignados Inmobiliaria — por fecha de primera asignación</h2>
+  <div class="table-container">
+    <table id="asgInmoTable"><thead><tr><th>Asignados Inmobiliaria</th></tr></thead><tbody></tbody></table>
+  </div>
+  <p class="fnote">
+    Aquí sí el total <strong>es</strong> la cifra oficial: es la misma A + B de la primera tabla, partida por
+    su historia previa en Market Maker. Las dos filas de abajo son <strong>MECE</strong>.
+    <strong>Directo a Inmo</strong> = sin entrada a MM anterior a su asignación; reproduce la línea punteada
+    del WBR (validado: 482 vs 481, 528 vs 530, 461 vs 458).
+    <strong>Venía de MM</strong> = ya había entrado al pipeline MM antes.
+    <span class="fpartial">Ojo con la tendencia</span>: la proporción que viene de MM cayó de ~71% en mayo a
+    ~47% en agosto. Es el hallazgo, no un error de datos.
   </p>
 </div>
+
+<dialog id="helpAsgOficial" class="help-dialog">
+  <h3>Definiciones oficiales del WBR</h3>
+  <p>Las cifras <strong>citables</strong> de asignados. Cuadran con el WBR y el OKR; si un número de las
+  tablas de abajo no coincide con uno de aquí, <strong>manda este</strong>.</p>
+  <p>Cada producto tiene su propia fuente y su propia definición — <strong>no</strong> son dos cortes de la
+  misma tabla, y no hay una consulta única que dé las dos. Ver el <code>?</code> de cada fila.</p>
+  <p>Validado al lead contra el WBR el <strong>2026-09-09</strong>. Las semanas cerradas cuadran dentro de
+  1&ndash;2%; las dos más recientes se desvían porque la prioridad de Inmo es un snapshot que se sigue
+  reescribiendo. Solo Colombia.</p>
+  <button type="button" class="close-btn" onclick="this.closest('dialog').close()">Cerrar</button>
+</dialog>
+
+<dialog id="helpAsgOfMm" class="help-dialog">
+  <h3>Asignados Market Maker — cifra oficial</h3>
+  <p>Es el indicador <strong>«Leads Asignados (Primer Asignación)»</strong> del WBR:
+  <code>papyrus-master.sellers_data_mart.sellers_leads_asignados_marketing_wbr_mart</code>
+  con <code>pais='colombia'</code>, restringido a las <strong>6 fuentes de marketing</strong>.</p>
+  <p>Las 6: WEB&nbsp;(3), Habímetro&nbsp;(7), CRM&nbsp;(20), Comercial&nbsp;(35), Brokers&nbsp;(39) y
+  Leadforms&nbsp;(47/37/41/42, cuatro ids que se colapsan en una etiqueta).</p>
+  <p>El mart aplica <strong>16 filtros</strong> en 7 grupos, y el más importante para leer esta cifra es
+  <strong>F2</strong>: se queda solo con la <strong>primera asignación cronológica</strong> de cada nid. Por eso
+  se llama «Primer Asignación» y por eso esta cifra no puede descomponerse por producto.</p>
+  <p>Validado 2026-09-09: abr-2026 da <strong>5.080</strong>, exacto contra el WBR (977+1.252+2.309+542).
+  En la práctica el filtro de fuentes no mueve nada — fuera de las 6 hay 0&ndash;2 leads por mes — pero va
+  explícito porque es la definición.</p>
+  <button type="button" class="close-btn" onclick="this.closest('dialog').close()">Cerrar</button>
+</dialog>
+
+<dialog id="helpAsgOfInmo" class="help-dialog">
+  <h3>Asignados Inmobiliaria — cifra oficial</h3>
+  <p>Es el indicador <strong>«Leads asignados equipo inmobiliaria»</strong> del WBR:
+  <code>sellers-main-prod.bi_co.tablero_asignacion_inmo_col</code>, por
+  <code>fecha_primera_asignacion</code>, con <code>prioridad_de_gestion_inmo IN ('A','B')</code>.</p>
+  <p>⚠️ <strong>El filtro de prioridad es la definición, no una limpieza.</strong> La cifra del WBR es la suma
+  de las barras A + B, <strong>no</strong> el total de la tabla. Sin el filtro sobra ~11%: en la ventana
+  20-jul a 30-ago hay <strong>693 filas con prioridad NULL</strong> y 6 con «Descartado Gabi».</p>
+  <p>Validación semana a semana (2026-09-09): 20-jul WBR 896 · query 901 &nbsp;|&nbsp; 10-ago WBR 974 ·
+  query 984 &nbsp;|&nbsp; 17-ago WBR 813 · query 831.</p>
+  <p>⚠️ <code>prioridad_de_gestion_inmo</code> es <strong>snapshot</strong>: se reescribe en cada refresh, así
+  que la serie histórica del split A/B se mueve sola y las semanas recientes suben a medida que se tipifica.
+  <strong>Nunca leer tendencia de la prioridad.</strong></p>
+  <button type="button" class="close-btn" onclick="this.closest('dialog').close()">Cerrar</button>
+</dialog>
+
+<dialog id="helpAsgDirecto" class="help-dialog">
+  <h3>Directo a Inmo (sin pasar por MM)</h3>
+  <p>De los asignados a Inmobiliaria, los que <strong>no tenían entrada al pipeline Market Maker anterior</strong>
+  a su asignación. Reproduce la <strong>línea punteada</strong> del WBR.</p>
+  <p>Se resuelve cruzando con <code>sellers-main-prod.hubspot.historical</code>
+  (<code>propiedad='pipeline'</code>, <code>valor='798578615'</code>) y comparando el
+  <code>MIN(fecha)</code> de MM contra la fecha de asignación a Inmo.</p>
+  <p>Validado 2026-09-09 contra la línea del WBR: 482 vs 481 · 525 vs 529 · 528 vs 530 · 482 vs 485 ·
+  455 vs 458. Con «Venía de MM» es <strong>MECE</strong>: las dos suman exactamente el total.</p>
+  <p>⚠️ En <strong>México</strong> esa misma etiqueta mide otra cosa: allá el CTE del WBR calcula «calificado
+  para real_estate», que no excluye haber pasado por MM. En Colombia la etiqueta sí describe lo que mide.</p>
+  <button type="button" class="close-btn" onclick="this.closest('dialog').close()">Cerrar</button>
+</dialog>
 
 <dialog id="helpAsgMm" class="help-dialog">
   <h3>Asignados Market Maker</h3>
@@ -1209,7 +1295,8 @@ const INMO_RANK = { states: [] };
 const BUYBOX_RANK = { states: [] };
 let INMO_DESCLAS_DATA = [];
 let FLOW_DATA = [];
-let ASG_MM_DATA = [];   // asg_mm.json — tabla de Asignados Market Maker (hoja Asignación)
+let ASG_MM_DATA = [];     // asg_mm.json   — Asignados Market Maker (hoja Asignación)
+let ASG_INMO_DATA = [];   // asg_inmo.json — Asignados Inmobiliaria (hoja Asignación)
 
 function themeColors() {
   const s = getComputedStyle(document.body);
@@ -1825,49 +1912,107 @@ const FLOW_TREE = [
 ];
 const FLOW_TONES = { accent:'#818cf8', ok:'#34d399', sky:'#38bdf8', warn:'#fbbf24', bad:'#f87171', muted:'#94a3b8' };
 
-// ── Hoja "Asignación de leads": tabla de Asignados Market Maker ──────────────
-// Mismo formato que "Calificación de leads — cosechas": una columna por período de
-// la temporalidad seleccionada, fila total en absoluto y filas de descomposición
-// con heatCells (valor + % sobre su denominador).
-// No usa el filtro de fuentes: `hubspot.historical` no trae fuente. Solo país+temporalidad.
+// ── Hoja "Asignación de leads": tres tablas ─────────────────────────────────
+// Formato copiado de "Calificación de leads — cosechas": una columna por período de
+// la temporalidad seleccionada, fila total en absoluto y filas de descomposición con
+// heatCells (valor + % sobre su denominador).
+// Ninguna usa el filtro de fuentes: ni `hubspot.historical` ni la tabla de asignación
+// de Inmo traen fuente utilizable. Solo país + temporalidad.
+
+// Períodos comunes a las tres tablas: unión de los dos datasets, para que las columnas
+// queden alineadas aunque uno tenga un período que el otro no.
+function asgPeriodos(gran, country) {
+  const ps = new Set();
+  [ASG_MM_DATA, ASG_INMO_DATA].forEach(ds =>
+    ds.forEach(r => { if (r.g === gran && r.c === country) ps.add(r.p); }));
+  return [...ps].sort().slice(-20);
+}
+
+function asgHead(thead, etiqueta, helpId, periodos, gran) {
+  thead.innerHTML = `<th></th><th>${etiqueta}`
+    + (helpId ? `<button type="button" class="help-btn" onclick="document.getElementById('${helpId}').showModal()">?</button>` : '')
+    + '</th>'
+    + periodos.map(p => {
+        const cur = isCurrentPeriod(p, gran);
+        return `<th${cur ? ' class="in-progress"' : ''}${cur ? ' title="Período en curso — datos parciales"' : ''}>${formatPeriod(p, gran)}</th>`;
+      }).join('');
+}
+
+// Serie de un dataset alineada a `periodos`; 0 donde no hay fila.
+function asgSerie(ds, gran, country, periodos, campo) {
+  const idx = {};
+  ds.forEach(r => { if (r.g === gran && r.c === country) idx[r.p] = r; });
+  return periodos.map(p => Number((idx[p] || {})[campo] || 0));
+}
+
+function asgVacia(thead, tbody, etiqueta, country) {
+  thead.innerHTML = `<th></th><th>${etiqueta}</th>`;
+  tbody.innerHTML = `<tr><td colspan="3" style="text-align:center;padding:40px;color:#64748b">`
+    + `Sin datos para ${country}. Estas tablas solo tienen Colombia por ahora.</td></tr>`;
+}
+
 function renderAsgMm() {
-  const thead = document.querySelector('#asgMmTable thead tr');
-  const tbody = document.querySelector('#asgMmTable tbody');
-  if (!thead || !tbody) return;
-
   const gran = getGran(), country = getCountry();
-  const rows = ASG_MM_DATA
-    .filter(r => r.g === gran && r.c === country)
-    .sort((a, b) => a.p < b.p ? -1 : 1)
-    .slice(-20);
+  const periodos = asgPeriodos(gran, country);
 
-  if (!rows.length) {
-    thead.innerHTML = '<th></th><th>Asignados Market Maker</th>';
-    tbody.innerHTML = `<tr><td colspan="3" style="text-align:center;padding:40px;color:#64748b">`
-      + `Sin datos para ${country}. Esta tabla solo tiene Colombia por ahora.</td></tr>`;
-    return;
+  // ── Tabla 1: definiciones oficiales del WBR ──
+  const ofH = document.querySelector('#asgOficialTable thead tr');
+  const ofB = document.querySelector('#asgOficialTable tbody');
+  if (ofH && ofB) {
+    if (!periodos.length) { asgVacia(ofH, ofB, 'Asignados — cifra oficial', country); }
+    else {
+      asgHead(ofH, 'Asignados — cifra oficial', 'helpAsgOficial', periodos, gran);
+      const mmOf   = asgSerie(ASG_MM_DATA,   gran, country, periodos, 'mart');
+      const inmoOf = asgSerie(ASG_INMO_DATA, gran, country, periodos, 'asg');
+      const inmoDir= asgSerie(ASG_INMO_DATA, gran, country, periodos, 'directo');
+      let tb = `<tr class="row-total">${helpCell('helpAsgOfMm')}<td>Asignados Market Maker (mart WBR, 6 fuentes)</td>`
+        + mmOf.map(n => `<td>${fmt(n)}</td>`).join('') + '</tr>';
+      tb += `<tr class="row-total">${helpCell('helpAsgOfInmo')}<td>Asignados Inmobiliaria (prioridad A + B)</td>`
+        + inmoOf.map(n => `<td>${fmt(n)}</td>`).join('') + '</tr>';
+      tb += renderPctRow('└ de los cuales, directo a Inmo (sin pasar por MM)', inmoDir, inmoOf, 'helpAsgDirecto');
+      ofB.innerHTML = tb;
+    }
   }
 
-  thead.innerHTML = `<th></th><th>Asignados Market Maker`
-    + `<button type="button" class="help-btn" onclick="document.getElementById('helpAsgMm').showModal()">?</button></th>`
-    + rows.map(r => {
-        const cur = isCurrentPeriod(r.p, gran);
-        return `<th${cur ? ' class="in-progress"' : ''}${cur ? ' title="Período en curso — datos parciales"' : ''}>${formatPeriod(r.p, gran)}</th>`;
-      }).join('');
+  // ── Tabla 2: Market Maker, descomposición ──
+  const mmH = document.querySelector('#asgMmTable thead tr');
+  const mmB = document.querySelector('#asgMmTable tbody');
+  if (mmH && mmB) {
+    if (!periodos.length) { asgVacia(mmH, mmB, 'Asignados Market Maker', country); }
+    else {
+      asgHead(mmH, 'Asignados Market Maker', 'helpAsgMm', periodos, gran);
+      const asg  = asgSerie(ASG_MM_DATA, gran, country, periodos, 'asg');
+      const dir  = asgSerie(ASG_MM_DATA, gran, country, periodos, 'directo');
+      const inmo = asgSerie(ASG_MM_DATA, gran, country, periodos, 'de_inmo');
+      const mart = asgSerie(ASG_MM_DATA, gran, country, periodos, 'mart');
+      let tb = `<tr class="row-total">${helpCell('helpAsgMm')}<td>Asignados Market Maker</td>`
+        + asg.map(n => `<td>${fmt(n)}</td>`).join('') + '</tr>';
+      tb += renderPctRow('Directo por primera vez (nunca pasó por Inmo)', dir, asg);
+      tb += renderPctRow('Venía de Inmo (asignado a Inmo antes que a MM)', inmo, asg);
+      // Contraste, NO parte de la descomposición: otro universo (ver helpAsgMart).
+      tb += `<tr class="row-stage">${helpCell('helpAsgMart')}<td style="opacity:.75">Mart oficial (WBR) — contraste</td>`
+        + mart.map(n => `<td style="opacity:.75">${fmt(n)}</td>`).join('') + '</tr>';
+      mmB.innerHTML = tb;
+    }
+  }
 
-  const asg     = rows.map(r => Number(r.asg));
-  const directo = rows.map(r => Number(r.directo));
-  const deInmo  = rows.map(r => Number(r.de_inmo));
-  const mart    = rows.map(r => Number(r.mart));
-
-  let tb = `<tr class="row-total">${helpCell('helpAsgMm')}<td>Asignados Market Maker</td>`
-    + asg.map(n => `<td>${fmt(n)}</td>`).join('') + '</tr>';
-  tb += renderPctRow('Directo por primera vez (nunca pasó por Inmo)', directo, asg);
-  tb += renderPctRow('Venía de Inmo (asignado a Inmo antes que a MM)', deInmo, asg);
-  // Contraste, NO parte de la descomposición: otro universo (ver helpAsgMart).
-  tb += `<tr class="row-stage">${helpCell('helpAsgMart')}<td style="opacity:.75">Mart oficial (WBR) — contraste</td>`
-    + mart.map(n => `<td style="opacity:.75">${fmt(n)}</td>`).join('') + '</tr>';
-  tbody.innerHTML = tb;
+  // ── Tabla 3: Inmobiliaria, descomposición. Su total SÍ es la cifra oficial ──
+  const inH = document.querySelector('#asgInmoTable thead tr');
+  const inB = document.querySelector('#asgInmoTable tbody');
+  if (inH && inB) {
+    if (!periodos.length) { asgVacia(inH, inB, 'Asignados Inmobiliaria', country); }
+    else {
+      asgHead(inH, 'Asignados Inmobiliaria', 'helpAsgOfInmo', periodos, gran);
+      const asg = asgSerie(ASG_INMO_DATA, gran, country, periodos, 'asg');
+      const dir = asgSerie(ASG_INMO_DATA, gran, country, periodos, 'directo');
+      const mm  = asgSerie(ASG_INMO_DATA, gran, country, periodos, 'de_mm');
+      let tb = `<tr class="row-total">${helpCell('helpAsgOfInmo')}<td>Asignados Inmobiliaria (A + B)</td>`
+        + asg.map(n => `<td>${fmt(n)}</td>`).join('') + '</tr>';
+      tb += renderPctRow('Directo a Inmo (sin pasar antes por MM)', dir, asg, 'helpAsgDirecto');
+      tb += renderPctRow('Venía de MM (ya había entrado al pipeline MM)', mm, asg);
+      inB.innerHTML = tb;
+    }
+  }
 }
 
 function renderFlow() {
@@ -2661,8 +2806,9 @@ Promise.all([
   fetch('mm_desclas_states.json').then(r => r.json()).catch(() => []),
   fetch('inmo_desclas_states.json').then(r => r.json()).catch(() => []),
   fetch('flujo_asignacion.json').then(r => r.json()).catch(() => []),
-  fetch('asg_mm.json').then(r => r.json()).catch(() => [])
-]).then(([data, antifunnel, mmSinInmo, mmDesclas, inmoDesclas, flow, asgMm]) => {
+  fetch('asg_mm.json').then(r => r.json()).catch(() => []),
+  fetch('asg_inmo.json').then(r => r.json()).catch(() => [])
+]).then(([data, antifunnel, mmSinInmo, mmDesclas, inmoDesclas, flow, asgMm, asgInmo]) => {
   RAW_DATA = data;
   ANTIFUNNEL_DATA = antifunnel;
   MM_SIN_INMO_DATA = mmSinInmo;
@@ -2670,6 +2816,7 @@ Promise.all([
   INMO_DESCLAS_DATA = inmoDesclas;
   FLOW_DATA = flow;
   ASG_MM_DATA = asgMm;
+  ASG_INMO_DATA = asgInmo;
   buildLabelCache();
   buildFuenteCheckboxes();
   document.getElementById('lastUpdate').textContent = `Datos al ${new Date().toLocaleString('es-CO')}`;

@@ -216,6 +216,18 @@ jobs:
             --maximum_bytes_billed=15000000000 \
             < marketing-sellers/asg_mm.sql > marketing-sellers/asg_mm.json
 
+      # Hoja "Asignación de leads": cifra oficial de Inmobiliaria (A+B) y su
+      # descomposición por historia previa en MM. Escribe directo al .json final.
+      # Mismo tope alto que la de arriba y por la misma razón: cruza
+      # `hubspot.historical`, clusterizada por `propiedad`, y la estimación previa
+      # de BigQuery ignora el pruning del clustering. Factura real: 1,53 GB.
+      - name: Query Asignados Inmobiliaria (CO)
+        if: always()
+        run: |
+          bq query --use_legacy_sql=false --format=json --max_rows=200000 \
+            --maximum_bytes_billed=15000000000 \
+            < marketing-sellers/asg_inmo.sql > marketing-sellers/asg_inmo.json
+
       - name: Query MM-sin-Inmo states (CO + MX)
         if: always()
         run: |

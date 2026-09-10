@@ -63,6 +63,12 @@ WITH
     FROM `papyrus-master.sellers_data_mart.sellers_leads_asignados_marketing_wbr_mart`
     WHERE pais = 'colombia'
       AND dia >= DATE '2026-05-01'
+      -- Las 6 fuentes de marketing CO: WEB(3), Habimetro(7), CRM(20), Comercial(35),
+      -- Brokers(39) y Leadforms(47/37/41/42 — cuatro ids en una sola etiqueta).
+      -- El mart ya viene casi limpio (fuera de las 6 hay 0-2 leads/mes), pero el filtro
+      -- va explícito porque ES la definición, no una limpieza de datos.
+      -- Validado 2026-09-09: abr-2026 = 5.080, exacto contra el WBR (977+1252+2309+542).
+      AND fuente_id_tig IN (3, 7, 20, 35, 39, 47, 37, 41, 42)
   ),
 
   eventos AS (
