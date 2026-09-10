@@ -656,9 +656,11 @@ body.light #sheet-web .wchip.country { background: #dbeafe; border-color: #3b82f
     <strong>La tabla es de cohortes.</strong> Cada columna agrupa los leads por el período en que
     <strong>marketing los asignó</strong>, y su destino se evalúa a hoy — así el % es la conversión de esa
     misma gente, no una mezcla de períodos.
-    <strong>Llegaron a comercial</strong> y <strong>sin comercial</strong> son <strong>MECE</strong>: suman
-    la cohorte. <strong>Pasaron por GABI</strong> es un corte aparte y no parte de la descomposición: un lead
-    puede pasar por GABI y llegar igual al comercial.
+    Las <strong>cinco</strong> primeras filas de destino son <strong>MECE</strong>: suman la cohorte.
+    <strong>Pasaron por GABI</strong> es un corte aparte — un lead puede pasar por GABI y llegar igual.
+    <strong>En tránsito</strong> son los que llevan menos de 6 días: no son fuga todavía, y por eso van
+    separados de las otras causas. Las definiciones son las del documento
+    <em>Asignados comercial MM · ciclo ago 2026</em>, incluidas las cinco condiciones de «atascado en GABI».
     <span class="fpartial">Las cohortes recientes maduran</span>: un lead asignado ayer todavía puede llegar
     al comercial hoy, así que los últimos períodos se ven peor de lo que van a terminar. En abr&ndash;jun 2026
     el 96,3&ndash;98,5% de la cohorte de México ya tenía comercial <strong>al día 6</strong>, y ahí se
@@ -668,11 +670,52 @@ body.light #sheet-web .wchip.country { background: #dbeafe; border-color: #3b82f
   <div class="quality-charts cols-5">
     <div class="qc-card"><div class="qc-title">Asignados marketing<br>(tamaño de la cohorte)</div><div class="qc-wrap"><canvas id="qcComCohorte"></canvas></div></div>
     <div class="qc-card"><div class="qc-title">% Llegaron a comercial<br>(/ cohorte)</div><div class="qc-wrap"><canvas id="qcComLlego"></canvas></div></div>
-    <div class="qc-card"><div class="qc-title">% Sin comercial<br>(la fuga, / cohorte)</div><div class="qc-wrap"><canvas id="qcComSin"></canvas></div></div>
-    <div class="qc-card"><div class="qc-title">% Pasaron por GABI<br>(/ cohorte)</div><div class="qc-wrap"><canvas id="qcComGabi"></canvas></div></div>
+    <div class="qc-card"><div class="qc-title">% Al descartador<br>(no es un comercial)</div><div class="qc-wrap"><canvas id="qcComSin"></canvas></div></div>
+    <div class="qc-card"><div class="qc-title">% Atascado en GABI<br>(≥6 días y sigue ahí)</div><div class="qc-wrap"><canvas id="qcComGabi"></canvas></div></div>
     <div class="qc-card"><div class="qc-title">Días hasta el comercial<br>(mediana de los que llegaron)</div><div class="qc-wrap"><canvas id="qcComDias"></canvas></div></div>
   </div>
 </div>
+
+<dialog id="helpComDescartador" class="help-dialog">
+  <h3>Al descartador</h3>
+  <p><code>susanaescobar@habi.co</code> <strong>no es un comercial</strong>: es la cuenta a la que van los
+  leads descartados, en los dos países (5.469 nids en México, 1.306 en Colombia).</p>
+  <p>⚠️ <strong>Antes se contaban como «llegaron a comercial»</strong>, así que esa métrica venía inflada —
+  y cada vez más. Como % de los que figuraban como llegados: Colombia 1,5% en mayo → 4,3% en agosto;
+  México 1,3% → <strong>8,1%</strong>, y 13,7% en septiembre.</p>
+  <p>⚠️ Hay otras Susanas que <strong>sí</strong> son comerciales (<code>susanacosme@tuhabi.mx</code> con
+  2.650 nids, <code>susanabaez@tuhabi.mx</code> con 1.988). El filtro va por correo exacto, nunca por
+  coincidencia parcial del nombre.</p>
+  <p>Un lead que pasó por el descartador y <strong>después</strong> llegó a un comercial real cuenta como
+  «llegó a comercial»: importa si terminó gestionado, no por dónde pasó.</p>
+  <button type="button" class="close-btn" onclick="this.closest('dialog').close()">Cerrar</button>
+</dialog>
+
+<dialog id="helpComAtascado" class="help-dialog">
+  <h3>Atascado en GABI · las cinco condiciones</h3>
+  <p>Definición literal del documento <em>Asignados comercial MM · ciclo ago 2026</em>. Las cinco son
+  obligatorias:</p>
+  <p><strong>1.</strong> Está en el indicador de asignados marketing del WBR — es la cohorte.<br>
+  <strong>2.</strong> GABI lo recibió (<code>tipo = 'gabi'</code>).<br>
+  <strong>3.</strong> NO tiene <code>'Primer Asignación comercial'</code>. En México se exige además
+  <code>flag_asignacion_comercial = 'aplica_asignacion'</code>.<br>
+  <strong>4.</strong> Pasaron <strong>6 días o más</strong> desde la asignación de marketing.<br>
+  <strong>5.</strong> <strong>Sigue en manos de GABI hoy.</strong></p>
+  <p><strong>Por qué 6 días:</strong> en abr&ndash;jun 2026 el 96,3&ndash;98,5% de la cohorte ya tenía
+  comercial al día 6 y la curva se aplanaba ahí. Un lead que pasa el día 6 sin comercial históricamente ya
+  no salía. Antes del día 6 no está atascado, está <strong>en tránsito</strong> — por eso es una fila aparte
+  y no se cuenta como fuga.</p>
+  <p><strong>Por qué la condición 5 importa:</strong> el documento la marca como la crítica. Sin ella el
+  query devolvía 562 leads, pero 10 ya estaban con un comercial real — cambiaron de propietario en HubSpot
+  sin que se creara la fila de «Primer Asignación comercial», así que la condición 3 sola los marcaba
+  atascados cuando no lo estaban.</p>
+  <p>⚠️ <strong>Asimetría entre países.</strong> México aplica las cinco completas:
+  <code>equipo_actual</code> empieza por «gabi». Colombia no tiene <code>equipo_actual</code> ni
+  <code>flag_asignacion_comercial</code>; su condición 5 va por
+  <code>propietario_actual = 'iagabi@habi.co'</code>. El número de Colombia es un <strong>límite
+  inferior</strong> del atascamiento, no una medición idéntica a la de México.</p>
+  <button type="button" class="close-btn" onclick="this.closest('dialog').close()">Cerrar</button>
+</dialog>
 
 <dialog id="helpCom" class="help-dialog">
   <h3>Llegada al equipo comercial</h3>
@@ -2424,13 +2467,20 @@ function renderComercial() {
   asgHead(thead, 'Asignados marketing', 'helpCom', periodos, gran);
   const coh  = asgSerie(COM_DATA, gran, country, periodos, 'asg');
   const com  = asgSerie(COM_DATA, gran, country, periodos, 'comercial');
-  const sin  = asgSerie(COM_DATA, gran, country, periodos, 'sin_com');
+  const des  = asgSerie(COM_DATA, gran, country, periodos, 'descartador');
+  const ata  = asgSerie(COM_DATA, gran, country, periodos, 'atascado');
+  const tra  = asgSerie(COM_DATA, gran, country, periodos, 'transito');
+  const otr  = asgSerie(COM_DATA, gran, country, periodos, 'otra');
   const gabi = asgSerie(COM_DATA, gran, country, periodos, 'gabi');
   const dias = asgSerie(COM_DATA, gran, country, periodos, 'dias_p50');
 
+  // Las cinco primeras de destino son MECE. "Pasaron por GABI" es corte aparte.
   let tb = asgTotalRow('Asignados marketing (cohorte)', 'helpCom', coh);
   tb += asgPctRow('Llegaron a comercial', null, com, coh);
-  tb += asgPctRow('Sin comercial', null, sin, coh);
+  tb += asgPctRow('Al descartador (no es un comercial)', 'helpComDescartador', des, coh);
+  tb += asgPctRow('Atascado en GABI (≥6 días, sigue ahí)', 'helpComAtascado', ata, coh);
+  tb += asgPctRow('En tránsito (menos de 6 días)', 'helpComAtascado', tra, coh);
+  tb += asgPctRow('Sin comercial, otra razón', null, otr, coh);
   tb += asgPctRow('Pasaron por GABI (corte aparte)', null, gabi, coh);
   tb += asgTotalRow('Días hasta el comercial (mediana)', null, dias)
           .replace('class="row-total"', 'class="row-stage"');
@@ -2439,8 +2489,8 @@ function renderComercial() {
   const et = periodos.map(p => formatPeriod(p, gran));
   otpChart('qcComCohorte', 'Cohorte',        '#818cf8', coh,  et, false);
   otpChart('qcComLlego',   '% A comercial',  '#34d399', asgPctSerie(com,  coh), et, true);
-  otpChart('qcComSin',     '% Sin comercial','#f87171', asgPctSerie(sin,  coh), et, true);
-  otpChart('qcComGabi',    '% Vía GABI',     '#38bdf8', asgPctSerie(gabi, coh), et, true);
+  otpChart('qcComSin',     '% Descartador',  '#f87171', asgPctSerie(des,  coh), et, true);
+  otpChart('qcComGabi',    '% Atascado GABI','#fb923c', asgPctSerie(ata,  coh), et, true);
   otpChart('qcComDias',    'Días (mediana)', '#fbbf24', dias, et, false);
 }
 
