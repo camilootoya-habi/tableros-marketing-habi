@@ -204,16 +204,16 @@ jobs:
       # Hoja "Asignación de leads": tabla de Asignados Market Maker (CO).
       # Escribe directo al .json final: la query ya devuelve el shape que lee el HTML,
       # así que no necesita paso de Process como las de arriba.
-      # ⚠️ El tope va en 15 GB y no en ~2: BigQuery valida `maximum_bytes_billed` ANTES
+      # ⚠️ El tope va en 150 GB y no en ~2: BigQuery valida `maximum_bytes_billed` ANTES
       # de ejecutar, con una estimación que ignora el pruning por clustering. La tabla
       # `hubspot.historical` está clusterizada por `propiedad`, así que la estimación
       # previa da ~12 GB y la factura real es 1,55 GB. Con el tope en el valor real, la
       # query se rechaza sin llegar a correr.
-      - name: Query Asignados Market Maker (CO)
+      - name: Query Asignados Market Maker (CO + MX)
         if: always()
         run: |
           bq query --use_legacy_sql=false --format=json --max_rows=200000 \
-            --maximum_bytes_billed=15000000000 \
+            --maximum_bytes_billed=150000000000 \
             < marketing-sellers/asg_mm.sql > marketing-sellers/asg_mm.json
 
       # Hoja "Asignación de leads": cifra oficial de Inmobiliaria (A+B) y su
@@ -221,23 +221,23 @@ jobs:
       # Mismo tope alto que la de arriba y por la misma razón: cruza
       # `hubspot.historical`, clusterizada por `propiedad`, y la estimación previa
       # de BigQuery ignora el pruning del clustering. Factura real: 1,53 GB.
-      - name: Query Asignados Inmobiliaria (CO)
+      - name: Query Asignados Inmobiliaria (CO + MX)
         if: always()
         run: |
           bq query --use_legacy_sql=false --format=json --max_rows=200000 \
-            --maximum_bytes_billed=15000000000 \
+            --maximum_bytes_billed=150000000000 \
             < marketing-sellers/asg_inmo.sql > marketing-sellers/asg_inmo.json
 
       # Hoja "Asignación de leads": asignados totales y su reparto por producto
       # (exclusivo MM / exclusivo Inmo / ambos, desde product_qualified).
       # Cruza `hubspot.historical`, clusterizada por `propiedad`, así que el tope va alto
       # por la misma razón que las dos de arriba: la estimación previa de BigQuery ignora
-      # el pruning del clustering. Factura real: 1,50 GB.
-      - name: Query Asignados totales (CO)
+      # el pruning del clustering. Factura real con los dos países: 2,00 GB.
+      - name: Query Asignados totales (CO + MX)
         if: always()
         run: |
           bq query --use_legacy_sql=false --format=json --max_rows=200000 \
-            --maximum_bytes_billed=60000000000 \
+            --maximum_bytes_billed=150000000000 \
             < marketing-sellers/asg_total.sql > marketing-sellers/asg_total.json
 
       - name: Query MM-sin-Inmo states (CO + MX)

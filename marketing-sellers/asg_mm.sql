@@ -1,157 +1,150 @@
--- Hoja "Asignación de leads" · tabla de ASIGNADOS MARKET MAKER (Colombia)
+-- Hoja "Asignación de leads" · ASIGNADOS MARKET MAKER (Colombia y México)
 --
 -- Tres filas MECE: el total se descompone en "directo por primera vez" + "venía de Inmo",
--- y esas dos suman exactamente el total. Cuarta fila de contraste con el mart del WBR.
+-- y esas dos suman exactamente el total. La cuarta serie, `mart`, es la CIFRA OFICIAL y
+-- alimenta la tabla de Definiciones oficiales.
 --
--- FUENTE: `sellers-main-prod.hubspot.historical` con propiedad='pipeline'.
---   El `valor` es el pipeline_id. MM = 798578615 ("Sellers - Market Maker CO (NUEVO)")
---   INMO = 803674753 ("Nuevo - Inmobiliaria CO").
+-- ── FUENTE DE LA DESCOMPOSICIÓN ──────────────────────────────────────────────────
+--   `sellers-main-prod.hubspot.historical` con propiedad='pipeline'. El `valor` es el
+--   pipeline_id, y hay cuatro en juego (catálogo: `hubspot.deal_pipelines`):
+--     MM CO   = 798578615  "Sellers - Market Maker CO (NUEVO)"   desde 2025-09
+--     INMO CO = 803674753  "Nuevo - Inmobiliaria CO"             desde 2025-10
+--     MM MX   = 731899270  "Sellers - Market Maker MX (NUEVO)"   desde 2025-05
+--     INMO MX = 638550350  "Nuevo - Inmobiliaria MX"             desde 2024-10
 --   ⚠ NO usar `bi_co.seguimiento_asignacion_ibuyer_co.pipeline`: es SNAPSHOT del pipeline
 --   actual del deal, así que da 0 casos de "pasó por MM primero". Verificado 2026-08-04.
 --   ⚠ `historical` tiene ~5 h de rezago (batch): el período en curso siempre va corto.
 --
--- POR QUÉ NO EL MART: `sellers_leads_asignados_marketing_wbr_mart` no tiene columna de
---   producto, y su filtro F2 se queda solo con la PRIMERA asignación cronológica del nid
---   sin importar el producto. Un lead asignado a Inmo y después a MM queda fuera → la fila
---   "venía de Inmo" sería 0 por construcción. Por eso las tres filas salen de `historical`
---   y el mart va como fila de contraste rotulada, no como cabeza de la descomposición.
---   Medido 2026-09-09: los dos universos difieren entre −12,5 % y +28 % por mes.
+-- ── CIFRA OFICIAL (serie `mart`) ─────────────────────────────────────────────────
+--   `papyrus-master.sellers_data_mart.sellers_leads_asignados_marketing_wbr_mart`.
+--   SOLO SUMA ASIGNADOS QUE CALIFICAN PARA MARKET MAKER, en los dos países. No es un
+--   recorte técnico: para Marketing la prioridad sigue siendo optimizar por leads que
+--   califiquen para MM, así que un asignado que no calificaba nunca fue el objetivo.
+--   Lo consiguen cuatro de los 16 filtros del mart: estado del deal en la lista permitida
+--   (Sin pricing inicial / No gestionado / Cierre / No hay suficientes datos),
+--   check_a_pricing = 1, calificacion_del_lead_v2 <> N/NH, y asignacion_descartes_top IS
+--   NULL, que saca a los que solo fueron a inmobiliaria.
+--   Validado 2026-09-09 (CO): abr-2026 = 5.080, exacto contra el WBR (977+1252+2309+542).
 --
--- VENTANA: toda la historia disponible, para dar los mismos 20 períodos que la tabla de
---   cosechas de la hoja de Calificación. Ojo al leerla: el mart llega a 2020-02, pero
---   `historical` solo a 2025-09-18 — antes de esa fecha las tres primeras filas van en "—",
---   no en cero. Y los meses previos a 2026-05 están contaminados por cambios en la lógica
---   de asignación (los asignados MM caen de 39,6k en sep-2025 a ~8k en jun-2026, y el mix
---   cambia en abril), así que sirven de contexto pero no para comparar contra hoy.
+-- ── POR QUÉ LA DESCOMPOSICIÓN NO SALE DEL MART ───────────────────────────────────
+--   El mart no tiene columna de producto, y su filtro F2 se queda solo con la PRIMERA
+--   asignación cronológica del nid sin importar el producto. Un lead asignado a Inmo y
+--   después a MM queda fuera → la fila "venía de Inmo" sería 0 por construcción.
+--   Medido 2026-09-09: los dos universos difieren entre −12,5 % y +28 % por mes, así que
+--   el total de esta tabla NO cuadra con la cifra oficial y no debe cuadrar.
 --
--- SOLO COLOMBIA en esta versión: los pipeline_id de arriba son de CO. El de MM en México
---   todavía no está identificado (INMO MX es 638550350). Cuando aparezca, se agrega otra
---   rama con c='México'.
+-- ── VENTANA ──────────────────────────────────────────────────────────────────────
+--   Toda la historia, para dar los mismos 20 períodos que la tabla de cosechas. El mart
+--   llega a 2020-02 pero `historical` arranca en las fechas de arriba: antes de eso las
+--   tres primeras filas van en "—" y no en cero. Y los meses previos a 2026-05 están
+--   contaminados por cambios en la lógica de asignación (los asignados MM CO caen de
+--   39,6k en sep-2025 a ~8k en jun-2026): sirven de contexto, no para comparar.
 --
--- Salida larga: {g, c, p, asg, directo, de_inmo, mart} — mismo shape que query.sql.
+-- ── NOTA DE ESTRUCTURA ───────────────────────────────────────────────────────────
+--   El resto del repo escribe un CTE por granularidad (6 bloques). Aquí se usa un UNNEST
+--   que mapea cada fecha a sus 6 claves de período y se agrega una sola vez. Con dos
+--   países serían 12 bloques casi idénticos, y cada copia es una oportunidad de que uno
+--   quede desincronizado. Los cortes son los mismos que `query.sql`:
+--   W = ISOWEEK (lun-dom) · C = WEEK(WEDNESDAY) = ciclo comercial (mié-mar).
+--
+-- Salida larga: {g, c, p, asg, directo, de_inmo, mart}.
 
 WITH
   pipe AS (
-    SELECT nid, valor AS pipeline, MIN(fecha) AS primera
+    SELECT
+      IF(valor IN ('798578615', '803674753'), 'Colombia', 'México') AS c,
+      nid,
+      IF(valor IN ('798578615', '731899270'), 'MM', 'INMO')         AS producto,
+      MIN(fecha)                                                    AS primera
     FROM `sellers-main-prod.hubspot.historical`
     WHERE propiedad = 'pipeline'
-      AND valor IN ('798578615', '803674753')
+      AND valor IN ('798578615', '803674753', '731899270', '638550350')
       AND nid IS NOT NULL
-    GROUP BY nid, valor
+    GROUP BY c, nid, producto
   ),
 
   primera_por_producto AS (
     SELECT
-      nid,
-      MIN(IF(pipeline = '798578615', primera, NULL)) AS primera_mm,
-      MIN(IF(pipeline = '803674753', primera, NULL)) AS primera_inmo
+      c, nid,
+      MIN(IF(producto = 'MM',   primera, NULL)) AS primera_mm,
+      MIN(IF(producto = 'INMO', primera, NULL)) AS primera_inmo
     FROM pipe
-    GROUP BY nid
+    GROUP BY c, nid
   ),
 
-  -- Universo: nids cuya PRIMERA entrada al pipeline MM cae en la ventana.
-  -- Un nid aparece una sola vez, en el período de su primera asignación a MM.
+  -- Universo: nids cuya PRIMERA entrada al pipeline MM de su país cae en la ventana.
+  -- Cada nid aparece una sola vez, en el período de esa primera asignación.
   base AS (
     SELECT
-      nid,
+      c, nid,
       DATE(primera_mm) AS fecha,
       (primera_inmo IS NOT NULL AND primera_inmo < primera_mm) AS venia_inmo
     FROM primera_por_producto
     WHERE primera_mm IS NOT NULL
   ),
 
-  -- CIFRA OFICIAL de MM. Alimenta la tabla de definiciones y la fila de contraste de esta.
-  --
-  -- SOLO SUMA ASIGNADOS QUE CALIFICAN PARA MARKET MAKER, y eso aplica a los dos países.
-  -- No es un recorte técnico: para Marketing la prioridad sigue siendo optimizar por leads
-  -- que califiquen para MM, así que un asignado que no calificaba nunca fue el objetivo.
-  -- Lo consiguen cuatro de los 16 filtros del mart: estado del deal en la lista permitida
-  -- (Sin pricing inicial / No gestionado / Cierre / No hay suficientes datos),
-  -- check_a_pricing = 1, calificacion_del_lead_v2 <> N/NH, y asignacion_descartes_top IS
-  -- NULL, que saca a los que solo fueron a inmobiliaria.
-  --
-  -- Validado 2026-09-09: abr-2026 = 5.080, exacto contra el WBR (977+1252+2309+542).
   mart AS (
-    SELECT DISTINCT nid, dia AS fecha
+    SELECT DISTINCT
+      IF(pais = 'colombia', 'Colombia', 'México') AS c,
+      CAST(nid AS STRING)                         AS nid,
+      dia                                         AS fecha
     FROM `papyrus-master.sellers_data_mart.sellers_leads_asignados_marketing_wbr_mart`
-    WHERE pais = 'colombia'
-      -- Las 6 fuentes de marketing CO: WEB(3), Habimetro(7), CRM(20), Comercial(35),
-      -- Brokers(39) y Leadforms(47/37/41/42 — cuatro ids en una sola etiqueta).
-      -- Fuera de las 6 hay 0-2 leads/mes, pero el filtro va explícito porque ES la
-      -- definición, no una limpieza de datos.
-      AND fuente_id_tig IN (3, 7, 20, 35, 39, 47, 37, 41, 42)
+    WHERE pais IN ('colombia', 'mexico')
+      -- Las 6 fuentes de marketing de cada país. CO tiene CRM(20) donde MX tiene
+      -- Propiedades(46); el resto comparte código. Leadforms son 4 ids en CO (47/37/41/42)
+      -- y uno solo en MX (47). Fuera de las 6 hay 0-2 leads/mes, pero el filtro va
+      -- explícito porque ES la definición, no una limpieza de datos.
+      AND (
+        (pais = 'colombia' AND fuente_id_tig IN (3, 7, 20, 35, 39, 47, 37, 41, 42))
+        OR
+        (pais = 'mexico'   AND fuente_id_tig IN (3, 7, 46, 35, 39, 47))
+      )
   ),
 
   eventos AS (
-    SELECT fecha, nid, 'hist' AS universo, venia_inmo FROM base
+    SELECT c, fecha, CAST(nid AS STRING) AS nid, 'hist' AS universo, venia_inmo FROM base
     UNION ALL
-    SELECT fecha, nid, 'mart' AS universo, FALSE          FROM mart
+    SELECT c, fecha, nid,                        'mart' AS universo, FALSE      FROM mart
   ),
 
-  -- Períodos: los últimos 25 de cada granularidad sobre la UNIÓN de los dos universos,
-  -- para que las columnas lleguen tan atrás como el mart y no se corten donde arranca
-  -- `historical`. Mismos cortes que query.sql:
-  -- W = ISOWEEK (lun-dom) · C = WEEK(WEDNESDAY) = ciclo comercial (mié-mar).
-  day_periods     AS (SELECT DISTINCT fecha                          p FROM eventos ORDER BY p DESC LIMIT 25),
-  week_periods    AS (SELECT DISTINCT DATE_TRUNC(fecha, ISOWEEK)     p FROM eventos ORDER BY p DESC LIMIT 25),
-  comm_periods    AS (SELECT DISTINCT DATE_TRUNC(fecha, WEEK(WEDNESDAY)) p FROM eventos ORDER BY p DESC LIMIT 25),
-  month_periods   AS (SELECT DISTINCT DATE_TRUNC(fecha, MONTH)       p FROM eventos ORDER BY p DESC LIMIT 25),
-  quarter_periods AS (SELECT DISTINCT DATE_TRUNC(fecha, QUARTER)     p FROM eventos ORDER BY p DESC LIMIT 25),
+  -- Cada evento se replica a sus 6 claves de período.
+  expandido AS (
+    SELECT e.c, e.nid, e.universo, e.venia_inmo, gp.g, gp.p
+    FROM eventos e,
+    UNNEST([
+      STRUCT('D' AS g, CAST(e.fecha AS STRING) AS p),
+      ('W', CAST(DATE_TRUNC(e.fecha, ISOWEEK) AS STRING)),
+      ('C', CAST(DATE_TRUNC(e.fecha, WEEK(WEDNESDAY)) AS STRING)),
+      ('M', FORMAT_DATE('%Y-%m', e.fecha)),
+      ('Q', CONCAT(CAST(EXTRACT(YEAR FROM e.fecha) AS STRING), '-Q',
+                   CAST(EXTRACT(QUARTER FROM e.fecha) AS STRING))),
+      ('Y', CAST(EXTRACT(YEAR FROM e.fecha) AS STRING))
+    ]) AS gp
+  ),
 
-  diario AS (
-    SELECT 'D' g, 'Colombia' c, CAST(fecha AS STRING) p,
-      IF(COUNTIF(universo="hist")=0, NULL, COUNT(DISTINCT IF(universo="hist", nid, NULL)))                    asg,
-      IF(COUNTIF(universo="hist")=0, NULL, COUNT(DISTINCT IF(universo="hist" AND NOT venia_inmo, nid, NULL))) directo,
-      IF(COUNTIF(universo="hist")=0, NULL, COUNT(DISTINCT IF(universo="hist" AND venia_inmo, nid, NULL)))     de_inmo,
-      IF(COUNTIF(universo="mart")=0, NULL, COUNT(DISTINCT IF(universo="mart", nid, NULL)))                    mart
-    FROM eventos WHERE fecha IN (SELECT p FROM day_periods) GROUP BY p
-  ),
-  semanal AS (
-    SELECT 'W' g, 'Colombia' c, CAST(DATE_TRUNC(fecha, ISOWEEK) AS STRING) p,
-      IF(COUNTIF(universo="hist")=0, NULL, COUNT(DISTINCT IF(universo="hist", nid, NULL)))                    asg,
-      IF(COUNTIF(universo="hist")=0, NULL, COUNT(DISTINCT IF(universo="hist" AND NOT venia_inmo, nid, NULL))) directo,
-      IF(COUNTIF(universo="hist")=0, NULL, COUNT(DISTINCT IF(universo="hist" AND venia_inmo, nid, NULL)))     de_inmo,
-      IF(COUNTIF(universo="mart")=0, NULL, COUNT(DISTINCT IF(universo="mart", nid, NULL)))                    mart
-    FROM eventos WHERE DATE_TRUNC(fecha, ISOWEEK) IN (SELECT p FROM week_periods) GROUP BY p
-  ),
-  ciclo AS (
-    SELECT 'C' g, 'Colombia' c, CAST(DATE_TRUNC(fecha, WEEK(WEDNESDAY)) AS STRING) p,
-      IF(COUNTIF(universo="hist")=0, NULL, COUNT(DISTINCT IF(universo="hist", nid, NULL)))                    asg,
-      IF(COUNTIF(universo="hist")=0, NULL, COUNT(DISTINCT IF(universo="hist" AND NOT venia_inmo, nid, NULL))) directo,
-      IF(COUNTIF(universo="hist")=0, NULL, COUNT(DISTINCT IF(universo="hist" AND venia_inmo, nid, NULL)))     de_inmo,
-      IF(COUNTIF(universo="mart")=0, NULL, COUNT(DISTINCT IF(universo="mart", nid, NULL)))                    mart
-    FROM eventos WHERE DATE_TRUNC(fecha, WEEK(WEDNESDAY)) IN (SELECT p FROM comm_periods) GROUP BY p
-  ),
-  mensual AS (
-    SELECT 'M' g, 'Colombia' c, FORMAT_DATE('%Y-%m', fecha) p,
-      IF(COUNTIF(universo="hist")=0, NULL, COUNT(DISTINCT IF(universo="hist", nid, NULL)))                    asg,
-      IF(COUNTIF(universo="hist")=0, NULL, COUNT(DISTINCT IF(universo="hist" AND NOT venia_inmo, nid, NULL))) directo,
-      IF(COUNTIF(universo="hist")=0, NULL, COUNT(DISTINCT IF(universo="hist" AND venia_inmo, nid, NULL)))     de_inmo,
-      IF(COUNTIF(universo="mart")=0, NULL, COUNT(DISTINCT IF(universo="mart", nid, NULL)))                    mart
-    FROM eventos WHERE DATE_TRUNC(fecha, MONTH) IN (SELECT p FROM month_periods) GROUP BY p
-  ),
-  trimestral AS (
-    SELECT 'Q' g, 'Colombia' c,
-      CONCAT(CAST(EXTRACT(YEAR FROM fecha) AS STRING), '-Q', CAST(EXTRACT(QUARTER FROM fecha) AS STRING)) p,
-      IF(COUNTIF(universo="hist")=0, NULL, COUNT(DISTINCT IF(universo="hist", nid, NULL)))                    asg,
-      IF(COUNTIF(universo="hist")=0, NULL, COUNT(DISTINCT IF(universo="hist" AND NOT venia_inmo, nid, NULL))) directo,
-      IF(COUNTIF(universo="hist")=0, NULL, COUNT(DISTINCT IF(universo="hist" AND venia_inmo, nid, NULL)))     de_inmo,
-      IF(COUNTIF(universo="mart")=0, NULL, COUNT(DISTINCT IF(universo="mart", nid, NULL)))                    mart
-    FROM eventos WHERE DATE_TRUNC(fecha, QUARTER) IN (SELECT p FROM quarter_periods) GROUP BY p
-  ),
-  anual AS (
-    SELECT 'Y' g, 'Colombia' c, CAST(EXTRACT(YEAR FROM fecha) AS STRING) p,
-      IF(COUNTIF(universo="hist")=0, NULL, COUNT(DISTINCT IF(universo="hist", nid, NULL)))                    asg,
-      IF(COUNTIF(universo="hist")=0, NULL, COUNT(DISTINCT IF(universo="hist" AND NOT venia_inmo, nid, NULL))) directo,
-      IF(COUNTIF(universo="hist")=0, NULL, COUNT(DISTINCT IF(universo="hist" AND venia_inmo, nid, NULL)))     de_inmo,
-      IF(COUNTIF(universo="mart")=0, NULL, COUNT(DISTINCT IF(universo="mart", nid, NULL)))                    mart
-    FROM eventos GROUP BY p
+  -- Últimos 25 períodos de cada (país, granularidad). El orden alfabético de `p` es
+  -- cronológico en los 6 formatos: YYYY-MM-DD, YYYY-MM, YYYY-Qn y YYYY.
+  vivos AS (
+    SELECT c, g, p FROM (
+      SELECT c, g, p, ROW_NUMBER() OVER (PARTITION BY c, g ORDER BY p DESC) AS rn
+      FROM (SELECT DISTINCT c, g, p FROM expandido)
+    ) WHERE rn <= 25
   )
 
-SELECT * FROM diario
-UNION ALL SELECT * FROM semanal
-UNION ALL SELECT * FROM ciclo
-UNION ALL SELECT * FROM mensual
-UNION ALL SELECT * FROM trimestral
-UNION ALL SELECT * FROM anual
-ORDER BY g, p
+SELECT
+  e.g,
+  e.c,
+  e.p,
+  -- NULL, no 0, donde un universo no tiene historia en ese período: el tablero pinta "—".
+  IF(COUNTIF(e.universo = 'hist') = 0, NULL,
+     COUNT(DISTINCT IF(e.universo = 'hist', e.nid, NULL)))                          AS asg,
+  IF(COUNTIF(e.universo = 'hist') = 0, NULL,
+     COUNT(DISTINCT IF(e.universo = 'hist' AND NOT e.venia_inmo, e.nid, NULL)))     AS directo,
+  IF(COUNTIF(e.universo = 'hist') = 0, NULL,
+     COUNT(DISTINCT IF(e.universo = 'hist' AND e.venia_inmo, e.nid, NULL)))         AS de_inmo,
+  IF(COUNTIF(e.universo = 'mart') = 0, NULL,
+     COUNT(DISTINCT IF(e.universo = 'mart', e.nid, NULL)))                          AS mart
+FROM expandido e
+JOIN vivos v ON v.c = e.c AND v.g = e.g AND v.p = e.p
+GROUP BY e.g, e.c, e.p
+ORDER BY e.g, e.c, e.p

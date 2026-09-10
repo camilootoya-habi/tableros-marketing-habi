@@ -1,140 +1,128 @@
--- Hoja "Asignación de leads" · ASIGNADOS INMOBILIARIA (Colombia)
+-- Hoja "Asignación de leads" · ASIGNADOS INMOBILIARIA (Colombia y México)
 --
--- Sirve a dos tablas del tablero:
---   1. la cifra OFICIAL del WBR ("Leads asignados equipo inmobiliaria"), y
---   2. su descomposición por historia previa en Market Maker.
+-- Sirve a dos tablas: la cifra OFICIAL del WBR y su descomposición por historia previa
+-- en Market Maker. Tres filas, las dos últimas MECE: suman exactamente el total.
 --
--- FUENTE: `sellers-main-prod.bi_co.tablero_asignacion_inmo_col`, por
---   `fecha_primera_asignacion`, con `prioridad_de_gestion_inmo IN ('A','B')`.
+-- ⚠️ LOS DOS PAÍSES NO COMPARTEN DEFINICIÓN. No es un espejo como las otras dos queries:
+--    cada WBR mide esto con su propia tabla y sus propios filtros, y no hay una fuente
+--    común. Lo que sí es igual es la descomposición: en los dos casos la ruta MM→INMO se
+--    resuelve contra `hubspot.historical`.
 --
--- DOS FILTROS, Y LOS DOS SON PARTE DE LA DEFINICIÓN:
+-- ── COLOMBIA ────────────────────────────────────────────────────────────────────
+--   `sellers-main-prod.bi_co.tablero_asignacion_inmo_col`, por `fecha_primera_asignacion`,
+--   con DOS filtros que son parte de la definición:
+--     1. `asignacion_consistente = TRUE` — el grueso, quita ~10%. Significa que el lead
+--        fue priorizado y asignado el mismo día: en las filas consistentes
+--        `dias_asignacion_vs_prioridad` va de −1 a 1 y `mismo_mes_inmo` es TRUE en el 100%.
+--        Las inconsistentes son 693 sin prioridad ni fecha de prioridad, más otras
+--        asignadas hasta 161 días después de haberse priorizado.
+--     2. `prioridad_de_gestion_inmo IN ('A','B')` — el remate: quita solo los
+--        'Descartado Gabi', 1-2 por semana.
+--   Validado EXACTO en 6 de 6 semanas (2026-09-10): 896 · 1.005 · 1.083 · 974 · 813 · 793.
+--   Y al mes: may 4.991 · jul 4.629 · ago 4.032, los tres idénticos al WBR.
 --
---   1. `asignacion_consistente = TRUE` — el que hace el trabajo grueso, quita ~10%.
---      Significa que el lead fue **priorizado y asignado el mismo día**: en las filas
---      consistentes `dias_asignacion_vs_prioridad` va de -1 a 1 y `mismo_mes_inmo` es
---      TRUE en el 100%. Las inconsistentes son 693 sin prioridad ni fecha de prioridad,
---      más otras asignadas hasta 161 días después de haberse priorizado.
+-- ── MÉXICO ──────────────────────────────────────────────────────────────────────
+--   `sellers-main-prod.data_sellers_bo.leads_asignados_imobiliaria` (ojo: "imobiliaria",
+--   con una sola m), por `fecha_asignacion`. Es la fuente del indicador "Leads Asignados
+--   inmobiliaria" del WBR MX, replicada y anotada en su día en
+--   `asignacion-inmo-mx/query_wbr_oficial.sql`.
+--   ⚠ NO es HubSpot: la etapa 942483319 del pipeline Inmobiliaria MX se desvía entre −62 y
+--     +17 leads por semana, y la entrada al pipeline sobreestima ~10%.
+--   ⚠ Esta tabla NO tiene `asignacion_consistente` ni `prioridad_de_gestion_inmo` (la
+--     prioridad vive en `hubspot.deals` y es SNAPSHOT), así que los dos filtros de CO no
+--     tienen equivalente y no se aplican. El total de MX es todas sus asignaciones.
+--   ⚠ `COUNT(*)` cuenta FILAS, no leads: la tabla tiene 202.222 filas para 153.943 nids por
+--     reasignaciones. El WBR usa COUNT(*) y por eso su abril-2026 está inflado en 159.
+--     Aquí se usa COUNT(DISTINCT nid).
+--   ⚠ SIN VALIDAR contra un pantallazo del WBR MX. La serie de CO se verificó semana a
+--     semana y ahí apareció un filtro que faltaba; MX no ha pasado por esa prueba. Tratar
+--     su nivel absoluto como provisional hasta compararlo con el tablero real.
 --
---   2. `prioridad_de_gestion_inmo IN ('A','B')` — quita solo los 'Descartado Gabi',
---      1-2 por semana. Entre las filas consistentes NO hay ninguna con prioridad NULL,
---      así que este filtro es el remate fino, no el grueso.
+-- ── RUTA MM → INMO (las dos filas de descomposición) ────────────────────────────
+--   `sellers-main-prod.hubspot.historical` con propiedad='pipeline' y el pipeline MM del
+--   país: MM CO = 798578615 · MM MX = 731899270. MIN(fecha) = primera entrada a MM.
+--   ⚠ NO usar `bi_co.seguimiento_asignacion_ibuyer_co.pipeline`: es snapshot del pipeline
+--     actual, da 0 casos de "MM primero".
+--   ⚠ `historical` tiene ~5 h de rezago: el período en curso va corto.
 --
--- Validado semana a semana contra el WBR, EXACTO en 6 de 6 (2026-09-10):
---     20-jul  896 · 27-jul 1.005 · 03-ago 1.083 · 10-ago 974 · 17-ago 813 · 24-ago 793
---   Sin `asignacion_consistente` daba 901 / 1.015 / 1.093 / 984 / 831 / 844 — entre 5 y
---   51 leads de más. Esa diferencia NO era el snapshot de la prioridad (que también
---   existe, ver abajo): era este filtro faltando.
+--   `directo` = sin entrada a MM ANTERIOR a su asignación a Inmo (incluye a los que
+--   entraron a MM después). Con `de_mm` es MECE.
+--   En CO reproduce la línea punteada del WBR "Asignado directo a Inmo (sin pasar por MM)":
+--     WBR 481 · 529 · 530 · 485 · 458   |   query 482 · 525 · 528 · 482 · 455
+--   ⚠ En MX esa misma etiqueta del WBR mide OTRA COSA ("calificado para real_estate", que
+--     no excluye haber pasado por MM), así que la fila de aquí y la línea del WBR MX no
+--     son comparables aunque se llamen parecido.
 --
--- ⚠️ `prioridad_de_gestion_inmo` sí es SNAPSHOT y se reescribe en cada refresh, así que
---   el split A/B no sirve para leer tendencia. Pero eso no explicaba la diferencia de
---   arriba: con los dos filtros puestos, la serie cuadra hasta la última semana cerrada.
+-- NOTA DE ESTRUCTURA: UNNEST que mapea cada fecha a sus 6 claves de período, en vez de 6
+--   CTEs por país. Cortes iguales a `query.sql`:
+--   W = ISOWEEK (lun-dom) · C = WEEK(WEDNESDAY) = ciclo comercial (mié-mar).
 --
--- RUTA MM → INMO: se cruza con `sellers-main-prod.hubspot.historical` con
---   propiedad='pipeline' y valor='798578615' (pipeline MM CO), tomando MIN(fecha) como
---   su primera entrada a MM.
---   ⚠️ NO usar `bi_co.seguimiento_asignacion_ibuyer_co.pipeline`: es snapshot del
---   pipeline actual, da 0 casos de "MM primero".
---   ⚠️ `historical` tiene ~5 h de rezago: el período en curso va corto.
---
--- `directo` = sin entrada a MM ANTERIOR a su asignación a Inmo (incluye a los que
---   entraron a MM después). Con `de_mm` es MECE: suman exactamente el total.
---   Reproduce la línea punteada del WBR "Asignado directo a Inmo (sin pasar por MM)":
---     WBR 481 · 529 · 530 · 485 · 458   |   esta query 482 · 525 · 528 · 482 · 455
---   Ojo: en MX esa misma etiqueta mide otra cosa ("calificado para real_estate", ver
---   [[asignados_inmo_wbr_oficial]]). En CO la etiqueta sí describe lo que mide.
---
--- VENTANA: toda la historia de la tabla, que arranca en 2026-02-26. Ese es el límite duro
---   de esta serie, y es más corto que el de la tabla de MM (cuyo mart llega a 2020). En
---   granularidades largas —mes, trimestre, año— las columnas anteriores a feb-2026 salen
---   en "—" porque el dato no existe, no porque sea cero.
---
--- SOLO COLOMBIA: la tabla es `bi_co`. El equivalente MX es
---   `data_sellers_bo.leads_asignados_imobiliaria`, con otra definición y otros gotchas.
---
--- Salida larga: {g, c, p, asg, directo, de_mm} — mismo shape que asg_mm.sql.
+-- Salida larga: {g, c, p, asg, directo, de_mm}.
 
 WITH
   inmo AS (
-    SELECT nid, fecha_primera_asignacion AS fecha
+    SELECT 'Colombia' AS c, CAST(nid AS STRING) AS nid, fecha_primera_asignacion AS fecha
     FROM `sellers-main-prod.bi_co.tablero_asignacion_inmo_col`
-    WHERE asignacion_consistente                        -- priorizado y asignado el mismo día
-      AND prioridad_de_gestion_inmo IN ('A', 'B')       -- excluye 'Descartado Gabi'
+    WHERE asignacion_consistente
+      AND prioridad_de_gestion_inmo IN ('A', 'B')
+      AND fecha_primera_asignacion IS NOT NULL
+      AND nid IS NOT NULL
+    UNION ALL
+    -- MX: una fila por asignación, así que se colapsa a la primera de cada nid.
+    SELECT 'México', CAST(nid AS STRING), MIN(fecha_asignacion)
+    FROM `sellers-main-prod.data_sellers_bo.leads_asignados_imobiliaria`
+    WHERE fecha_asignacion IS NOT NULL
+      AND nid IS NOT NULL
+    GROUP BY 1, 2
   ),
 
   mm AS (
-    SELECT nid, MIN(fecha) AS primera_mm
+    SELECT
+      IF(valor = '798578615', 'Colombia', 'México') AS c,
+      CAST(nid AS STRING)                           AS nid,
+      MIN(fecha)                                    AS primera_mm
     FROM `sellers-main-prod.hubspot.historical`
     WHERE propiedad = 'pipeline'
-      AND valor = '798578615'
+      AND valor IN ('798578615', '731899270')
       AND nid IS NOT NULL
-    GROUP BY nid
+    GROUP BY c, nid
   ),
 
   base AS (
     SELECT
-      i.nid,
-      i.fecha,
+      i.c, i.nid, i.fecha,
       (m.primera_mm IS NOT NULL AND DATE(m.primera_mm) <= i.fecha) AS venia_mm
     FROM inmo i
-    LEFT JOIN mm m USING (nid)
+    LEFT JOIN mm m ON m.c = i.c AND m.nid = i.nid
   ),
 
-  -- Mismos cortes que query.sql y asg_mm.sql:
-  -- W = ISOWEEK (lun-dom) · C = WEEK(WEDNESDAY) = ciclo comercial (mié-mar).
-  day_periods     AS (SELECT DISTINCT fecha                              p FROM base ORDER BY p DESC LIMIT 25),
-  week_periods    AS (SELECT DISTINCT DATE_TRUNC(fecha, ISOWEEK)         p FROM base ORDER BY p DESC LIMIT 25),
-  comm_periods    AS (SELECT DISTINCT DATE_TRUNC(fecha, WEEK(WEDNESDAY)) p FROM base ORDER BY p DESC LIMIT 25),
-  month_periods   AS (SELECT DISTINCT DATE_TRUNC(fecha, MONTH)           p FROM base ORDER BY p DESC LIMIT 25),
-  quarter_periods AS (SELECT DISTINCT DATE_TRUNC(fecha, QUARTER)         p FROM base ORDER BY p DESC LIMIT 25),
+  expandido AS (
+    SELECT b.c, b.nid, b.venia_mm, gp.g, gp.p
+    FROM base b,
+    UNNEST([
+      STRUCT('D' AS g, CAST(b.fecha AS STRING) AS p),
+      ('W', CAST(DATE_TRUNC(b.fecha, ISOWEEK) AS STRING)),
+      ('C', CAST(DATE_TRUNC(b.fecha, WEEK(WEDNESDAY)) AS STRING)),
+      ('M', FORMAT_DATE('%Y-%m', b.fecha)),
+      ('Q', CONCAT(CAST(EXTRACT(YEAR FROM b.fecha) AS STRING), '-Q',
+                   CAST(EXTRACT(QUARTER FROM b.fecha) AS STRING))),
+      ('Y', CAST(EXTRACT(YEAR FROM b.fecha) AS STRING))
+    ]) AS gp
+  ),
 
-  diario AS (
-    SELECT 'D' g, 'Colombia' c, CAST(fecha AS STRING) p,
-      COUNT(DISTINCT nid)                              asg,
-      COUNT(DISTINCT IF(NOT venia_mm, nid, NULL))      directo,
-      COUNT(DISTINCT IF(venia_mm,     nid, NULL))      de_mm
-    FROM base WHERE fecha IN (SELECT p FROM day_periods) GROUP BY p
-  ),
-  semanal AS (
-    SELECT 'W' g, 'Colombia' c, CAST(DATE_TRUNC(fecha, ISOWEEK) AS STRING) p,
-      COUNT(DISTINCT nid)                              asg,
-      COUNT(DISTINCT IF(NOT venia_mm, nid, NULL))      directo,
-      COUNT(DISTINCT IF(venia_mm,     nid, NULL))      de_mm
-    FROM base WHERE DATE_TRUNC(fecha, ISOWEEK) IN (SELECT p FROM week_periods) GROUP BY p
-  ),
-  ciclo AS (
-    SELECT 'C' g, 'Colombia' c, CAST(DATE_TRUNC(fecha, WEEK(WEDNESDAY)) AS STRING) p,
-      COUNT(DISTINCT nid)                              asg,
-      COUNT(DISTINCT IF(NOT venia_mm, nid, NULL))      directo,
-      COUNT(DISTINCT IF(venia_mm,     nid, NULL))      de_mm
-    FROM base WHERE DATE_TRUNC(fecha, WEEK(WEDNESDAY)) IN (SELECT p FROM comm_periods) GROUP BY p
-  ),
-  mensual AS (
-    SELECT 'M' g, 'Colombia' c, FORMAT_DATE('%Y-%m', fecha) p,
-      COUNT(DISTINCT nid)                              asg,
-      COUNT(DISTINCT IF(NOT venia_mm, nid, NULL))      directo,
-      COUNT(DISTINCT IF(venia_mm,     nid, NULL))      de_mm
-    FROM base WHERE DATE_TRUNC(fecha, MONTH) IN (SELECT p FROM month_periods) GROUP BY p
-  ),
-  trimestral AS (
-    SELECT 'Q' g, 'Colombia' c,
-      CONCAT(CAST(EXTRACT(YEAR FROM fecha) AS STRING), '-Q', CAST(EXTRACT(QUARTER FROM fecha) AS STRING)) p,
-      COUNT(DISTINCT nid)                              asg,
-      COUNT(DISTINCT IF(NOT venia_mm, nid, NULL))      directo,
-      COUNT(DISTINCT IF(venia_mm,     nid, NULL))      de_mm
-    FROM base WHERE DATE_TRUNC(fecha, QUARTER) IN (SELECT p FROM quarter_periods) GROUP BY p
-  ),
-  anual AS (
-    SELECT 'Y' g, 'Colombia' c, CAST(EXTRACT(YEAR FROM fecha) AS STRING) p,
-      COUNT(DISTINCT nid)                              asg,
-      COUNT(DISTINCT IF(NOT venia_mm, nid, NULL))      directo,
-      COUNT(DISTINCT IF(venia_mm,     nid, NULL))      de_mm
-    FROM base GROUP BY p
+  vivos AS (
+    SELECT c, g, p FROM (
+      SELECT c, g, p, ROW_NUMBER() OVER (PARTITION BY c, g ORDER BY p DESC) AS rn
+      FROM (SELECT DISTINCT c, g, p FROM expandido)
+    ) WHERE rn <= 25
   )
 
-SELECT * FROM diario
-UNION ALL SELECT * FROM semanal
-UNION ALL SELECT * FROM ciclo
-UNION ALL SELECT * FROM mensual
-UNION ALL SELECT * FROM trimestral
-UNION ALL SELECT * FROM anual
-ORDER BY g, p
+SELECT
+  e.g, e.c, e.p,
+  COUNT(DISTINCT e.nid)                                    AS asg,
+  COUNT(DISTINCT IF(NOT e.venia_mm, e.nid, NULL))          AS directo,
+  COUNT(DISTINCT IF(e.venia_mm, e.nid, NULL))              AS de_mm
+FROM expandido e
+JOIN vivos v ON v.c = e.c AND v.g = e.g AND v.p = e.p
+GROUP BY e.g, e.c, e.p
+ORDER BY e.g, e.c, e.p

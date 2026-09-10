@@ -534,12 +534,14 @@ body.light #sheet-web .wchip.country { background: #dbeafe; border-color: #3b82f
     que califiquen para Market Maker.
     <strong>Inmobiliaria</strong> exige que la asignación sea <strong>consistente</strong> — priorizado y
     asignado el mismo día — y prioridad <strong>A o B</strong>. Sin lo primero sobra ~10%.
-    Cuadra <strong>exacto</strong> contra el WBR en las 7 semanas verificadas. Solo Colombia por ahora.
+    Cuadra <strong>exacto</strong> contra el WBR en las 7 semanas verificadas de Colombia.
+    ⚠️ <strong>México usa otra definición</strong> —su WBR mide Inmo con otra tabla— y su nivel
+    <strong>no está validado</strong> contra el tablero real (ver el <code>?</code>).
   </p>
 
   <div class="quality-charts cols-4">
     <div class="qc-card"><div class="qc-title">Asignados Market Maker<br>(mart WBR)</div><div class="qc-wrap"><canvas id="qcAsgOfMm"></canvas></div></div>
-    <div class="qc-card"><div class="qc-title">Asignados Inmobiliaria<br>(prioridad A + B)</div><div class="qc-wrap"><canvas id="qcAsgOfInmo"></canvas></div></div>
+    <div class="qc-card"><div class="qc-title">Asignados Inmobiliaria<br>(cifra oficial del país)</div><div class="qc-wrap"><canvas id="qcAsgOfInmo"></canvas></div></div>
     <div class="qc-card"><div class="qc-title">Directo a Inmo<br>(sin pasar por MM)</div><div class="qc-wrap"><canvas id="qcAsgOfDirectoAbs"></canvas></div></div>
     <div class="qc-card"><div class="qc-title">% Directo a Inmo<br>(sin pasar por MM / Asignados Inmo)</div><div class="qc-wrap"><canvas id="qcAsgOfDirecto"></canvas></div></div>
   </div>
@@ -604,7 +606,7 @@ body.light #sheet-web .wchip.country { background: #dbeafe; border-color: #3b82f
   </p>
 
   <div class="quality-charts cols-4">
-    <div class="qc-card"><div class="qc-title">Asignados Inmobiliaria<br>(prioridad A + B)</div><div class="qc-wrap"><canvas id="qcAsgInmoTotal"></canvas></div></div>
+    <div class="qc-card"><div class="qc-title">Asignados Inmobiliaria<br>(cifra oficial del país)</div><div class="qc-wrap"><canvas id="qcAsgInmoTotal"></canvas></div></div>
     <div class="qc-card"><div class="qc-title">% Directo a Inmo<br>(sin pasar antes por MM / Asignados Inmo)</div><div class="qc-wrap"><canvas id="qcAsgInmoDirecto"></canvas></div></div>
     <div class="qc-card"><div class="qc-title">Venía de MM<br>(ya había entrado al pipeline MM)</div><div class="qc-wrap"><canvas id="qcAsgInmoDeMmAbs"></canvas></div></div>
     <div class="qc-card"><div class="qc-title">% Venía de MM<br>(/ Asignados Inmo)</div><div class="qc-wrap"><canvas id="qcAsgInmoDeMm"></canvas></div></div>
@@ -619,7 +621,17 @@ body.light #sheet-web .wchip.country { background: #dbeafe; border-color: #3b82f
   misma tabla, y no hay una consulta única que dé las dos. Ver el <code>?</code> de cada fila.</p>
   <p>Validado al lead contra el WBR el <strong>2026-09-09</strong>. Las semanas cerradas cuadran dentro de
   1&ndash;2%; las dos más recientes se desvían porque la prioridad de Inmo es un snapshot que se sigue
-  reescribiendo. Solo Colombia.</p>
+  reescribiendo. Esto aplica a <strong>Colombia</strong>.</p>
+  <p><strong>México usa otra fuente y otra definición.</strong>
+  <code>data_sellers_bo.leads_asignados_imobiliaria</code> por <code>fecha_asignacion</code>. Esa tabla
+  <strong>no tiene</strong> <code>asignacion_consistente</code> ni <code>prioridad_de_gestion_inmo</code>
+  —la prioridad vive en <code>hubspot.deals</code> y es snapshot—, así que los dos filtros de Colombia no
+  tienen equivalente y el total de MX son todas sus asignaciones. Se cuenta
+  <code>COUNT(DISTINCT nid)</code> y no <code>COUNT(*)</code>: la tabla tiene 202.222 filas para 153.943
+  nids por reasignaciones, y el WBR usa <code>COUNT(*)</code>, que le infla abril-2026 en 159 leads.</p>
+  <p>⚠️ <strong>El nivel de México no está validado.</strong> La serie de Colombia se verificó semana a
+  semana contra el WBR y ahí apareció un filtro que faltaba; México no ha pasado por esa prueba. Tratar su
+  nivel absoluto como provisional hasta compararlo con el tablero real.</p>
   <button type="button" class="close-btn" onclick="this.closest('dialog').close()">Cerrar</button>
 </dialog>
 
@@ -631,21 +643,30 @@ body.light #sheet-web .wchip.country { background: #dbeafe; border-color: #3b82f
   <p><strong>Asignación:</strong> <code>sellers-main-prod.hubspot.historical</code> con
   <code>propiedad='hubspot_owner_id'</code> y <code>valor</code> no vacío —
   <code>MIN(fecha)</code> por nid. Es la misma señal que usa el tablero <em>Asignación · MM vs INMO (CO)</em>.</p>
-  <p><strong>Calificación: por paso por estado</strong>, no por <code>product_qualified</code>.
-  MM = pasó por <code>estado_id IN (20, 63)</code> en <code>habi_db_tabla_historico_estado_v2</code>.
-  Inmo = pasó por <code>state_id = 20</code> en <code>habi_db_history_state_real_estate</code>. Son las
-  mismas fuentes e ids que usa la hoja de Calificación, así que las dos hablan el mismo idioma.</p>
+  <p><strong>Calificación: por paso por estado</strong>, no por <code>product_qualified</code>. Son las
+  mismas fuentes e ids que usa la hoja de Calificación en cada país, así que las dos hablan el mismo
+  idioma.</p>
+  <p><strong>Colombia</strong> — MM: <code>estado_id IN (20,63)</code> en
+  <code>co_rds_staging.habi_db_tabla_historico_estado_v2</code> · Inmo: <code>state_id = 20</code> en
+  <code>co_rds_staging.habi_db_history_state_real_estate</code>.<br>
+  <strong>México</strong> — MM: <code>state_id IN (20,63)</code> en
+  <code>mx_rds_staging.habi_db_history_state</code> · Inmo: <code>state_id = 20</code> en
+  <code>mx_rds_staging.habi_db_history_state_real_estate</code>.</p>
   <p>Se prefiere sobre <code>product_qualified</code> porque es un <strong>evento</strong> («pasó por») y no
   el snapshot del último valor, y porque es un superconjunto estricto: medido 2026-09-10, la definición
   ampliada (estados <em>o</em> <code>product_qualified</code>) da exactamente lo mismo que los estados solos
   en los 16 meses revisados. Además recoge algo más: jul 7.104 vs 7.059 · ago 7.558 vs 7.509.</p>
-  <p>⚠️ <strong>La serie arranca en marzo de 2026, y es el límite del dato, no una decisión.</strong>
-  <code>habi_db_history_state_real_estate</code> tiene <strong>cero filas antes de 2026-03</strong>. Sin esa
-  tabla no existe la mitad «Inmo» de la definición, así que hacia atrás solo se podría calcular la parte de
-  MM — que es otra cosa y se leería como una caída del indicador. Cambiar de <code>product_qualified</code> a
-  estados <strong>no</strong> mueve ese límite: <code>product_qualified</code> también arranca en marzo
-  (feb 678 → mar 4.610 de ~15.800 asignados/mes). Los dos sistemas empezaron a registrar calificación de
-  producto al mismo tiempo.</p>
+  <p>⚠️ <strong>Cada país arranca donde arranca su dato, no donde queramos.</strong> Sin la historia de
+  estados de Inmo no existe la mitad «Inmo» de la definición, así que hacia atrás solo se podría calcular la
+  parte de MM — otra cosa, y se leería como una caída del indicador. El piso lo fija la propia tabla:
+  <strong>Colombia desde marzo-2026</strong> (la suya tiene cero filas antes) y
+  <strong>México desde abril-2025</strong>. Los períodos previos van en «—».</p>
+  <p>Cambiar de <code>product_qualified</code> a estados <strong>no</strong> mueve ese límite en Colombia:
+  <code>product_qualified</code> también arranca en marzo-2026 (feb 678 → mar 4.610 de ~15.800
+  asignados/mes). Los dos sistemas empezaron a registrar calificación a la vez.</p>
+  <p>⚠️ <strong>En México la cobertura madura despacio.</strong> La tabla arranca en abr-2025, pero la señal
+  de Inmo tarda meses en poblarse: «solo MM» va de 6.105 en abr-2025 a 426 en dic-2025. Ese desplome no es un
+  cambio de negocio, es la señal de Inmo apareciendo. Los meses de 2025 sobre-representan «solo MM».</p>
   <p><strong>Sin filtro de fuente, a propósito:</strong> restringir a las 6 fuentes de marketing daba el
   mismo número, así que se omite el join a <code>tabla_inmuebles_general</code> — la tabla más grande — y la
   query no paga ese escaneo.</p>
@@ -663,7 +684,9 @@ body.light #sheet-web .wchip.country { background: #dbeafe; border-color: #3b82f
   <h3>Asignados Market Maker — cifra oficial</h3>
   <p>Es el indicador <strong>«Leads Asignados (Primer Asignación)»</strong> del WBR:
   <code>papyrus-master.sellers_data_mart.sellers_leads_asignados_marketing_wbr_mart</code>,
-  restringido a las 6 fuentes de marketing.</p>
+  restringido a las 6 fuentes de marketing de cada país. Colombia tiene CRM&nbsp;(20) donde México tiene
+  Propiedades&nbsp;(46); el resto comparte código, y Leadforms son cuatro ids en CO (47/37/41/42) contra
+  uno solo en MX (47).</p>
   <p><strong>Solo suma leads asignados que son calificados para Market Maker</strong>, en los dos países.
   No es un recorte técnico: para Marketing la prioridad sigue siendo <strong>optimizar por leads que
   califiquen para MM</strong>, así que un asignado que no calificaba nunca fue el objetivo y no entra en el
@@ -717,8 +740,15 @@ body.light #sheet-web .wchip.country { background: #dbeafe; border-color: #3b82f
   <p>Leads cuya <strong>primera entrada al pipeline Market Maker</strong> de HubSpot cae en el período.
   <code>COUNT(DISTINCT nid)</code>, así que un lead reasignado no se cuenta dos veces.</p>
   <p>Fuente: <code>sellers-main-prod.hubspot.historical</code> con <code>propiedad='pipeline'</code>,
-  donde <code>valor</code> es el <code>pipeline_id</code>: MM = <code>798578615</code>,
-  Inmobiliaria = <code>803674753</code>. Query: <code>asg_mm.sql</code>.</p>
+  donde <code>valor</code> es el <code>pipeline_id</code>. Los cuatro en juego, del catálogo
+  <code>hubspot.deal_pipelines</code>:</p>
+  <p><strong>Colombia</strong> — MM <code>798578615</code> «Sellers - Market Maker CO (NUEVO)», desde
+  sep-2025 · Inmo <code>803674753</code> «Nuevo - Inmobiliaria CO», desde oct-2025.<br>
+  <strong>México</strong> — MM <code>731899270</code> «Sellers - Market Maker MX (NUEVO)», desde
+  may-2025 · Inmo <code>638550350</code> «Nuevo - Inmobiliaria MX», desde oct-2024.
+  Query: <code>asg_mm.sql</code>.</p>
+  <p>La ruta cruzada pesa muy distinto en cada país: «venía de Inmo» es <strong>0,6&ndash;2%</strong> del
+  total en Colombia y <strong>9&ndash;15%</strong> en México.</p>
   <p>⚠️ <strong>No</strong> se usa <code>bi_co.seguimiento_asignacion_ibuyer_co</code>: su columna
   <code>pipeline</code> es un <em>snapshot</em> del pipeline actual del deal, así que da 0 casos de
   «pasó por MM primero» y no sirve para la secuencia.</p>
@@ -2076,7 +2106,7 @@ function asgPctSerie(valores, denoms) {
 function asgVacia(thead, tbody, etiqueta, country) {
   thead.innerHTML = `<th></th><th>${etiqueta}</th>`;
   tbody.innerHTML = `<tr><td colspan="3" style="text-align:center;padding:40px;color:#64748b">`
-    + `Sin datos para ${country}. Estas tablas solo tienen Colombia por ahora.</td></tr>`;
+    + `Sin datos de asignación para ${country} en esta temporalidad.</td></tr>`;
 }
 
 function renderAsgMm() {
@@ -2090,11 +2120,16 @@ function renderAsgMm() {
     if (!periodos.length) { asgVacia(ofH, ofB, 'Asignados — cifra oficial', country); }
     else {
       asgHead(ofH, 'Asignados — cifra oficial', 'helpAsgOficial', periodos, gran);
+      // El "(prioridad A + B)" es de la definición de Colombia; México usa otra tabla
+      // que no tiene ese campo, así que la etiqueta se ajusta al país.
+      const etInmoOf = country === 'Colombia'
+        ? 'Asignados Inmobiliaria (prioridad A + B)'
+        : 'Asignados Inmobiliaria (todas las asignaciones)';
       const mmOf   = asgSerie(ASG_MM_DATA,   gran, country, periodos, 'mart');
       const inmoOf = asgSerie(ASG_INMO_DATA, gran, country, periodos, 'asg');
       const inmoDir= asgSerie(ASG_INMO_DATA, gran, country, periodos, 'directo');
       let tb = asgTotalRow("Asignados Market Maker (mart WBR)", "helpAsgOfMm", mmOf);
-      tb += asgTotalRow("Asignados Inmobiliaria (prioridad A + B)", "helpAsgOfInmo", inmoOf);
+      tb += asgTotalRow(etInmoOf, "helpAsgOfInmo", inmoOf);
       tb += asgPctRow("└ de los cuales, directo a Inmo (sin pasar por MM)", "helpAsgDirecto", inmoDir, inmoOf);
       ofB.innerHTML = tb;
 
@@ -2168,7 +2203,10 @@ function renderAsgMm() {
       const asg = asgSerie(ASG_INMO_DATA, gran, country, periodos, 'asg');
       const dir = asgSerie(ASG_INMO_DATA, gran, country, periodos, 'directo');
       const mm  = asgSerie(ASG_INMO_DATA, gran, country, periodos, 'de_mm');
-      let tb = asgTotalRow("Asignados Inmobiliaria (A + B)", "helpAsgOfInmo", asg);
+      const etInmo = country === 'Colombia'
+        ? 'Asignados Inmobiliaria (A + B)'
+        : 'Asignados Inmobiliaria (todas las asignaciones)';
+      let tb = asgTotalRow(etInmo, "helpAsgOfInmo", asg);
       tb += asgPctRow("Directo a Inmo (sin pasar antes por MM)", "helpAsgDirecto", dir, asg);
       tb += asgPctRow("Venía de MM (ya había entrado al pipeline MM)", null, mm, asg);
       inB.innerHTML = tb;
