@@ -109,6 +109,14 @@
     width: 340px; min-width: 340px; max-width: 340px;
     overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
   }
+  .link-detalle { color: var(--accent); font-weight: 600; text-decoration: none; }
+  .link-detalle:hover { text-decoration: underline; }
+  /* Tabla de detalle: una fila por lead, no por período. Columnas a la izquierda. */
+  #sheet-bbx thead th, #sheet-bbx tbody td { text-align: left; white-space: nowrap; }
+  #sheet-bbx thead th:first-child, #sheet-bbx tbody td:first-child { position: static; width: auto; min-width: 0; padding: 12px 14px; text-align: left; }
+  #sheet-bbx thead th:nth-child(2), #sheet-bbx tbody td:nth-child(2) { position: static; width: auto; min-width: 0; max-width: none; border-right: none; }
+  #sheet-bbx tbody td { font-size: 12.5px; }
+  #bbxDetalleTable tbody tr:hover td { background: var(--card-hover); }
   /* "—" de período sin dato: la fuente no llega tan atrás. No es un cero. */
   .sindato { opacity: .3; }
   tbody tr.row-in-chart td { background: var(--row-in-chart); }
@@ -386,6 +394,7 @@ body.light #sheet-web .wchip.country { background: #dbeafe; border-color: #3b82f
     <button class="tab active" data-sheet="cal" onclick="goSheet('cal')">Calificación de leads</button>
     <button class="tab" data-sheet="asg" onclick="goSheet('asg')">Asignación de leads</button>
     <button class="tab" data-sheet="com" onclick="goSheet('com')">Asignado a comercial</button>
+    <button class="tab" data-sheet="bbx" onclick="goSheet('bbx')">Error de Buybox</button>
     <button class="tab" data-sheet="traf" onclick="goSheet('traf')">Tráfico WEB</button>
     <button class="tab" data-sheet="web" onclick="goSheet('web')">Funnel WEB</button>
     <button class="tab" data-sheet="otp" onclick="goSheet('otp')">OTP WEB</button>
@@ -456,6 +465,11 @@ body.light #sheet-web .wchip.country { background: #dbeafe; border-color: #3b82f
   <div class="qc-card"><div class="qc-title" id="bbxTitle5">—</div><div class="qc-wrap"><canvas id="bbx5"></canvas></div></div>
   <div class="qc-card"><div class="qc-title" id="bbxTitle6">—</div><div class="qc-wrap"><canvas id="bbx6"></canvas></div></div>
 </div>
+
+<p class="fnote" style="margin-top:12px">
+  ¿Quiénes son? <a href="#bbx" onclick="goSheet('bbx'); return false;" class="link-detalle">Ver el detalle
+  lead por lead de los últimos 30 días &rarr;</a>
+</p>
 
 <h2 class="section-heading">Error de consistencia MM — en qué estado quedaron</h2>
 <div class="table-container">
@@ -606,12 +620,32 @@ body.light #sheet-web .wchip.country { background: #dbeafe; border-color: #3b82f
     ~47% en agosto. Es el hallazgo, no un error de datos.
   </p>
 
-  <div class="quality-charts cols-4">
+  <div class="quality-charts cols-5">
     <div class="qc-card"><div class="qc-title">Asignados Inmobiliaria<br>(cifra oficial del país)</div><div class="qc-wrap"><canvas id="qcAsgInmoTotal"></canvas></div></div>
     <div class="qc-card"><div class="qc-title">% Directo a Inmo<br>(sin pasar antes por MM / Asignados Inmo)</div><div class="qc-wrap"><canvas id="qcAsgInmoDirecto"></canvas></div></div>
     <div class="qc-card"><div class="qc-title">Venía de MM<br>(ya había entrado al pipeline MM)</div><div class="qc-wrap"><canvas id="qcAsgInmoDeMmAbs"></canvas></div></div>
     <div class="qc-card"><div class="qc-title">% Venía de MM<br>(/ Asignados Inmo)</div><div class="qc-wrap"><canvas id="qcAsgInmoDeMm"></canvas></div></div>
+    <div class="qc-card"><div class="qc-title">Vino por referido<br>(marcado «Lo voy a captar»)</div><div class="qc-wrap"><canvas id="qcAsgInmoRef"></canvas></div></div>
   </div>
+</div>
+
+<div class="sheet" id="sheet-bbx" hidden>
+  <h2 class="section-heading" style="margin-top:0">Error de Buybox — detalle lead por lead</h2>
+  <p class="fnote" style="margin-top:0">
+    Leads creados en los <strong>últimos 30 días</strong> que <strong>califican para Market Maker</strong>
+    (estado actual 20 o 63) y <strong>nunca pasaron por el estado 20 de Inmobiliaria</strong>. Es el
+    drill-down de la tabla de arriba en la hoja de Calificación: allá está el agregado, aquí está quién.
+    <a href="#cal" onclick="goSheet('cal'); return false;" class="link-detalle">&larr; Volver a Calificación</a>
+  </p>
+  <div class="table-container">
+    <table id="bbxDetalleTable"><thead><tr><th>NID</th></tr></thead><tbody></tbody></table>
+  </div>
+  <p class="fnote">
+    <span id="bbxDetalleCount">—</span>
+    <span class="fpartial">El estado de MM es el actual</span>, no el del momento de calificar: un lead que
+    calificaba y ya no, no sale aquí — eso lo mide «Error de consistencia MM», que es otra cosa.
+    El <code>owner</code> guarda el correo del comercial, no un id.
+  </p>
 </div>
 
 <div class="sheet" id="sheet-com" hidden>
@@ -663,6 +697,24 @@ body.light #sheet-web .wchip.country { background: #dbeafe; border-color: #3b82f
   <p><strong>Días hasta el comercial:</strong> mediana de <code>DATE_DIFF</code> entre la asignación de
   marketing y la primera asignación comercial, sobre los que sí llegaron. Se descartan los negativos, donde
   el seguimiento registró la asignación comercial antes que el mart la de marketing.</p>
+  <button type="button" class="close-btn" onclick="this.closest('dialog').close()">Cerrar</button>
+</dialog>
+
+<dialog id="helpAsgReferido" class="help-dialog">
+  <h3>Vino por referido vs. por pipeline</h3>
+  <p>Abre la fila «venía de MM» en dos, y las dos suman exactamente a ella.</p>
+  <p><strong>Referido</strong> = un comercial de Market Maker lo marcó
+  <strong>«Lo voy a captar»</strong> antes de que llegara a Inmo. Alguien decidió pasarlo a mano.
+  Es la etapa <code>dealstage</code> del pipeline de MM de cada país:
+  <code>1172812288</code> en Colombia, <code>1089167879</code> en México
+  (catálogo <code>hubspot.deal_pipelines_stages</code>).</p>
+  <p><strong>Por pipeline</strong> = pasó por MM sin esa marca. Llegó a Inmo por flujo.</p>
+  <p>⚠️ Se exige que la marca sea <strong>anterior o igual</strong> a la asignación a Inmo. Un lead
+  marcado «Lo voy a captar» después de haber llegado a Inmo no explica cómo llegó.</p>
+  <p>⚠️ <strong>En Colombia la vía de referido es casi inexistente</strong>: 9 leads de 1.867 en
+  agosto-2026 (0,5%). La etapa existe y se usa —1.512 nids desde nov-2025— pero casi nunca precede a
+  una asignación a Inmo. En México pesa 5&ndash;7% (133&ndash;297 al mes). Si en Colombia se espera
+  que el referido sea una vía real, el dato dice que hoy no lo es.</p>
   <button type="button" class="close-btn" onclick="this.closest('dialog').close()">Cerrar</button>
 </dialog>
 
@@ -1469,6 +1521,7 @@ let ASG_MM_DATA = [];     // asg_mm.json   — Asignados Market Maker (hoja Asig
 let ASG_INMO_DATA = [];   // asg_inmo.json  — Asignados Inmobiliaria (hoja Asignación)
 let ASG_TOTAL_DATA = [];  // asg_total.json — Asignados totales, sin filtro de calificación MM
 let COM_DATA = [];        // asg_comercial.json — hoja "Asignado a comercial"
+let BBX_DATA = [];        // buybox_detalle.json — hoja "Error de Buybox" (detalle por lead)
 
 function themeColors() {
   const s = getComputedStyle(document.body);
@@ -1946,12 +1999,14 @@ function onUpdate() {
     renderAsgMm();   // no depende del filtro de fuentes, así que se pinta igual
     if (WEB_DATA) renderWeb();
     renderComercial();
+    renderBuybox();
     scrollTablasDerecha();   // las de asignados sí quedaron con columnas
     return;
   }
   renderFlow();   // la hoja de Asignación también depende de país y fuentes
   renderAsgMm();   // Asignados MM: depende de país y temporalidad, no de fuentes
   renderComercial();   // cohortes de llegada al comercial: país y temporalidad
+  renderBuybox();      // detalle de buybox: solo depende del país
   if (WEB_DATA) renderWeb();   // la hoja WEB depende de país y temporalidad
   const g = getGran();
   let rows = aggregate(g, country, sel);
@@ -2269,6 +2324,12 @@ function renderAsgMm() {
       let tb = asgTotalRow(etInmo, "helpAsgOfInmo", asg);
       tb += asgPctRow("Directo a Inmo (sin pasar antes por MM)", "helpAsgDirecto", dir, asg);
       tb += asgPctRow("Venía de MM (ya había entrado al pipeline MM)", null, mm, asg);
+      // Las dos de abajo abren la anterior y suman exactamente a ella. El denominador
+      // sigue siendo el total, para que los % se lean contra la misma base que el resto.
+      const ref = asgSerie(ASG_INMO_DATA, gran, country, periodos, 'de_mm_referido');
+      const pip = asgSerie(ASG_INMO_DATA, gran, country, periodos, 'de_mm_pipeline');
+      tb += asgPctRow("└ vino por referido (marcado «Lo voy a captar»)", 'helpAsgReferido', ref, asg);
+      tb += asgPctRow("└ vino por pipeline (sin esa marca)", null, pip, asg);
       inB.innerHTML = tb;
 
       // "Venía de MM" en volumen y en %: aquí pesa la mitad del total y su tendencia
@@ -2278,6 +2339,7 @@ function renderAsgMm() {
       otpChart('qcAsgInmoDirecto','% Directo Inmo', '#fbbf24', asgPctSerie(dir, asg), et, true);
       otpChart('qcAsgInmoDeMmAbs','Venía de MM',    '#c084fc', mm,  et, false);
       otpChart('qcAsgInmoDeMm',   '% Venía de MM',  '#c084fc', asgPctSerie(mm,  asg), et, true);
+      otpChart('qcAsgInmoRef',    'Referido',       '#fb923c', ref, et, false);
     }
   }
 }
@@ -2286,6 +2348,44 @@ function renderAsgMm() {
 // Cohortes por fecha de asignación de marketing. Reusa los helpers de la hoja de
 // Asignación (asgHead / asgSerie / asgTotalRow / asgPctRow / asgPctSerie), que ya
 // manejan el "—" de los períodos sin dato.
+// ── Hoja "Error de Buybox" · detalle ─────────────────────────────────────────
+// Lista, no serie: una fila por lead. Solo respeta el filtro de país; la
+// temporalidad no aplica porque la ventana es fija en 30 días.
+function renderBuybox() {
+  const thead = document.querySelector('#bbxDetalleTable thead tr');
+  const tbody = document.querySelector('#bbxDetalleTable tbody');
+  const cnt   = document.getElementById('bbxDetalleCount');
+  if (!thead || !tbody) return;
+
+  const country = getCountry();
+  const filas = BBX_DATA.filter(r => r.c === country);
+
+  const cols = [
+    ['nid', 'NID'], ['fecha_creacion', 'Creado'], ['fuente', 'Fuente'],
+    ['pipeline', 'Pipeline'], ['owner', 'Owner (HubSpot)'],
+    ['estado_mm', 'Estado MM'], ['estado_inmo', 'Estado Inmo']
+  ];
+  thead.innerHTML = cols.map(([, t]) => `<th>${t}</th>`).join('');
+
+  if (!filas.length) {
+    tbody.innerHTML = `<tr><td colspan="${cols.length}" style="text-align:center;padding:40px;color:#64748b">`
+      + `Sin leads en error de Buybox para ${country} en los últimos 30 días.</td></tr>`;
+    if (cnt) cnt.textContent = '';
+    return;
+  }
+
+  const esc = x => String(x ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;');
+  // Tope de render: la lista es para trabajar, no para hacer scroll infinito.
+  const TOPE = 500;
+  tbody.innerHTML = filas.slice(0, TOPE)
+    .map(r => '<tr>' + cols.map(([k]) => `<td>${esc(r[k])}</td>`).join('') + '</tr>').join('');
+  if (cnt) {
+    cnt.textContent = filas.length > TOPE
+      ? `${fmt(filas.length)} leads en ${country}; se muestran los ${fmt(TOPE)} más recientes. `
+      : `${fmt(filas.length)} leads en ${country}. `;
+  }
+}
+
 function renderComercial() {
   const thead = document.querySelector('#comTable thead tr');
   const tbody = document.querySelector('#comTable tbody');
@@ -2417,7 +2517,8 @@ function goSheet(name) {
   // la temporalidad aplica a todas las hojas: la de Asignación pasó de un flujo con
   // ventana fija de 14 días a la tabla de Asignados MM, que sí se corta por período
   const gran = document.getElementById('granSelect');
-  if (gran && gran.closest('.control-card')) gran.closest('.control-card').hidden = false;
+  // la hoja de detalle de Buybox tiene ventana fija de 30 días: la temporalidad no aplica
+  if (gran && gran.closest('.control-card')) gran.closest('.control-card').hidden = (name === 'bbx');
   // la hoja WEB usa país + temporalidad globales, pero NO el filtro de fuentes
   // (por definición es solo fuente WEB). Asignación tampoco: historical no trae fuente.
   const ctrls = document.querySelector('.controls');
@@ -2425,10 +2526,11 @@ function goSheet(name) {
   const fuentesCard = document.getElementById('filterBar');
   if (fuentesCard && fuentesCard.closest('.control-card')) {
     fuentesCard.closest('.control-card').hidden =
-      (name === 'web' || name === 'traf' || name === 'otp' || name === 'asg' || name === 'com');
+      (name === 'web' || name === 'traf' || name === 'otp' || name === 'asg' || name === 'com' || name === 'bbx');
   }
   if (name === 'asg') renderAsgMm();
   if (name === 'com') renderComercial();
+  if (name === 'bbx') renderBuybox();
   if (name === 'web' || name === 'traf' || name === 'otp') loadWebSheet();
   scrollTablasDerecha();   // toda hoja abre mostrando los períodos más recientes
   location.hash = name;
@@ -3122,8 +3224,9 @@ Promise.all([
   fetch('asg_mm.json').then(r => r.json()).catch(() => []),
   fetch('asg_inmo.json').then(r => r.json()).catch(() => []),
   fetch('asg_total.json').then(r => r.json()).catch(() => []),
-  fetch('asg_comercial.json').then(r => r.json()).catch(() => [])
-]).then(([data, antifunnel, mmSinInmo, mmDesclas, inmoDesclas, flow, asgMm, asgInmo, asgTotal, com]) => {
+  fetch('asg_comercial.json').then(r => r.json()).catch(() => []),
+  fetch('buybox_detalle.json').then(r => r.json()).catch(() => [])
+]).then(([data, antifunnel, mmSinInmo, mmDesclas, inmoDesclas, flow, asgMm, asgInmo, asgTotal, com, bbx]) => {
   RAW_DATA = data;
   ANTIFUNNEL_DATA = antifunnel;
   MM_SIN_INMO_DATA = mmSinInmo;
@@ -3134,6 +3237,7 @@ Promise.all([
   ASG_INMO_DATA = asgInmo;
   ASG_TOTAL_DATA = asgTotal;
   COM_DATA = com;
+  BBX_DATA = bbx;
   buildLabelCache();
   buildFuenteCheckboxes();
   document.getElementById('lastUpdate').textContent = `Datos al ${new Date().toLocaleString('es-CO')}`;
@@ -3142,6 +3246,7 @@ Promise.all([
   const h = (location.hash || '').replace('#', '');
   if (h === 'asg') goSheet('asg');
   else if (h === 'com') goSheet('com');
+  else if (h === 'bbx') goSheet('bbx');
   else if (h === 'web') goSheet('web');
   else if (h === 'traf') goSheet('traf');
   else if (h === 'otp') goSheet('otp');

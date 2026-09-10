@@ -250,6 +250,13 @@ jobs:
             --maximum_bytes_billed=20000000000 \
             < marketing-sellers/asg_comercial.sql > marketing-sellers/asg_comercial.json
 
+      # Hoja "Error de Buybox": lista lead por lead de los ultimos 30 dias. Es un tablero
+      # de trabajo (para llamar a alguien), no una serie, asi que la ventana es fija.
+      - name: Query Error de Buybox detalle (CO + MX)
+        if: always()
+        run: |
+          bq query --use_legacy_sql=false --format=json --max_rows=100000             --maximum_bytes_billed=150000000000             < marketing-sellers/buybox_detalle.sql > marketing-sellers/buybox_detalle.json
+
       - name: Query MM-sin-Inmo states (CO + MX)
         if: always()
         run: |

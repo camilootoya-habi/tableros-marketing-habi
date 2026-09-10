@@ -57,7 +57,19 @@
 --   CTEs por país. Cortes iguales a `query.sql`:
 --   W = ISOWEEK (lun-dom) · C = WEEK(WEDNESDAY) = ciclo comercial (mié-mar).
 --
--- Salida larga: {g, c, p, asg, directo, de_mm}.
+-- ── DE DÓNDE VIENEN LOS QUE PASARON POR MM ──────────────────────────────────────
+--   `de_mm` se abre en dos, y las dos suman `de_mm`:
+--     de_mm_referido = el comercial de MM lo marcó "Lo voy a captar" antes de que
+--       llegara a Inmo. Es la ruta de REFERIDO: alguien decidió pasarlo a mano.
+--     de_mm_pipeline = pasó por MM sin esa marca. Llegó a Inmo por flujo, no porque
+--       un comercial lo empujara.
+--   La marca es la etapa de HubSpot `dealstage` en el pipeline de MM de cada país:
+--     CO = 1172812288 · MX = 1089167879 (catálogo: `hubspot.deal_pipelines_stages`).
+--   Volumen 2026-09-10: 1.512 nids en CO desde nov-2025, 2.386 en MX desde jun-2025.
+--   ⚠ Se exige que la marca sea ANTERIOR o igual a la asignación a Inmo. Un lead marcado
+--     "Lo voy a captar" después de haber llegado a Inmo no explica cómo llegó.
+--
+-- Salida larga: {g, c, p, asg, directo, de_mm, de_mm_referido, de_mm_pipeline}.
 
 WITH
   inmo AS (
@@ -88,16 +100,32 @@ WITH
     GROUP BY c, nid
   ),
 
+  -- "Lo voy a captar": la marca del comercial de MM que convierte el lead en referido.
+  captar AS (
+    SELECT
+      IF(valor = '1172812288', 'Colombia', 'México') AS c,
+      CAST(nid AS STRING)                            AS nid,
+      MIN(DATE(fecha))                               AS primera_marca
+    FROM `sellers-main-prod.hubspot.historical`
+    WHERE propiedad = 'dealstage'
+      AND valor IN ('1172812288', '1089167879')
+      AND nid IS NOT NULL
+    GROUP BY c, nid
+  ),
+
   base AS (
     SELECT
       i.c, i.nid, i.fecha,
-      (m.primera_mm IS NOT NULL AND DATE(m.primera_mm) <= i.fecha) AS venia_mm
+      (m.primera_mm IS NOT NULL AND DATE(m.primera_mm) <= i.fecha) AS venia_mm,
+      -- la marca tiene que ser anterior a la asignación a Inmo para explicarla
+      (k.primera_marca IS NOT NULL AND k.primera_marca <= i.fecha)  AS marcado_captar
     FROM inmo i
-    LEFT JOIN mm m ON m.c = i.c AND m.nid = i.nid
+    LEFT JOIN mm m     ON m.c = i.c AND m.nid = i.nid
+    LEFT JOIN captar k ON k.c = i.c AND k.nid = i.nid
   ),
 
   expandido AS (
-    SELECT b.c, b.nid, b.venia_mm, gp.g, gp.p
+    SELECT b.c, b.nid, b.venia_mm, b.marcado_captar, gp.g, gp.p
     FROM base b,
     UNNEST([
       STRUCT('D' AS g, CAST(b.fecha AS STRING) AS p),
@@ -121,7 +149,9 @@ SELECT
   e.g, e.c, e.p,
   COUNT(DISTINCT e.nid)                                    AS asg,
   COUNT(DISTINCT IF(NOT e.venia_mm, e.nid, NULL))          AS directo,
-  COUNT(DISTINCT IF(e.venia_mm, e.nid, NULL))              AS de_mm
+  COUNT(DISTINCT IF(e.venia_mm, e.nid, NULL))                            AS de_mm,
+  COUNT(DISTINCT IF(e.venia_mm AND e.marcado_captar, e.nid, NULL))       AS de_mm_referido,
+  COUNT(DISTINCT IF(e.venia_mm AND NOT e.marcado_captar, e.nid, NULL))   AS de_mm_pipeline
 FROM expandido e
 JOIN vivos v ON v.c = e.c AND v.g = e.g AND v.p = e.p
 GROUP BY e.g, e.c, e.p
