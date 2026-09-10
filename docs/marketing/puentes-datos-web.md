@@ -2,7 +2,7 @@
 
 Know-how extraído de `funnel-fuentes/` (CO) y `funnel-web-mx/` (MX) antes de retirarlos
 del hub (2026-09-02). Ambos tableros se consolidaron en la hoja **Funnel WEB** de
-`tablero-marketing/`. Este documento conserva lo que costó descubrir; el SQL vivo está
+`marketing-sellers/`. Este documento conserva lo que costó descubrir; el SQL vivo está
 en esa hoja.
 
 ---

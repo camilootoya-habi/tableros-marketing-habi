@@ -23,16 +23,45 @@ Live: https://camilootoya-habi.github.io/tableros-marketing-habi/
 
 El **dueño** se infiere por ubicación: carpeta en la raíz = `general`; bajo `canales/<lider>/` = ese líder. El hub muestra la sección General arriba y una sección inline por líder debajo (líderes sin tableros se omiten).
 
+## Dos cosas viven en este repo: tableros y documentos
+
+No es lo mismo y no se tratan igual. Al agregar algo, lo primero es decidir cuál es.
+
+| | **Tablero** | **Documento** |
+|---|---|---|
+| Qué es | Datos **vivos** conectados a BigQuery | Una **foto**: el análisis de un momento |
+| Se refresca | Sí, por workflow. Nadie lo actualiza a mano | **No.** Su número de hoy es el mismo del año que viene |
+| Datos de BQ | Siempre | Puede tenerlos, pero **quedan congelados a propósito** |
+| `section` | `dashboard` | `analysis` o `reference` |
+| Para qué sirve | Seguir un indicador en el tiempo | Dejar constancia de una conclusión y su evidencia |
+| Hoy hay | 18 | 8 |
+
+**Por qué un documento NO debe quedar conectado:** su valor es ser citable. Un postmortem
+que diga "la campaña cayó 32%" tiene que seguir diciendo 32% cuando alguien lo abra en seis
+meses; si estuviera conectado, el número se movería y la conclusión escrita al lado dejaría
+de tener sentido. Un documento con datos vivos es un documento que se autodestruye.
+
+Cómo se reconoce en el repo: un tablero tiene `.sql` propios y/o un paso en
+`.github/workflows/update-data.yml` que reescribe su `.json`. Un documento no tiene ninguna
+de las dos. **Caso intermedio:** `asignados-comercial-mm` y `diagnostico-performance-co`
+llevan `.sql` pero **ningún paso en el workflow** — son fotos reproducibles: se puede volver
+a correr la query a mano, pero nadie la corre sola. Eso está bien y es deliberado; si algún
+día se les agrega al cron, dejan de ser documentos.
+
+Nombres: un documento se rotula como tal en su `title` (p. ej. `Referencias - Marketing
+Sellers`), para que en el hub se distinga de un tablero sin tener que abrirlo.
+
 ## Contrato de `meta.json`
 
 ```json
 { "title": "...", "description": "...", "country": "CO",
   "section": "dashboard", "order": 10, "query": "query.sql",
-  "maximum_bytes_billed": 5000000000 }
+  "featured": true, "maximum_bytes_billed": 5000000000 }
 ```
-- `section`: `dashboard` | `analysis` | `reference` (sub-grupo dentro del dueño).
-- `order`: menor = más arriba en su sección. Tableros nuevos → `order` mayor (quedan al final, orden cronológico).
-- `query` / `maximum_bytes_billed`: opcionales. Sin `query` = tablero estático (el cron lo ignora, pero igual sale su card). Tope de costo por query: 5 GB por defecto.
+- `section`: `dashboard` | `analysis` | `reference` (sub-grupo dentro del dueño). Ver la tabla de arriba: `dashboard` = tablero, los otros dos = documento.
+- `order`: menor = más arriba en su sección. Tableros nuevos → `order` mayor (quedan al final, orden cronológico). `order: 0` se reserva al tablero oficial que debe abrir la sección.
+- `featured`: opcional. `true` resalta la card en **verde neón** con badge *oficial*. Solo para la fuente de verdad de un indicador — ver `docs/marketing/tableros-oficiales.md` (el verde se gana; si media hub está resaltada, el resaltado no comunica nada).
+- `query` / `maximum_bytes_billed`: opcionales. Sin `query` el cron genérico lo ignora — pero eso **no** significa que sea estático: `marketing-sellers` y `wbr-2-0` se refrescan por pasos dedicados en el workflow. Tope de costo por query: 5 GB por defecto.
 
 ## Cómo agregar un tablero (líderes) → ver `CONTRIBUTING.md`
 

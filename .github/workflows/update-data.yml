@@ -191,20 +191,35 @@ jobs:
           curl -sL -o /tmp/mx_sheet.csv "https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=csv&gid=943056262"
           python3 okr-marketing/build_data.py /tmp/co_sheet.csv /tmp/mx_sheet.csv /tmp/okr_invest.json okr-marketing/data.json
 
-      - name: Query Funnel Sellers (CO + MX)
+      - name: Query Marketing Sellers (CO + MX)
         if: always()
         run: |
-          bq query --use_legacy_sql=false --format=json --max_rows=100000 < tablero-marketing/query.sql > /tmp/funnel_raw.json
+          bq query --use_legacy_sql=false --format=json --max_rows=100000 < marketing-sellers/query.sql > /tmp/funnel_raw.json
 
       - name: Query Antifunnel Sellers (CO + MX)
         if: always()
         run: |
-          bq query --use_legacy_sql=false --format=json --max_rows=200000 < tablero-marketing/antifunnel.sql > /tmp/antifunnel_raw.json
+          bq query --use_legacy_sql=false --format=json --max_rows=200000 < marketing-sellers/antifunnel.sql > /tmp/antifunnel_raw.json
+
+      # Hoja "Asignación de leads": tabla de Asignados Market Maker (CO).
+      # Escribe directo al .json final: la query ya devuelve el shape que lee el HTML,
+      # así que no necesita paso de Process como las de arriba.
+      # ⚠️ El tope va en 15 GB y no en ~2: BigQuery valida `maximum_bytes_billed` ANTES
+      # de ejecutar, con una estimación que ignora el pruning por clustering. La tabla
+      # `hubspot.historical` está clusterizada por `propiedad`, así que la estimación
+      # previa da ~12 GB y la factura real es 1,55 GB. Con el tope en el valor real, la
+      # query se rechaza sin llegar a correr.
+      - name: Query Asignados Market Maker (CO)
+        if: always()
+        run: |
+          bq query --use_legacy_sql=false --format=json --max_rows=200000 \
+            --maximum_bytes_billed=15000000000 \
+            < marketing-sellers/asg_mm.sql > marketing-sellers/asg_mm.json
 
       - name: Query MM-sin-Inmo states (CO + MX)
         if: always()
         run: |
-          bq query --use_legacy_sql=false --format=json --max_rows=200000 < tablero-marketing/mm_sin_inmo_states.sql > /tmp/mm_sin_inmo_raw.json
+          bq query --use_legacy_sql=false --format=json --max_rows=200000 < marketing-sellers/mm_sin_inmo_states.sql > /tmp/mm_sin_inmo_raw.json
 
       - name: Process funnel data.json
         if: always()
@@ -217,7 +232,7 @@ jobs:
           for r in data:
               for k in int_keys:
                   r[k] = int(r[k])
-          with open('tablero-marketing/data.json','w') as f:
+          with open('marketing-sellers/data.json','w') as f:
               json.dump(data, f, separators=(',',':'))
           print(f'Funnel rows: {len(data)}')
           "
@@ -232,7 +247,7 @@ jobs:
           for r in data:
               for k in ('state_id','n'):
                   r[k] = int(r[k])
-          with open('tablero-marketing/antifunnel.json','w') as f:
+          with open('marketing-sellers/antifunnel.json','w') as f:
               json.dump(data, f, separators=(',',':'))
           print(f'Antifunnel rows: {len(data)}')
           "
@@ -240,7 +255,7 @@ jobs:
       - name: Query MM-desclasificados por estado actual (CO + MX)
         if: always()
         run: |
-          bq query --use_legacy_sql=false --format=json --max_rows=200000 < tablero-marketing/mm_desclas_states.sql > /tmp/mm_desclas_raw.json
+          bq query --use_legacy_sql=false --format=json --max_rows=200000 < marketing-sellers/mm_desclas_states.sql > /tmp/mm_desclas_raw.json
 
       - name: Process MM-desclasificados data.json
         if: always()
@@ -252,7 +267,7 @@ jobs:
           for r in data:
               for k in ('state_id','n'):
                   r[k] = int(r[k])
-          with open('tablero-marketing/mm_desclas_states.json','w') as f:
+          with open('marketing-sellers/mm_desclas_states.json','w') as f:
               json.dump(data, f, separators=(',',':'))
           print(f'MM-desclas rows: {len(data)}')
           "
@@ -260,7 +275,7 @@ jobs:
       - name: Query Inmo-desclasificados por estado actual (CO + MX)
         if: always()
         run: |
-          bq query --use_legacy_sql=false --format=json --max_rows=200000 < tablero-marketing/inmo_desclas_states.sql > /tmp/inmo_desclas_raw.json
+          bq query --use_legacy_sql=false --format=json --max_rows=200000 < marketing-sellers/inmo_desclas_states.sql > /tmp/inmo_desclas_raw.json
 
       - name: Process Inmo-desclasificados data.json
         if: always()
@@ -272,7 +287,7 @@ jobs:
           for r in data:
               for k in ('state_id','n'):
                   r[k] = int(r[k])
-          with open('tablero-marketing/inmo_desclas_states.json','w') as f:
+          with open('marketing-sellers/inmo_desclas_states.json','w') as f:
               json.dump(data, f, separators=(',',':'))
           print(f'Inmo-desclas rows: {len(data)}')
           "
@@ -287,7 +302,7 @@ jobs:
           for r in data:
               for k in ('state_id','n'):
                   r[k] = int(r[k])
-          with open('tablero-marketing/mm_sin_inmo_states.json','w') as f:
+          with open('marketing-sellers/mm_sin_inmo_states.json','w') as f:
               json.dump(data, f, separators=(',',':'))
           print(f'MM-sin-Inmo rows: {len(data)}')
           "
@@ -508,47 +523,47 @@ jobs:
         run: |
           python3 calificados-mm-inmo/build_data.py /tmp/calificados-mm-inmo-raw.json calificados-mm-inmo/data.json
 
-      # Hoja "Funnel WEB" de tablero-marketing (migrada desde funnel-web-mx, 2026-09-02).
+      # Hoja "Funnel WEB" de marketing-sellers (migrada desde funnel-web-mx, 2026-09-02).
       # Know-how de los puentes de datos: docs/marketing/puentes-datos-web.md
-      - name: Query tablero-marketing/web — clicks (MX)
+      - name: Query marketing-sellers/web — clicks (MX)
         if: always()
         run: |
-          bq query --use_legacy_sql=false --format=json --max_rows=200000 < tablero-marketing/web_query_clicks.sql > /tmp/tmweb_clicks.json
+          bq query --use_legacy_sql=false --format=json --max_rows=200000 < marketing-sellers/web_query_clicks.sql > /tmp/tmweb_clicks.json
 
-      - name: Query tablero-marketing/web — sessions (MX)
+      - name: Query marketing-sellers/web — sessions (MX)
         if: always()
         run: |
-          bq query --use_legacy_sql=false --format=json --max_rows=500000 < tablero-marketing/web_query_sessions.sql > /tmp/tmweb_sessions.json
+          bq query --use_legacy_sql=false --format=json --max_rows=500000 < marketing-sellers/web_query_sessions.sql > /tmp/tmweb_sessions.json
 
-      - name: Query tablero-marketing/web — leads (MX)
+      - name: Query marketing-sellers/web — leads (MX)
         if: always()
         run: |
-          bq query --use_legacy_sql=false --format=json --max_rows=500000 < tablero-marketing/web_query_leads.sql > /tmp/tmweb_leads.json
+          bq query --use_legacy_sql=false --format=json --max_rows=500000 < marketing-sellers/web_query_leads.sql > /tmp/tmweb_leads.json
 
-      - name: Query tablero-marketing/web — rutas (CO+MX)
+      - name: Query marketing-sellers/web — rutas (CO+MX)
         if: always()
         run: |
-          bq query --use_legacy_sql=false --format=json --max_rows=100000 < tablero-marketing/web_query_rutas.sql > /tmp/tmweb_rutas.json
+          bq query --use_legacy_sql=false --format=json --max_rows=100000 < marketing-sellers/web_query_rutas.sql > /tmp/tmweb_rutas.json
 
-      - name: Query tablero-marketing/web — referrers (CO+MX)
+      - name: Query marketing-sellers/web — referrers (CO+MX)
         if: always()
         run: |
-          bq query --use_legacy_sql=false --format=json --max_rows=500000 < tablero-marketing/web_query_referrers.sql > /tmp/tmweb_ref.json
+          bq query --use_legacy_sql=false --format=json --max_rows=500000 < marketing-sellers/web_query_referrers.sql > /tmp/tmweb_ref.json
 
-      - name: Query tablero-marketing/web — OTP salud (CO+MX)
+      - name: Query marketing-sellers/web — OTP salud (CO+MX)
         if: always()
         run: |
-          bq query --use_legacy_sql=false --format=json --max_rows=200000 < tablero-marketing/web_query_otp_salud.sql > /tmp/otp_salud.json
+          bq query --use_legacy_sql=false --format=json --max_rows=200000 < marketing-sellers/web_query_otp_salud.sql > /tmp/otp_salud.json
 
-      - name: Query tablero-marketing/web — OTP A/B (CO+MX)
+      - name: Query marketing-sellers/web — OTP A/B (CO+MX)
         if: always()
         run: |
-          bq query --use_legacy_sql=false --format=json --max_rows=200000 < tablero-marketing/web_query_otp_ab.sql > /tmp/otp_ab.json
+          bq query --use_legacy_sql=false --format=json --max_rows=200000 < marketing-sellers/web_query_otp_ab.sql > /tmp/otp_ab.json
 
-      - name: Build tablero-marketing/web_data.json
+      - name: Build marketing-sellers/web_data.json
         if: always()
         run: |
-          python3 tablero-marketing/build_web_data.py /tmp/tmweb_clicks.json /tmp/tmweb_sessions.json /tmp/tmweb_leads.json /tmp/tmweb_rutas.json /tmp/tmweb_ref.json /tmp/otp_salud.json /tmp/otp_ab.json tablero-marketing/web_data.json
+          python3 marketing-sellers/build_web_data.py /tmp/tmweb_clicks.json /tmp/tmweb_sessions.json /tmp/tmweb_leads.json /tmp/tmweb_rutas.json /tmp/tmweb_ref.json /tmp/otp_salud.json /tmp/otp_ab.json marketing-sellers/web_data.json
 
       - name: Auto-discovery — correr queries de tableros nuevos (líderes)
         if: always()

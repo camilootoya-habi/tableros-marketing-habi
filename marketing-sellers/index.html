@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📢</text></svg>">
-<title>Funnel Sellers</title>
+<title>Marketing Sellers</title>
 <style>
   :root {
     --bg: #0f172a;
@@ -380,7 +380,7 @@ body.light #sheet-web .wchip.country { background: #dbeafe; border-color: #3b82f
 </nav>
 
 <div class="header">
-  <h1>Funnel Sellers — <span id="countryTitle">México</span></h1>
+  <h1>Marketing Sellers — <span id="countryTitle">México</span></h1>
   <div class="refresh-info">
     <span id="lastUpdate"></span>
     <button type="button" class="theme-btn" id="themeToggle" onclick="toggleTheme()" aria-label="Cambiar tema">🌙</button>
@@ -510,19 +510,48 @@ body.light #sheet-web .wchip.country { background: #dbeafe; border-color: #3b82f
 </div><!-- /sheet-cal -->
 
 <div class="sheet" id="sheet-asg" hidden>
-  <h2 class="section-heading" style="margin-top:0">Flujo de asignación — leads creados en los últimos 14 días</h2>
-  <div class="flow" id="flowTree"></div>
+  <h2 class="section-heading" style="margin-top:0">Asignados Market Maker — por fecha de primera asignación</h2>
+  <div class="table-container">
+    <table id="asgMmTable"><thead><tr><th>Asignados Market Maker</th></tr></thead><tbody></tbody></table>
+  </div>
   <p class="fnote">
-    Notación estándar: <strong>óvalo</strong> = terminal · <strong>rombo</strong> = decisión ·
-    <strong>rectángulo</strong> = resultado. Cada decisión es <strong>MECE</strong>: sus salidas suman exactamente
-    el nodo del que vienen, así que el diagrama se puede auditar. El % de cada caja es sobre su nodo padre.
-    <strong>Asignado</strong> = tiene <code>hubspot_owner_id</code>, la señal más amplia — la tabla de seguimiento
-    es un subconjunto estricto de ella. El <strong>primer destino</strong> se resuelve por timestamp entre las tres
-    señales, con empate a favor de GABI porque es upstream por diseño.
-    <span class="fpartial">Las cajas con asterisco maduran</span>: a 14 días el paso GABI → comercial humano
-    va en ~73% y a 28 días llega a ~93%.
+    Cada lead cuenta <strong>una sola vez</strong>, en el período de su <strong>primera</strong> entrada al
+    pipeline Market Maker. Las dos filas de abajo son <strong>MECE</strong>: suman exactamente el total.
+    <strong>Directo por primera vez</strong> = nunca había entrado a Inmobiliaria antes.
+    <strong>Venía de Inmo</strong> = su primera entrada a Inmobiliaria es anterior a la de MM.
+    <span class="fpartial">El período en curso va corto</span>: <code>hubspot.historical</code> tiene ~5 h de rezago.
+    La fila <strong>Mart oficial (WBR)</strong> es solo de contraste y <strong>no</strong> es la suma de las
+    anteriores — es otro universo (ver el <code>?</code>). Solo Colombia por ahora.
   </p>
 </div>
+
+<dialog id="helpAsgMm" class="help-dialog">
+  <h3>Asignados Market Maker</h3>
+  <p>Leads cuya <strong>primera entrada al pipeline Market Maker</strong> de HubSpot cae en el período.
+  <code>COUNT(DISTINCT nid)</code>, así que un lead reasignado no se cuenta dos veces.</p>
+  <p>Fuente: <code>sellers-main-prod.hubspot.historical</code> con <code>propiedad='pipeline'</code>,
+  donde <code>valor</code> es el <code>pipeline_id</code>: MM = <code>798578615</code>,
+  Inmobiliaria = <code>803674753</code>. Query: <code>asg_mm.sql</code>.</p>
+  <p>⚠️ <strong>No</strong> se usa <code>bi_co.seguimiento_asignacion_ibuyer_co</code>: su columna
+  <code>pipeline</code> es un <em>snapshot</em> del pipeline actual del deal, así que da 0 casos de
+  «pasó por MM primero» y no sirve para la secuencia.</p>
+  <p>Ventana desde <strong>2026-05-01</strong>: antes está contaminado por cambios en la lógica de asignación.</p>
+  <button type="button" class="close-btn" onclick="this.closest('dialog').close()">Cerrar</button>
+</dialog>
+
+<dialog id="helpAsgMart" class="help-dialog">
+  <h3>Mart oficial (WBR) — fila de contraste</h3>
+  <p>Es el indicador oficial de asignados de Marketing:
+  <code>papyrus-master.sellers_data_mart.sellers_leads_asignados_marketing_wbr_mart</code>
+  con <code>pais='colombia'</code>. Cuadra con el WBR y el OKR.</p>
+  <p><strong>No es la suma de las dos filas de arriba</strong>, y no debería cuadrar con ellas. Son dos
+  universos distintos: medido el 2026-09-09, difieren entre <strong>−12,5 % y +28 %</strong> por mes.</p>
+  <p>Por eso la descomposición no sale del mart: el mart <strong>no tiene columna de producto</strong>, y su
+  filtro F2 se queda solo con la <strong>primera asignación cronológica del nid</strong> sin importar el
+  producto. Un lead asignado a Inmo y después a MM queda fuera, así que la fila «venía de Inmo» sería
+  <strong>0 por construcción</strong> — no porque no pase, sino porque el mart ya los descartó.</p>
+  <button type="button" class="close-btn" onclick="this.closest('dialog').close()">Cerrar</button>
+</dialog>
 
 <dialog id="helpConv_contacto" class="help-dialog">
   <h3>Llegan a contacto</h3>
@@ -1180,6 +1209,7 @@ const INMO_RANK = { states: [] };
 const BUYBOX_RANK = { states: [] };
 let INMO_DESCLAS_DATA = [];
 let FLOW_DATA = [];
+let ASG_MM_DATA = [];   // asg_mm.json — tabla de Asignados Market Maker (hoja Asignación)
 
 function themeColors() {
   const s = getComputedStyle(document.body);
@@ -1329,6 +1359,8 @@ function inGroup(html, grp, open) {
 }
 
 function helpCell(id) {
+  // sin id no hay diálogo que abrir: celda vacía en vez de un botón que revienta
+  if (!id) return '<td></td>';
   return `<td><button type="button" class="help-btn" onclick="document.getElementById('${id}').showModal()" aria-label="Ayuda">?</button></td>`;
 }
 
@@ -1652,10 +1684,12 @@ function onUpdate() {
     clearAntifunnelCharts();
     clearQualityCharts();
     renderFlow();
+    renderAsgMm();   // no depende del filtro de fuentes, así que se pinta igual
     if (WEB_DATA) renderWeb();
     return;
   }
   renderFlow();   // la hoja de Asignación también depende de país y fuentes
+  renderAsgMm();   // Asignados MM: depende de país y temporalidad, no de fuentes
   if (WEB_DATA) renderWeb();   // la hoja WEB depende de país y temporalidad
   const g = getGran();
   let rows = aggregate(g, country, sel);
@@ -1791,6 +1825,51 @@ const FLOW_TREE = [
 ];
 const FLOW_TONES = { accent:'#818cf8', ok:'#34d399', sky:'#38bdf8', warn:'#fbbf24', bad:'#f87171', muted:'#94a3b8' };
 
+// ── Hoja "Asignación de leads": tabla de Asignados Market Maker ──────────────
+// Mismo formato que "Calificación de leads — cosechas": una columna por período de
+// la temporalidad seleccionada, fila total en absoluto y filas de descomposición
+// con heatCells (valor + % sobre su denominador).
+// No usa el filtro de fuentes: `hubspot.historical` no trae fuente. Solo país+temporalidad.
+function renderAsgMm() {
+  const thead = document.querySelector('#asgMmTable thead tr');
+  const tbody = document.querySelector('#asgMmTable tbody');
+  if (!thead || !tbody) return;
+
+  const gran = getGran(), country = getCountry();
+  const rows = ASG_MM_DATA
+    .filter(r => r.g === gran && r.c === country)
+    .sort((a, b) => a.p < b.p ? -1 : 1)
+    .slice(-20);
+
+  if (!rows.length) {
+    thead.innerHTML = '<th></th><th>Asignados Market Maker</th>';
+    tbody.innerHTML = `<tr><td colspan="3" style="text-align:center;padding:40px;color:#64748b">`
+      + `Sin datos para ${country}. Esta tabla solo tiene Colombia por ahora.</td></tr>`;
+    return;
+  }
+
+  thead.innerHTML = `<th></th><th>Asignados Market Maker`
+    + `<button type="button" class="help-btn" onclick="document.getElementById('helpAsgMm').showModal()">?</button></th>`
+    + rows.map(r => {
+        const cur = isCurrentPeriod(r.p, gran);
+        return `<th${cur ? ' class="in-progress"' : ''}${cur ? ' title="Período en curso — datos parciales"' : ''}>${formatPeriod(r.p, gran)}</th>`;
+      }).join('');
+
+  const asg     = rows.map(r => Number(r.asg));
+  const directo = rows.map(r => Number(r.directo));
+  const deInmo  = rows.map(r => Number(r.de_inmo));
+  const mart    = rows.map(r => Number(r.mart));
+
+  let tb = `<tr class="row-total">${helpCell('helpAsgMm')}<td>Asignados Market Maker</td>`
+    + asg.map(n => `<td>${fmt(n)}</td>`).join('') + '</tr>';
+  tb += renderPctRow('Directo por primera vez (nunca pasó por Inmo)', directo, asg);
+  tb += renderPctRow('Venía de Inmo (asignado a Inmo antes que a MM)', deInmo, asg);
+  // Contraste, NO parte de la descomposición: otro universo (ver helpAsgMart).
+  tb += `<tr class="row-stage">${helpCell('helpAsgMart')}<td style="opacity:.75">Mart oficial (WBR) — contraste</td>`
+    + mart.map(n => `<td style="opacity:.75">${fmt(n)}</td>`).join('') + '</tr>';
+  tbody.innerHTML = tb;
+}
+
 function renderFlow() {
   const el = document.getElementById('flowTree');
   if (!el) return;
@@ -1885,18 +1964,20 @@ function goSheet(name) {
   document.querySelectorAll('.sheet').forEach(el => { el.hidden = (el.id !== 'sheet-' + name); });
   document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.sheet === name));
   // los controles (país/temporalidad/fuentes) solo aplican a la hoja de calificación
-  // la temporalidad no aplica al flujo (ventana fija de 14 días); país y fuentes sí
+  // la temporalidad aplica a todas las hojas: la de Asignación pasó de un flujo con
+  // ventana fija de 14 días a la tabla de Asignados MM, que sí se corta por período
   const gran = document.getElementById('granSelect');
-  if (gran && gran.closest('.control-card')) gran.closest('.control-card').hidden = (name === 'asg');
+  if (gran && gran.closest('.control-card')) gran.closest('.control-card').hidden = false;
   // la hoja WEB usa país + temporalidad globales, pero NO el filtro de fuentes
-  // (por definición es solo fuente WEB)
+  // (por definición es solo fuente WEB). Asignación tampoco: historical no trae fuente.
   const ctrls = document.querySelector('.controls');
   if (ctrls) ctrls.hidden = false;
   const fuentesCard = document.getElementById('filterBar');
   if (fuentesCard && fuentesCard.closest('.control-card')) {
-    fuentesCard.closest('.control-card').hidden = (name === 'web' || name === 'traf' || name === 'otp');
+    fuentesCard.closest('.control-card').hidden =
+      (name === 'web' || name === 'traf' || name === 'otp' || name === 'asg');
   }
-  if (name === 'asg') renderFlow();
+  if (name === 'asg') renderAsgMm();
   if (name === 'web' || name === 'traf' || name === 'otp') { loadWebSheet(); scrollTablasDerecha(); }
   location.hash = name;
   window.scrollTo(0, 0);
@@ -2579,14 +2660,16 @@ Promise.all([
   fetch('mm_sin_inmo_states.json').then(r => r.json()).catch(() => []),
   fetch('mm_desclas_states.json').then(r => r.json()).catch(() => []),
   fetch('inmo_desclas_states.json').then(r => r.json()).catch(() => []),
-  fetch('flujo_asignacion.json').then(r => r.json()).catch(() => [])
-]).then(([data, antifunnel, mmSinInmo, mmDesclas, inmoDesclas, flow]) => {
+  fetch('flujo_asignacion.json').then(r => r.json()).catch(() => []),
+  fetch('asg_mm.json').then(r => r.json()).catch(() => [])
+]).then(([data, antifunnel, mmSinInmo, mmDesclas, inmoDesclas, flow, asgMm]) => {
   RAW_DATA = data;
   ANTIFUNNEL_DATA = antifunnel;
   MM_SIN_INMO_DATA = mmSinInmo;
   MM_DESCLAS_DATA = mmDesclas;
   INMO_DESCLAS_DATA = inmoDesclas;
   FLOW_DATA = flow;
+  ASG_MM_DATA = asgMm;
   buildLabelCache();
   buildFuenteCheckboxes();
   document.getElementById('lastUpdate').textContent = `Datos al ${new Date().toLocaleString('es-CO')}`;

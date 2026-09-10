@@ -17,6 +17,12 @@
     --text-muted: #94a3b8;
     --text-muted-2: #64748b;
     --accent: #818cf8;
+    /* verde neón de los tableros oficiales (featured) */
+    --neon: #39ff88;
+    --neon-text: #b6ffd4;
+    --neon-soft: rgba(57, 255, 136, .35);
+    --neon-glow: rgba(57, 255, 136, .22);
+    --neon-bg: rgba(57, 255, 136, .07);
   }
   body.light {
     --bg: #f5f7fa;
@@ -28,6 +34,12 @@
     --text-muted: #64748b;
     --text-muted-2: #94a3b8;
     --accent: #6366f1;
+    /* en claro el neón puro no contrasta sobre blanco: se oscurece el borde y el texto */
+    --neon: #06c167;
+    --neon-text: #04703c;
+    --neon-soft: rgba(6, 193, 103, .28);
+    --neon-glow: rgba(6, 193, 103, .18);
+    --neon-bg: rgba(6, 193, 103, .07);
   }
   * { margin: 0; padding: 0; box-sizing: border-box; }
   body { font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; display: flex; flex-direction: column; align-items: center; padding: 48px 24px; transition: background 0.2s, color 0.2s; }
@@ -44,6 +56,19 @@
   .card h2 { font-size: 15px; color: var(--text-title); font-weight: 600; line-height: 1.3; }
   .card h2 .country { color: var(--accent); font-weight: 700; margin-right: 8px; }
   .card p { font-size: 12.5px; color: var(--text-muted); line-height: 1.4; }
+
+  /* Tableros oficiales: `"featured": true` en su meta.json. La leyenda de abajo del
+     nav explica qué significa el verde. Ver docs/marketing/tableros-oficiales.md */
+  .card.featured { border-color: var(--neon); border-width: 2px; box-shadow: 0 0 0 1px var(--neon-soft), 0 0 14px var(--neon-glow); }
+  .card.featured:hover { border-color: var(--neon); background: var(--neon-bg); box-shadow: 0 0 0 1px var(--neon-soft), 0 0 22px var(--neon-glow); }
+  .card.featured h2 { color: var(--neon-text); }
+  .card.featured h2 .country { color: var(--neon); }
+  .badge-oficial { display: inline-block; margin-left: 8px; padding: 1px 7px; border-radius: 999px; background: var(--neon); color: #06210f; font-size: 10px; font-weight: 700; letter-spacing: .4px; text-transform: uppercase; vertical-align: 1px; }
+
+  /* Leyenda del código de color */
+  .leyenda { max-width: 1400px; width: 100%; margin: -20px auto 32px; display: flex; align-items: center; justify-content: center; gap: 10px; font-size: 12.5px; color: var(--text-muted); text-align: center; flex-wrap: wrap; }
+  .leyenda .swatch { display: inline-block; width: 26px; height: 12px; border-radius: 3px; border: 2px solid var(--neon); background: var(--neon-bg); flex: none; }
+  .leyenda strong { color: var(--neon-text); font-weight: 600; }
 
   footer { margin-top: 48px; font-size: 12px; color: var(--text-muted-2); }
 
@@ -95,12 +120,23 @@
     <button type="button" class="tab-btn tab-docs" data-tab="documentos">Documentos</button>
     <button type="button" class="tab-btn tab-ref" data-tab="referencias">Referencias</button>
   </nav>
+  <p class="leyenda">
+    <span class="swatch" aria-hidden="true"></span>
+    <span>Los tableros en <strong>verde</strong> son los <strong>oficiales</strong>: la fuente de verdad
+    del indicador, mantenidos al día y los que se citan en el WBR y el OKR. Si dos tableros muestran lo
+    mismo, manda el verde.</span>
+  </p>
   <div class="tab-panel active" id="panel-marketing-general">
   <h2 class="owner-title">Marketing General</h2>
   <div class="columns">
     <div class="column">
       <h2 class="section-title"><span>Dashboards</span></h2>
       <div class="card-stack">
+        <a class="card featured" href="marketing-sellers/">
+          <h2><span class="country">CO</span><span class="country">MX</span>Marketing Sellers<span class="badge-oficial">oficial</span></h2>
+          <p>Calificación y asignación de leads sellers para Market Maker vs Inmobiliaria, por fuente, país y período.</p>
+        </a>
+
         <a class="card" href="wbr-2-0/">
           <h2><span class="country">CO</span><span class="country">MX</span>WBR 2.0</h2>
           <p>Drill-down semanal: fuente → canal → plataforma. Tabla con cumplimiento de meta + variación vs semana anterior y vs prom 7s, charts de tendencias por nivel de filtro.</p>
@@ -114,11 +150,6 @@
         <a class="card" href="prioridad-mm/">
           <h2><span class="country">CO</span><span class="country">MX</span>Prioridad Market Maker</h2>
           <p>Distribución semanal de leads tipificados A/B/C en HubSpot (campo prioridad_gestion_market_maker), últimas 18 semanas con selector de país.</p>
-        </a>
-
-        <a class="card" href="tablero-marketing/">
-          <h2><span class="country">CO</span><span class="country">MX</span>Funnel Sellers</h2>
-          <p>Calificación de leads para Market Maker vs Inmobiliaria por fuente, país y período.</p>
         </a>
 
         <a class="card" href="okr-marketing/">
@@ -272,8 +303,8 @@
       <h2 class="section-title"><span>Reference</span></h2>
       <div class="card-stack">
         <a class="card" href="docs-marketing/">
-          <h2><span class="country">CO</span><span class="country">MX</span>Marketing Sellers · Docs</h2>
-          <p>Diccionario de tablas, fuentes (fuente_id), canales y cómo se hace el cruce UTM para establecer el canal. Referencia rápida para queries y tableros.</p>
+          <h2><span class="country">CO</span><span class="country">MX</span>Referencias - Marketing Sellers</h2>
+          <p>Documento, no tablero: no está conectado a BigQuery. Diccionario de tablas, fuentes (fuente_id), canales y cómo se hace el cruce UTM para establecer el canal. Referencia rápida para queries y tableros.</p>
         </a>
       </div>
     </div>

@@ -40,9 +40,13 @@ def render_card(d: dict) -> str:
         f'<span class="country">{escape(c.strip())}</span>'
         for c in country.split("&")
     ) if country else ""
+    # `featured: true` en el meta.json marca los tableros oficiales: se resaltan en
+    # verde neón y la leyenda del hub explica qué significa. Ver docs/marketing.
+    featured = " featured" if d.get("featured") else ""
+    badge = '<span class="badge-oficial">oficial</span>' if d.get("featured") else ""
     return (
-        f'        <a class="card" href="{escape(d["link"])}">\n'
-        f'          <h2>{chips}{escape(d["title"])}</h2>\n'
+        f'        <a class="card{featured}" href="{escape(d["link"])}">\n'
+        f'          <h2>{chips}{escape(d["title"])}{badge}</h2>\n'
         f'          <p>{escape(d["description"])}</p>\n'
         f'        </a>'
     )
@@ -93,7 +97,7 @@ def discover_dashboards(repo_root: Path):
                 "title": meta["title"], "description": meta["description"],
                 "country": meta["country"], "section": meta.get("section", "dashboard"),
                 "order": meta.get("order", 9999), "query": meta.get("query"),
-                "tab": meta.get("tab"),
+                "tab": meta.get("tab"), "featured": meta.get("featured", False),
             })
         except (ValueError, KeyError, OSError) as e:
             print(f"  ⚠ meta inválido, se salta: {meta_path} ({e})", file=sys.stderr)

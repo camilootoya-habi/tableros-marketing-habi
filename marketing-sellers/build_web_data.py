@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Build tablero-marketing/web_data.json (hoja "Funnel WEB") desde 3 salidas de BQ.
+"""Build marketing-sellers/web_data.json (hoja "Funnel WEB") desde 3 salidas de BQ.
 
 Migrado desde funnel-web-mx/build_data.py (2026-09-02), extendido a CO+MX y a las
 6 granularidades del tablero. Know-how: docs/marketing/puentes-datos-web.md
