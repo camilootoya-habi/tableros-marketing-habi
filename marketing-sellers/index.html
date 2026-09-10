@@ -111,8 +111,6 @@
   }
   /* "—" de período sin dato: la fuente no llega tan atrás. No es un cero. */
   .sindato { opacity: .3; }
-  /* Fila de contraste del mart: atenuada, no es parte de la descomposición. */
-  tbody tr.contraste td { opacity: .72; font-weight: 500; }
   tbody tr.row-in-chart td { background: var(--row-in-chart); }
   tbody tr.row-in-chart td:first-child, tbody tr.row-in-chart td:nth-child(2) { background: var(--row-in-chart); }
   tbody tr.row-in-chart td:first-child { color: var(--accent); font-weight: 700; font-size: 11px; }
@@ -577,9 +575,19 @@ body.light #sheet-web .wchip.country { background: #dbeafe; border-color: #3b82f
     <strong>Directo por primera vez</strong> = nunca había entrado a Inmobiliaria antes.
     <strong>Venía de Inmo</strong> = su primera entrada a Inmobiliaria es anterior a la de MM.
     <span class="fpartial">El período en curso va corto</span>: <code>hubspot.historical</code> tiene ~5 h de rezago.
-    ⚠️ El total de esta tabla <strong>no</strong> es la cifra oficial y no cuadra con la tabla de arriba: son
-    universos distintos, y difieren entre −12,5% y +28% por mes. El mart no puede descomponerse (ver el <code>?</code>).
+    ⚠️ El total de esta tabla <strong>no</strong> es la cifra oficial y no cuadra con la de Definiciones
+    oficiales: son universos distintos y difieren entre −12,5% y +28% por mes. La cifra citable es la de esa
+    tabla; esta existe porque el mart <strong>no se puede descomponer</strong> por producto — no tiene esa
+    columna y su filtro F2 se queda solo con la primera asignación del nid, así que «venía de Inmo» sería
+    cero por construcción.
   </p>
+
+  <div class="quality-charts cols-4">
+    <div class="qc-card"><div class="qc-title">Asignados Market Maker<br>(entrada al pipeline MM)</div><div class="qc-wrap"><canvas id="qcAsgMmTotal"></canvas></div></div>
+    <div class="qc-card"><div class="qc-title">% Directo por primera vez<br>(nunca pasó por Inmo / Asignados MM)</div><div class="qc-wrap"><canvas id="qcAsgMmDirecto"></canvas></div></div>
+    <div class="qc-card"><div class="qc-title">Venía de Inmo<br>(asignado a Inmo antes que a MM)</div><div class="qc-wrap"><canvas id="qcAsgMmDeInmoAbs"></canvas></div></div>
+    <div class="qc-card"><div class="qc-title">% Venía de Inmo<br>(/ Asignados MM)</div><div class="qc-wrap"><canvas id="qcAsgMmDeInmo"></canvas></div></div>
+  </div>
 
   <h2 class="section-heading">Asignados Inmobiliaria — por fecha de primera asignación</h2>
   <div class="table-container">
@@ -594,6 +602,13 @@ body.light #sheet-web .wchip.country { background: #dbeafe; border-color: #3b82f
     <span class="fpartial">Ojo con la tendencia</span>: la proporción que viene de MM cayó de ~71% en mayo a
     ~47% en agosto. Es el hallazgo, no un error de datos.
   </p>
+
+  <div class="quality-charts cols-4">
+    <div class="qc-card"><div class="qc-title">Asignados Inmobiliaria<br>(prioridad A + B)</div><div class="qc-wrap"><canvas id="qcAsgInmoTotal"></canvas></div></div>
+    <div class="qc-card"><div class="qc-title">% Directo a Inmo<br>(sin pasar antes por MM / Asignados Inmo)</div><div class="qc-wrap"><canvas id="qcAsgInmoDirecto"></canvas></div></div>
+    <div class="qc-card"><div class="qc-title">Venía de MM<br>(ya había entrado al pipeline MM)</div><div class="qc-wrap"><canvas id="qcAsgInmoDeMmAbs"></canvas></div></div>
+    <div class="qc-card"><div class="qc-title">% Venía de MM<br>(/ Asignados Inmo)</div><div class="qc-wrap"><canvas id="qcAsgInmoDeMm"></canvas></div></div>
+  </div>
 </div>
 
 <dialog id="helpAsgOficial" class="help-dialog">
@@ -708,20 +723,6 @@ body.light #sheet-web .wchip.country { background: #dbeafe; border-color: #3b82f
   <code>pipeline</code> es un <em>snapshot</em> del pipeline actual del deal, así que da 0 casos de
   «pasó por MM primero» y no sirve para la secuencia.</p>
   <p>Ventana desde <strong>2026-05-01</strong>: antes está contaminado por cambios en la lógica de asignación.</p>
-  <button type="button" class="close-btn" onclick="this.closest('dialog').close()">Cerrar</button>
-</dialog>
-
-<dialog id="helpAsgMart" class="help-dialog">
-  <h3>Mart oficial (WBR) — fila de contraste</h3>
-  <p>Es el indicador oficial de asignados de Marketing:
-  <code>papyrus-master.sellers_data_mart.sellers_leads_asignados_marketing_wbr_mart</code>
-  con <code>pais='colombia'</code>. Cuadra con el WBR y el OKR.</p>
-  <p><strong>No es la suma de las dos filas de arriba</strong>, y no debería cuadrar con ellas. Son dos
-  universos distintos: medido el 2026-09-09, difieren entre <strong>−12,5 % y +28 %</strong> por mes.</p>
-  <p>Por eso la descomposición no sale del mart: el mart <strong>no tiene columna de producto</strong>, y su
-  filtro F2 se queda solo con la <strong>primera asignación cronológica del nid</strong> sin importar el
-  producto. Un lead asignado a Inmo y después a MM queda fuera, así que la fila «venía de Inmo» sería
-  <strong>0 por construcción</strong> — no porque no pase, sino porque el mart ya los descartó.</p>
   <button type="button" class="close-btn" onclick="this.closest('dialog').close()">Cerrar</button>
 </dialog>
 
@@ -2141,13 +2142,19 @@ function renderAsgMm() {
       const asg  = asgSerie(ASG_MM_DATA, gran, country, periodos, 'asg');
       const dir  = asgSerie(ASG_MM_DATA, gran, country, periodos, 'directo');
       const inmo = asgSerie(ASG_MM_DATA, gran, country, periodos, 'de_inmo');
-      const mart = asgSerie(ASG_MM_DATA, gran, country, periodos, 'mart');
       let tb = asgTotalRow("Asignados Market Maker", "helpAsgMm", asg);
       tb += asgPctRow("Directo por primera vez (nunca pasó por Inmo)", null, dir, asg);
       tb += asgPctRow("Venía de Inmo (asignado a Inmo antes que a MM)", null, inmo, asg);
-      // Contraste, NO parte de la descomposición: otro universo (ver helpAsgMart).
-      tb += asgTotalRow("Mart oficial (WBR) — contraste", "helpAsgMart", mart).replace(/class="row-total"/, "class=\"row-stage contraste\"");
       mmB.innerHTML = tb;
+
+      // Gráficas de las filas de esta tabla. "Venía de Inmo" va en volumen Y en %:
+      // es 1-2% del total, así que el % solo no distingue si crece la ruta cruzada o
+      // si cae el total de MM.
+      const et = periodos.map(p => formatPeriod(p, gran));
+      otpChart('qcAsgMmTotal',   'Asignados MM',    '#34d399', asg,  et, false);
+      otpChart('qcAsgMmDirecto', '% Directo 1a vez','#38bdf8', asgPctSerie(dir,  asg), et, true);
+      otpChart('qcAsgMmDeInmoAbs','Venía de Inmo',  '#fb7185', inmo, et, false);
+      otpChart('qcAsgMmDeInmo',  '% Venía de Inmo', '#fb7185', asgPctSerie(inmo, asg), et, true);
     }
   }
 
@@ -2165,6 +2172,14 @@ function renderAsgMm() {
       tb += asgPctRow("Directo a Inmo (sin pasar antes por MM)", "helpAsgDirecto", dir, asg);
       tb += asgPctRow("Venía de MM (ya había entrado al pipeline MM)", null, mm, asg);
       inB.innerHTML = tb;
+
+      // "Venía de MM" en volumen y en %: aquí pesa la mitad del total y su tendencia
+      // es el hallazgo de la hoja, así que conviene ver las dos lecturas.
+      const et = periodos.map(p => formatPeriod(p, gran));
+      otpChart('qcAsgInmoTotal',  'Asignados Inmo', '#60a5fa', asg, et, false);
+      otpChart('qcAsgInmoDirecto','% Directo Inmo', '#fbbf24', asgPctSerie(dir, asg), et, true);
+      otpChart('qcAsgInmoDeMmAbs','Venía de MM',    '#c084fc', mm,  et, false);
+      otpChart('qcAsgInmoDeMm',   '% Venía de MM',  '#c084fc', asgPctSerie(mm,  asg), et, true);
     }
   }
 }
