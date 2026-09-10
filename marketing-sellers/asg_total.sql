@@ -5,48 +5,69 @@
 --
 -- Cuatro filas, las tres últimas MECE: suman exactamente el total.
 --   asg        = asignados totales
---   solo_mm    = calificados exclusivamente para MM        (product_qualified='ibuyer')
---   solo_inmo  = calificados exclusivamente para Inmo      (product_qualified='real_estate')
---   ambos      = calificados para los dos productos        ('ibuyer_and_real_estate')
+--   solo_mm    = calificado para MM y nunca para Inmo
+--   solo_inmo  = calificado para Inmo y nunca para MM
+--   ambos      = calificado para los dos productos
 --
--- FUENTES
---   Asignación: `sellers-main-prod.hubspot.historical` con propiedad='hubspot_owner_id' y
---     `valor` no vacío. MIN(fecha) por nid = su primera asignación a un comercial. Es la
---     misma señal que usa el tablero `asignacion-co`. Volumen sano: 22-35k nids/mes.
---   Calificación: `sellers-main-prod.co_rds_staging.habi_db_tabla_negocio_inmueble`,
---     tomando el `product_qualified` más reciente por nid (ORDER BY fecha_creacion DESC).
---     Valores en CO: ibuyer_and_real_estate 31.172 · real_estate 10.101 · ibuyer 7.579 ·
---     transient 100.041 · vacío 3,6M. Los dos últimos NO son calificados y quedan fuera.
+-- ── CALIFICACIÓN: por PASO POR ESTADO, no por `product_qualified` ────────────────
+--   MM   → pasó por `estado_id IN (20, 63)` en
+--          `co_rds_staging.habi_db_tabla_historico_estado_v2` (por `negocio_id`)
+--   INMO → pasó por `state_id = 20` en
+--          `co_rds_staging.habi_db_history_state_real_estate` (por `deal_id`)
+--   Son las mismas fuentes e ids que usa `query.sql` de este tablero para "Calificados MM"
+--   y "Calificados Inmo", así que las dos hojas hablan el mismo idioma.
 --
--- POR QUÉ NO SE RECONSTRUYE DESDE EL MART: el mart es una tabla materializada con sus 16
---   filtros ya aplicados, no se le puede quitar uno. Se intentó reconstruirlo desde
---   `tabla_inmuebles_general` y no cuadra (−1,8% a +4,2%): F15 solo se puede aproximar
---   porque `asignacion_descartes_top` no es accesible por IAM, los estados de la TIG son
---   valores actuales y no del momento de la asignación, y F4-F6 no son reproducibles.
---   Esta definición no intenta imitar al mart: parte de la calificación de producto, que
---   es el dato que de verdad responde la pregunta.
+--   Se prefiere sobre `product_qualified` por tres razones, medidas 2026-09-10:
+--     1. Es un evento ("pasó por"), no el snapshot del último valor.
+--     2. Es un SUPERCONJUNTO estricto: la definición ampliada (estados OR
+--        product_qualified) da exactamente lo mismo que estados solos en los 16 meses
+--        revisados. Todo lead con `product_qualified` pasó por esos estados.
+--     3. Recoge algo más: jul 7.104 vs 7.059 · ago 7.558 vs 7.509 · may 7.145 vs 7.069.
 --
--- SIN FILTRO DE FUENTE, a propósito. Medido 2026-09-10: restringir a las 6 fuentes de
---   marketing da el MISMO número (7.059 vs 7.059 en julio; una sola diferencia de 1 lead
---   en junio). Como no cambia nada, se omite el join a la TIG — que es la tabla más grande
---   de las tres — y la query baja de ~50 GB a una fracción.
+-- ── ⚠️ VENTANA: DESDE 2026-03. NO ES UNA DECISIÓN, ES EL LÍMITE DEL DATO ─────────
+--   `habi_db_history_state_real_estate` tiene **CERO filas antes de 2026-03**; su primer
+--   registro es de ese mes. Sin esa tabla no existe la mitad "Inmo" de la definición, así
+--   que un total de "calificado para MM o Inmo" no se puede calcular hacia atrás: daría
+--   solo la parte de MM, que es otra cosa y se leería como una caída del indicador.
+--
+--   Cambiar de `product_qualified` a estados NO mueve este límite: `product_qualified`
+--   también arranca en marzo-2026 (feb 678 → mar 4.610 de ~15.800 asignados/mes). Los dos
+--   sistemas empezaron a registrar calificación de producto al mismo tiempo.
+--
+--   Por eso los períodos anteriores a 2026-03 salen en NULL → "—" en el tablero, en las
+--   cuatro filas. Si algún día hace falta una serie más larga, tendría que ser un
+--   indicador distinto y rotulado como tal: "calificados MM" solo, que sí llega a 2025-06.
 --
 -- ⚠️ NO ES CITABLE en el WBR ni en el OKR: ahí se reporta el mart. Esta tabla dimensiona
---   la operación de asignación completa. Referencia de magnitud (jul-2026): 7.059 totales
---   contra 5.147 del mart oficial.
+--   la operación de asignación completa. Referencia (jul-2026): 7.104 contra 5.147.
 --
--- SOLO COLOMBIA por ahora: `co_rds_staging` y el pipeline de CO.
+-- SIN FILTRO DE FUENTE, a propósito: restringir a las 6 fuentes de marketing daba el mismo
+--   número, así que se omite el join a `tabla_inmuebles_general` — la tabla más grande — y
+--   la query no paga ese escaneo.
+--
+-- SOLO COLOMBIA por ahora: todo sale de `co_rds_staging`.
 --
 -- Salida larga: {g, c, p, asg, solo_mm, solo_inmo, ambos}.
 
 WITH
-  pq AS (
-    SELECT
-      CAST(nid AS STRING) AS nid,
-      TRIM(ARRAY_AGG(product_qualified ORDER BY fecha_creacion DESC LIMIT 1)[OFFSET(0)]) AS pq
+  negocios AS (
+    SELECT CAST(nid AS STRING) AS nid, id AS biz_id
     FROM `sellers-main-prod.co_rds_staging.habi_db_tabla_negocio_inmueble`
     WHERE nid IS NOT NULL
-    GROUP BY nid
+  ),
+
+  cal_mm AS (
+    SELECT DISTINCT n.nid
+    FROM `sellers-main-prod.co_rds_staging.habi_db_tabla_historico_estado_v2` h
+    JOIN negocios n ON n.biz_id = h.negocio_id
+    WHERE h.estado_id IN (20, 63)
+  ),
+
+  cal_inmo AS (
+    SELECT DISTINCT n.nid
+    FROM `sellers-main-prod.co_rds_staging.habi_db_history_state_real_estate` h
+    JOIN negocios n ON n.biz_id = h.deal_id
+    WHERE h.state_id = 20
   ),
 
   owner AS (
@@ -59,10 +80,17 @@ WITH
   ),
 
   base AS (
-    SELECT o.nid, o.fecha, pq.pq
+    SELECT
+      o.nid,
+      o.fecha,
+      mm.nid IS NOT NULL   AS es_mm,
+      inmo.nid IS NOT NULL AS es_inmo
     FROM owner o
-    JOIN pq USING (nid)
-    WHERE pq.pq IN ('ibuyer', 'real_estate', 'ibuyer_and_real_estate')
+    LEFT JOIN cal_mm   mm   ON mm.nid   = o.nid
+    LEFT JOIN cal_inmo inmo ON inmo.nid = o.nid
+    WHERE (mm.nid IS NOT NULL OR inmo.nid IS NOT NULL)
+      -- Límite del dato, no de la decisión. Ver la cabecera.
+      AND o.fecha >= DATE '2026-03-01'
   ),
 
   -- Mismos cortes que query.sql, asg_mm.sql y asg_inmo.sql:
@@ -75,46 +103,46 @@ WITH
 
   agg AS (
     SELECT 'D' g, CAST(fecha AS STRING) p,
-      COUNT(DISTINCT nid)                                                    asg,
-      COUNT(DISTINCT IF(pq = 'ibuyer', nid, NULL))                           solo_mm,
-      COUNT(DISTINCT IF(pq = 'real_estate', nid, NULL))                      solo_inmo,
-      COUNT(DISTINCT IF(pq = 'ibuyer_and_real_estate', nid, NULL))           ambos
+      COUNT(DISTINCT nid)                                              asg,
+      COUNT(DISTINCT IF(es_mm AND NOT es_inmo, nid, NULL))             solo_mm,
+      COUNT(DISTINCT IF(es_inmo AND NOT es_mm, nid, NULL))             solo_inmo,
+      COUNT(DISTINCT IF(es_mm AND es_inmo, nid, NULL))                 ambos
     FROM base WHERE fecha IN (SELECT p FROM day_periods) GROUP BY p
     UNION ALL
     SELECT 'W', CAST(DATE_TRUNC(fecha, ISOWEEK) AS STRING),
       COUNT(DISTINCT nid),
-      COUNT(DISTINCT IF(pq = 'ibuyer', nid, NULL)),
-      COUNT(DISTINCT IF(pq = 'real_estate', nid, NULL)),
-      COUNT(DISTINCT IF(pq = 'ibuyer_and_real_estate', nid, NULL))
+      COUNT(DISTINCT IF(es_mm AND NOT es_inmo, nid, NULL)),
+      COUNT(DISTINCT IF(es_inmo AND NOT es_mm, nid, NULL)),
+      COUNT(DISTINCT IF(es_mm AND es_inmo, nid, NULL))
     FROM base WHERE DATE_TRUNC(fecha, ISOWEEK) IN (SELECT p FROM week_periods) GROUP BY 2
     UNION ALL
     SELECT 'C', CAST(DATE_TRUNC(fecha, WEEK(WEDNESDAY)) AS STRING),
       COUNT(DISTINCT nid),
-      COUNT(DISTINCT IF(pq = 'ibuyer', nid, NULL)),
-      COUNT(DISTINCT IF(pq = 'real_estate', nid, NULL)),
-      COUNT(DISTINCT IF(pq = 'ibuyer_and_real_estate', nid, NULL))
+      COUNT(DISTINCT IF(es_mm AND NOT es_inmo, nid, NULL)),
+      COUNT(DISTINCT IF(es_inmo AND NOT es_mm, nid, NULL)),
+      COUNT(DISTINCT IF(es_mm AND es_inmo, nid, NULL))
     FROM base WHERE DATE_TRUNC(fecha, WEEK(WEDNESDAY)) IN (SELECT p FROM comm_periods) GROUP BY 2
     UNION ALL
     SELECT 'M', FORMAT_DATE('%Y-%m', fecha),
       COUNT(DISTINCT nid),
-      COUNT(DISTINCT IF(pq = 'ibuyer', nid, NULL)),
-      COUNT(DISTINCT IF(pq = 'real_estate', nid, NULL)),
-      COUNT(DISTINCT IF(pq = 'ibuyer_and_real_estate', nid, NULL))
+      COUNT(DISTINCT IF(es_mm AND NOT es_inmo, nid, NULL)),
+      COUNT(DISTINCT IF(es_inmo AND NOT es_mm, nid, NULL)),
+      COUNT(DISTINCT IF(es_mm AND es_inmo, nid, NULL))
     FROM base WHERE DATE_TRUNC(fecha, MONTH) IN (SELECT p FROM month_periods) GROUP BY 2
     UNION ALL
     SELECT 'Q', CONCAT(CAST(EXTRACT(YEAR FROM fecha) AS STRING), '-Q',
                        CAST(EXTRACT(QUARTER FROM fecha) AS STRING)),
       COUNT(DISTINCT nid),
-      COUNT(DISTINCT IF(pq = 'ibuyer', nid, NULL)),
-      COUNT(DISTINCT IF(pq = 'real_estate', nid, NULL)),
-      COUNT(DISTINCT IF(pq = 'ibuyer_and_real_estate', nid, NULL))
+      COUNT(DISTINCT IF(es_mm AND NOT es_inmo, nid, NULL)),
+      COUNT(DISTINCT IF(es_inmo AND NOT es_mm, nid, NULL)),
+      COUNT(DISTINCT IF(es_mm AND es_inmo, nid, NULL))
     FROM base WHERE DATE_TRUNC(fecha, QUARTER) IN (SELECT p FROM quarter_periods) GROUP BY 2
     UNION ALL
     SELECT 'Y', CAST(EXTRACT(YEAR FROM fecha) AS STRING),
       COUNT(DISTINCT nid),
-      COUNT(DISTINCT IF(pq = 'ibuyer', nid, NULL)),
-      COUNT(DISTINCT IF(pq = 'real_estate', nid, NULL)),
-      COUNT(DISTINCT IF(pq = 'ibuyer_and_real_estate', nid, NULL))
+      COUNT(DISTINCT IF(es_mm AND NOT es_inmo, nid, NULL)),
+      COUNT(DISTINCT IF(es_inmo AND NOT es_mm, nid, NULL)),
+      COUNT(DISTINCT IF(es_mm AND es_inmo, nid, NULL))
     FROM base GROUP BY 2
   )
 

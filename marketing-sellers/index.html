@@ -413,9 +413,9 @@ body.light #sheet-web .wchip.country { background: #dbeafe; border-color: #3b82f
     <div class="control-label">Temporalidad <button type="button" class="help-btn" onclick="document.getElementById('helpGran').showModal()" aria-label="Explicación de temporalidades">?</button></div>
     <select class="granularity" id="granSelect" onchange="onUpdate()">
       <option value="D">Diario</option>
-      <option value="W">Semanal (lun-dom)</option>
+      <option value="W" selected>Semanal (lun-dom)</option>
       <option value="C">Ciclo comercial (mié-mar)</option>
-      <option value="M" selected>Mensual</option>
+      <option value="M">Mensual</option>
       <option value="Q">Trimestral</option>
       <option value="Y">Anual</option>
     </select>
@@ -544,13 +544,13 @@ body.light #sheet-web .wchip.country { background: #dbeafe; border-color: #3b82f
     <table id="asgTotalTable"><thead><tr><th>Asignados totales</th></tr></thead><tbody></tbody></table>
   </div>
   <p class="fnote">
-    Todo lead que fue <strong>calificado para MM o para Inmo</strong> y se asignó a un
+    Todo lead que fue <strong>calificado para MM o para Inmo</strong> —por paso por estado— y se asignó a un
     <code>hubspot_owner_id</code>, por la fecha de su <strong>primera</strong> asignación. Contesta una
     pregunta distinta a la tabla de arriba: dimensiona la operación de asignación completa, no el objetivo
-    de Marketing. Las tres filas de abajo son <strong>MECE</strong> y salen de
-    <code>product_qualified</code>.
-    <span class="fpartial">No es citable en el WBR ni en el OKR</span>: ahí se reporta el mart.
-    Referencia de magnitud (jul-26): 7.059 totales contra 5.147 del oficial.
+    de Marketing. Las tres filas de abajo son <strong>MECE</strong>.
+    <span class="fpartial">La serie arranca en marzo de 2026</span>: antes de esa fecha no existe la mitad
+    Inmo del dato, así que un total hacia atrás mediría otra cosa (ver el <code>?</code>).
+    No es citable en el WBR ni en el OKR: ahí se reporta el mart. Referencia (jul-26): 7.104 contra 5.147.
   </p>
 
   <h2 class="section-heading">Asignados Market Maker — por fecha de primera asignación</h2>
@@ -602,15 +602,24 @@ body.light #sheet-web .wchip.country { background: #dbeafe; border-color: #3b82f
   <p><strong>Asignación:</strong> <code>sellers-main-prod.hubspot.historical</code> con
   <code>propiedad='hubspot_owner_id'</code> y <code>valor</code> no vacío —
   <code>MIN(fecha)</code> por nid. Es la misma señal que usa el tablero <em>Asignación · MM vs INMO (CO)</em>.</p>
-  <p><strong>Calificación:</strong> el <code>product_qualified</code> más reciente por nid en
-  <code>co_rds_staging.habi_db_tabla_negocio_inmueble</code>. Sus tres valores calificados son justo las
-  tres filas de la tabla: <code>ibuyer</code> (solo MM), <code>real_estate</code> (solo Inmo) y
-  <code>ibuyer_and_real_estate</code> (ambos). Quedan fuera <code>transient</code> y el valor vacío, que no
-  son calificaciones.</p>
-  <p><strong>Sin filtro de fuente, a propósito.</strong> Medido 2026-09-10: restringir a las 6 fuentes de
-  marketing da el mismo número (7.059 vs 7.059 en julio, con una diferencia de 1 lead en junio). Como no
-  cambia nada, se omite el join a <code>tabla_inmuebles_general</code> — la tabla más grande de las tres — y
-  la query pasa de ~50 GB a 1,5 GB.</p>
+  <p><strong>Calificación: por paso por estado</strong>, no por <code>product_qualified</code>.
+  MM = pasó por <code>estado_id IN (20, 63)</code> en <code>habi_db_tabla_historico_estado_v2</code>.
+  Inmo = pasó por <code>state_id = 20</code> en <code>habi_db_history_state_real_estate</code>. Son las
+  mismas fuentes e ids que usa la hoja de Calificación, así que las dos hablan el mismo idioma.</p>
+  <p>Se prefiere sobre <code>product_qualified</code> porque es un <strong>evento</strong> («pasó por») y no
+  el snapshot del último valor, y porque es un superconjunto estricto: medido 2026-09-10, la definición
+  ampliada (estados <em>o</em> <code>product_qualified</code>) da exactamente lo mismo que los estados solos
+  en los 16 meses revisados. Además recoge algo más: jul 7.104 vs 7.059 · ago 7.558 vs 7.509.</p>
+  <p>⚠️ <strong>La serie arranca en marzo de 2026, y es el límite del dato, no una decisión.</strong>
+  <code>habi_db_history_state_real_estate</code> tiene <strong>cero filas antes de 2026-03</strong>. Sin esa
+  tabla no existe la mitad «Inmo» de la definición, así que hacia atrás solo se podría calcular la parte de
+  MM — que es otra cosa y se leería como una caída del indicador. Cambiar de <code>product_qualified</code> a
+  estados <strong>no</strong> mueve ese límite: <code>product_qualified</code> también arranca en marzo
+  (feb 678 → mar 4.610 de ~15.800 asignados/mes). Los dos sistemas empezaron a registrar calificación de
+  producto al mismo tiempo.</p>
+  <p><strong>Sin filtro de fuente, a propósito:</strong> restringir a las 6 fuentes de marketing daba el
+  mismo número, así que se omite el join a <code>tabla_inmuebles_general</code> — la tabla más grande — y la
+  query no paga ese escaneo.</p>
   <p><strong>Por qué no se reconstruye desde el mart:</strong> se intentó, y no cuadra (−1,8% a +4,2%). El
   mart es una tabla materializada con sus 16 filtros aplicados; F15 solo se puede aproximar porque
   <code>asignacion_descartes_top</code> no es accesible por IAM, los estados de la TIG son valores actuales y
