@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Se movió a Marketing Sellers</title>
+<!-- Redirect de compatibilidad. Este tablero se renombró de `tablero-marketing` a
+     `marketing-sellers` el 2026-09-09. GitHub Pages no permite redirects de servidor,
+     así que esta página estática cubre los links guardados.
+
+     Esta carpeta NO tiene meta.json a propósito: sin él, `build_hub.py` no le genera
+     card y `run_queries.py` la ignora. Es solo un redirect, no un tablero.
+
+     Se puede borrar cuando dejen de llegar visitas a /tablero-marketing/ — razonable
+     revisarlo en 2027. -->
+<link rel="canonical" href="../marketing-sellers/">
+<meta name="robots" content="noindex">
+<meta http-equiv="refresh" content="0; url=../marketing-sellers/">
+<style>
+  :root { color-scheme: dark light; }
+  body { margin: 0; min-height: 100vh; display: grid; place-items: center;
+         background: #0f172a; color: #e2e8f0; text-align: center; padding: 24px;
+         font: 15px/1.55 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  .box { max-width: 30rem; }
+  h1 { font-size: 19px; margin: 0 0 10px; color: #f8fafc; font-weight: 600; }
+  p { margin: 0 0 14px; color: #94a3b8; font-size: 13.5px; }
+  a { color: #39ff88; font-weight: 600; }
+  code { background: #1e293b; border: 1px solid #334155; border-radius: 4px;
+         padding: 1px 5px; font-size: 12.5px; color: #e2e8f0; }
+</style>
+</head>
+<body>
+  <div class="box">
+    <h1>Este tablero se llama ahora Marketing Sellers</h1>
+    <p><code>tablero-marketing</code> pasó a <code>marketing-sellers</code>. Te estamos
+    llevando allá; si no pasa nada, entra por el link.</p>
+    <p><a id="ir" href="../marketing-sellers/">Ir a Marketing Sellers &rarr;</a></p>
+    <p style="font-size:12px;opacity:.65">Actualiza tu marcador para no pasar por aquí.</p>
+  </div>
+<script>
+  // Conserva el hash y el query para no perder la hoja (#asg, #web, #otp...)
+  // ni los filtros que traiga el link guardado.
+  var destino = '../marketing-sellers/' + location.search + location.hash;
+  document.getElementById('ir').href = destino;
+  // replace() y no assign(): no deja este redirect en el historial, así que el
+  // botón "atrás" del navegador no lo hace rebotar aquí otra vez.
+  location.replace(destino);
+</script>
+</body>
+</html>
