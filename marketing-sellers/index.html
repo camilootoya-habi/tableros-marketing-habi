@@ -531,10 +531,12 @@ body.light #sheet-web .wchip.country { background: #dbeafe; border-color: #3b82f
   <p class="fnote">
     Estas son las cifras <strong>citables</strong>: cuadran con el WBR y con el OKR. Si un número de las
     tablas de abajo no coincide con uno de aquí, manda este.
-    <strong>Market Maker</strong> sale del mart oficial con las 6 fuentes de marketing.
+    <strong>Market Maker</strong> sale del mart oficial y cuenta <strong>solo los asignados que califican
+    para MM</strong> — en los dos países, porque la prioridad de Marketing sigue siendo optimizar por leads
+    que califiquen para Market Maker.
     <strong>Inmobiliaria</strong> exige que la asignación sea <strong>consistente</strong> — priorizado y
     asignado el mismo día — y prioridad <strong>A o B</strong>. Sin lo primero sobra ~10%.
-    Cuadra <strong>exacto</strong> contra el WBR en las 7 semanas verificadas. Solo Colombia.
+    Cuadra <strong>exacto</strong> contra el WBR en las 7 semanas verificadas. Solo Colombia por ahora.
   </p>
 
   <h2 class="section-heading">Asignados Market Maker — por fecha de primera asignación</h2>
@@ -581,16 +583,19 @@ body.light #sheet-web .wchip.country { background: #dbeafe; border-color: #3b82f
 <dialog id="helpAsgOfMm" class="help-dialog">
   <h3>Asignados Market Maker — cifra oficial</h3>
   <p>Es el indicador <strong>«Leads Asignados (Primer Asignación)»</strong> del WBR:
-  <code>papyrus-master.sellers_data_mart.sellers_leads_asignados_marketing_wbr_mart</code>
-  con <code>pais='colombia'</code>, restringido a las <strong>6 fuentes de marketing</strong>.</p>
-  <p>Las 6: WEB&nbsp;(3), Habímetro&nbsp;(7), CRM&nbsp;(20), Comercial&nbsp;(35), Brokers&nbsp;(39) y
-  Leadforms&nbsp;(47/37/41/42, cuatro ids que se colapsan en una etiqueta).</p>
-  <p>El mart aplica <strong>16 filtros</strong> en 7 grupos, y el más importante para leer esta cifra es
-  <strong>F2</strong>: se queda solo con la <strong>primera asignación cronológica</strong> de cada nid. Por eso
-  se llama «Primer Asignación» y por eso esta cifra no puede descomponerse por producto.</p>
-  <p>Validado 2026-09-09: abr-2026 da <strong>5.080</strong>, exacto contra el WBR (977+1.252+2.309+542).
-  En la práctica el filtro de fuentes no mueve nada — fuera de las 6 hay 0&ndash;2 leads por mes — pero va
-  explícito porque es la definición.</p>
+  <code>papyrus-master.sellers_data_mart.sellers_leads_asignados_marketing_wbr_mart</code>,
+  restringido a las 6 fuentes de marketing.</p>
+  <p><strong>Solo suma leads asignados que son calificados para Market Maker</strong>, en los dos países.
+  No es un recorte técnico: para Marketing la prioridad sigue siendo <strong>optimizar por leads que
+  califiquen para MM</strong>, así que un asignado que no calificaba nunca fue el objetivo y no entra en el
+  indicador que se mide.</p>
+  <p>Eso lo consiguen cuatro de los <strong>16 filtros</strong> del mart: el estado del deal debe estar en la
+  lista permitida (<em>Sin pricing inicial</em>, <em>No gestionado</em>, <em>Cierre</em>, <em>No hay
+  suficientes datos</em>), <code>check_a_pricing = 1</code>, <code>calificacion_del_lead_v2</code> distinto de
+  N/NH, y <code>asignacion_descartes_top IS NULL</code>, que saca a los que solo fueron a inmobiliaria.</p>
+  <p>El filtro más importante para leer la cifra es <strong>F2</strong>: se queda solo con la
+  <strong>primera asignación cronológica</strong> de cada nid. Por eso se llama «Primer Asignación» y por eso
+  esta cifra no puede descomponerse por producto.</p>
   <button type="button" class="close-btn" onclick="this.closest('dialog').close()">Cerrar</button>
 </dialog>
 
@@ -2016,7 +2021,7 @@ function renderAsgMm() {
       const mmOf   = asgSerie(ASG_MM_DATA,   gran, country, periodos, 'mart');
       const inmoOf = asgSerie(ASG_INMO_DATA, gran, country, periodos, 'asg');
       const inmoDir= asgSerie(ASG_INMO_DATA, gran, country, periodos, 'directo');
-      let tb = asgTotalRow("Asignados Market Maker (mart WBR, 6 fuentes)", "helpAsgOfMm", mmOf);
+      let tb = asgTotalRow("Asignados Market Maker (mart WBR)", "helpAsgOfMm", mmOf);
       tb += asgTotalRow("Asignados Inmobiliaria (prioridad A + B)", "helpAsgOfInmo", inmoOf);
       tb += asgPctRow("└ de los cuales, directo a Inmo (sin pasar por MM)", "helpAsgDirecto", inmoDir, inmoOf);
       ofB.innerHTML = tb;
