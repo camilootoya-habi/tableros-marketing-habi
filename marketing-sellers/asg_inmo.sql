@@ -43,6 +43,11 @@
 --   Ojo: en MX esa misma etiqueta mide otra cosa ("calificado para real_estate", ver
 --   [[asignados_inmo_wbr_oficial]]). En CO la etiqueta sí describe lo que mide.
 --
+-- VENTANA: toda la historia de la tabla, que arranca en 2026-02-26. Ese es el límite duro
+--   de esta serie, y es más corto que el de la tabla de MM (cuyo mart llega a 2020). En
+--   granularidades largas —mes, trimestre, año— las columnas anteriores a feb-2026 salen
+--   en "—" porque el dato no existe, no porque sea cero.
+--
 -- SOLO COLOMBIA: la tabla es `bi_co`. El equivalente MX es
 --   `data_sellers_bo.leads_asignados_imobiliaria`, con otra definición y otros gotchas.
 --
@@ -54,7 +59,6 @@ WITH
     FROM `sellers-main-prod.bi_co.tablero_asignacion_inmo_col`
     WHERE asignacion_consistente                        -- priorizado y asignado el mismo día
       AND prioridad_de_gestion_inmo IN ('A', 'B')       -- excluye 'Descartado Gabi'
-      AND fecha_primera_asignacion >= DATE '2026-05-01'
   ),
 
   mm AS (

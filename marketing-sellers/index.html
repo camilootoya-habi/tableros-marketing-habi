@@ -99,6 +99,20 @@
   tbody tr.row-stage .p { font-size: 11px; opacity: 0.85; margin-left: 6px; }
   tbody tr.row-sep td { padding: 0; height: 3px; background: var(--bg); border: none; }
   tbody tr.row-sep td:first-child, tbody tr.row-sep td:nth-child(2) { background: var(--bg); border-right-color: var(--bg); }
+
+  /* Hoja de Asignación: las tres tablas se leen en vertical una debajo de otra, así que
+     su columna de etiqueta tiene que medir IGUAL en las tres. Con el `min-width: 220px`
+     general cada tabla estiraba distinto según sus columnas (780 / 733 / 727 px medidos).
+     Aquí va fija: mismo ancho siempre, y las etiquetas largas cortan con ellipsis. */
+  #sheet-asg thead th:nth-child(2),
+  #sheet-asg tbody td:nth-child(2) {
+    width: 340px; min-width: 340px; max-width: 340px;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  /* "—" de período sin dato: la fuente no llega tan atrás. No es un cero. */
+  .sindato { opacity: .3; }
+  /* Fila de contraste del mart: atenuada, no es parte de la descomposición. */
+  tbody tr.contraste td { opacity: .72; font-weight: 500; }
   tbody tr.row-in-chart td { background: var(--row-in-chart); }
   tbody tr.row-in-chart td:first-child, tbody tr.row-in-chart td:nth-child(2) { background: var(--row-in-chart); }
   tbody tr.row-in-chart td:first-child { color: var(--accent); font-weight: 700; font-size: 11px; }
@@ -1941,11 +1955,45 @@ function asgHead(thead, etiqueta, helpId, periodos, gran) {
       }).join('');
 }
 
-// Serie de un dataset alineada a `periodos`; 0 donde no hay fila.
+// Serie de un dataset alineada a `periodos`. Devuelve `null` —no 0— donde el dataset no
+// tiene ese período: las tres tablas comparten columnas pero no historia (el mart llega a
+// 2020, `historical` a 2025-09 y la tabla de Inmo a 2026-02). Un 0 ahí se leería como
+// "ese mes no hubo asignados", que es falso.
 function asgSerie(ds, gran, country, periodos, campo) {
   const idx = {};
   ds.forEach(r => { if (r.g === gran && r.c === country) idx[r.p] = r; });
-  return periodos.map(p => Number((idx[p] || {})[campo] || 0));
+  return periodos.map(p => {
+    const r = idx[p];
+    if (!r || r[campo] === null || r[campo] === undefined || r[campo] === '') return null;
+    return Number(r[campo]);
+  });
+}
+
+// Fila de total: absolutos, con "—" donde no hay dato.
+function asgTotalRow(label, helpId, valores) {
+  return `<tr class="row-total">${helpCell(helpId)}<td>${label}</td>`
+    + valores.map(n => `<td>${n === null ? '<span class="sindato">—</span>' : fmt(n)}</td>`).join('')
+    + '</tr>';
+}
+
+// Fila de descomposición: valor + % sobre su denominador, con heatmap. Versión propia de
+// esta hoja porque `heatCells` no maneja nulls y está compartida con las otras hojas.
+function asgPctRow(label, helpId, valores, denoms) {
+  const pcts = valores.map((v, i) => (v === null || !denoms[i]) ? null : v / denoms[i] * 100);
+  const conDato = pcts.filter(p => p !== null);
+  const min = conDato.length ? Math.min(...conDato) : 0;
+  const max = conDato.length ? Math.max(...conDato) : 0;
+  const range = (max - min) || 1;
+  const celdas = valores.map((v, i) => {
+    if (v === null || pcts[i] === null) return '<td><span class="sindato">—</span></td>';
+    const ratio = (pcts[i] - min) / range;
+    const rc = Math.round(248 - ratio * 196);
+    const gc = Math.round(52 + ratio * 159);
+    const bc = Math.round(52 + ratio * 101);
+    const pctStr = pcts[i] >= 10 ? pcts[i].toFixed(1) : pcts[i].toFixed(2);
+    return `<td><span class="n">${fmt(v)}</span><span class="p" style="color:rgb(${rc},${gc},${bc})">${pctStr}%</span></td>`;
+  }).join('');
+  return `<tr class="row-stage">${helpCell(helpId)}<td>${label}</td>${celdas}</tr>`;
 }
 
 function asgVacia(thead, tbody, etiqueta, country) {
@@ -1968,11 +2016,9 @@ function renderAsgMm() {
       const mmOf   = asgSerie(ASG_MM_DATA,   gran, country, periodos, 'mart');
       const inmoOf = asgSerie(ASG_INMO_DATA, gran, country, periodos, 'asg');
       const inmoDir= asgSerie(ASG_INMO_DATA, gran, country, periodos, 'directo');
-      let tb = `<tr class="row-total">${helpCell('helpAsgOfMm')}<td>Asignados Market Maker (mart WBR, 6 fuentes)</td>`
-        + mmOf.map(n => `<td>${fmt(n)}</td>`).join('') + '</tr>';
-      tb += `<tr class="row-total">${helpCell('helpAsgOfInmo')}<td>Asignados Inmobiliaria (prioridad A + B)</td>`
-        + inmoOf.map(n => `<td>${fmt(n)}</td>`).join('') + '</tr>';
-      tb += renderPctRow('└ de los cuales, directo a Inmo (sin pasar por MM)', inmoDir, inmoOf, 'helpAsgDirecto');
+      let tb = asgTotalRow("Asignados Market Maker (mart WBR, 6 fuentes)", "helpAsgOfMm", mmOf);
+      tb += asgTotalRow("Asignados Inmobiliaria (prioridad A + B)", "helpAsgOfInmo", inmoOf);
+      tb += asgPctRow("└ de los cuales, directo a Inmo (sin pasar por MM)", "helpAsgDirecto", inmoDir, inmoOf);
       ofB.innerHTML = tb;
     }
   }
@@ -1988,13 +2034,11 @@ function renderAsgMm() {
       const dir  = asgSerie(ASG_MM_DATA, gran, country, periodos, 'directo');
       const inmo = asgSerie(ASG_MM_DATA, gran, country, periodos, 'de_inmo');
       const mart = asgSerie(ASG_MM_DATA, gran, country, periodos, 'mart');
-      let tb = `<tr class="row-total">${helpCell('helpAsgMm')}<td>Asignados Market Maker</td>`
-        + asg.map(n => `<td>${fmt(n)}</td>`).join('') + '</tr>';
-      tb += renderPctRow('Directo por primera vez (nunca pasó por Inmo)', dir, asg);
-      tb += renderPctRow('Venía de Inmo (asignado a Inmo antes que a MM)', inmo, asg);
+      let tb = asgTotalRow("Asignados Market Maker", "helpAsgMm", asg);
+      tb += asgPctRow("Directo por primera vez (nunca pasó por Inmo)", null, dir, asg);
+      tb += asgPctRow("Venía de Inmo (asignado a Inmo antes que a MM)", null, inmo, asg);
       // Contraste, NO parte de la descomposición: otro universo (ver helpAsgMart).
-      tb += `<tr class="row-stage">${helpCell('helpAsgMart')}<td style="opacity:.75">Mart oficial (WBR) — contraste</td>`
-        + mart.map(n => `<td style="opacity:.75">${fmt(n)}</td>`).join('') + '</tr>';
+      tb += asgTotalRow("Mart oficial (WBR) — contraste", "helpAsgMart", mart).replace(/class="row-total"/, "class=\"row-stage contraste\"");
       mmB.innerHTML = tb;
     }
   }
@@ -2009,10 +2053,9 @@ function renderAsgMm() {
       const asg = asgSerie(ASG_INMO_DATA, gran, country, periodos, 'asg');
       const dir = asgSerie(ASG_INMO_DATA, gran, country, periodos, 'directo');
       const mm  = asgSerie(ASG_INMO_DATA, gran, country, periodos, 'de_mm');
-      let tb = `<tr class="row-total">${helpCell('helpAsgOfInmo')}<td>Asignados Inmobiliaria (A + B)</td>`
-        + asg.map(n => `<td>${fmt(n)}</td>`).join('') + '</tr>';
-      tb += renderPctRow('Directo a Inmo (sin pasar antes por MM)', dir, asg, 'helpAsgDirecto');
-      tb += renderPctRow('Venía de MM (ya había entrado al pipeline MM)', mm, asg);
+      let tb = asgTotalRow("Asignados Inmobiliaria (A + B)", "helpAsgOfInmo", asg);
+      tb += asgPctRow("Directo a Inmo (sin pasar antes por MM)", "helpAsgDirecto", dir, asg);
+      tb += asgPctRow("Venía de MM (ya había entrado al pipeline MM)", null, mm, asg);
       inB.innerHTML = tb;
     }
   }
