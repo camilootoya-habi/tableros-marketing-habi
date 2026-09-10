@@ -518,10 +518,9 @@ body.light #sheet-web .wchip.country { background: #dbeafe; border-color: #3b82f
     Estas son las cifras <strong>citables</strong>: cuadran con el WBR y con el OKR. Si un número de las
     tablas de abajo no coincide con uno de aquí, manda este.
     <strong>Market Maker</strong> sale del mart oficial con las 6 fuentes de marketing.
-    <strong>Inmobiliaria</strong> es la suma de las prioridades <strong>A + B</strong> — no el total de la
-    tabla de asignación, que trae ~11% de filas sin prioridad que el WBR no cuenta.
-    <span class="fpartial">Las semanas recientes se mueven</span>: la prioridad de Inmo es un snapshot que se
-    reescribe, así que un lead sin prioridad hoy puede aparecer como A o B mañana. Solo Colombia.
+    <strong>Inmobiliaria</strong> exige que la asignación sea <strong>consistente</strong> — priorizado y
+    asignado el mismo día — y prioridad <strong>A o B</strong>. Sin lo primero sobra ~10%.
+    Cuadra <strong>exacto</strong> contra el WBR en las 7 semanas verificadas. Solo Colombia.
   </p>
 
   <h2 class="section-heading">Asignados Market Maker — por fecha de primera asignación</h2>
@@ -546,7 +545,7 @@ body.light #sheet-web .wchip.country { background: #dbeafe; border-color: #3b82f
     Aquí sí el total <strong>es</strong> la cifra oficial: es la misma A + B de la primera tabla, partida por
     su historia previa en Market Maker. Las dos filas de abajo son <strong>MECE</strong>.
     <strong>Directo a Inmo</strong> = sin entrada a MM anterior a su asignación; reproduce la línea punteada
-    del WBR (validado: 482 vs 481, 528 vs 530, 461 vs 458).
+    del WBR (validado exacto en 6 de 7 semanas).
     <strong>Venía de MM</strong> = ya había entrado al pipeline MM antes.
     <span class="fpartial">Ojo con la tendencia</span>: la proporción que viene de MM cayó de ~71% en mayo a
     ~47% en agosto. Es el hallazgo, no un error de datos.
@@ -585,15 +584,19 @@ body.light #sheet-web .wchip.country { background: #dbeafe; border-color: #3b82f
   <h3>Asignados Inmobiliaria — cifra oficial</h3>
   <p>Es el indicador <strong>«Leads asignados equipo inmobiliaria»</strong> del WBR:
   <code>sellers-main-prod.bi_co.tablero_asignacion_inmo_col</code>, por
-  <code>fecha_primera_asignacion</code>, con <code>prioridad_de_gestion_inmo IN ('A','B')</code>.</p>
-  <p>⚠️ <strong>El filtro de prioridad es la definición, no una limpieza.</strong> La cifra del WBR es la suma
-  de las barras A + B, <strong>no</strong> el total de la tabla. Sin el filtro sobra ~11%: en la ventana
-  20-jul a 30-ago hay <strong>693 filas con prioridad NULL</strong> y 6 con «Descartado Gabi».</p>
-  <p>Validación semana a semana (2026-09-09): 20-jul WBR 896 · query 901 &nbsp;|&nbsp; 10-ago WBR 974 ·
-  query 984 &nbsp;|&nbsp; 17-ago WBR 813 · query 831.</p>
-  <p>⚠️ <code>prioridad_de_gestion_inmo</code> es <strong>snapshot</strong>: se reescribe en cada refresh, así
-  que la serie histórica del split A/B se mueve sola y las semanas recientes suben a medida que se tipifica.
-  <strong>Nunca leer tendencia de la prioridad.</strong></p>
+  <code>fecha_primera_asignacion</code>, con <strong>dos filtros</strong> que son parte de la definición.</p>
+  <p><strong>1. <code>asignacion_consistente = TRUE</code></strong> — el que hace el trabajo grueso: quita
+  ~10%. Significa que el lead fue <strong>priorizado y asignado el mismo día</strong> (en las filas
+  consistentes <code>dias_asignacion_vs_prioridad</code> va de −1 a 1 y <code>mismo_mes_inmo</code> es TRUE
+  en el 100%). Las inconsistentes son 693 sin prioridad ni fecha de prioridad, más otras asignadas hasta
+  <strong>161 días</strong> después de haberse priorizado.</p>
+  <p><strong>2. <code>prioridad_de_gestion_inmo IN ('A','B')</code></strong> — el remate fino: quita solo los
+  «Descartado Gabi», 1&ndash;2 por semana. Entre las filas consistentes no queda ninguna con prioridad NULL.</p>
+  <p>Validado <strong>exacto en 7 de 7 semanas</strong> (2026-09-10): 896 · 1.005 · 1.083 · 974 · 813 · 793 ·
+  793. Y al mes: may 4.991, jul 4.629, ago 4.032, los tres idénticos al WBR.</p>
+  <p>⚠️ <code>prioridad_de_gestion_inmo</code> es <strong>snapshot</strong> y se reescribe en cada refresh,
+  así que el split A/B no sirve para leer tendencia. Pero eso <strong>no</strong> afecta a esta cifra: con los
+  dos filtros puestos la serie cuadra hasta la última semana cerrada.</p>
   <button type="button" class="close-btn" onclick="this.closest('dialog').close()">Cerrar</button>
 </dialog>
 

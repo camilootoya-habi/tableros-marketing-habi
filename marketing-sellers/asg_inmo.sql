@@ -7,16 +7,27 @@
 -- FUENTE: `sellers-main-prod.bi_co.tablero_asignacion_inmo_col`, por
 --   `fecha_primera_asignacion`, con `prioridad_de_gestion_inmo IN ('A','B')`.
 --
--- ⚠️ EL FILTRO DE PRIORIDAD ES LA DEFINICIÓN, NO UN FILTRO DE CONVENIENCIA.
---   La cifra del WBR es la suma de las barras A + B, no el total de la tabla. Sin el
---   filtro sobra ~11%: en la ventana 20-jul a 30-ago hay 693 filas con prioridad NULL
---   y 6 con 'Descartado Gabi'. Validado semana a semana contra el WBR (2026-09-09):
---     20-jul  A+B del WBR = 174+722 = 896   · esta query = 901
---     10-ago  A+B del WBR = 187+787 = 974   · esta query = 984
---     17-ago  A+B del WBR = 142+671 = 813   · esta query = 831
---   Las diferencias de 5-20 leads y el drift de las semanas recientes vienen de que
---   `prioridad_de_gestion_inmo` es SNAPSHOT: se reescribe en cada refresh, así que la
---   serie histórica del split A/B se mueve sola. Nunca leer tendencia de la prioridad.
+-- DOS FILTROS, Y LOS DOS SON PARTE DE LA DEFINICIÓN:
+--
+--   1. `asignacion_consistente = TRUE` — el que hace el trabajo grueso, quita ~10%.
+--      Significa que el lead fue **priorizado y asignado el mismo día**: en las filas
+--      consistentes `dias_asignacion_vs_prioridad` va de -1 a 1 y `mismo_mes_inmo` es
+--      TRUE en el 100%. Las inconsistentes son 693 sin prioridad ni fecha de prioridad,
+--      más otras asignadas hasta 161 días después de haberse priorizado.
+--
+--   2. `prioridad_de_gestion_inmo IN ('A','B')` — quita solo los 'Descartado Gabi',
+--      1-2 por semana. Entre las filas consistentes NO hay ninguna con prioridad NULL,
+--      así que este filtro es el remate fino, no el grueso.
+--
+-- Validado semana a semana contra el WBR, EXACTO en 6 de 6 (2026-09-10):
+--     20-jul  896 · 27-jul 1.005 · 03-ago 1.083 · 10-ago 974 · 17-ago 813 · 24-ago 793
+--   Sin `asignacion_consistente` daba 901 / 1.015 / 1.093 / 984 / 831 / 844 — entre 5 y
+--   51 leads de más. Esa diferencia NO era el snapshot de la prioridad (que también
+--   existe, ver abajo): era este filtro faltando.
+--
+-- ⚠️ `prioridad_de_gestion_inmo` sí es SNAPSHOT y se reescribe en cada refresh, así que
+--   el split A/B no sirve para leer tendencia. Pero eso no explicaba la diferencia de
+--   arriba: con los dos filtros puestos, la serie cuadra hasta la última semana cerrada.
 --
 -- RUTA MM → INMO: se cruza con `sellers-main-prod.hubspot.historical` con
 --   propiedad='pipeline' y valor='798578615' (pipeline MM CO), tomando MIN(fecha) como
@@ -41,7 +52,8 @@ WITH
   inmo AS (
     SELECT nid, fecha_primera_asignacion AS fecha
     FROM `sellers-main-prod.bi_co.tablero_asignacion_inmo_col`
-    WHERE prioridad_de_gestion_inmo IN ('A', 'B')
+    WHERE asignacion_consistente                        -- priorizado y asignado el mismo día
+      AND prioridad_de_gestion_inmo IN ('A', 'B')       -- excluye 'Descartado Gabi'
       AND fecha_primera_asignacion >= DATE '2026-05-01'
   ),
 
