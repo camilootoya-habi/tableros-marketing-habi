@@ -539,6 +539,18 @@ body.light #sheet-web .wchip.country { background: #dbeafe; border-color: #3b82f
     Cuadra <strong>exacto</strong> contra el WBR en las 7 semanas verificadas. Solo Colombia por ahora.
   </p>
 
+  <div class="table-container" style="margin-top:14px">
+    <table id="asgTotalTable"><thead><tr><th>Asignados totales</th></tr></thead><tbody></tbody></table>
+  </div>
+  <p class="fnote">
+    La misma definición del mart, pero <strong>sin el filtro de calificación para Market Maker</strong>:
+    cuántos leads se asignaron, calificaran o no. Contesta una pregunta distinta a la tabla de arriba —
+    dimensiona la operación de asignación completa, no el objetivo de Marketing.
+    <span class="fpartial">No es citable en el WBR ni en el OKR</span>: ahí se reporta el mart.
+    Hoy corre entre <strong>27% y 35% por encima</strong> del indicador oficial; ese hueco son los
+    asignados que no calificaban para MM.
+  </p>
+
   <h2 class="section-heading">Asignados Market Maker — por fecha de primera asignación</h2>
   <div class="table-container">
     <table id="asgMmTable"><thead><tr><th>Asignados Market Maker</th></tr></thead><tbody></tbody></table>
@@ -577,6 +589,27 @@ body.light #sheet-web .wchip.country { background: #dbeafe; border-color: #3b82f
   <p>Validado al lead contra el WBR el <strong>2026-09-09</strong>. Las semanas cerradas cuadran dentro de
   1&ndash;2%; las dos más recientes se desvían porque la prioridad de Inmo es un snapshot que se sigue
   reescribiendo. Solo Colombia.</p>
+  <button type="button" class="close-btn" onclick="this.closest('dialog').close()">Cerrar</button>
+</dialog>
+
+<dialog id="helpAsgTotal" class="help-dialog">
+  <h3>Asignados totales</h3>
+  <p>La definición del WBR mart <strong>menos los cuatro filtros de calificación para Market Maker</strong>.
+  Cuenta cuántos leads se asignaron, calificaran o no.</p>
+  <p><strong>No sale del mart</strong>, y no podría: el mart es una tabla materializada con sus 16 filtros ya
+  aplicados, así que no se le puede «quitar» uno. La lógica se reconstruye desde
+  <code>papyrus-data.habi_wh_bi.tabla_inmuebles_general</code> por
+  <code>fecha_primer_asignacion</code> — el mismo universo «ever-asignado» que usa el tablero
+  <em>Asignados · Mart vs Ever-asignado</em>, donde ya está validado contra el mart.</p>
+  <p><strong>Se conserva:</strong> la primera asignación de cada nid (implícita en
+  <code>fecha_primer_asignacion</code>), el correo del comercial con «habi.», y las 6 fuentes de marketing.
+  <strong>Se quita:</strong> el estado del deal, <code>check_a_pricing</code>,
+  <code>calificacion_del_lead_v2</code> y el descarte a inmobiliaria.</p>
+  <p>⚠️ <strong>Este número no es citable en el WBR ni en el OKR.</strong> Ahí se reporta el mart. Este sirve
+  para dimensionar la operación de asignación completa; si se usa como si fuera el indicador oficial, infla
+  entre 27% y 35%.</p>
+  <p>Medido 2026-09-10 (CO): abr 7.860 vs 5.080 · may 8.108 vs 5.250 · jun 6.284 vs 4.469 ·
+  jul 7.262 vs 5.147 · ago 7.675 vs 5.398.</p>
   <button type="button" class="close-btn" onclick="this.closest('dialog').close()">Cerrar</button>
 </dialog>
 
@@ -1318,7 +1351,8 @@ const BUYBOX_RANK = { states: [] };
 let INMO_DESCLAS_DATA = [];
 let FLOW_DATA = [];
 let ASG_MM_DATA = [];     // asg_mm.json   — Asignados Market Maker (hoja Asignación)
-let ASG_INMO_DATA = [];   // asg_inmo.json — Asignados Inmobiliaria (hoja Asignación)
+let ASG_INMO_DATA = [];   // asg_inmo.json  — Asignados Inmobiliaria (hoja Asignación)
+let ASG_TOTAL_DATA = [];  // asg_total.json — Asignados totales, sin filtro de calificación MM
 
 function themeColors() {
   const s = getComputedStyle(document.body);
@@ -1945,7 +1979,7 @@ const FLOW_TONES = { accent:'#818cf8', ok:'#34d399', sky:'#38bdf8', warn:'#fbbf2
 // queden alineadas aunque uno tenga un período que el otro no.
 function asgPeriodos(gran, country) {
   const ps = new Set();
-  [ASG_MM_DATA, ASG_INMO_DATA].forEach(ds =>
+  [ASG_MM_DATA, ASG_INMO_DATA, ASG_TOTAL_DATA].forEach(ds =>
     ds.forEach(r => { if (r.g === gran && r.c === country) ps.add(r.p); }));
   return [...ps].sort().slice(-20);
 }
@@ -2025,6 +2059,18 @@ function renderAsgMm() {
       tb += asgTotalRow("Asignados Inmobiliaria (prioridad A + B)", "helpAsgOfInmo", inmoOf);
       tb += asgPctRow("└ de los cuales, directo a Inmo (sin pasar por MM)", "helpAsgDirecto", inmoDir, inmoOf);
       ofB.innerHTML = tb;
+    }
+  }
+
+  // ── Tabla 1b: asignados totales, una sola fila ──
+  const toH = document.querySelector('#asgTotalTable thead tr');
+  const toB = document.querySelector('#asgTotalTable tbody');
+  if (toH && toB) {
+    if (!periodos.length) { asgVacia(toH, toB, 'Asignados totales', country); }
+    else {
+      asgHead(toH, 'Asignados totales', 'helpAsgTotal', periodos, gran);
+      toB.innerHTML = asgTotalRow('Asignados totales (sin filtro de calificación MM)',
+        'helpAsgTotal', asgSerie(ASG_TOTAL_DATA, gran, country, periodos, 'asg'));
     }
   }
 
@@ -2858,8 +2904,9 @@ Promise.all([
   fetch('inmo_desclas_states.json').then(r => r.json()).catch(() => []),
   fetch('flujo_asignacion.json').then(r => r.json()).catch(() => []),
   fetch('asg_mm.json').then(r => r.json()).catch(() => []),
-  fetch('asg_inmo.json').then(r => r.json()).catch(() => [])
-]).then(([data, antifunnel, mmSinInmo, mmDesclas, inmoDesclas, flow, asgMm, asgInmo]) => {
+  fetch('asg_inmo.json').then(r => r.json()).catch(() => []),
+  fetch('asg_total.json').then(r => r.json()).catch(() => [])
+]).then(([data, antifunnel, mmSinInmo, mmDesclas, inmoDesclas, flow, asgMm, asgInmo, asgTotal]) => {
   RAW_DATA = data;
   ANTIFUNNEL_DATA = antifunnel;
   MM_SIN_INMO_DATA = mmSinInmo;
@@ -2868,6 +2915,7 @@ Promise.all([
   FLOW_DATA = flow;
   ASG_MM_DATA = asgMm;
   ASG_INMO_DATA = asgInmo;
+  ASG_TOTAL_DATA = asgTotal;
   buildLabelCache();
   buildFuenteCheckboxes();
   document.getElementById('lastUpdate').textContent = `Datos al ${new Date().toLocaleString('es-CO')}`;
