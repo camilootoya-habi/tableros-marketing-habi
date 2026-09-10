@@ -539,6 +539,12 @@ body.light #sheet-web .wchip.country { background: #dbeafe; border-color: #3b82f
     Cuadra <strong>exacto</strong> contra el WBR en las 7 semanas verificadas. Solo Colombia por ahora.
   </p>
 
+  <div class="quality-charts cols-3">
+    <div class="qc-card"><div class="qc-title">Asignados Market Maker<br>(mart WBR)</div><div class="qc-wrap"><canvas id="qcAsgOfMm"></canvas></div></div>
+    <div class="qc-card"><div class="qc-title">Asignados Inmobiliaria<br>(prioridad A + B)</div><div class="qc-wrap"><canvas id="qcAsgOfInmo"></canvas></div></div>
+    <div class="qc-card"><div class="qc-title">% Directo a Inmo<br>(sin pasar por MM / Asignados Inmo)</div><div class="qc-wrap"><canvas id="qcAsgOfDirecto"></canvas></div></div>
+  </div>
+
   <h2 class="section-heading">Asignados totales</h2>
   <div class="table-container">
     <table id="asgTotalTable"><thead><tr><th>Asignados totales</th></tr></thead><tbody></tbody></table>
@@ -552,6 +558,13 @@ body.light #sheet-web .wchip.country { background: #dbeafe; border-color: #3b82f
     Inmo del dato, así que un total hacia atrás mediría otra cosa (ver el <code>?</code>).
     No es citable en el WBR ni en el OKR: ahí se reporta el mart. Referencia (jul-26): 7.104 contra 5.147.
   </p>
+
+  <div class="quality-charts cols-4">
+    <div class="qc-card"><div class="qc-title">Asignados totales<br>(calificados MM o Inmo)</div><div class="qc-wrap"><canvas id="qcAsgTotal"></canvas></div></div>
+    <div class="qc-card"><div class="qc-title">% Exclusivo Market Maker<br>(/ Asignados totales)</div><div class="qc-wrap"><canvas id="qcAsgSoloMm"></canvas></div></div>
+    <div class="qc-card"><div class="qc-title">% Exclusivo Inmobiliaria<br>(/ Asignados totales)</div><div class="qc-wrap"><canvas id="qcAsgSoloInmo"></canvas></div></div>
+    <div class="qc-card"><div class="qc-title">% Ambos productos<br>(/ Asignados totales)</div><div class="qc-wrap"><canvas id="qcAsgAmbos"></canvas></div></div>
+  </div>
 
   <h2 class="section-heading">Asignados Market Maker — por fecha de primera asignación</h2>
   <div class="table-container">
@@ -2052,6 +2065,12 @@ function asgPctRow(label, helpId, valores, denoms) {
   return `<tr class="row-stage">${helpCell(helpId)}<td>${label}</td>${celdas}</tr>`;
 }
 
+// Serie de % para las gráficas, conservando el null donde no hay dato: Chart.js dibuja
+// un hueco y no una caída a cero, que es lo que hay que ver en los períodos sin fuente.
+function asgPctSerie(valores, denoms) {
+  return valores.map((v, i) => (v === null || !denoms[i]) ? null : v / denoms[i] * 100);
+}
+
 function asgVacia(thead, tbody, etiqueta, country) {
   thead.innerHTML = `<th></th><th>${etiqueta}</th>`;
   tbody.innerHTML = `<tr><td colspan="3" style="text-align:center;padding:40px;color:#64748b">`
@@ -2076,6 +2095,12 @@ function renderAsgMm() {
       tb += asgTotalRow("Asignados Inmobiliaria (prioridad A + B)", "helpAsgOfInmo", inmoOf);
       tb += asgPctRow("└ de los cuales, directo a Inmo (sin pasar por MM)", "helpAsgDirecto", inmoDir, inmoOf);
       ofB.innerHTML = tb;
+
+      // Gráficas de las filas de ESTA tabla, mismo patrón que la hoja de Calificación.
+      const et = periodos.map(p => formatPeriod(p, gran));
+      otpChart('qcAsgOfMm',      'Asignados MM',   '#34d399', mmOf,   et, false);
+      otpChart('qcAsgOfInmo',    'Asignados Inmo', '#60a5fa', inmoOf, et, false);
+      otpChart('qcAsgOfDirecto', '% Directo Inmo', '#fbbf24', asgPctSerie(inmoDir, inmoOf), et, true);
     }
   }
 
@@ -2095,6 +2120,12 @@ function renderAsgMm() {
       tb += asgPctRow('Calificados exclusivamente para Inmo', null, sInmo, tot);
       tb += asgPctRow('Calificados para ambos productos', null, ambos, tot);
       toB.innerHTML = tb;
+
+      const et = periodos.map(p => formatPeriod(p, gran));
+      otpChart('qcAsgTotal',    'Asignados totales', '#818cf8', tot, et, false);
+      otpChart('qcAsgSoloMm',   '% Exclusivo MM',    '#34d399', asgPctSerie(sMm,   tot), et, true);
+      otpChart('qcAsgSoloInmo', '% Exclusivo Inmo',  '#60a5fa', asgPctSerie(sInmo, tot), et, true);
+      otpChart('qcAsgAmbos',    '% Ambos',           '#c084fc', asgPctSerie(ambos, tot), et, true);
     }
   }
 
