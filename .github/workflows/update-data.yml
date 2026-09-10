@@ -228,14 +228,16 @@ jobs:
             --maximum_bytes_billed=15000000000 \
             < marketing-sellers/asg_inmo.sql > marketing-sellers/asg_inmo.json
 
-      # Hoja "Asignación de leads": asignados totales, sin el filtro de calificación MM.
-      # No cruza `hubspot.historical`, así que no necesita el tope alto de las dos de
-      # arriba: la reconstrucción sobre `tabla_inmuebles_general` + el mart pesa ~4 GB.
+      # Hoja "Asignación de leads": asignados totales y su reparto por producto
+      # (exclusivo MM / exclusivo Inmo / ambos, desde product_qualified).
+      # Cruza `hubspot.historical`, clusterizada por `propiedad`, así que el tope va alto
+      # por la misma razón que las dos de arriba: la estimación previa de BigQuery ignora
+      # el pruning del clustering. Factura real: 1,50 GB.
       - name: Query Asignados totales (CO)
         if: always()
         run: |
           bq query --use_legacy_sql=false --format=json --max_rows=200000 \
-            --maximum_bytes_billed=10000000000 \
+            --maximum_bytes_billed=60000000000 \
             < marketing-sellers/asg_total.sql > marketing-sellers/asg_total.json
 
       - name: Query MM-sin-Inmo states (CO + MX)
