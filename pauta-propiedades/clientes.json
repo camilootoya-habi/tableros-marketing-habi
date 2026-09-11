@@ -1,12 +1,12 @@
 {
-  "actualizado": "2026-08-07",
+  "actualizado": "2026-09-11",
   "ads_activos_objetivo": 20,
   "min_usd_por_ad": 1,
   "presupuesto_evento_default": 20,
   "min_usd_por_ad_evento": 4,
   "clientes": [
-    { "cliente_id": "12917", "nombre": "MINT Inmobiliaria", "presupuesto_diario": 20, "presupuesto_evento": 20, "activo": true },
-    { "cliente_id": "11", "nombre": "Cataño México", "presupuesto_diario": 20, "presupuesto_evento": 20, "activo": true },
+    { "cliente_id": "12917", "nombre": "MINT Inmobiliaria", "presupuesto_diario": 20, "presupuesto_evento": 20, "activo": false },
+    { "cliente_id": "11", "nombre": "Cataño México", "presupuesto_diario": 20, "presupuesto_evento": 20, "activo": false },
     { "cliente_id": "11826", "nombre": "Cattori Inmobiliaria", "presupuesto_diario": 20, "presupuesto_evento": 20, "activo": true },
     { "cliente_id": "1972496", "nombre": "Pulppo", "presupuesto_diario": 0, "presupuesto_evento": 20, "activo": true }
   ]
