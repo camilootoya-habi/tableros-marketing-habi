@@ -1,0 +1,8 @@
+{
+  "title": "Salud de marca",
+  "description": "Salud de marca mes a mes: percepción (Brand Lift, exit poll), búsqueda (Trends, Search Console) y demanda (tráfico home y formulario, pauta vs orgánico).",
+  "country": "MX & CO",
+  "section": "dashboard",
+  "order": 20,
+  "maximum_bytes_billed": 20000000000
+}
