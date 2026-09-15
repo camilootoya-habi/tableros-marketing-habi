@@ -10,6 +10,7 @@ import os
 import contract
 import sources_bq as BQ
 import sources_brand_lift as BL
+import sources_pulso as PULSO
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 
@@ -20,6 +21,16 @@ def collect_exit_poll():
 
 def collect_traffic():
     return BQ.traffic_series(BQ.run_query("queries/trafico_plazas.sql"))
+
+
+def collect_encuestador():
+    """Serie de Pulso Inmobiliario, por su API pública de agregados.
+
+    Una llamada HTTP sin credenciales: ese endpoint solo devuelve conteos, así
+    que el tablero no necesita (ni debe tener) acceso a la base de la encuesta.
+    Hoy hay una sola ola; `series()` ya devuelve lista para que las siguientes
+    se acumulen sin tocar esto."""
+    return PULSO.series([PULSO.fetch()])
 
 
 def _refresco_reciente(last_refresh, now):
@@ -113,13 +124,13 @@ def collect_brand_lift(country, now):
     return contract.metric("ok", source="api", series=series, last_updated=now)
 
 
-def _try(fn, *a):
+def _try(fn, *a, source="bq"):
     """Envoltura genérica para drivers de dos estados (éxito con serie / excepción → error).
     Brand Lift tiene un tercer estado (stale) que depende del resultado de `fetch()`, no de
     una excepción, así que `collect_brand_lift` ya devuelve su propio metric y se aísla aparte
     en `_try_brand_lift` (misma garantía de aislamiento, forma distinta)."""
     try:
-        return contract.metric("ok", source="bq", series=fn(*a)), None
+        return contract.metric("ok", source=source, series=fn(*a)), None
     except Exception as e:
         print(f"WARN {fn.__name__}: {e}")
         return contract.metric("error", reason=f"{type(e).__name__}: {e}"), e
@@ -136,10 +147,13 @@ def _try_brand_lift(country, now):
 def collect(now):
     exit_poll_mx, _ = _try(collect_exit_poll)
     traffic_mx, _ = _try(collect_traffic)
+    encuestador_mx, _ = _try(collect_encuestador, source="pulso")
     if exit_poll_mx["status"] == "ok":
         exit_poll_mx["last_updated"] = now
     if traffic_mx["status"] == "ok":
         traffic_mx["last_updated"] = now
+    if encuestador_mx["status"] == "ok":
+        encuestador_mx["last_updated"] = now
 
     metrics = {
         "brand_lift": {c: _try_brand_lift(c, now) for c in ("MX", "CO")},
@@ -149,9 +163,9 @@ def collect(now):
         "exit_poll": {"MX": exit_poll_mx,
                       "CO": contract.metric("not_available",
                                             reason=contract.NOT_AVAILABLE[("exit_poll", "CO")])},
-        "encuestador": {c: contract.metric("not_available", planned=True,
-                                           reason=contract.NOT_AVAILABLE[("encuestador", c)])
-                        for c in ("MX", "CO")},
+        "encuestador": {"MX": encuestador_mx,
+                        "CO": contract.metric("not_available", planned=True,
+                                              reason=contract.NOT_AVAILABLE[("encuestador", "CO")])},
     }
     return contract.envelope(metrics, now)
 
