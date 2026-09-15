@@ -273,3 +273,42 @@ def test_el_dia_del_cierre_ya_no_es_parcial():
     s = build.marca_parciales([{"month": "2026-07", "end_time": "2026-08-01T06:59:59+0000"}],
                               now="2026-08-01T12:00:00Z")
     assert s[0]["parcial"] is False
+
+
+# ── Agente encuestador (Pulso Inmobiliario) ───────────────────────────────────
+
+def _stubs(monkeypatch):
+    """Los otros tres drivers, neutralizados, para aislar el del encuestador."""
+    monkeypatch.setattr(build, "collect_exit_poll", lambda: [])
+    monkeypatch.setattr(build, "collect_traffic", lambda: [])
+    monkeypatch.setattr(build, "collect_brand_lift", lambda c, now: contract.metric("ok", source="api", series=[]))
+
+
+def test_el_encuestador_de_mx_sale_ok_con_la_serie_de_pulso(monkeypatch):
+    _stubs(monkeypatch)
+    monkeypatch.setattr(build, "collect_encuestador",
+                        lambda: [{"wave": "2026Q3", "respuestas": 72, "asistida_pct": 56}])
+    m = build.collect(now="2026-09-15T21:00:00Z")["metrics"]["encuestador"]["MX"]
+    assert m["status"] == "ok"
+    assert m["series"][0]["asistida_pct"] == 56
+    assert m["source"] == "pulso"   # no "api": en este tablero "api" ya significa Meta
+    assert "planned" not in m
+
+
+def test_si_pulso_no_responde_el_encuestador_queda_en_error_sin_tumbar_el_resto(monkeypatch):
+    _stubs(monkeypatch)
+    monkeypatch.setattr(build, "collect_encuestador",
+                        lambda: (_ for _ in ()).throw(RuntimeError("pulso caído")))
+    d = build.collect(now="2026-09-15T21:00:00Z")
+    assert d["metrics"]["encuestador"]["MX"]["status"] == "error"
+    assert "pulso caído" in d["metrics"]["encuestador"]["MX"]["reason"]
+    assert d["metrics"]["brand_lift"]["MX"]["status"] == "ok"
+
+
+def test_colombia_sigue_sin_encuestador_y_dice_por_que(monkeypatch):
+    """Pulso solo corre en México: la línea de WhatsApp y la base son de MX."""
+    _stubs(monkeypatch)
+    monkeypatch.setattr(build, "collect_encuestador", lambda: [])
+    co = build.collect(now="2026-09-15T21:00:00Z")["metrics"]["encuestador"]["CO"]
+    assert co["status"] == "not_available"
+    assert co["reason"]

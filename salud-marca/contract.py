@@ -18,14 +18,18 @@ NOT_AVAILABLE = {
         "`tabla_inmueble_v2` para recuperar la fecha real del registro. "
         "Para encender este indicador en CO hay que volver a capturar la pregunta en el "
         "formulario, no escribir una query."),
-    # El encuestador todavía no existe: es un agente que contactará gente por WhatsApp para
-    # preguntarle por la marca mes a mes. Se declara igual, con su razón, porque un indicador
-    # planeado que no aparece en ninguna parte es un indicador que nadie construye. La
-    # infraestructura de envío y de captura de respuestas ya existe (Infobip + WABA MX/CO en
-    # `marketing-loop-sellers`); lo que falta es el instrumento y, sobre todo, definir a quién
-    # se encuesta.
-    ("encuestador", "MX"): "El agente encuestador todavía no existe. Falta definir el universo: no hay base de teléfonos de la audiencia de propiedades.com, y encuestar solo a leads de Habi sesga la pregunta de reconocimiento.",
-    ("encuestador", "CO"): "El agente encuestador todavía no existe. Falta definir el universo: no hay base de teléfonos de la audiencia de propiedades.com, y encuestar solo a leads de Habi sesga la pregunta de reconocimiento.",
+    # El encuestador YA existe: es Pulso Inmobiliario (repo `pulso-inmobiliario`), que desde
+    # sep-2026 encuesta por WhatsApp y por un agente de voz a dueños que publican vivienda en
+    # propiedades.com. Resolvió justo lo que antes lo bloqueaba: el universo. La base es la de
+    # propiedades.com, no leads de Habi, así que la pregunta de reconocimiento no queda sesgada.
+    # MX se sirve desde su API pública de agregados (ver sources_pulso.py). CO no: la línea de
+    # WhatsApp, la base de teléfonos y el cuestionario son de México.
+    #
+    # Ojo con lo que cubre: de las tres preguntas que promete este indicador, Pulso responde dos
+    # (¿nos conocen? y ¿con qué atributo nos relacionan?) y agrega el embudo de consideración.
+    # La tercera — si nos ven como comprador directo, como inmobiliaria o como varias cosas — NO
+    # está en el cuestionario todavía.
+("encuestador", "CO"): "Pulso Inmobiliario, el agente encuestador, corre solo en México: la línea de WhatsApp, la base de teléfonos de propiedades.com y el cuestionario (marcas mexicanas) son de MX. Para encender CO hay que abrir una ola con marcas colombianas sobre la WABA de CO, que ya existe en `marketing-loop-sellers`.",
 }
 
 

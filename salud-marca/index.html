@@ -130,6 +130,23 @@
   .empty-metric .icon { font-size: 22px; color: var(--text-muted-3); display: block; margin-bottom: 8px; }
   .empty-metric strong { display: block; font-size: 13.5px; color: var(--text-muted); margin-bottom: 8px; }
   .empty-metric p { font-size: 12.5px; color: var(--text-muted-3); line-height: 1.65; max-width: 620px; margin: 0 auto; }
+
+  /* Agente encuestador (Pulso): una ola es un corte, se dibuja con barras HTML
+     y no con Chart.js — un solo punto no es una serie. */
+  .pulso-fila { display: grid; grid-template-columns: minmax(120px, 34%) 1fr 44px; align-items: center; gap: 10px; margin: 9px 0 0; }
+  .pulso-label { font-size: 12.5px; color: var(--text-muted); line-height: 1.35; }
+  .pulso-riel { height: 9px; background: var(--row-border); border-radius: 999px; overflow: hidden; }
+  .pulso-barra { height: 100%; border-radius: 999px; }
+  .pulso-pct { font-size: 12.5px; font-weight: 700; text-align: right; color: var(--text-muted); font-variant-numeric: tabular-nums; }
+  .pulso-nota { font-size: 11px; color: var(--text-muted-3); line-height: 1.5; margin: 3px 0 0; padding-left: calc(34% + 10px); }
+  .pulso-lista { list-style: decimal inside; margin: 8px 0 0; padding: 0; font-size: 12.5px; color: var(--text-muted); }
+  .pulso-lista li { display: flex; justify-content: space-between; gap: 10px; padding: 5px 0; border-bottom: 1px solid var(--row-border); }
+  .pulso-lista li b { font-variant-numeric: tabular-nums; color: var(--text-muted-2); }
+  @media (max-width: 560px) {
+    .pulso-fila { grid-template-columns: 1fr 44px; }
+    .pulso-riel { grid-column: 1 / -1; }
+    .pulso-nota { padding-left: 0; }
+  }
 </style>
 <script>
   function toggleTheme() {
@@ -408,7 +425,7 @@ function renderMetric(host, metric, drawFn) {
 }
 
 const srcTag = m => (m && m.source)
-  ? `<span class="src">fuente: ${{ bq: 'BigQuery', api: 'Meta API', cache: 'caché en repo' }[m.source] || m.source}</span>` : '';
+  ? `<span class="src">fuente: ${{ bq: 'BigQuery', api: 'Meta API', cache: 'caché en repo', pulso: 'Pulso Inmobiliario (API pública)' }[m.source] || m.source}</span>` : '';
 
 // ── Brand Lift ────────────────────────────────────────────────────────────────
 // TOMA va primero en los dos países: es el indicador de marca por excelencia —cuánta gente nos
@@ -531,6 +548,65 @@ const porPlaza = (serie, campo) => {
   return Object.values(acc).sort((x, y) => x.month.localeCompare(y.month))
     .map(a => ({ ...a }));
 };
+
+// ── Agente encuestador (Pulso Inmobiliario) ──────────────────────────────────
+// Una ola es un corte, no una serie: hoy hay una sola y dibujar una línea de un punto
+// mentiría sobre la tendencia. Se pinta el corte más reciente y se dice de qué ola es.
+// Cuando haya varias olas, el selector de abajo deja comparar sin tocar esto.
+const BARRA = (label, pct, color, nota, valor) => `
+  <div class="pulso-fila">
+    <div class="pulso-label">${label}</div>
+    <div class="pulso-riel"><div class="pulso-barra" style="width:${Math.max(pct, 1)}%;background:${color}"></div></div>
+    <div class="pulso-pct">${valor === undefined ? pct + '%' : valor}</div>
+  </div>${nota ? `<div class="pulso-nota">${nota}</div>` : ''}`;
+
+function drawEncuestador(host, serie) {
+  if (!serie.length) {
+    host.innerHTML = `<div class="empty-metric"><span class="icon">—</span>
+      <strong>Sin olas publicadas</strong><p>Pulso respondió, pero todavía no hay ninguna ola con respuestas.</p></div>`;
+    return;
+  }
+  const r = serie[serie.length - 1];
+  const otras = serie.length > 1 ? ` · ${serie.length} olas, se muestra la última` : '';
+  const comp = (r.competencia || []).slice().sort((a, b) => b.asistida_pct - a.asistida_pct);
+  const esp = r.espontanea || [];
+  const attr = r.atributos || [];
+
+  host.innerHTML = `<div class="charts-grid">
+    <div class="panel">
+      <h3>¿Nos conocen? El embudo de TuHabi</h3>
+      <div class="cap">Ola ${r.wave}${otras} · ${r.respuestas} encuestas completas. Cada escalón se calcula sobre
+        el total de quienes completaron, no sobre el escalón anterior.</div>
+      ${BARRA('La conocen', r.asistida_pct, C.azul)}
+      ${BARRA('La considerarían', r.consideracion_pct, C.verde)}
+      ${BARRA('Sería su primera opción', r.primera_opcion_pct, C.ambar)}
+      ${BARRA('Marca inventada (piso de ruido)', r.ruido_pct, C.gris,
+        'Pulso mete una marca que no existe en la lista. Lo que marque ahí es gente diciendo que sí a todo: lee el resto de las cifras descontando este piso.')}
+    </div>
+    <div class="panel">
+      <h3>Notoriedad asistida, contra la categoría</h3>
+      <div class="cap">Quién dice conocer cada marca, aunque sea de nombre. La marca inventada de control no aparece acá: su cifra está en el panel del embudo, como piso de ruido.</div>
+      ${BARRA('TuHabi', r.asistida_pct, C.azul)}
+      ${comp.map(c => BARRA(c.marca, c.asistida_pct, C.gris)).join('')}
+      ${BARRA('No reconoció ninguna', r.ninguna_pct || 0, C.rojo,
+        'No es una marca: es quien no marcó ninguna de la lista. Se saca del ranking para que no se lea como un competidor.')}
+    </div>
+    <div class="panel">
+      <h3>Recordación espontánea</h3>
+      <div class="cap">La primera marca que se les viene a la mente, sin lista. Se transcribe tal cual:
+        Pulso agrupa por ortografía y no codifica marcas, así que una variante mal escrita aparece como su propio grupo.</div>
+      ${esp.length ? `<ol class="pulso-lista">${esp.map(e => `<li><span>${e.texto}</span><b>${e.n}</b></li>`).join('')}</ol>`
+        : '<div class="cap">Sin respuestas abiertas en esta ola.</div>'}
+    </div>
+    <div class="panel">
+      <h3>¿Con qué atributo nos relacionan?</h3>
+      <div class="cap">Promedio de acuerdo con cada frase sobre TuHabi, de 1 a 5. Base: ${r.atributos_n} personas que dijeron conocerla lo suficiente.</div>
+      ${attr.length ? attr.map(a => BARRA(a.text || a.id, Math.round(((a.avg || 0) / 5) * 100), C.cian,
+          null, a.avg == null ? '—' : a.avg.toFixed(1))).join('')
+        : '<div class="cap">Nadie dijo conocer la marca lo suficiente para calificarla en esta ola.</div>'}
+    </div>
+  </div>`;
+}
 
 function drawTraffic(host, serie) {
   const todo = porPlaza(serie);
@@ -671,9 +747,9 @@ function render() {
     ['exit_poll', 'Atribución declarada — exit poll de registro',
      'Lo que la gente dice cuando se le pregunta dónde nos conoció, al momento de registrarse. Es declarado, no medido: sirve para leer tendencia, nunca para atribuir cierres.',
      drawExitPoll],
-    ['encuestador', 'Agente encuestador de marca',
-     'Un agente que contactará gente por WhatsApp mes a mes con tres preguntas: <strong>¿nos conocen?</strong>, <strong>¿con qué atributo nos relacionan?</strong> y <strong>¿nos ven como comprador directo, como inmobiliaria o como varias cosas?</strong> Es el único indicador de este tablero que preguntaría a gente que <em>no</em> ha interactuado con nosotros — todos los demás miden sobre audiencia ya alcanzada por la pauta o ya registrada.',
-     null],
+    ['encuestador', 'Agente encuestador de marca — Pulso Inmobiliario',
+     'Encuesta por WhatsApp y por un agente de voz a dueños que publican vivienda en propiedades.com. Responde dos de las tres preguntas de este indicador: <strong>¿nos conocen?</strong> y <strong>¿con qué atributo nos relacionan?</strong>, y agrega el embudo de consideración. La tercera —<strong>¿nos ven como comprador directo, como inmobiliaria o como varias cosas?</strong>— todavía no está en el cuestionario. Es el único indicador de este tablero que le pregunta a gente que <em>no</em> ha interactuado con nosotros: todos los demás miden sobre audiencia ya alcanzada por la pauta o ya registrada.',
+     drawEncuestador],
     ['traffic', 'Tráfico por plaza',
      'Usuarios únicos que llegan al sitio, por plaza. Si la marca funciona, el tráfico sube sin que suba la inversión.',
      drawTraffic, ['Demanda', 'Cuánta gente llega al sitio. Es comportamiento, no opinión.']],
