@@ -15,6 +15,7 @@ la considerarían (Q4) y sería su primera opción (Q5), más los atributos (Q7)
 y el ranking de recordación espontánea (Q1).
 """
 import json
+import urllib.parse
 import urllib.request
 
 API = "https://pulso-inmobiliario.vercel.app/api/resultados"
@@ -32,9 +33,22 @@ NINGUNA = "ninguna"
 MAX_ESPONTANEA = 10
 
 
-def fetch(wave=None, url=API, timeout=30):
-    """Agregados de una ola. Sin `wave`, la ola activa. Lanza si la API falla."""
-    destino = f"{url}?wave={wave}" if wave else url
+#: La encuesta se manda a dos públicos: dueños que publican su vivienda y
+#: agentes inmobiliarios independientes. La salud de marca se mide sobre los
+#: dueños, que son el cliente de TuHabi. Sin pedir audiencia la API devuelve
+#: los dos mezclados, así que aquí siempre se pide una.
+AUDIENCIA = "owner"
+
+
+def fetch(wave=None, url=API, timeout=30, audiencia=AUDIENCIA):
+    """Agregados de una ola y un público. Sin `wave`, la ola activa.
+
+    Lanza si la API falla.
+    """
+    params = {"audience": audiencia}
+    if wave:
+        params["wave"] = wave
+    destino = f"{url}?{urllib.parse.urlencode(params)}"
     with urllib.request.urlopen(destino, timeout=timeout) as r:
         return json.load(r)
 
@@ -73,6 +87,7 @@ def fila(payload):
     atributos, atributos_n = _atributos(payload.get("q7"))
     totals = payload.get("totals") or {}
     return {
+        "audiencia": payload.get("audience"),
         "wave": payload.get("wave_id"),
         "respuestas": totals.get("completed", 0),
         "asistida_pct": _pct(payload.get("q3"), FOCAL),

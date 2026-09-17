@@ -114,3 +114,68 @@ def test_la_serie_nunca_arrastra_datos_de_personas():
     # Como claves JSON: "uid" a secas daría un falso positivo con "ruido_pct".
     for prohibido in ('"utm_name"', '"utm_phone"', '"telefono"', '"uid"', '"ip_hash"'):
         assert prohibido not in crudo
+
+
+# ---------------------------------------------------------------------------
+# Audiencia: la encuesta se manda a dueños y a agentes inmobiliarios, y la
+# salud de marca se mide sobre los dueños, que son el cliente de TuHabi.
+# Sin pedir audiencia la API devuelve los dos públicos mezclados.
+# ---------------------------------------------------------------------------
+
+
+class _Respuesta:
+    def __init__(self, cuerpo):
+        self._cuerpo = cuerpo
+
+    def read(self):
+        return self._cuerpo
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *a):
+        return False
+
+
+def _espiar_urlopen(cuerpo=b'{"wave_id":"X","audience":"owner","totals":{"completed":1}}'):
+    pedidos = []
+    original = P.urllib.request.urlopen
+
+    def falso(destino, timeout=None):
+        pedidos.append(destino)
+        return _Respuesta(cuerpo)
+
+    P.urllib.request.urlopen = falso
+    return pedidos, original
+
+
+def test_fetch_pide_solo_la_audiencia_de_duenos_por_defecto():
+    pedidos, original = _espiar_urlopen()
+    try:
+        P.fetch()
+    finally:
+        P.urllib.request.urlopen = original
+    assert "audience=owner" in pedidos[0]
+
+
+def test_fetch_puede_pedir_la_audiencia_de_agentes():
+    pedidos, original = _espiar_urlopen()
+    try:
+        P.fetch(audiencia="broker")
+    finally:
+        P.urllib.request.urlopen = original
+    assert "audience=broker" in pedidos[0]
+
+
+def test_fetch_combina_ola_y_audiencia_en_la_misma_url():
+    pedidos, original = _espiar_urlopen()
+    try:
+        P.fetch(wave="2026Q3")
+    finally:
+        P.urllib.request.urlopen = original
+    assert "wave=2026Q3" in pedidos[0] and "audience=owner" in pedidos[0]
+
+
+def test_la_fila_deja_dicho_de_que_publico_es():
+    f = P.fila({**PAYLOAD, "audience": "owner"})
+    assert f["audiencia"] == "owner"
