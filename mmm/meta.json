@@ -1,0 +1,10 @@
+{
+  "title": "Marketing Mix Model",
+  "description": "Incrementalidad de la pauta sobre leads calificados, CO y MX. Contribución por canal, ROI marginal con intervalos de credibilidad, adstock, saturación y simulador de reasignación de presupuesto. Modelo bayesiano (Google Meridian) sobre ~5 años de serie semanal. Última corrida del modelo: 2026-09-21.",
+  "country": "CO & MX",
+  "section": "dashboard",
+  "tab": "performance",
+  "order": 140,
+  "skip_hub_cron": true,
+  "featured": false
+}

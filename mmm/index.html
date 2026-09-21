@@ -1,0 +1,487 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📈</text></svg>">
+<title>Marketing Mix Model</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<style>
+  :root {
+    --bg: #0f172a; --card: #1e293b; --card-hover: #263348;
+    --border: #334155; --border-strong: #4b5563; --row-border: #283548;
+    --text: #e2e8f0; --text-title: #f8fafc;
+    --text-muted: #cbd5e1; --text-muted-2: #94a3b8; --text-muted-3: #64748b;
+    --accent: #818cf8; --accent-on: #f8fafc;
+    --warn-bg: #422006; --warn-border: #854d0e; --warn-text: #fde68a;
+    --good: #4ade80; --bad: #f87171;
+  }
+  body.light {
+    --bg: #f5f7fa; --card: #ffffff; --card-hover: #f1f5f9;
+    --border: #e2e8f0; --border-strong: #cbd5e1; --row-border: #f1f5f9;
+    --text: #334155; --text-title: #0f172a;
+    --text-muted: #475569; --text-muted-2: #64748b; --text-muted-3: #94a3b8;
+    --accent: #6366f1; --accent-on: #ffffff;
+    --warn-bg: #fefce8; --warn-border: #fde047; --warn-text: #854d0e;
+    --good: #16a34a; --bad: #dc2626;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; background: var(--bg); color: var(--text); padding: 24px; transition: background .2s, color .2s; }
+  @media (max-width: 640px) { body { padding: 16px; } }
+
+  .back-link { display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; background: var(--card); border: 1px solid var(--border); border-radius: 6px; color: var(--text-muted-2); text-decoration: none; font-size: 13px; margin-bottom: 16px; }
+  .back-link:hover { color: var(--accent); border-color: var(--accent); }
+
+  .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; flex-wrap: wrap; gap: 12px; }
+  .header h1 { font-size: 22px; font-weight: 600; color: var(--text-title); }
+  .header h1 span { color: var(--accent); }
+  .controls { display: flex; gap: 8px; align-items: center; }
+  .theme-btn, .pais-btn { background: var(--card); border: 1px solid var(--border); color: var(--text-muted-2); border-radius: 6px; padding: 5px 12px; font-size: 13px; cursor: pointer; }
+  .pais-btn.on { background: var(--accent); color: var(--accent-on); border-color: var(--accent); font-weight: 600; }
+  .theme-btn:hover, .pais-btn:hover { background: var(--card-hover); }
+  .pais-btn.on:hover { background: var(--accent); }
+
+  .sub { color: var(--text-muted-3); font-size: 12.5px; margin-bottom: 16px; }
+
+  .warn { background: var(--warn-bg); border: 1px solid var(--warn-border); color: var(--warn-text); border-radius: 8px; padding: 11px 14px; font-size: 12.5px; line-height: 1.55; margin-bottom: 14px; }
+  .warn b { display: block; margin-bottom: 4px; }
+  .warn ul { margin: 0; padding-left: 18px; }
+  .warn li + li { margin-top: 5px; }
+
+  .kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; margin-bottom: 16px; }
+  .kpi { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 13px 15px; }
+  .kpi .l { font-size: 11px; text-transform: uppercase; letter-spacing: .5px; color: var(--text-muted-3); margin-bottom: 6px; }
+  .kpi .v { font-size: 23px; font-weight: 600; color: var(--text-title); }
+  .kpi .n { font-size: 11.5px; color: var(--text-muted-3); margin-top: 3px; }
+
+  .table-container { background: var(--card); border-radius: 10px; border: 1px solid var(--border); overflow-x: auto; margin-bottom: 16px; }
+  table { width: 100%; border-collapse: separate; border-spacing: 0; font-size: 13px; }
+  thead th { background: var(--border); color: var(--text-muted-2); font-weight: 600; text-transform: uppercase; font-size: 11px; letter-spacing: .5px; padding: 11px 14px; text-align: left; white-space: nowrap; }
+  th.num, td.num { text-align: right; }
+  tbody td { padding: 10px 14px; border-top: 1px solid var(--row-border); white-space: nowrap; }
+  tbody tr:hover td { background: var(--card-hover); }
+  tr.opaco td { opacity: .5; }
+  .ci { color: var(--text-muted-3); font-size: 11.5px; }
+  .tag { font-size: 10px; text-transform: uppercase; letter-spacing: .4px; border: 1px solid var(--warn-border); color: var(--warn-text); background: var(--warn-bg); border-radius: 4px; padding: 1px 5px; margin-left: 6px; }
+
+  h2 { font-size: 14px; color: var(--text-title); margin: 22px 0 10px; font-weight: 700; }
+  h2 small { font-weight: 400; color: var(--text-muted-3); font-size: 12px; margin-left: 8px; }
+
+  .charts-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 14px; }
+  .panel { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 14px 15px 12px; }
+  .panel h3 { font-size: 12.5px; color: var(--text-title); font-weight: 700; margin-bottom: 4px; }
+  .panel p.h { font-size: 11.5px; color: var(--text-muted-3); margin-bottom: 10px; line-height: 1.45; }
+  .ch { position: relative; height: 210px; }
+  .ch.alto { height: 260px; }
+
+  .sim { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 16px; }
+  .sim-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 14px 22px; }
+  .slider { display: grid; grid-template-columns: 1fr auto; gap: 4px 10px; align-items: center; }
+  .slider .nom { font-size: 12.5px; font-weight: 600; color: var(--text-title); text-transform: capitalize; }
+  .slider .val { font-size: 12px; color: var(--text-muted-2); font-variant-numeric: tabular-nums; }
+  .slider input { grid-column: 1 / -1; width: 100%; accent-color: var(--accent); }
+  .sim-out { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--row-border); }
+  .sim-out .v { font-size: 20px; font-weight: 600; color: var(--text-title); }
+  .delta.pos { color: var(--good); } .delta.neg { color: var(--bad); }
+  .reset { background: transparent; border: 1px solid var(--border); color: var(--text-muted-2); border-radius: 6px; padding: 4px 10px; font-size: 12px; cursor: pointer; }
+  .reset:hover { border-color: var(--accent); color: var(--accent); }
+
+  .nota { font-size: 11.5px; color: var(--text-muted-3); line-height: 1.6; margin-top: 10px; }
+  .empty-state { padding: 48px 24px; text-align: center; color: var(--text-muted-3); font-size: 14px; line-height: 1.6; }
+  .empty-state strong { display: block; font-size: 16px; margin-bottom: 8px; color: var(--text-muted-2); }
+</style>
+</head>
+<body>
+<a href="../" class="back-link">← Volver al hub</a>
+
+<div class="header">
+  <h1>Marketing Mix Model — <span id="tituloPais">Colombia</span></h1>
+  <div class="controls">
+    <button class="pais-btn on" id="btn-co" onclick="setPais('co')">CO</button>
+    <button class="pais-btn" id="btn-mx" onclick="setPais('mx')">MX</button>
+    <button class="theme-btn" id="themeToggle" onclick="toggleTheme()">🌙</button>
+  </div>
+</div>
+<div class="sub" id="sub"></div>
+
+<div id="app"></div>
+
+<script>
+function toggleTheme() {
+  const light = document.body.classList.toggle('light');
+  localStorage.setItem('tablero-theme', light ? 'light' : 'dark');
+  document.getElementById('themeToggle').textContent = light ? '☀️' : '🌙';
+  if (window._render) window._render();
+}
+if (localStorage.getItem('tablero-theme') === 'light') {
+  document.body.classList.add('light');
+  document.getElementById('themeToggle').textContent = '☀️';
+}
+
+const cssv = n => getComputedStyle(document.body).getPropertyValue(n).trim();
+const PALETA = ['#818cf8', '#34d399', '#fbbf24', '#f472b6', '#60a5fa', '#a78bfa'];
+const num = (v, d = 0) => v == null ? '—' : v.toLocaleString('es-CO', { minimumFractionDigits: d, maximumFractionDigits: d });
+const usd = v => v == null ? '—' : '$' + num(Math.round(v));
+const pct = (v, d = 1) => v == null ? '—' : (v * 100).toFixed(d) + '%';
+
+let DATA = null, PAIS = 'co', charts = [];
+
+function destruir() { charts.forEach(c => c.destroy()); charts = []; }
+
+function mkChart(id, cfg) {
+  const el = document.getElementById(id);
+  if (!el || !window.Chart) return;
+  const grid = cssv('--border'), tick = cssv('--text-muted-2');
+  cfg.options = Object.assign({
+    responsive: true, maintainAspectRatio: false,
+    interaction: { mode: 'index', intersect: false },
+    plugins: { legend: { display: false } },
+    scales: {
+      x: { ticks: { color: tick, maxTicksLimit: 8 }, grid: { display: false } },
+      y: { ticks: { color: tick }, grid: { color: grid } }
+    }
+  }, cfg.options || {});
+  charts.push(new Chart(el, cfg));
+}
+
+// Interpola en la rejilla de curvas de respuesta. Precalcularla en Python es lo que
+// permite simular aquí sin servidor: reasignar presupuesto es buscar en una tabla.
+function leadsEn(curva, gasto) {
+  if (!curva || !curva.length) return 0;
+  if (gasto <= curva[0].spend) return curva[0].leads || 0;
+  for (let i = 1; i < curva.length; i++) {
+    if (gasto <= curva[i].spend) {
+      const a = curva[i - 1], b = curva[i];
+      const t = (b.spend - a.spend) ? (gasto - a.spend) / (b.spend - a.spend) : 0;
+      return (a.leads || 0) + t * ((b.leads || 0) - (a.leads || 0));
+    }
+  }
+  return curva[curva.length - 1].leads || 0;
+}
+
+function setPais(p) {
+  PAIS = p;
+  document.getElementById('btn-co').classList.toggle('on', p === 'co');
+  document.getElementById('btn-mx').classList.toggle('on', p === 'mx');
+  document.getElementById('tituloPais').textContent = p === 'co' ? 'Colombia' : 'México';
+  render();
+}
+
+function render() {
+  destruir();
+  const d = DATA[PAIS];
+  const app = document.getElementById('app');
+  if (!d) { app.innerHTML = '<div class="table-container"><div class="empty-state"><strong>Sin datos para este país</strong></div></div>'; return; }
+
+  const canales = d.canales.filter(c => c.canal !== 'All Channels');
+  const total = d.canales.find(c => c.canal === 'All Channels');
+  document.getElementById('sub').textContent =
+    `${d.meta.semanas} semanas · ${d.meta.desde} → ${d.meta.hasta} · KPI: ${d.meta.kpi} · generado ${d.meta.generado}`;
+
+  const avisos = (d.meta.advertencias || []).map(a => `<li>${a}</li>`).join('');
+  const cpl = total && total.roi ? 1 / total.roi : null;
+
+  app.innerHTML = `
+  ${avisos ? `<div class="warn"><b>Léase antes de usar estas cifras</b><ul>${avisos}</ul></div>` : ''}
+
+  <div class="kpis">
+    <div class="kpi"><div class="l">Contribución de pauta</div><div class="v">${total ? total.contrib_pct.toFixed(1) + '%' : '—'}</div><div class="n">de los leads calificados</div></div>
+    <div class="kpi"><div class="l">Leads incrementales</div><div class="v">${total ? num(total.leads_increm) : '—'}</div><div class="n">de ${num(d.resumen.calificados_total)} totales</div></div>
+    <div class="kpi"><div class="l">Inversión</div><div class="v">${usd(d.resumen.spend_total)}</div><div class="n">acumulada en el periodo</div></div>
+    <div class="kpi"><div class="l">CPL incremental</div><div class="v">${usd(cpl)}</div><div class="n">costo del lead que no habría llegado</div></div>
+  </div>
+
+  <div class="charts-grid">
+    <div class="panel"><h3>De dónde salen los leads calificados</h3>
+      <p class="h">${total ? `<b>${(100 - total.contrib_pct).toFixed(0)}% llega sin pauta.</b>` : ''}
+      Ese es el contexto que hace honesta cualquier lectura del resto.</p>
+      <div class="ch alto"><canvas id="chWaterfall"></canvas></div></div>
+    <div class="panel"><h3>Costo por lead incremental, con intervalo del 90%</h3>
+      <p class="h">Si dos barras se solapan, el modelo <b>no puede distinguirlas</b>. La línea clara es la estimación central.</p>
+      <div class="ch alto"><canvas id="chCplCI"></canvas></div></div>
+  </div>
+
+  <h2>Por canal <small>el intervalo importa tanto como el número: si dos se solapan, no son distinguibles</small></h2>
+  <div class="table-container"><table>
+    <thead><tr>
+      <th>Canal</th><th class="num">% del gasto</th><th class="num">Contribución</th>
+      <th class="num">Leads increm.</th><th class="num">ROI (leads/USD)</th>
+      <th class="num">CPL increm.</th><th class="num">ROI marginal</th>
+    </tr></thead>
+    <tbody>${canales.map(c => `
+      <tr class="${c.interpretable ? '' : 'opaco'}">
+        <td style="text-transform:capitalize">${c.canal}${c.interpretable ? '' : '<span class="tag">no interpretable</span>'}</td>
+        <td class="num">${pct(c.peso_gasto)}</td>
+        <td class="num">${c.contrib_pct.toFixed(1)}%</td>
+        <td class="num">${num(c.leads_increm)}</td>
+        <td class="num">${c.roi.toFixed(4)}<div class="ci">${c.roi_lo.toFixed(4)} – ${c.roi_hi.toFixed(4)}</div></td>
+        <td class="num">${usd(c.cpl_increm)}</td>
+        <td class="num">${c.mroi.toFixed(4)}</td>
+      </tr>`).join('')}
+    </tbody>
+  </table></div>
+  <p class="nota"><b>ROI marginal</b> es lo que rinde el <i>próximo</i> dólar, y es el que manda para reasignar presupuesto.
+  En todos los canales es menor que el ROI promedio: ya están en rendimientos decrecientes.
+  Las filas atenuadas pesan menos del 5% del gasto — su ROI posterior es prácticamente el prior, o sea que el modelo no aprendió nada sobre ellas.</p>
+
+  <h2>Simulador de presupuesto <small>interpola las curvas de respuesta; no vuelve a ajustar el modelo</small></h2>
+  <div class="sim">
+    <div class="sim-grid" id="sliders"></div>
+    <div class="sim-out">
+      <div><div class="l" style="font-size:11px;text-transform:uppercase;color:var(--text-muted-3)">Inversión simulada</div><div class="v" id="simSpend">—</div></div>
+      <div><div class="l" style="font-size:11px;text-transform:uppercase;color:var(--text-muted-3)">Leads incrementales</div><div class="v" id="simLeads">—</div></div>
+      <div><div class="l" style="font-size:11px;text-transform:uppercase;color:var(--text-muted-3)">Contra el mix actual</div><div class="v delta" id="simDelta">—</div></div>
+      <div style="align-self:end"><button class="reset" onclick="resetSim()">Volver al mix actual</button></div>
+    </div>
+    <p class="nota">La simulación es creíble entre 0 y 2× el gasto actual de cada canal, que es el rango que el modelo vio.
+    Fuera de ahí la curva es forma funcional, no evidencia.</p>
+  </div>
+
+  <h2>Curvas de respuesta <small>cuántos leads da cada nivel de inversión — la pendiente es el ROI marginal</small></h2>
+  <div class="charts-grid">
+    <div class="panel"><h3>Respuesta por canal</h3><p class="h">Dónde se aplana la curva es donde el siguiente dólar deja de rendir.</p><div class="ch alto"><canvas id="chRespuesta"></canvas></div></div>
+    <div class="panel"><h3>Saturación (Hill)</h3><p class="h">La forma de la curva estimada por el modelo, en unidades de medio.</p><div class="ch alto"><canvas id="chSaturacion"></canvas></div></div>
+  </div>
+
+  <h2>Arrastre y ajuste</h2>
+  <div class="charts-grid">
+    <div class="panel"><h3>Adstock</h3><p class="h">Cuánto efecto de la pauta sobrevive semanas después de gastarla.</p><div class="ch"><canvas id="chAdstock"></canvas></div></div>
+    <div class="panel"><h3>Real vs. esperado</h3><p class="h">La banda es el intervalo del 90%. Lo que cae dentro no es un fallo del modelo.${
+      d.meta.cobertura_banda != null
+        ? ` <b>Cobertura real: ${pct(d.meta.cobertura_banda, 0)}</b> — ${
+            d.meta.cobertura_banda < 0.8
+              ? 'debería rondar 90%, así que el modelo subestima su propia incertidumbre y las bandas verdaderas son más anchas.'
+              : 'cerca del 90% esperado.'}`
+        : ''}</p><div class="ch"><canvas id="chSerie"></canvas></div></div>
+  </div>
+  ${d.optimo && d.optimo.por_canal && d.optimo.por_canal.length ? `
+  <h2>Reasignación óptima <small>mismo presupuesto, repartido distinto, con tope de ±${Math.round(d.optimo.limites.superior * 100)}% por canal</small></h2>
+  <div class="table-container"><table>
+    <thead><tr><th>Canal</th><th class="num">Hoy</th><th class="num">Óptimo</th><th class="num">Cambio</th></tr></thead>
+    <tbody>${d.optimo.por_canal.map(o => `
+      <tr><td style="text-transform:capitalize">${o.canal}</td>
+      <td class="num">${usd(o.actual)}</td><td class="num">${usd(o.optimo)}</td>
+      <td class="num ${o.delta_pct > 0 ? 'delta pos' : o.delta_pct < 0 ? 'delta neg' : ''}">${o.delta_pct == null ? '—' : (o.delta_pct > 0 ? '+' : '') + pct(o.delta_pct, 0)}</td></tr>`).join('')}
+    </tbody>
+  </table></div>
+  <p class="nota">Ganancia estimada: <b>${num(d.optimo.leads_optimo - d.optimo.leads_actual)} leads</b>
+  sobre ${num(d.optimo.leads_actual)} — <b>${pct((d.optimo.leads_optimo - d.optimo.leads_actual) / d.optimo.leads_actual, 2)}</b>.
+  ${(d.optimo.leads_optimo - d.optimo.leads_actual) / d.optimo.leads_actual < 0.02
+    ? 'Es decir: <b>prácticamente nada</b>. Reordenar el mix dentro de estos topes no cambia el resultado, que es lo esperable cuando los intervalos de los canales se solapan. La palanca no está en repartir distinto el mismo presupuesto.'
+    : '<b>No es una orden de compra</b>: cuando los intervalos de dos canales se solapan, mover presupuesto entre ellos es mover ruido.'}</p>` : ''}
+  `;
+
+  pintarGraficas(d, canales);
+  montarSim(d, canales);
+}
+
+function pintarGraficas(d, canales) {
+  const tick = cssv('--text-muted-2');
+  const total = d.canales.find(c => c.canal === 'All Channels');
+
+  // ── Waterfall: baseline + cada canal, apilados hasta el 100% del KPI ──────────
+  // Es la gráfica que impide leer el CPL en el vacío: primero se ve que la mayoría
+  // de los leads no vienen de pauta.
+  const baselinePct = total ? 100 - total.contrib_pct : null;
+  if (baselinePct != null) {
+    const pasos = [{ nom: 'Sin pauta', v: baselinePct, color: cssv('--text-muted-3') }]
+      .concat(canales.map((c, i) => ({ nom: c.canal, v: c.contrib_pct, color: PALETA[i % PALETA.length] })));
+    let acum = 0;
+    const barras = pasos.map(p => { const desde = acum; acum += p.v; return [desde, acum]; });
+    mkChart('chWaterfall', {
+      type: 'bar',
+      data: {
+        labels: pasos.map(p => p.nom),
+        datasets: [{ data: barras, backgroundColor: pasos.map(p => p.color), borderRadius: 3 }]
+      },
+      options: {
+        indexAxis: 'y',
+        plugins: {
+          // Sin leyenda: cada barra ya está etiquetada en el eje, y una leyenda de un
+          // solo dataset sale como "undefined".
+          legend: { display: false },
+          tooltip: { callbacks: {
+            label: c => `${pasos[c.dataIndex].v.toFixed(1)}% de los leads calificados` } } },
+        scales: {
+          x: { min: 0, max: 100, ticks: { color: tick, callback: v => v + '%' }, grid: { color: cssv('--border') } },
+          y: { ticks: { color: tick }, grid: { display: false } }
+        }
+      }
+    });
+  }
+
+  // ── CPL incremental con intervalo del 90% ────────────────────────────────────
+  // La barra ES el intervalo (CPL = 1/ROI, así que se invierte y se cruzan los
+  // extremos). El punto marca la estimación central. Solapamiento = indistinguible.
+  const conCI = canales.filter(c => c.roi_lo && c.roi_hi);
+  mkChart('chCplCI', {
+    type: 'bar',
+    data: {
+      labels: conCI.map(c => c.canal),
+      datasets: [
+        { label: 'Intervalo 90%', data: conCI.map(c => [1 / c.roi_hi, 1 / c.roi_lo]),
+          backgroundColor: conCI.map((c, i) => (c.interpretable ? PALETA[i % PALETA.length] : cssv('--text-muted-3')) + '66'),
+          borderColor: conCI.map((c, i) => c.interpretable ? PALETA[i % PALETA.length] : cssv('--text-muted-3')),
+          borderWidth: 1, borderRadius: 3, barPercentage: .6 },
+        { label: 'Estimación central', type: 'scatter',
+          data: conCI.map((c, i) => ({ x: c.cpl_increm, y: i })),
+          backgroundColor: cssv('--text-title'), pointStyle: 'line', rotation: 90,
+          radius: 11, borderWidth: 2, borderColor: cssv('--text-title') }
+      ]
+    },
+    options: {
+      indexAxis: 'y',
+      plugins: { tooltip: { callbacks: {
+        label: c => c.datasetIndex === 0
+          ? `entre ${usd(c.raw[0])} y ${usd(c.raw[1])} por lead`
+          : `central: ${usd(c.parsed.x)}` } } },
+      scales: {
+        x: { ticks: { color: tick, callback: v => '$' + v }, grid: { color: cssv('--border') },
+             title: { display: true, text: 'USD por lead incremental', color: tick, font: { size: 10 } } },
+        y: { type: 'category', labels: conCI.map(c => c.canal), ticks: { color: tick }, grid: { display: false } }
+      }
+    }
+  });
+
+  // ── Curvas de respuesta, con el gasto de hoy marcado ──────────────────────────
+  // Sin el marcador la curva es bonita pero no dice si estás en la parte empinada
+  // o en la plana, que es justo la pregunta que se le hace.
+  const dsResp = canales.map((c, i) => {
+    const curva = d.curvas[c.canal] || [];
+    return { label: c.canal, data: curva.map(p => ({ x: p.spend, y: p.leads })),
+             borderColor: PALETA[i % PALETA.length], backgroundColor: PALETA[i % PALETA.length],
+             borderWidth: 2, pointRadius: 0, tension: .25 };
+  });
+  const hoy = canales.map((c, i) => {
+    const p1 = (d.curvas[c.canal] || []).find(p => Math.abs((p.mult ?? 0) - 1) < 1e-6);
+    return p1 ? { x: p1.spend, y: p1.leads, canal: c.canal, color: PALETA[i % PALETA.length] } : null;
+  }).filter(Boolean);
+  dsResp.push({
+    label: 'Gasto de hoy', type: 'scatter', data: hoy,
+    backgroundColor: hoy.map(p => p.color), borderColor: cssv('--text-title'),
+    borderWidth: 2, radius: 6, hoverRadius: 8
+  });
+
+  mkChart('chRespuesta', {
+    type: 'line', data: { datasets: dsResp },
+    options: {
+      plugins: {
+        legend: { display: true, labels: { color: tick, boxWidth: 10, font: { size: 11 },
+          filter: l => l.text !== 'Gasto de hoy' } },
+        tooltip: { callbacks: { label: c => c.dataset.label === 'Gasto de hoy'
+          ? `${c.raw.canal}: hoy estás aquí — ${usd(c.parsed.x)}`
+          : `${c.dataset.label}: ${num(c.parsed.y)} leads con ${usd(c.parsed.x)}` } } },
+      scales: { x: { type: 'linear', ticks: { color: tick, callback: v => '$' + (v / 1000).toFixed(0) + 'k' }, grid: { display: false } },
+                y: { ticks: { color: tick, callback: v => num(v) }, grid: { color: cssv('--border') } } }
+    }
+  });
+
+  const curvaMulti = (id, mapa, fx) => {
+    const ds = canales.map((c, i) => {
+      const pts = (mapa[c.canal] || []);
+      return { label: c.canal, data: pts.map(p => ({ x: p.x, y: p.y })),
+               borderColor: PALETA[i % PALETA.length], borderWidth: 2, pointRadius: 0, tension: .25 };
+    }).filter(s => s.data.length);
+    mkChart(id, {
+      type: 'line', data: { datasets: ds },
+      options: {
+        plugins: { legend: { display: true, labels: { color: tick, boxWidth: 10, font: { size: 11 } } } },
+        scales: { x: { type: 'linear', ticks: { color: tick, callback: fx }, grid: { display: false } },
+                  y: { ticks: { color: tick }, grid: { color: cssv('--border') } } }
+      }
+    });
+  };
+  curvaMulti('chSaturacion', d.saturacion, v => num(v, 1));
+  curvaMulti('chAdstock', d.adstock, v => v + ' sem');
+
+  // ── Real vs esperado, con la banda del 90% ───────────────────────────────────
+  // Sin la banda, cada punto donde el esperado se separa del real parece un fallo
+  // del modelo aunque esté dentro de lo previsto.
+  const serie = d.serie || [];
+  const tieneBanda = serie.length && serie[0].esperado_lo != null;
+  const datasets = [
+    { label: 'Real', data: serie.map(s => s.real), borderColor: cssv('--text-muted-2'), borderWidth: 1.5, pointRadius: 0, order: 1 },
+    { label: 'Esperado', data: serie.map(s => s.esperado), borderColor: cssv('--accent'), borderWidth: 2, pointRadius: 0, order: 1 },
+    { label: 'Baseline', data: serie.map(s => s.baseline), borderColor: PALETA[2], borderWidth: 1.5, borderDash: [4, 3], pointRadius: 0, order: 1 }
+  ];
+  if (tieneBanda) {
+    datasets.push(
+      { label: 'Banda 90%', data: serie.map(s => s.esperado_hi), borderWidth: 0, pointRadius: 0, fill: '+1', backgroundColor: cssv('--accent') + '22', order: 2 },
+      { label: '_lo', data: serie.map(s => s.esperado_lo), borderWidth: 0, pointRadius: 0, order: 2 }
+    );
+  }
+  mkChart('chSerie', {
+    type: 'line',
+    data: { labels: serie.map(s => s.semana), datasets },
+    options: { plugins: { legend: { display: true, labels: { color: tick, boxWidth: 10, font: { size: 11 },
+      filter: l => l.text !== '_lo' } } } }
+  });
+}
+
+function montarSim(d, canales) {
+  const cont = document.getElementById('sliders');
+  cont.innerHTML = canales.map(c => `
+    <div class="slider">
+      <span class="nom">${c.canal}</span>
+      <span class="val" id="v-${c.canal}">100%</span>
+      <input type="range" min="0" max="200" value="100" step="5" data-canal="${c.canal}" oninput="calcSim()">
+    </div>`).join('');
+  window._canales = canales;
+  window._d = d;
+  calcSim();
+}
+
+function resetSim() {
+  document.querySelectorAll('#sliders input').forEach(i => { i.value = 100; });
+  calcSim();
+}
+
+function calcSim() {
+  const d = window._d, canales = window._canales;
+  if (!d) return;
+  let gasto = 0, leads = 0, base = 0;
+
+  canales.forEach(c => {
+    const input = document.querySelector(`#sliders input[data-canal="${c.canal}"]`);
+    const mult = (+input.value) / 100;
+    document.getElementById('v-' + c.canal).textContent = Math.round(mult * 100) + '%';
+
+    const curva = d.curvas[c.canal] || [];
+    // El gasto de hoy es el punto con multiplicador 1.0, no una división del último:
+    // si algún día cambia el rango de la rejilla, esto sigue siendo correcto.
+    const p1 = curva.find(p => Math.abs((p.mult ?? 0) - 1) < 1e-6);
+    const actual = p1 ? p1.spend : 0;
+    gasto += actual * mult;
+    leads += leadsEn(curva, actual * mult);
+    base += leadsEn(curva, actual);
+  });
+
+  document.getElementById('simSpend').textContent = usd(gasto);
+  document.getElementById('simLeads').textContent = num(leads);
+  const delta = leads - base;
+  const el = document.getElementById('simDelta');
+  el.textContent = (delta >= 0 ? '+' : '') + num(delta) + ' leads';
+  el.className = 'v delta ' + (delta > 0.5 ? 'pos' : delta < -0.5 ? 'neg' : '');
+}
+
+window._render = render;
+
+(async () => {
+  try {
+    const res = await fetch('data.json?t=' + Date.now(), { cache: 'no-store' });
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    DATA = await res.json();
+  } catch (e) {
+    document.getElementById('app').innerHTML = `
+      <div class="table-container"><div class="empty-state">
+        <strong>Aún no hay data.json</strong>
+        Se genera con <code>python -m mmm.publicar --pais co</code> desde <code>C:\\dev\\habi\\mmm</code>.<br>
+        El refit del modelo es mensual y manual: no hay cron que lo produzca.
+      </div></div>`;
+    return;
+  }
+  render();
+})();
+</script>
+</body>
+</html>
