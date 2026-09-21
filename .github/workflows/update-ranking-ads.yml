@@ -1,0 +1,65 @@
+name: Actualizar Ranking de ads Meta (diario)
+
+# Diario y no cada 4 h a proposito: el conector de Airbyte que llena
+# facebook_ads_data_global carga una vez al dia, asi que correr mas seguido no
+# trae un solo dato nuevo y si vuelve a pedirle miniaturas a Meta.
+# 12:30 UTC = 7:30 Bogota / 6:30 CDMX, listo antes de la jornada. La media hora
+# de desfase evita chocar con el cron del hub, que corre en punto.
+
+on:
+  schedule:
+    - cron: '30 12 * * *'
+  workflow_dispatch:
+
+concurrency:
+  group: update-ranking-ads
+  cancel-in-progress: false
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - uses: google-github-actions/setup-gcloud@v2
+
+      - name: Autenticar contra BigQuery
+        run: |
+          echo '${{ secrets.GCP_CREDENTIALS }}' > /tmp/adc.json
+          # El proyecto que FACTURA va fijo a sellers-main-prod y nunca a un
+          # papyrus-*: esas credenciales perdieron bigquery.jobs.create. Por eso
+          # tampoco se usa el secret GCP_PROJECT, que apunta a uno de ellos.
+          gcloud config set project sellers-main-prod
+          echo "CLOUDSDK_AUTH_CREDENTIAL_FILE_OVERRIDE=/tmp/adc.json" >> $GITHUB_ENV
+          echo "GOOGLE_APPLICATION_CREDENTIALS=/tmp/adc.json" >> $GITHUB_ENV
+
+      - name: Instalar dependencias
+        run: pip install requests Pillow
+
+      - name: Build data.json
+        env:
+          META_PCOM_TOKEN: ${{ secrets.META_PCOM_TOKEN }}
+        run: python3 ranking-ads-meta/build.py
+
+      - name: Commit and push
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add ranking-ads-meta/data.json ranking-ads-meta/thumbs
+          if git diff --staged --quiet; then echo "sin cambios"; exit 0; fi
+          git commit -m "Auto-update ranking de ads $(date -u +%Y-%m-%dT%H:%MZ)"
+          # Mismo bucle resiliente que update-pauta.yml: el cron del hub tambien
+          # pushea y el que pierda la carrera tiene que rebasarse, no morirse.
+          for i in 1 2 3 4 5; do
+            if git push; then echo "push OK"; exit 0; fi
+            git fetch origin main; git rebase -X ours origin/main || { git rebase --abort; git reset --hard origin/main; git checkout origin/main -- .; }
+            git add ranking-ads-meta/data.json ranking-ads-meta/thumbs
+            git diff --staged --quiet || git commit -m "Auto-update ranking de ads $(date -u +%Y-%m-%dT%H:%MZ)"
+          done
+          echo "no se pudo pushear"; exit 1
