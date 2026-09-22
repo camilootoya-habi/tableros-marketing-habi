@@ -1037,6 +1037,7 @@ const MET_HELP={
   ve4:'Personas distintas con al menos un turno propio hacia el agente en el rango (agent_thread, role user, campaign ventanas).',
   ve5:'Personas con resultado BACKBONE en la bitácora ventanas_backbone_intento (desde el 1 de septiembre). Es la única fuente de deal en todo el panel e incluye los disparados por el reloj de 72 h con la entrevista a medias. Fallaron = BACKBONE_FAILED sin un BACKBONE posterior.',
   ve6:'Entrevistas con completed_at en ventanas_intake: la captura terminó, con o sin deal.',
+  ve7:'Cierres de los deals que creó Ventanas, en el rango. Son DOS líneas de negocio que NO son el mismo evento: compra directa (Habi compró el inmueble, por oportunidad_del_negocio «Cierre - Comprado» y fechado por closedate) e inmobiliaria (el dueño firmó el mandato de venta con la red de aliados, fechado por fecha_captacion_inmobiliaria: es una captación, no una venta). Se suman, y debajo se muestra la composición. Fuente: HubSpot en BigQuery; los deals se identifican por el agente marketing_loop_ventanas del backbone.',
   vs5:'Teléfonos enviados a Dapta ese día o en el rango (ventanas_dapta_handoff): SIN_RESPUESTA_24H es la salida normal de quien no contestó; PIDE_LLAMADA es intención positiva.',
   f_cie:'Dos líneas sumadas: compra directa (Cierre - Comprado, por closedate) + captación de la red de aliados (contrato/mandato firmado). No son el mismo evento.'};
 const I=k=>MET_HELP[k]?`<span class="info" tabindex="0" data-tip="${MET_HELP[k].replace(/"/g,'&quot;')}">i</span>`:'';
@@ -1466,7 +1467,9 @@ function renderVentanasPanel(){
     {lab:'Plantillas enviadas'+IH('ve2'), k:'enviadas', color:'#A855F7', pie:'personas · Infobip aceptó, no es entrega'},
     {lab:'Respondieron'+IH('ve3'), k:'respondieron', color:'#2DD4BF', pie:'botón + texto libre · personas'},
     {lab:'Atendidos por el agente'+IH('ve4'), k:'atendidos', color:'#0EA5E9', pie:'personas, no turnos'},
-    {lab:'Deal creado'+IH('ve5'), k:'deal_creado', color:'var(--ok)', pie:(+R.deal_fallo||0)+' fallaron · bitácora del backbone'},
+    {lab:'Deal creado'+IH('ve5'), k:'deal_creado', color:'#F59E0B', pie:(+R.deal_fallo||0)+' fallaron · bitácora del backbone'},
+    {lab:'Cierres'+IH('ve7'), k:'cierres', color:'var(--ok)',
+     pie:`${fmt(+R.cierres_mm||0)} compra directa · ${fmt(+R.cierres_inmo||0)} inmobiliaria`},
   ];
   const base=+R[pasos[0].k]||1;
   const emb=pasos.map((s,i)=>{
@@ -1496,6 +1499,7 @@ function renderVentanasPanel(){
     <b>Enviadas</b> significa que Infobip aceptó el mensaje, no que llegó: la entrega real vive en el mart de BigQuery, fuera de esta base.
     <b>Respondieron</b> une los clics de botón (que procesa el bot y nunca llegan al agente) con el texto libre; medido con una sola fuente, el porcentaje llegó a dar 733%.
     <b>Deal creado</b> sale de la bitácora de intentos al backbone (desde el 1 de septiembre) e incluye los que disparó el reloj de 72 h sin turno del agente.
+    <b>Cierres</b> suma las <b>dos líneas de negocio, que no son el mismo evento</b>: compra directa (Habi compró) y captación de la red de aliados (el dueño firmó mandato, no es una venta); la composición va debajo de la cifra. Vienen de HubSpot en BigQuery.
     La ventana cuenta por <b>cuándo pasó cada cosa</b>, no por cuándo se le escribió: es actividad, no tasa por cohorte.</p>
   </section>
 

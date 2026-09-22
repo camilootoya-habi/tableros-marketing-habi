@@ -733,6 +733,58 @@ def ventanas_serie(dias=30):
     return serie
 
 
+def ventanas_cierres():
+    """Citas y cierres de los deals que creó VENTANAS, por ruta y rango.
+
+    Vive en BigQuery (HubSpot), no en Neon: el programa solo deja en el backbone el `agente`
+    `marketing_loop_ventanas`, que es la marca con la que `query_ventanas_cierres.sql` los
+    encuentra. La ruta (directa/normal) sí es de Neon, así que se cruza por `new_deal_id`.
+
+    REGLA DE ORO 4 / METRICAS.md §1: el cierre son DOS líneas de negocio y NO son el mismo
+    evento — compra directa (Habi compró) e inmobiliaria (el dueño firmó mandato con la red,
+    o sea una captación). Se suman, pero se devuelven también por separado para que el
+    tablero pueda decir la composición.
+
+    Devuelve {ruta: {rango: {cierres, cierres_mm, cierres_inmo, citas}}}; con BigQuery caído,
+    todo en 0 (el resto del panel de Ventanas no depende de esto).
+    """
+    from zoneinfo import ZoneInfo
+    hoy = datetime.datetime.now(ZoneInfo(VENT_TZ)).date()
+    vacio = {"cierres": 0, "cierres_mm": 0, "cierres_inmo": 0, "citas": 0}
+    out = {r: {k: dict(vacio) for k in ("hoy", "7", "30")} for r in VENT_RUTAS}
+    try:
+        filas = q("query_ventanas_cierres.sql")
+        ruta_de = {r["deal_id"]: r["ruta"] for r in N._rows(
+            "WITH ruta AS (SELECT DISTINCT ON (phone) phone, "
+            "  CASE WHEN flujo='compra_wa' THEN 'directa' ELSE 'normal' END AS r "
+            "  FROM ventanas_hs_inbound WHERE action NOT LIKE 'DRY:%%' AND phone IS NOT NULL "
+            "  ORDER BY phone, received_at) "
+            "SELECT b.new_deal_id AS deal_id, coalesce(max(r.r),'normal') AS ruta "
+            "FROM ventanas_backbone_intento b LEFT JOIN ruta r ON r.phone=b.phone "
+            "WHERE b.resultado='BACKBONE' AND b.country='CO' AND b.new_deal_id IS NOT NULL "
+            "GROUP BY 1")}
+    except Exception as e:  # noqa: BLE001
+        print(f"WARN ventanas_cierres: {e}")
+        return out
+    _d = lambda v: datetime.date.fromisoformat(v) if v else None
+    for f in filas:
+        rt = ruta_de.get(str(f.get("deal_id")), "normal")
+        for campo, met in (("f_mm", "cierres_mm"), ("f_inmo", "cierres_inmo"), ("f_cita", "citas")):
+            d = _d(f.get(campo))
+            if not d:
+                continue
+            dias = (hoy - d).days
+            if dias < 0:                      # citas agendadas a futuro: no son de ningún rango
+                continue
+            for k, n in (("hoy", 0), ("7", 7), ("30", 30)):
+                if (dias == 0) if n == 0 else (dias < n):
+                    for r in (rt, "total"):
+                        out[r][k][met] += 1
+                        if met != "citas":
+                            out[r][k]["cierres"] += 1
+    return out
+
+
 def ventanas_metricas():
     """Embudo de VENTANAS por rango (hoy / 7 / 30) y por ruta (total / directa / normal).
     Ventanas es SOLO CO. Reglas (8-sep, unificadas con la gráfica):
@@ -740,6 +792,8 @@ def ventanas_metricas():
       · Recibidos = webhook sin DRY ni RECUPERADO_*. Enviadas = Infobip aceptó (no es entrega).
       · Respondieron = clics de botón ∪ texto libre (una sola fuente daba 733 %).
       · Deal = bitácora ventanas_backbone_intento (desde 1-sep), incluye los del reloj de 72 h.
+      · Citas y cierres salen de BigQuery (ventanas_cierres); el cierre son DOS líneas
+        (compra directa + inmobiliaria) y se devuelven también por separado (regla de oro 4).
       · La ventana es por CUÁNDO pasó cada cosa (actividad), no por cohorte.
     `rangos` = total aplanado (compat); `rutas` = {ruta: {rango: {...}}}."""
     ventanas_dias = {"hoy": 0, "7": 7, "30": 30}
@@ -747,12 +801,14 @@ def ventanas_metricas():
         if dias == 0:
             return f"(f.ts AT TIME ZONE '{VENT_TZ}')::date = (now() AT TIME ZONE '{VENT_TZ}')::date"
         return f"f.ts > now() - interval '{int(dias)} days'"
+    cierres = ventanas_cierres()
     rutas = {r: {} for r in VENT_RUTAS}
     with _SNC() as c:
         for k, d in ventanas_dias.items():
             por = {m: _vent_por_ruta(c, fuente, _cond(d)) for m, fuente in _VENT_MET.items()}
             for r in VENT_RUTAS:
                 rutas[r][k] = {m: por[m][r] for m in _VENT_MET}
+                rutas[r][k].update(cierres[r][k])
     return {"rangos": rutas["total"], "rutas": rutas, "pais": "CO"}
 
 
