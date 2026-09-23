@@ -754,6 +754,14 @@ function render() {
     M[k] && M[k][PAIS] && ['ok', 'stale'].includes(M[k][PAIS].status)).length;
   document.getElementById('cobertura').textContent =
     `${conDato} de ${total} indicadores con dato en ${PAIS === 'MX' ? 'México' : 'Colombia'}`;
+
+  // El hash se resuelve acá y no lo deja el navegador: las secciones se crean dinámicamente en
+  // render(), así que al cargar la página el elemento al que apunta #h-tv todavía no existe.
+  // El enlace de la tarjeta de Google Chat depende de esto para caer en el panel de TV.
+  if (location.hash) {
+    const destino = document.getElementById(location.hash.slice(1));
+    if (destino) requestAnimationFrame(() => destino.scrollIntoView({ behavior: 'smooth' }));
+  }
 }
 window.rerender = render;
 

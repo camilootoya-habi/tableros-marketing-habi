@@ -14,6 +14,12 @@ import urllib.request
 
 ENV_WEBHOOK = "GCHAT_WEBHOOK_TV"
 
+# Enlace profundo al panel de TV del tablero. `?pais=MX` porque la campaña es solo de México y
+# el tablero abre en MX por defecto pero el parámetro lo deja explícito; `#h-tv` baja directo a
+# la sección, que está al final de la página.
+PANEL_URL = ("https://camilootoya-habi.github.io/tableros-marketing-habi/"
+             "salud-marca/?pais=MX#h-tv")
+
 
 def _num(x, dec=0):
     if x is None:
@@ -26,12 +32,13 @@ def _texto_plano(r):
     renderizan tarjetas, así que tiene que sostenerse solo."""
     inc = r["incremental"]
     if inc["n"] == 0:
-        return f"TV Tuhabi {r['fecha']}: sin horario de spots para estimar incremental."
+        return (f"TV Tuhabi {r['fecha']}: sin horario de spots para estimar incremental. "
+                f"{PANEL_URL}")
     sig = "significativo" if inc["significativo"] else "no significativo"
     inv = (f", {_num(r['plan']['inversion'])} MXN"
            if r["plan"].get("inversion") is not None else "")
     return (f"TV Tuhabi {r['fecha']}: incremental 7 días {_num(inc['total'])} visitas ({sig}). "
-            f"Ayer {_num(r['plan']['spots'])} spots{inv}.")
+            f"Ayer {_num(r['plan']['spots'])} spots{inv}. {PANEL_URL}")
 
 
 def construir_tarjeta(r):
@@ -94,6 +101,12 @@ def construir_tarjeta(r):
     if r.get("avisos"):
         secciones.append({"header": "Notas", "widgets": [
             {"textParagraph": {"text": "• " + "<br>• ".join(r["avisos"])}}]})
+
+    # Va SIEMPRE y al final: la tarjeta resume, el tablero tiene la serie diaria completa y el
+    # minuto a minuto. Sin el enlace, quien quiere mirar el detalle no sabe dónde buscarlo.
+    secciones.append({"widgets": [{"buttonList": {"buttons": [
+        {"text": "Ver el panel completo",
+         "onClick": {"openLink": {"url": PANEL_URL}}}]}}]})
 
     return {
         "text": _texto_plano(r),
