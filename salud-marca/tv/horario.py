@@ -141,7 +141,14 @@ def proyectar(spots, fecha):
 
     Devuelve [] si no hay as-run que cubra ese día de semana — el reporte entonces dice que
     no puede estimar, en vez de asumir cero spots, que se leería como 'la TV no salió'.
+
+    NUNCA proyecta hacia ATRÁS del primer as-run. El patrón describe una campaña que empezó
+    el 7-sep; aplicarlo a agosto inventaba spots en días sin televisión y contaminaba tanto el
+    factor del día como la detección de anomalías en el tramo pre-campaña que el tablero
+    dibuja justamente como referencia.
     """
+    if spots and fecha < min(f["ts"].date() for f in spots):
+        return []
     patron = _patron(spots).get(fecha.weekday(), [])
     out = []
     for f in patron:

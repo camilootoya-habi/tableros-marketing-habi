@@ -148,6 +148,25 @@ que permite calificar una hora como anómala.
 Regenerar solo si la campaña se extiende más allá de 2026 o si el sitio cambia
 estructuralmente: `python3 salud-marca/tv/baseline.py`
 
+## El panel del tablero de salud de marca
+
+Cada corrida escribe también `metrics.tv` en `salud-marca/data.json`, que alimenta dos
+gráficas del tablero:
+
+| Gráfica | Qué muestra | Cómo leerla |
+|---|---|---|
+| **Diaria** | Observado vs contrafactual desde el 31-ago | **Descriptiva.** La brecha incluye pauta digital, feriados y estacionalidad — no es incrementalidad de TV |
+| **Minuto a minuto** | El último día cerrado, con el contrafactual reescalado al nivel del día | Aquí **sí** se aísla una emisión: el 22-sep el minuto 20:08 tuvo 206 visitas contra 5.7 esperadas |
+
+Los días con alguna hora anómala salen con punto rojo en la serie diaria.
+
+Solo se guarda **un día** de minuto a minuto (~25 KB, 1.440 puntos). Una semana metería
+~10.000 puntos en un `data.json` que el navegador descarga entero antes de pintar.
+
+`inyectar()` reescribe **solo** la clave `tv` y deja el resto intacto: las otras métricas
+vienen de `build.py`, que corre a mano, y un rewrite completo desde el cron borraría el caché
+histórico de Brand Lift.
+
 ## Configuración
 
 Dos secrets del repo:

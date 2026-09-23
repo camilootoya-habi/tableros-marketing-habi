@@ -35,6 +35,10 @@ import baseline as BL          # noqa: E402
 import chat as CHAT            # noqa: E402
 import estimador as EST        # noqa: E402
 import horario as HOR          # noqa: E402
+import panel as PANEL          # noqa: E402
+
+sys.path.insert(0, os.path.dirname(HERE))
+import contract as CONTRATO    # noqa: E402
 
 VENTANA_DIAS = 7
 
@@ -47,6 +51,10 @@ MESES = ["ene", "feb", "mar", "abr", "may", "jun",
 
 def fecha_larga(d):
     return f"{DIAS[d.weekday()]} {d.day} {MESES[d.month - 1]}"
+
+
+def ahora():
+    return datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
 
 
 SQL_TRAFICO = """
@@ -182,6 +190,8 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--enviar", action="store_true", help="postear a Google Chat")
     ap.add_argument("--fecha", help="día a reportar (YYYY-MM-DD). Por defecto, ayer en CDMX")
+    ap.add_argument("--sin-panel", action="store_true",
+                    help="no actualizar el panel de TV en salud-marca/data.json")
     args = ap.parse_args()
 
     hoy_cdmx = (datetime.datetime.now(datetime.timezone.utc)
@@ -198,7 +208,10 @@ def main():
         return 1
     inversion = HOR.cargar_inversion()
 
-    serie = consultar_trafico(hasta - datetime.timedelta(days=VENTANA_DIAS), hasta)
+    # Se pide desde el arranque del panel, no solo la ventana de 7 días: el tablero muestra la
+    # serie diaria completa de la campaña y sale más barato una consulta que dos.
+    desde = min(PANEL.DESDE, hasta - datetime.timedelta(days=VENTANA_DIAS))
+    serie = consultar_trafico(desde, hasta)
     r = calcular(serie, perfil, horas_sd, spots, inversion, hasta)
 
     inc = r["incremental"]
@@ -215,6 +228,18 @@ def main():
               f"({x:+,.0f}, {sig:.1f} sigmas)")
     for a in r["avisos"]:
         print(f"  ⚠ {a}")
+
+    if not args.sin_panel:
+        try:
+            bloque = PANEL.construir(serie, perfil, horas_sd, spots, hasta,
+                                     minutos_de_dia, EST, HOR, BL, CONTRATO, ahora())
+            ruta = PANEL.inyectar(bloque)
+            n = len(bloque["MX"].get("series") or [])
+            print(f"  panel: {n} días escritos en {os.path.relpath(ruta)}")
+        except Exception as e:
+            # Que falle el panel no debe impedir el aviso a Chat: son dos entregables
+            # independientes y el de Chat es el que la gente espera cada mañana.
+            print(f"WARN panel: {type(e).__name__}: {e}")
 
     payload = CHAT.construir_tarjeta(r)
     if args.enviar:

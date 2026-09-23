@@ -24,6 +24,8 @@ on:
 jobs:
   reporte:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write   # para commitear el panel de TV en salud-marca/data.json
 
     steps:
       - uses: actions/checkout@v4
@@ -63,3 +65,16 @@ jobs:
           python3 salud-marca/tv/reporte_diario.py \
             ${{ inputs.fecha && format('--fecha {0}', inputs.fecha) || '' }} \
             ${{ (github.event_name == 'schedule' || inputs.enviar) && '--enviar' || '' }}
+
+      - name: Commitear el panel
+        run: |
+          # Solo data.json: el resto del repo no lo toca este job. Si no cambió nada —porque
+          # GA4 no trajo datos nuevos— no se commitea, para no llenar el historial de commits
+          # vacíos diarios.
+          git config user.name  'github-actions[bot]'
+          git config user.email 'github-actions[bot]@users.noreply.github.com'
+          git add salud-marca/data.json
+          git diff --cached --quiet && echo "sin cambios en el panel" && exit 0
+          git commit -m "data(tv): panel de TV $(date -u +%Y-%m-%dT%H:%MZ)"
+          git pull --rebase --autostash origin ${{ github.ref_name }}
+          git push origin HEAD:${{ github.ref_name }}

@@ -251,8 +251,13 @@ function mkMulti(id, labels, datasets, o = {}) {
     data: { labels, datasets: datasets.map(d => ({
       type: d.type || 'line', label: d.label, data: d.data, yAxisID: d.eje || 'y',
       borderColor: d.color, backgroundColor: d.fill || d.color,
-      borderDash: d.dash || [], tension: .35, pointRadius: d.type === 'line' ? 2 : 0,
-      borderWidth: 2, borderRadius: 3,
+      borderDash: d.dash || [], tension: d.tension != null ? d.tension : .35,
+      // `puntoRadio`/`puntoColor` aceptan arreglo: es como se marcan los días anómalos sin
+      // meter una serie aparte que ensucie la leyenda y el tooltip.
+      pointRadius: d.puntoRadio != null ? d.puntoRadio : (d.type === 'line' ? 2 : 0),
+      pointBackgroundColor: d.puntoColor || d.color,
+      pointBorderColor: d.puntoColor || d.color,
+      borderWidth: d.grosor != null ? d.grosor : 2, borderRadius: 3,
       // spanGaps: false a propósito — un mes sin medición debe dejar HUECO, no unir la línea
       // por encima. Ver el contrato de data.json.
       spanGaps: false })) },
@@ -409,6 +414,52 @@ function renderMetric(host, metric, drawFn) {
 
 const srcTag = m => (m && m.source)
   ? `<span class="src">fuente: ${{ bq: 'BigQuery', api: 'Meta API', cache: 'caché en repo' }[m.source] || m.source}</span>` : '';
+
+// ── TV abierta ────────────────────────────────────────────────────────────────
+// Dos lentes sobre la misma campaña. La serie DIARIA es descriptiva: la brecha contra el
+// contrafactual incluye todo lo que movió el día —pauta digital, feriados, estacionalidad—,
+// no solo televisión, y se rotula así. El MINUTO A MINUTO es donde sí se ve una emisión:
+// alrededor de un spot el ruido es una fracción del diario y el pico se separa del fondo.
+const hhmm = m => String(Math.floor(m / 60)).padStart(2, '0') + ':' + String(m % 60).padStart(2, '0');
+
+function drawTV(host, serie) {
+  const m = ((DATA.metrics.tv || {})[PAIS] || {}).minuto;
+
+  host.innerHTML = `<div class="panel"><h3>Tráfico diario contra el contrafactual</h3>
+      <div class="cap">Sesiones observadas frente a lo que predice el baseline sin televisión
+      (20-jul a 6-sep, previo a la campaña). <strong>La brecha no es atribuible a TV por sí
+      sola</strong>: incluye pauta digital, feriados y estacionalidad. Los puntos rojos marcan
+      días con alguna hora anómala.</div>
+      <div class="ch alto"><canvas id="tv-dia"></canvas></div>
+      ${legend([[C.azul, 'Observado'], [C.gris, 'Contrafactual'], [C.rojo, 'Día con hora anómala']])}</div>`
+    + (m ? `<div class="panel"><h3>Minuto a minuto · ${m.fecha}</h3>
+      <div class="cap">El último día cerrado. Aquí sí se aísla el efecto de una emisión: el
+      contrafactual va reescalado al nivel del día (factor ${m.factor_dia}), así que un día
+      globalmente bajo no pinta toda la serie por debajo.
+      ${m.horas_anomalas.length
+        ? '<strong>Horas anómalas: ' + m.horas_anomalas.map(a =>
+            String(a.hora).padStart(2, '0') + 'h (' + a.sigmas + ' sigmas, ' +
+            Math.round(a.exceso) + ' visitas sobre lo esperado)').join(' · ') + '</strong>'
+        : 'Sin horas anómalas: ninguna superó 4 sigmas sobre su dispersión histórica.'}</div>
+      <div class="ch alto"><canvas id="tv-min"></canvas></div>
+      ${legend([[C.azul, 'Observado'], [C.gris, 'Contrafactual']])}</div>` : '');
+
+  const L = serie.map(r => r.fecha.slice(5));
+  mkMulti('tv-dia', L, [
+    { label: 'Contrafactual', color: C.gris, data: serie.map(r => r.esperado), dash: [5, 4], puntoRadio: 0 },
+    { label: 'Observado', color: C.azul, data: serie.map(r => r.observado),
+      puntoRadio: serie.map(r => r.anomalia ? 5 : 2),
+      puntoColor: serie.map(r => r.anomalia ? C.rojo : C.azul) },
+  ], { fmt: 'num', sinBandas: true });
+
+  if (!m) return;
+  // pointRadius 0 y tension 0: son 1.440 puntos, y suavizarlos redondearía justo los picos de
+  // un minuto que son la señal que se busca.
+  mkMulti('tv-min', m.puntos.map(p => hhmm(p[0])), [
+    { label: 'Contrafactual', color: C.gris, data: m.puntos.map(p => p[2]), dash: [5, 4], puntoRadio: 0, tension: 0, grosor: 1 },
+    { label: 'Observado', color: C.azul, data: m.puntos.map(p => p[1]), puntoRadio: 0, tension: 0 },
+  ], { fmt: 'num', sinBandas: true });
+}
 
 // ── Brand Lift ────────────────────────────────────────────────────────────────
 // TOMA va primero en los dos países: es el indicador de marca por excelencia —cuánta gente nos
@@ -677,6 +728,9 @@ function render() {
     ['traffic', 'Tráfico por plaza',
      'Usuarios únicos que llegan al sitio, por plaza. Si la marca funciona, el tráfico sube sin que suba la inversión.',
      drawTraffic, ['Demanda', 'Cuánta gente llega al sitio. Es comportamiento, no opinión.']],
+    ['tv', 'Impacto de la TV abierta',
+     'Campaña nacional con Televisa, sep-nov 2026. El efecto de un spot dura unos 30 minutos y es chico frente al tráfico diario, así que solo se separa del ruido mirando el minuto exacto de la emisión. La cifra de incrementalidad con su intervalo se publica cada mañana en Google Chat; acá se ve la forma.',
+     drawTV],
   ];
 
   app.innerHTML = secs.map(([k, , , , bloque]) =>

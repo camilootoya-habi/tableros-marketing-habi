@@ -54,6 +54,15 @@ def test_patron_toma_la_semana_mas_reciente():
     assert {f["ts"].hour for f in proy} == {6}
 
 
+def test_no_proyecta_hacia_atras_del_primer_asrun():
+    """El patrón describe una campaña que arrancó el 7-sep. Aplicarlo a agosto inventaría
+    spots en días sin televisión, justo en el tramo que el tablero dibuja como referencia."""
+    s = [spot(7, 20), spot(8, 19)]
+    assert horario.proyectar(s, datetime.date(2026, 8, 31)) == []     # lunes previo
+    assert horario.para_fecha(s, datetime.date(2026, 8, 31)) == []
+    assert horario.proyectar(s, datetime.date(2026, 9, 14)) != []     # lunes posterior, sí
+
+
 def test_regularidad_none_con_una_sola_semana():
     assert horario.regularidad([spot(7, 20), spot(8, 19)]) is None
 
