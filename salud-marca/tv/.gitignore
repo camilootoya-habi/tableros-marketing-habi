@@ -1,0 +1,11 @@
+# Este repo es PÚBLICO (sirve el hub por GitHub Pages).
+#
+# El as-run de la central trae las tarifas negociadas con Televisa: costo por spot, CPP por
+# canal, el desglose del paquete LRDG y el tarifario completo por programa. Nada de eso puede
+# quedar en un repo que cualquiera clona.
+#
+# `ingesta.py` separa el xlsx en dos: `spots.csv` (calendario, público, se commitea) e
+# `inversion.json` (dinero agregado por día y franja, privado, viaja como el secret
+# TV_INVERSION_JSON). Estas dos reglas son las que garantizan esa separación.
+*.xlsx
+inversion.json
