@@ -81,6 +81,16 @@ def construir_tarjeta(r):
                 "text": f"${_num(r['costo_por_visita'])} MXN"}})
         secciones.append({"header": "Incremental TV · últimos 7 días", "widgets": widgets})
 
+    # Va ANTES de las notas y con marca roja: un pico de 10+ sigmas es la noticia del día,
+    # no un pie de página. Promediado en la ventana de 7 días desaparecería.
+    if r.get("anomalias"):
+        w = []
+        for hora, obs, esp, exceso, sigmas in r["anomalias"][:3]:
+            w.append({"decoratedText": {
+                "topLabel": f"{hora:02d}h — {sigmas:.1f} sigmas sobre lo normal",
+                "text": f"🔴 {_num(obs)} visitas vs {_num(esp)} esperadas ({_num(exceso)})"}})
+        secciones.append({"header": "Horas anómalas detectadas", "widgets": w})
+
     if r.get("avisos"):
         secciones.append({"header": "Notas", "widgets": [
             {"textParagraph": {"text": "• " + "<br>• ".join(r["avisos"])}}]})

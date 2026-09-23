@@ -47,16 +47,78 @@ def factor_del_dia(minutos_dia, perfil_dia, horas_con_spot):
     minutos desaparecían del denominador mientras seguían contando en las horas con spot,
     lo que inflaba `k` y se comía el efecto — sobre la semana 1 daba -88 visitas en vez de
     +591. Un minuto ausente es un minuto con CERO tráfico, no un minuto inexistente.
+
+    ES RECORTADO (trimmed) Y NO UN PROMEDIO SIMPLE. Una emisión que no está en el horario
+    —un paquete especial, un cambio de última hora— cae en una hora tratada como "limpia" y
+    contamina la referencia del día. Pasó el 22-sep con la integración de La Rosa de
+    Guadalupe: el pico de la hora 20 no estaba en el horario proyectado, entró al
+    denominador y subió `k` de 0.823 a 1.067. Ese `k` inflado elevó el esperado de todas las
+    horas con spot y dio un exceso de -60 visitas en el día que en realidad tuvo +1.934.
+    Recortando los extremos, una hora anómala ya no arrastra la referencia.
+
+    Se descartan además las horas de volumen despreciable (madrugada): sus cocientes son
+    ruido puro —observado 3 sobre esperado 1 da un cociente de 3— y se comerían el recorte
+    sin aportar información.
     """
-    obs = esp = 0.0
-    for minuto, e in perfil_dia.items():
-        if minuto // 60 in horas_con_spot:
+    limpias = []
+    for hora in range(24):
+        if hora in horas_con_spot:
             continue
-        obs += minutos_dia.get(minuto, 0.0)
-        esp += e
-    if esp <= 0:
+        obs = esp = 0.0
+        for minuto in range(hora * 60, hora * 60 + 60):
+            e = perfil_dia.get(minuto)
+            if e is None:
+                continue
+            obs += minutos_dia.get(minuto, 0.0)
+            esp += e
+        if esp > 0:
+            limpias.append((obs / esp, obs, esp))
+    if not limpias:
         return 1.0
-    return obs / esp
+
+    corte = 0.25 * (sum(x[2] for x in limpias) / len(limpias))
+    con_volumen = [x for x in limpias if x[2] >= corte] or limpias
+
+    con_volumen.sort(key=lambda x: x[0])
+    n = len(con_volumen)
+    recorte = max(1, int(round(0.15 * n))) if n >= 6 else 0
+    centro = con_volumen[recorte:n - recorte] if recorte else con_volumen
+
+    esp_total = sum(x[2] for x in centro)
+    if esp_total <= 0:
+        return 1.0
+    return sum(x[1] for x in centro) / esp_total
+
+
+def horas_anomalas(minutos_dia, perfil_dia, sd_por_hora, factor, umbral=4.0):
+    """Horas cuyo exceso supera `umbral` desviaciones — vengan o no del horario de spots.
+
+    Es la red que atrapa lo que el horario no contempla. La integración de LRDG del 22-sep
+    ocurrió en una hora ausente del horario proyectado: sin esto el reporte la ignoraba por
+    completo y además la usaba como referencia de normalidad.
+
+    El umbral es 4 sigmas y no 2: se busca el evento evidente, no cualquier fluctuación. Con
+    24 horas por día, a 2 sigmas habría un falso positivo casi diario.
+
+    Devuelve [(hora, observado, esperado, exceso, sigmas), ...] de mayor a menor.
+    """
+    out = []
+    for hora in range(24):
+        obs = esp = 0.0
+        for minuto in range(hora * 60, hora * 60 + 60):
+            e = perfil_dia.get(minuto)
+            if e is None:
+                continue
+            obs += minutos_dia.get(minuto, 0.0)
+            esp += e
+        sd = sd_por_hora.get(hora, 0.0)
+        if esp <= 0 or sd <= 0:
+            continue
+        exceso = obs - esp * factor
+        sigmas = exceso / sd
+        if sigmas >= umbral:
+            out.append((hora, obs, esp * factor, exceso, sigmas))
+    return sorted(out, key=lambda x: -x[4])
 
 
 def exceso_por_hora(minutos_dia, perfil_dia, horas_con_spot):

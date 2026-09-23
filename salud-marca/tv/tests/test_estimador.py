@@ -93,12 +93,60 @@ def test_exceso_por_spot_usa_la_ventana_pedida():
 
 
 def test_minutos_ausentes_cuentan_como_cero_no_como_inexistentes():
-    """Regresión: BigQuery no devuelve fila para los minutos sin tráfico. Si esos minutos se
-    saltan en el denominador del factor del día, `k` se infla y se come el efecto — sobre la
-    semana 1 real daba -88 visitas en vez de +591."""
+    """Regresión: BigQuery no devuelve fila para los minutos sin una sola sesión. Si se
+    recorriera lo observado en vez del perfil, esos minutos desaparecerían del cálculo en vez
+    de contar como cero. Sobre la semana 1 real eso daba -88 visitas donde había +591."""
     perfil = perfil_plano(10.0)
-    dia = {m: 10.0 for m in range(1440) if not (0 <= m // 60 < 5)}   # madrugada ausente
+    dia = {m: 10.0 for m in range(1440)}
+    for m in range(20 * 60 + 30, 20 * 60 + 60):      # media hora sin filas en BQ
+        del dia[m]
+    ex = estimador.exceso_por_hora(dia, perfil, {20})
+    # 30 min observados × 10 = 300 contra 60 min esperados × 10 = 600 → exceso -300.
+    # Ignorando los ausentes daría 0, como si la hora hubiera estado normal.
+    assert abs(ex[0][1] + 300.0) < 1e-6
+
+
+def test_factor_del_dia_resiste_una_hora_anomala():
+    """El caso LRDG del 22-sep: una emisión fuera del horario cae en una hora tratada como
+    limpia. Sin recorte, ese pico infla `k`, sube el esperado de las horas con spot y hunde
+    el exceso medido — el día del pico más alto de la campaña daba -60 visitas."""
+    perfil = perfil_plano(10.0)
+    dia = {m: 10.0 for m in range(1440)}
+    for m in range(14 * 60, 14 * 60 + 60):           # hora 14: pico x30, fuera del horario
+        dia[m] = 300.0
     k = estimador.factor_del_dia(dia, perfil, {20})
-    esperado = (1440 - 5 * 60 - 60) * 10.0 / ((1440 - 60) * 10.0)
-    assert abs(k - esperado) < 1e-9
-    assert k < 1.0            # sin la corrección daba exactamente 1.0
+    assert abs(k - 1.0) < 0.05        # el pico no arrastra la referencia del día
+
+    ex = estimador.exceso_por_hora(dia, perfil, {20})
+    assert abs(ex[0][1]) < 40.0       # y la hora con spot no queda castigada
+
+
+def test_horas_anomalas_detecta_el_pico_y_lo_cuantifica():
+    perfil = perfil_plano(10.0)
+    sd = {h: 50.0 for h in range(24)}
+    dia = {m: 10.0 for m in range(1440)}
+    for m in range(20 * 60, 20 * 60 + 60):
+        dia[m] = 30.0                                # 1800 obs contra 600 esperadas
+    an = estimador.horas_anomalas(dia, perfil, sd, 1.0, umbral=4.0)
+    assert len(an) == 1
+    hora, obs, esp, exceso, sigmas = an[0]
+    assert hora == 20
+    assert abs(exceso - 1200.0) < 1e-6
+    assert abs(sigmas - 24.0) < 1e-6                 # 1200 / 50
+
+
+def test_horas_anomalas_no_dispara_en_un_dia_normal():
+    """El umbral de 4 sigmas busca el evento evidente. Con 24 horas al día, uno de 2 sigmas
+    daría un falso positivo casi diario."""
+    perfil = perfil_plano(10.0)
+    sd = {h: 50.0 for h in range(24)}
+    dia = {m: 11.0 for m in range(1440)}             # día 10% arriba, parejo
+    assert estimador.horas_anomalas(dia, perfil, sd, 1.1, umbral=4.0) == []
+
+
+def test_horas_anomalas_sin_dispersion_no_inventa_sigmas():
+    """Una hora con sd=0 en el baseline no permite calificar nada: se omite en vez de
+    dividir por cero o reportar sigmas infinitas."""
+    perfil = perfil_plano(10.0)
+    dia = {m: 100.0 for m in range(1440)}
+    assert estimador.horas_anomalas(dia, perfil, {h: 0.0 for h in range(24)}, 1.0) == []

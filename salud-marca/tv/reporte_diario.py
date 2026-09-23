@@ -88,7 +88,7 @@ def minutos_de_dia(serie, dia):
     return {t.hour * 60 + t.minute: v for t, v in serie.items() if t.date() == dia}
 
 
-def calcular(serie, perfil, spots, inversion, hasta):
+def calcular(serie, perfil, horas_sd, spots, inversion, hasta):
     """Arma el dict del reporte. `hasta` es el último día cubierto (ayer)."""
     dias = [hasta - datetime.timedelta(days=i) for i in range(VENTANA_DIAS - 1, -1, -1)]
     avisos = []
@@ -135,6 +135,14 @@ def calcular(serie, perfil, spots, inversion, hasta):
     dia = {"observado": obs, "esperado": esp,
            "desvio_pct": (100 * (obs - esp) / esp) if esp else 0.0}
 
+    # Red de seguridad para lo que el horario no contempla. La integración de LRDG del
+    # 22-sep cayó en una hora ausente del horario proyectado: sin esto el reporte no solo la
+    # ignoraba, sino que la usaba como referencia de normalidad y publicaba "no significativo"
+    # en el día del pico más alto de la campaña.
+    k_ayer = EST.factor_del_dia(mins_ayer, pdia, HOR.horas_con_spot(spots_ayer))
+    anomalias = EST.horas_anomalas(mins_ayer, pdia, BL.sd_de_dia(horas_sd, hasta.weekday()),
+                                   k_ayer)
+
     inv_7d = sum(v["inversion"]
                  for d in dias
                  for v in inversion.get(d.isoformat(), {}).values())
@@ -157,8 +165,16 @@ def calcular(serie, perfil, spots, inversion, hasta):
         avisos.append(f"La parrilla cambió: solo {100 * reg:.0f}% de las horas se repiten "
                       "entre semanas. La proyección pierde fiabilidad.")
 
+    if anomalias:
+        horas_sin_plan = [h for h, *_ in anomalias if h not in HOR.horas_con_spot(spots_ayer)]
+        if horas_sin_plan:
+            avisos.append(
+                "Hay horas anómalas <b>fuera del horario de spots</b> "
+                f"({', '.join(f'{h:02d}h' for h in horas_sin_plan)}). El incremental de 7 "
+                "días NO las incluye: revisar si salió algo no contemplado en el plan.")
+
     return {"fecha": fecha_larga(hasta), "fecha_iso": hasta.isoformat(),
-            "plan": plan, "dia": dia, "incremental": inc,
+            "plan": plan, "dia": dia, "incremental": inc, "anomalias": anomalias,
             "costo_por_visita": costo, "avisos": avisos}
 
 
@@ -174,6 +190,7 @@ def main():
         hoy_cdmx - datetime.timedelta(days=1)
 
     perfil = BL.cargar()
+    horas_sd = BL.cargar_horas()
     spots = HOR.cargar()
     if not spots:
         print("ERROR: spots.csv está vacío o no existe. Correr ingesta.py con el as-run de "
@@ -182,7 +199,7 @@ def main():
     inversion = HOR.cargar_inversion()
 
     serie = consultar_trafico(hasta - datetime.timedelta(days=VENTANA_DIAS), hasta)
-    r = calcular(serie, perfil, spots, inversion, hasta)
+    r = calcular(serie, perfil, horas_sd, spots, inversion, hasta)
 
     inc = r["incremental"]
     trp = f"{r['plan']['trp']:.1f} TRP" if r['plan']['trp'] is not None else "TRP s/d"
@@ -193,6 +210,9 @@ def main():
     if inc["n"]:
         print(f"  incremental 7d: {inc['total']:,.0f} visitas  n={inc['n']}  "
               f"t={inc['t']:.2f}  {'SIGNIFICATIVO' if inc['significativo'] else 'no signif.'}")
+    for h, o, e, x, sig in r["anomalias"]:
+        print(f"  🔴 hora {h:02d}h ANÓMALA: obs {o:,.0f} vs esp {e:,.0f} "
+              f"({x:+,.0f}, {sig:.1f} sigmas)")
     for a in r["avisos"]:
         print(f"  ⚠ {a}")
 

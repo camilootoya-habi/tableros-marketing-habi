@@ -61,6 +61,39 @@ def consultar(ini=INICIO, fin=FIN, max_bytes=20_000_000_000):
     return json.loads(out.stdout or "[]")
 
 
+def construir_horas(filas, ini=INICIO, fin=FIN):
+    """{dia_semana: {hora: {media, sd}}} de los totales por hora del baseline.
+
+    Existe para poder decir si una hora concreta es ANÓMALA, no solo si está por encima del
+    promedio. Sin la dispersión no hay forma de distinguir una hora que subió porque el día
+    venía bueno de una que subió porque salió un comercial: la del 22-sep a las 20h tuvo
+    1.614 visitas contra 470 esperadas, y eso solo se puede calificar comparándolo con
+    cuánto varía normalmente esa hora.
+    """
+    d_ini = datetime.date.fromisoformat(ini)
+    d_fin = datetime.date.fromisoformat(fin)
+    por_dia = {}
+    for f in filas:
+        ts = datetime.datetime.strptime(f["minuto"], "%Y-%m-%d %H:%M")
+        if not (d_ini <= ts.date() <= d_fin):
+            continue
+        por_dia.setdefault((ts.date(), ts.hour), 0.0)
+        por_dia[(ts.date(), ts.hour)] += float(f["sesiones"])
+
+    agrup = {}
+    for (fecha, hora), v in por_dia.items():
+        agrup.setdefault((fecha.weekday(), hora), []).append(v)
+
+    out = {}
+    for (dow, hora), vals in agrup.items():
+        n = len(vals)
+        media = sum(vals) / n
+        sd = (sum((x - media) ** 2 for x in vals) / (n - 1)) ** 0.5 if n > 1 else 0.0
+        out.setdefault(str(dow), {})[str(hora)] = {"media": round(media, 2),
+                                                   "sd": round(sd, 2), "n": n}
+    return out
+
+
 def construir(filas, ini=INICIO, fin=FIN):
     """filas de bq → {dia_semana: {minuto_del_dia: sesiones promedio}}.
 
@@ -93,13 +126,14 @@ def construir(filas, ini=INICIO, fin=FIN):
     return perfil
 
 
-def guardar(perfil, ruta=RUTA, ini=INICIO, fin=FIN):
+def guardar(perfil, horas=None, ruta=RUTA, ini=INICIO, fin=FIN):
     payload = {
         "generado": datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
         "periodo": [ini, fin],
         "metrica": "session_start por minuto, hora CDMX",
         "nota": "Baseline CONGELADO a propósito: ver docstring de baseline.py",
         "perfil": perfil,
+        "horas": horas or {},
     }
     with open(ruta, "w", encoding="utf-8") as f:
         json.dump(payload, f, separators=(",", ":"))
@@ -119,9 +153,23 @@ def perfil_de_dia(perfil, dia_semana):
     return {m: v for (dow, m), v in perfil.items() if dow == dia_semana}
 
 
+def cargar_horas(ruta=RUTA):
+    """→ {(dia_semana, hora): {media, sd, n}} para calificar anomalías por hora."""
+    with open(ruta, encoding="utf-8") as f:
+        d = json.load(f)
+    return {(int(dow), int(h)): v
+            for dow, horas in d.get("horas", {}).items()
+            for h, v in horas.items()}
+
+
+def sd_de_dia(horas, dia_semana):
+    return {h: v["sd"] for (dow, h), v in horas.items() if dow == dia_semana}
+
+
 if __name__ == "__main__":
-    p = construir(consultar())
-    meta = guardar(p)
+    filas = consultar()
+    p = construir(filas)
+    meta = guardar(p, construir_horas(filas))
     total = sum(sum(v.values()) for v in p.values())
     print(f"baseline {meta['periodo'][0]} → {meta['periodo'][1]}: "
           f"{len(p)} días de semana, {total:,.0f} sesiones/semana promedio")

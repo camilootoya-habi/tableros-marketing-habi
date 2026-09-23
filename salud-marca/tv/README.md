@@ -94,6 +94,45 @@ cifras de dinero avisándolo.
 > de negocio. `horario.regularidad()` la mide en cuanto haya dos semanas, y el reporte avisa
 > en la tarjeta si baja del 70%.
 
+## El factor del día es recortado, y por qué importa
+
+El perfil aporta la *forma* del día; el **nivel** se estima en cada corrida con las horas sin
+spot (`factor_del_dia`). Ese cálculo **recorta los extremos** en vez de promediar todo, y no
+es una sutileza estadística: sin el recorte el reporte puede afirmar lo contrario de lo que
+pasó.
+
+El 22 de septiembre salió la integración de marca en *La Rosa de Guadalupe* — un paquete que
+no está en el pauteo regular, así que la hora 20 no figuraba en el horario proyectado. Esa
+hora se trató como "limpia", o sea como referencia de normalidad:
+
+| | Factor del día | Exceso medido |
+|---|---|---|
+| Promedio simple (con el pico dentro) | 1.067 | **−60 visitas** |
+| Recortado | 0.804 | **+1.934 visitas** |
+
+El mismo día y los mismos datos, invertidos por una sola hora. El pico real fue de **15.8
+sigmas**.
+
+El recorte se validó sobre las 364 horas-con-spot equivalentes de semanas **sin** TV: media
+**−0.027**, t=−0.01. Sigue insesgado.
+
+> Nota: con el estimador recortado la semana 1 pasa de +591 a **+716 visitas** (t=2.42). No
+> es un sesgo nuevo — el efecto de TV dura ~30 min y se derrama a las horas contiguas
+> "limpias", inflando `k`. El recorte las descarta.
+
+## Horas anómalas: la red para lo que el horario no contempla
+
+`horas_anomalas()` revisa **las 24 horas**, estén o no en el horario, y marca las que superan
+**4 sigmas** sobre su propia dispersión histórica. Por eso `baseline.json` guarda media y
+desviación por (día de semana, hora), no solo el perfil por minuto.
+
+El umbral es 4 y no 2 a propósito: con 24 horas diarias, a 2 sigmas habría un falso positivo
+casi todos los días.
+
+Cuando la anomalía cae **fuera** del horario de spots, la tarjeta lo dice explícitamente —
+esas horas no entran en el incremental de 7 días y hay que revisar si salió algo no previsto
+en el plan.
+
 ## El baseline está congelado a propósito
 
 `baseline.json` es el perfil minuto a minuto del tráfico **sin** televisión, calculado sobre
@@ -103,9 +142,8 @@ Si se recalculara con datos recientes iría absorbiendo el propio efecto de la c
 semana el "normal" subiría un poco y el incremental medido bajaría hasta desaparecer. Un
 contrafactual tiene que venir de un período donde el tratamiento no existía.
 
-Lo que sí se ajusta en cada corrida es el **nivel** del día (`factor_del_dia`), estimado con
-las horas sin spot de ese mismo día. Así el perfil aporta la *forma* y el día su *altura*, y
-un cambio de nivel — más pauta digital, un feriado — no se lee como efecto de TV.
+Además del perfil por minuto, guarda media y desviación por (día de semana, hora), que es lo
+que permite calificar una hora como anómala.
 
 Regenerar solo si la campaña se extiende más allá de 2026 o si el sitio cambia
 estructuralmente: `python3 salud-marca/tv/baseline.py`
