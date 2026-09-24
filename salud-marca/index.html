@@ -431,10 +431,10 @@ let DATA = null, PAIS = 'MX', PLAZA = 'Todas', MESES = '24 meses';
 // cuando el horario es proyectado y el spot pudo salir un cuarto de hora antes o después.
 const BLOQUES = ['10', '30'];
 let BLOQUE = '10';
-// Qué leads mira el panel de incrementalidad. "De marca" va primero porque es lo único que una
-// emisión puede mover sin pasar por el presupuesto digital; "Todos WEB" queda de contexto.
-const LEADS_OPC = { 'De marca': 'tv', 'Directo': 'directo', 'Búsqueda de marca': 'marca', 'Todos WEB': 'web' };
-let LEADS_SEL = 'De marca';
+// Qué leads mira el panel de incrementalidad. "Directo" va primero porque es lo que una emisión
+// puede mover sin pasar por ningún anuncio; "Todos WEB" queda de contexto.
+const LEADS_OPC = { 'Directo': 'directo', 'Búsqueda de marca': 'marca', 'Todos WEB': 'web' };
+let LEADS_SEL = 'Directo';
 
 // ── El corazón del tablero: cada métrica se dibuja según su `status`, no según si su
 // serie viene vacía. Un `not_available` explica qué fuente falta; jamás pinta un chart
@@ -548,7 +548,6 @@ function drawTV(host, serie) {
 // venía la serie la semana ANTES del primer spot — si ya subía, el alza no es de la TV.
 const PRIMER_SPOT = '2026-09-07';
 const LEADS_NOTA = {
-  tv: 'Directo (sin UTM) + búsqueda de marca en Google: los leads que una emisión puede mover sin pasar por el presupuesto digital.',
   directo: 'Leads WEB sin UTM: llegaron escribiendo la URL o por orgánico.',
   marca: 'Leads de Google Ads en campañas de búsqueda de marca (<code>sem_brand</code>): alguien buscó "habi". También se mueve con el presupuesto de esas campañas.',
   web: 'Todos los leads WEB. <strong>La mayoría es pauta de Meta y Google</strong> y sube o baja con el presupuesto digital (el salto del 17-30 ago fue eso), así que aquí la TV queda enterrada: va como contexto.',
