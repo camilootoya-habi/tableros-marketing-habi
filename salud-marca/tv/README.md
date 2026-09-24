@@ -156,7 +156,7 @@ gráficas del tablero:
 | Gráfica | Qué muestra | Cómo leerla |
 |---|---|---|
 | **Diaria** | Observado vs contrafactual desde el 31-ago | **Descriptiva.** La brecha incluye pauta digital, feriados y estacionalidad — no es incrementalidad de TV |
-| **Minuto a minuto** | El último día cerrado, con el contrafactual reescalado al nivel del día | Aquí **sí** se aísla una emisión: el 22-sep el minuto 20:08 tuvo 206 visitas contra 5.7 esperadas |
+| **Intradía** | El último día cerrado, sumado en bloques de 10 min (o 30, con un botón), con el contrafactual reescalado al nivel del día y una línea ámbar por spot | Aquí **sí** se aísla una emisión: el 22-sep el minuto 20:08 tuvo 206 visitas contra 5.7 esperadas. Se suma en bloques porque por minuto llegan ~7 visitas y el ruido de conteo (±3) hacía parecer que la serie estaba siempre por encima del contrafactual |
 
 Los días con alguna hora anómala salen con punto rojo en la serie diaria.
 

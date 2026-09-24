@@ -228,7 +228,26 @@ const bandasTV = {
     chart.ctx.restore();
   },
 };
-if (window.Chart) Chart.register(bandasTV);
+// Una línea vertical por spot, en el bloque donde cayó la emisión. Va ENCIMA de las series
+// (`afterDatasetsDraw`) porque aquí el spot es el dato que se busca, no contexto de fondo.
+const marcasSpot = {
+  id: 'marcasSpot',
+  afterDatasetsDraw(chart) {
+    const o = (chart.options.plugins || {}).marcasSpot || {};
+    const idx = o.indices || [];
+    const x = chart.scales.x, a = chart.chartArea;
+    if (!idx.length || !x || !a) return;
+    const ctx = chart.ctx;
+    ctx.save();
+    ctx.strokeStyle = o.color; ctx.lineWidth = 1.5; ctx.setLineDash([3, 3]);
+    [...new Set(idx)].forEach(i => {
+      const px = x.getPixelForValue(i);
+      ctx.beginPath(); ctx.moveTo(px, a.top); ctx.lineTo(px, a.bottom); ctx.stroke();
+    });
+    ctx.restore();
+  },
+};
+if (window.Chart) Chart.register(bandasTV, marcasSpot);
 let _charts = [];
 function destroyCharts() { _charts.forEach(c => c.destroy()); _charts = []; }
 
@@ -283,11 +302,13 @@ function mkMulti(id, labels, datasets, o = {}) {
       interaction: { mode: 'index', intersect: false },
       plugins: { legend: { display: false },
         bandasTV: { bandas: o.sinBandas ? [] : (CAMPANAS[PAIS] || []) },
+        marcasSpot: o.spots || {},
         tooltip: { callbacks: { label: ctx => {
         const y = ctx.parsed.y;
         if (y == null) return `${ctx.dataset.label}: sin dato`;
         const f = ctx.dataset.yAxisID === 'y1' ? (der || 'pts') : izq;
-        return `${ctx.dataset.label}: ${FMT[f](y)}`; } } } },
+        return `${ctx.dataset.label}: ${FMT[f](y)}`; },
+        afterBody: items => (o.pieTooltip && items.length) ? o.pieTooltip(items[0].dataIndex) : [] } } },
       scales,
     }
   }));
@@ -401,6 +422,12 @@ const legend = items => `<div class="legend">${items.map(([c, t]) =>
   `<span><i style="background:${c}"></i>${t}</span>`).join('')}</div>`;
 
 let DATA = null, PAIS = 'MX', PLAZA = 'Todas', MESES = '24 meses';
+// Ancho del bloque del gráfico intradía, en minutos. 10 por defecto: un spot mueve
+// ~20-25 visitas en sus primeros 15 minutos, que en un bloque de 10 (~70 esperadas, ruido ±8)
+// se separan del fondo; en uno de 30 (~210, ±14) se diluyen. El de 30 queda como opción para
+// cuando el horario es proyectado y el spot pudo salir un cuarto de hora antes o después.
+const BLOQUES = ['10', '30'];
+let BLOQUE = '10';
 
 // ── El corazón del tablero: cada métrica se dibuja según su `status`, no según si su
 // serie viene vacía. Un `not_available` explica qué fuente falta; jamás pinta un chart
@@ -449,17 +476,24 @@ function drawTV(host, serie) {
       días con alguna hora anómala.</div>
       <div class="ch alto"><canvas id="tv-dia"></canvas></div>
       ${legend([[C.azul, 'Observado'], [C.gris, 'Contrafactual'], [C.rojo, 'Día con hora anómala']])}</div>`
-    + (m ? `<div class="panel"><h3>Minuto a minuto · ${m.fecha}</h3>
-      <div class="cap">El último día cerrado. Aquí sí se aísla el efecto de una emisión: el
-      contrafactual va reescalado al nivel del día (factor ${m.factor_dia}), así que un día
-      globalmente bajo no pinta toda la serie por debajo.
+    + (m ? `<div class="panel"><h3>Intradía · ${m.fecha} · bloques de ${BLOQUE} min</h3>
+      <div class="cap">El último día cerrado, sumado en bloques de ${BLOQUE} minutos. Por minuto
+      llegan tan pocas visitas (~7) que el azar solo ya da agujas de ±3, y la gráfica parecía
+      estar siempre por encima de lo esperado; sumadas en bloques, ese ruido se cancela y lo que
+      queda arriba de la línea gris es exceso real. Las <strong>líneas ámbar</strong> son los
+      spots${m.spots_origen === 'proyectado'
+        ? ' <strong>según el horario proyectado</strong> (aún no llega el as-run de la central: pudieron salir minutos antes o después)'
+        : ' del as-run de la central'}. El contrafactual va reescalado al nivel del día
+      (factor ${m.factor_dia}), así que un día globalmente bajo no pinta toda la serie por debajo.
       ${m.horas_anomalas.length
         ? '<strong>Horas anómalas: ' + m.horas_anomalas.map(a =>
             String(a.hora).padStart(2, '0') + 'h (' + a.sigmas + ' sigmas, ' +
             Math.round(a.exceso) + ' visitas sobre lo esperado)').join(' · ') + '</strong>'
         : 'Sin horas anómalas: ninguna superó 4 sigmas sobre su dispersión histórica.'}</div>
+      ${chips('Bloque (minutos)', BLOQUES, BLOQUE, 'bloque')}
       <div class="ch alto"><canvas id="tv-min"></canvas></div>
-      ${legend([[C.azul, 'Observado'], [C.gris, 'Contrafactual']])}</div>` : '');
+      ${legend([[C.azul, 'Observado'], [C.gris, 'Contrafactual']]
+        .concat((m.spots || []).length ? [[C.ambar, 'Spot']] : []))}</div>` : '');
 
   const L = serie.map(r => r.fecha.slice(5));
   mkMulti('tv-dia', L, [
@@ -470,12 +504,21 @@ function drawTV(host, serie) {
   ], { fmt: 'num', sinBandas: true });
 
   if (!m) return;
-  // pointRadius 0 y tension 0: son 1.440 puntos, y suavizarlos redondearía justo los picos de
-  // un minuto que son la señal que se busca.
-  mkMulti('tv-min', m.puntos.map(p => hhmm(p[0])), [
-    { label: 'Contrafactual', color: C.gris, data: m.puntos.map(p => p[2]), dash: [5, 4], puntoRadio: 0, tension: 0, grosor: 1 },
-    { label: 'Observado', color: C.azul, data: m.puntos.map(p => p[1]), puntoRadio: 0, tension: 0 },
-  ], { fmt: 'num', sinBandas: true });
+  // Se suma, no se promedia: el eje queda en "visitas por bloque", que es la unidad en la que
+  // se lee el exceso de un spot. tension 0: suavizar redondearía justo el bloque del pico.
+  const n = +BLOQUE, B = [];
+  for (let i = 0; i < m.puntos.length; i += n) {
+    const g = m.puntos.slice(i, i + n);
+    B.push([g[0][0], g.reduce((a, p) => a + p[1], 0), g.reduce((a, p) => a + p[2], 0)]);
+  }
+  const spots = m.spots || [];
+  const spotsDe = i => spots.filter(sp => Math.floor(sp[0] / n) === i);
+  mkMulti('tv-min', B.map(b => hhmm(b[0])), [
+    { label: 'Contrafactual', color: C.gris, data: B.map(b => b[2]), dash: [5, 4], puntoRadio: 0, tension: 0 },
+    { label: 'Observado', color: C.azul, data: B.map(b => b[1]), puntoRadio: 0, tension: 0 },
+  ], { fmt: 'num', sinBandas: true,
+       spots: { indices: spots.map(sp => Math.floor(sp[0] / n)), color: C.ambar },
+       pieTooltip: i => spotsDe(i).map(sp => `Spot ${hhmm(sp[0])} · ${sp[1]}${sp[2] ? ' · ' + sp[2] : ''}`) });
 }
 
 // ── Brand Lift ────────────────────────────────────────────────────────────────
@@ -844,7 +887,7 @@ window.rerender = render;
 // La vista queda en la URL: así se puede mandar "el tablero de Colombia" por Slack en vez de
 // "abre el tablero y dale click a CO".
 function syncURL() {
-  const q = new URLSearchParams({ pais: PAIS, plaza: PLAZA, meses: MESES });
+  const q = new URLSearchParams({ pais: PAIS, plaza: PLAZA, meses: MESES, bloque: BLOQUE });
   history.replaceState(null, '', `?${q}`);
 }
 function readURL() {
@@ -852,12 +895,14 @@ function readURL() {
   if (['MX', 'CO'].includes(q.get('pais'))) PAIS = q.get('pais');
   if (['Todas', 'MTY', 'GDL', 'CDMX', 'Resto'].includes(q.get('plaza'))) PLAZA = q.get('plaza');
   if (VENTANAS.includes(q.get('meses'))) MESES = q.get('meses');
+  if (BLOQUES.includes(q.get('bloque'))) BLOQUE = q.get('bloque');
 }
 
 document.addEventListener('click', e => {
   const b = e.target.closest('.chip'); if (!b) return;
   if (b.dataset.pick === 'pais') PAIS = b.dataset.val;
   else if (b.dataset.pick === 'meses') MESES = b.dataset.val;
+  else if (b.dataset.pick === 'bloque') BLOQUE = b.dataset.val;
   else PLAZA = b.dataset.val;
   syncURL();
   render();
