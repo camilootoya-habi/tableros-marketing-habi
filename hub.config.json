@@ -2,7 +2,17 @@
   "title": "Growth & Marketing",
   "subtitle": "Lo que no se mide no se mejora — y acá buscamos mejora continua.",
   "general": { "title": "General · Marketing", "order": 0 },
-  "external_cards": [],
+  "external_cards": [
+    {
+      "title": "Marketing Study Lab",
+      "description": "Biblioteca de estudio del equipo: cursos con objetivos, auto-quizzes y flashcards para Anki. Hoy — Marketing en la era de la IA (español), Git & GitHub, y React · Python · Docker.",
+      "country": "CO & MX",
+      "section": "reference",
+      "order": 5,
+      "tab": "documentos",
+      "url": "https://camilootoya-habi.github.io/marketing-study-lab/"
+    }
+  ],
   "tabs": [
     { "id": "marketing-general", "label": "Marketing General", "order": 0, "group": "dash" },
     { "id": "performance",       "label": "Performance",       "order": 1, "group": "dash" },

@@ -23,7 +23,12 @@ jobs:
       - name: Authenticate with user credentials
         run: |
           echo '${{ secrets.GCP_CREDENTIALS }}' > /tmp/adc.json
-          gcloud config set project ${{ secrets.GCP_PROJECT }}
+          # Proyecto que FACTURA los jobs de BQ. Las tablas se siguen leyendo cross-project
+          # (papyrus-data, papyrus-data-mx, papyrus-master…), pero estas credenciales ya NO tienen
+          # bigquery.jobs.create en ningún papyrus-*, así que el facturador tiene que ser este.
+          # Va fijo a propósito y no por `secrets.GCP_PROJECT`: ese secret apunta a un papyrus-* y
+          # dejaba todos los pasos de `bq query` de abajo devolviendo Access Denied.
+          gcloud config set project sellers-main-prod
           export CLOUDSDK_AUTH_CREDENTIAL_FILE_OVERRIDE=/tmp/adc.json
           echo "CLOUDSDK_AUTH_CREDENTIAL_FILE_OVERRIDE=/tmp/adc.json" >> $GITHUB_ENV
           export GOOGLE_APPLICATION_CREDENTIALS=/tmp/adc.json
@@ -190,20 +195,76 @@ jobs:
           curl -sL -o /tmp/mx_sheet.csv "https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=csv&gid=943056262"
           python3 okr-marketing/build_data.py /tmp/co_sheet.csv /tmp/mx_sheet.csv /tmp/okr_invest.json okr-marketing/data.json
 
-      - name: Query Funnel Sellers (CO + MX)
+      - name: Query Marketing Sellers (CO + MX)
         if: always()
         run: |
-          bq query --use_legacy_sql=false --format=json --max_rows=100000 < tablero-marketing/query.sql > /tmp/funnel_raw.json
+          bq query --use_legacy_sql=false --format=json --max_rows=100000 < marketing-sellers/query.sql > /tmp/funnel_raw.json
 
       - name: Query Antifunnel Sellers (CO + MX)
         if: always()
         run: |
-          bq query --use_legacy_sql=false --format=json --max_rows=200000 < tablero-marketing/antifunnel.sql > /tmp/antifunnel_raw.json
+          bq query --use_legacy_sql=false --format=json --max_rows=200000 < marketing-sellers/antifunnel.sql > /tmp/antifunnel_raw.json
+
+      # Hoja "Asignación de leads": tabla de Asignados Market Maker (CO).
+      # Escribe directo al .json final: la query ya devuelve el shape que lee el HTML,
+      # así que no necesita paso de Process como las de arriba.
+      # ⚠️ El tope va en 150 GB y no en ~2: BigQuery valida `maximum_bytes_billed` ANTES
+      # de ejecutar, con una estimación que ignora el pruning por clustering. La tabla
+      # `hubspot.historical` está clusterizada por `propiedad`, así que la estimación
+      # previa da ~12 GB y la factura real es 1,55 GB. Con el tope en el valor real, la
+      # query se rechaza sin llegar a correr.
+      - name: Query Asignados Market Maker (CO + MX)
+        if: always()
+        run: |
+          bq query --use_legacy_sql=false --format=json --max_rows=200000 \
+            --maximum_bytes_billed=150000000000 \
+            < marketing-sellers/asg_mm.sql > marketing-sellers/asg_mm.json
+
+      # Hoja "Asignación de leads": cifra oficial de Inmobiliaria (A+B) y su
+      # descomposición por historia previa en MM. Escribe directo al .json final.
+      # Mismo tope alto que la de arriba y por la misma razón: cruza
+      # `hubspot.historical`, clusterizada por `propiedad`, y la estimación previa
+      # de BigQuery ignora el pruning del clustering. Factura real: 1,53 GB.
+      - name: Query Asignados Inmobiliaria (CO + MX)
+        if: always()
+        run: |
+          bq query --use_legacy_sql=false --format=json --max_rows=200000 \
+            --maximum_bytes_billed=150000000000 \
+            < marketing-sellers/asg_inmo.sql > marketing-sellers/asg_inmo.json
+
+      # Hoja "Asignación de leads": asignados totales y su reparto por producto
+      # (exclusivo MM / exclusivo Inmo / ambos, desde product_qualified).
+      # Cruza `hubspot.historical`, clusterizada por `propiedad`, así que el tope va alto
+      # por la misma razón que las dos de arriba: la estimación previa de BigQuery ignora
+      # el pruning del clustering. Factura real con los dos países: 2,00 GB.
+      - name: Query Asignados totales (CO + MX)
+        if: always()
+        run: |
+          bq query --use_legacy_sql=false --format=json --max_rows=200000 \
+            --maximum_bytes_billed=150000000000 \
+            < marketing-sellers/asg_total.sql > marketing-sellers/asg_total.json
+
+      # Hoja "Asignado a comercial": cohortes de marketing y su llegada al comercial
+      # humano, en CO y MX. No cruza `hubspot.historical`, así que no necesita el tope
+      # alto de las tres de arriba. Factura real: 0,14 GB, la más barata de la hoja.
+      - name: Query Asignado a comercial (CO + MX)
+        if: always()
+        run: |
+          bq query --use_legacy_sql=false --format=json --max_rows=200000 \
+            --maximum_bytes_billed=20000000000 \
+            < marketing-sellers/asg_comercial.sql > marketing-sellers/asg_comercial.json
+
+      # Hoja "Error de Buybox": lista lead por lead de los ultimos 30 dias. Es un tablero
+      # de trabajo (para llamar a alguien), no una serie, asi que la ventana es fija.
+      - name: Query Error de Buybox detalle (CO + MX)
+        if: always()
+        run: |
+          bq query --use_legacy_sql=false --format=json --max_rows=100000             --maximum_bytes_billed=150000000000             < marketing-sellers/buybox_detalle.sql > marketing-sellers/buybox_detalle.json
 
       - name: Query MM-sin-Inmo states (CO + MX)
         if: always()
         run: |
-          bq query --use_legacy_sql=false --format=json --max_rows=200000 < tablero-marketing/mm_sin_inmo_states.sql > /tmp/mm_sin_inmo_raw.json
+          bq query --use_legacy_sql=false --format=json --max_rows=200000 < marketing-sellers/mm_sin_inmo_states.sql > /tmp/mm_sin_inmo_raw.json
 
       - name: Process funnel data.json
         if: always()
@@ -212,11 +273,11 @@ jobs:
           import json
           with open('/tmp/funnel_raw.json') as f:
               data = json.load(f)
-          int_keys = ('f','tr','t','cal_mm','cal_inmo','asg_inmo','cal_mm_no_inmo','cal_mm_dup','cal_mm_desc','incomp','dup')
+          int_keys = ('tr','t','cal_mm','cal_inmo','asg_inmo','cal_mm_no_inmo','cal_desclas','cal_mm_desclas','cal_mm_dup','cal_mm_desc','incomp','dup')
           for r in data:
               for k in int_keys:
                   r[k] = int(r[k])
-          with open('tablero-marketing/data.json','w') as f:
+          with open('marketing-sellers/data.json','w') as f:
               json.dump(data, f, separators=(',',':'))
           print(f'Funnel rows: {len(data)}')
           "
@@ -229,11 +290,51 @@ jobs:
           with open('/tmp/antifunnel_raw.json') as f:
               data = json.load(f)
           for r in data:
-              for k in ('f','state_id','n'):
+              for k in ('state_id','n'):
                   r[k] = int(r[k])
-          with open('tablero-marketing/antifunnel.json','w') as f:
+          with open('marketing-sellers/antifunnel.json','w') as f:
               json.dump(data, f, separators=(',',':'))
           print(f'Antifunnel rows: {len(data)}')
+          "
+
+      - name: Query MM-desclasificados por estado actual (CO + MX)
+        if: always()
+        run: |
+          bq query --use_legacy_sql=false --format=json --max_rows=200000 < marketing-sellers/mm_desclas_states.sql > /tmp/mm_desclas_raw.json
+
+      - name: Process MM-desclasificados data.json
+        if: always()
+        run: |
+          python3 -c "
+          import json
+          with open('/tmp/mm_desclas_raw.json') as f:
+              data = json.load(f)
+          for r in data:
+              for k in ('state_id','n'):
+                  r[k] = int(r[k])
+          with open('marketing-sellers/mm_desclas_states.json','w') as f:
+              json.dump(data, f, separators=(',',':'))
+          print(f'MM-desclas rows: {len(data)}')
+          "
+
+      - name: Query Inmo-desclasificados por estado actual (CO + MX)
+        if: always()
+        run: |
+          bq query --use_legacy_sql=false --format=json --max_rows=200000 < marketing-sellers/inmo_desclas_states.sql > /tmp/inmo_desclas_raw.json
+
+      - name: Process Inmo-desclasificados data.json
+        if: always()
+        run: |
+          python3 -c "
+          import json
+          with open('/tmp/inmo_desclas_raw.json') as f:
+              data = json.load(f)
+          for r in data:
+              for k in ('state_id','n'):
+                  r[k] = int(r[k])
+          with open('marketing-sellers/inmo_desclas_states.json','w') as f:
+              json.dump(data, f, separators=(',',':'))
+          print(f'Inmo-desclas rows: {len(data)}')
           "
 
       - name: Process MM-sin-Inmo data.json
@@ -244,9 +345,9 @@ jobs:
           with open('/tmp/mm_sin_inmo_raw.json') as f:
               data = json.load(f)
           for r in data:
-              for k in ('f','state_id','n'):
+              for k in ('state_id','n'):
                   r[k] = int(r[k])
-          with open('tablero-marketing/mm_sin_inmo_states.json','w') as f:
+          with open('marketing-sellers/mm_sin_inmo_states.json','w') as f:
               json.dump(data, f, separators=(',',':'))
           print(f'MM-sin-Inmo rows: {len(data)}')
           "
@@ -456,17 +557,6 @@ jobs:
         run: |
           python3 prioridad-mm/build_data.py /tmp/prioridad-mm-raw.json prioridad-mm/data.json
 
-      - name: Query BigQuery — funnel-fuentes (CO)
-        if: always()
-        run: |
-          bq query --use_legacy_sql=false --format=json --max_rows=100000 \
-            < funnel-fuentes/query.sql > /tmp/funnel-fuentes-raw.json
-
-      - name: Build funnel-fuentes/data.json
-        if: always()
-        run: |
-          python3 scripts/funnel_fuentes_to_json.py /tmp/funnel-fuentes-raw.json funnel-fuentes/data.json
-
       - name: Query BigQuery — calificados-mm-inmo (CO + MX)
         if: always()
         run: |
@@ -478,30 +568,52 @@ jobs:
         run: |
           python3 calificados-mm-inmo/build_data.py /tmp/calificados-mm-inmo-raw.json calificados-mm-inmo/data.json
 
-      - name: Query funnel-web-mx — clicks (MX)
+      # Hoja "Funnel WEB" de marketing-sellers (migrada desde funnel-web-mx, 2026-09-02).
+      # Know-how de los puentes de datos: docs/marketing/puentes-datos-web.md
+      - name: Query marketing-sellers/web — clicks (MX)
         if: always()
         run: |
-          bq query --use_legacy_sql=false --format=json --max_rows=200000 < funnel-web-mx/query_clicks.sql > /tmp/wfmx_clicks.json
+          bq query --use_legacy_sql=false --format=json --max_rows=200000 < marketing-sellers/web_query_clicks.sql > /tmp/tmweb_clicks.json
 
-      - name: Query funnel-web-mx — sessions (MX)
+      - name: Query marketing-sellers/web — sessions (MX)
         if: always()
         run: |
-          bq query --use_legacy_sql=false --format=json --max_rows=500000 < funnel-web-mx/query_sessions.sql > /tmp/wfmx_sessions.json
+          bq query --use_legacy_sql=false --format=json --max_rows=500000 < marketing-sellers/web_query_sessions.sql > /tmp/tmweb_sessions.json
 
-      - name: Query funnel-web-mx — leads (MX)
+      - name: Query marketing-sellers/web — leads (MX)
         if: always()
         run: |
-          bq query --use_legacy_sql=false --format=json --max_rows=500000 < funnel-web-mx/query_leads.sql > /tmp/wfmx_leads.json
+          bq query --use_legacy_sql=false --format=json --max_rows=500000 < marketing-sellers/web_query_leads.sql > /tmp/tmweb_leads.json
 
-      - name: Build funnel-web-mx/data.json
+      - name: Query marketing-sellers/web — rutas (CO+MX)
         if: always()
         run: |
-          python3 funnel-web-mx/build_data.py /tmp/wfmx_clicks.json /tmp/wfmx_sessions.json /tmp/wfmx_leads.json funnel-web-mx/data.json
+          bq query --use_legacy_sql=false --format=json --max_rows=100000 < marketing-sellers/web_query_rutas.sql > /tmp/tmweb_rutas.json
+
+      - name: Query marketing-sellers/web — referrers (CO+MX)
+        if: always()
+        run: |
+          bq query --use_legacy_sql=false --format=json --max_rows=500000 < marketing-sellers/web_query_referrers.sql > /tmp/tmweb_ref.json
+
+      - name: Query marketing-sellers/web — OTP salud (CO+MX)
+        if: always()
+        run: |
+          bq query --use_legacy_sql=false --format=json --max_rows=200000 < marketing-sellers/web_query_otp_salud.sql > /tmp/otp_salud.json
+
+      - name: Query marketing-sellers/web — OTP A/B (CO+MX)
+        if: always()
+        run: |
+          bq query --use_legacy_sql=false --format=json --max_rows=200000 < marketing-sellers/web_query_otp_ab.sql > /tmp/otp_ab.json
+
+      - name: Build marketing-sellers/web_data.json
+        if: always()
+        run: |
+          python3 marketing-sellers/build_web_data.py /tmp/tmweb_clicks.json /tmp/tmweb_sessions.json /tmp/tmweb_leads.json /tmp/tmweb_rutas.json /tmp/tmweb_ref.json /tmp/otp_salud.json /tmp/otp_ab.json marketing-sellers/web_data.json
 
       - name: Auto-discovery — correr queries de tableros nuevos (líderes)
         if: always()
-        env:
-          GCP_PROJECT: ${{ secrets.GCP_PROJECT }}
+        # Sin `env: GCP_PROJECT` a propósito: inyectaba el secret (un papyrus-*) y pisaba el default
+        # correcto del script. run_queries.py factura en sellers-main-prod por su cuenta.
         run: python3 scripts/run_queries.py
 
       - name: Regenerar el hub (index.html)

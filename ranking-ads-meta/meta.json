@@ -1,0 +1,10 @@
+{
+  "title": "Ranking de ads — Meta",
+  "description": "Los ads de Meta que están entregando en CO y MX, ordenados por inversión, con su share del total y una miniatura del creativo. Inversión y entrega desde BigQuery; nombre, estado y creativo desde la Marketing API. Se actualiza solo, una vez al día.",
+  "country": "CO & MX",
+  "section": "dashboard",
+  "tab": "performance",
+  "order": 150,
+  "featured": false,
+  "skip_hub_cron": true
+}

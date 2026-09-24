@@ -66,6 +66,27 @@ def test_build_page_renders_external_card_under_analysis():
     assert "Informe externo" in html
     assert ">Analysis<" in html
 
+def test_external_card_honors_tab_field():
+    """Una external_card con `tab` sale en esa pestaña, no en marketing-general."""
+    TABS = [
+        {"id": "marketing-general", "label": "Marketing General", "order": 0},
+        {"id": "documentos", "label": "Documentos", "order": 1},
+    ]
+    config = {
+        "title": "T", "subtitle": "s", "general": {"title": "General", "order": 0},
+        "tabs": TABS,
+        "external_cards": [{
+            "section": "reference", "order": 1, "title": "Biblioteca",
+            "description": "d", "country": "CO", "url": "https://example.com/lib/",
+            "tab": "documentos",
+        }],
+    }
+    html = build_hub.build_page([], {}, config, template=build_hub.load_template())
+    docs_panel = html.split('id="panel-documentos"')[1]
+    general_panel = html.split('id="panel-marketing-general"')[1].split('id="panel-documentos"')[0]
+    assert "Biblioteca" in docs_panel
+    assert "Biblioteca" not in general_panel
+
 def test_slugify_strips_accents_and_spaces():
     assert build_hub.slugify("Performance Colombia") == "performance-colombia"
     assert build_hub.slugify("Growth México") == "growth-mexico"

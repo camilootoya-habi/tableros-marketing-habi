@@ -18,12 +18,28 @@ def test_job_applies_default_max_bytes():
     assert job["sql_path"].name == "query.sql"
 
 def test_build_bq_command_includes_guardrails():
-    cmd = run_queries.build_bq_command(max_bytes=5_000_000_000, project="papyrus-data")
+    cmd = run_queries.build_bq_command(max_bytes=5_000_000_000, project="sellers-main-prod")
     assert cmd[0] == "bq"
     assert "--maximum_bytes_billed=5000000000" in cmd
     assert "--format=json" in cmd
     assert "--nouse_legacy_sql" in cmd
-    assert "--project_id=papyrus-data" in cmd
+    assert "--project_id=sellers-main-prod" in cmd
+
+def test_billing_project_default_no_es_papyrus(monkeypatch):
+    # Los papyrus-* no aceptan bigquery.jobs.create con las credenciales del hub: si el default
+    # vuelve a ser uno de ellos, TODAS las queries del cron mueren con Access Denied.
+    monkeypatch.delenv("BQ_BILLING_PROJECT", raising=False)
+    assert run_queries.billing_project() == "sellers-main-prod"
+
+def test_billing_project_ignora_gcp_project(monkeypatch):
+    # El secret GCP_PROJECT del repo apunta a un papyrus-*. El script NO debe leerlo.
+    monkeypatch.delenv("BQ_BILLING_PROJECT", raising=False)
+    monkeypatch.setenv("GCP_PROJECT", "papyrus-data")
+    assert run_queries.billing_project() == "sellers-main-prod"
+
+def test_billing_project_respeta_override(monkeypatch):
+    monkeypatch.setenv("BQ_BILLING_PROJECT", "otro-proyecto")
+    assert run_queries.billing_project() == "otro-proyecto"
 
 def test_run_job_isolates_failure(tmp_path):
     # SQL inexistente → read_text levanta; run_job debe capturarlo y devolver False

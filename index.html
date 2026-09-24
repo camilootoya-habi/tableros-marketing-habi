@@ -17,6 +17,12 @@
     --text-muted: #94a3b8;
     --text-muted-2: #64748b;
     --accent: #818cf8;
+    /* verde neón de los tableros oficiales (featured) */
+    --neon: #39ff88;
+    --neon-text: #b6ffd4;
+    --neon-soft: rgba(57, 255, 136, .35);
+    --neon-glow: rgba(57, 255, 136, .22);
+    --neon-bg: rgba(57, 255, 136, .07);
   }
   body.light {
     --bg: #f5f7fa;
@@ -28,6 +34,12 @@
     --text-muted: #64748b;
     --text-muted-2: #94a3b8;
     --accent: #6366f1;
+    /* en claro el neón puro no contrasta sobre blanco: se oscurece el borde y el texto */
+    --neon: #06c167;
+    --neon-text: #04703c;
+    --neon-soft: rgba(6, 193, 103, .28);
+    --neon-glow: rgba(6, 193, 103, .18);
+    --neon-bg: rgba(6, 193, 103, .07);
   }
   * { margin: 0; padding: 0; box-sizing: border-box; }
   body { font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; display: flex; flex-direction: column; align-items: center; padding: 48px 24px; transition: background 0.2s, color 0.2s; }
@@ -44,6 +56,19 @@
   .card h2 { font-size: 15px; color: var(--text-title); font-weight: 600; line-height: 1.3; }
   .card h2 .country { color: var(--accent); font-weight: 700; margin-right: 8px; }
   .card p { font-size: 12.5px; color: var(--text-muted); line-height: 1.4; }
+
+  /* Tableros oficiales: `"featured": true` en su meta.json. La leyenda de abajo del
+     nav explica qué significa el verde. Ver docs/marketing/tableros-oficiales.md */
+  .card.featured { border-color: var(--neon); border-width: 2px; box-shadow: 0 0 0 1px var(--neon-soft), 0 0 14px var(--neon-glow); }
+  .card.featured:hover { border-color: var(--neon); background: var(--neon-bg); box-shadow: 0 0 0 1px var(--neon-soft), 0 0 22px var(--neon-glow); }
+  .card.featured h2 { color: var(--neon-text); }
+  .card.featured h2 .country { color: var(--neon); }
+  .badge-oficial { display: inline-block; margin-left: 8px; padding: 1px 7px; border-radius: 999px; background: var(--neon); color: #06210f; font-size: 10px; font-weight: 700; letter-spacing: .4px; text-transform: uppercase; vertical-align: 1px; }
+
+  /* Leyenda del código de color */
+  .leyenda { max-width: 1400px; width: 100%; margin: -20px auto 32px; display: flex; align-items: center; justify-content: center; gap: 10px; font-size: 12.5px; color: var(--text-muted); text-align: center; flex-wrap: wrap; }
+  .leyenda .swatch { display: inline-block; width: 26px; height: 12px; border-radius: 3px; border: 2px solid var(--neon); background: var(--neon-bg); flex: none; }
+  .leyenda strong { color: var(--neon-text); font-weight: 600; }
 
   footer { margin-top: 48px; font-size: 12px; color: var(--text-muted-2); }
 
@@ -95,12 +120,28 @@
     <button type="button" class="tab-btn tab-docs" data-tab="documentos">Documentos</button>
     <button type="button" class="tab-btn tab-ref" data-tab="referencias">Referencias</button>
   </nav>
+  <p class="leyenda">
+    <span class="swatch" aria-hidden="true"></span>
+    <span>Los tableros en <strong>verde</strong> son los <strong>oficiales</strong>: la fuente de verdad
+    del indicador, mantenidos al día y los que se citan en el WBR y el OKR. Si dos tableros muestran lo
+    mismo, manda el verde.</span>
+  </p>
   <div class="tab-panel active" id="panel-marketing-general">
   <h2 class="owner-title">Marketing General</h2>
   <div class="columns">
     <div class="column">
       <h2 class="section-title"><span>Dashboards</span></h2>
       <div class="card-stack">
+        <a class="card featured" href="marketing-sellers/">
+          <h2><span class="country">CO</span><span class="country">MX</span>Marketing Sellers<span class="badge-oficial">oficial</span></h2>
+          <p>Calificación y asignación de leads sellers para Market Maker vs Inmobiliaria, por fuente, país y período.</p>
+        </a>
+
+        <a class="card" href="salud-marca/">
+          <h2><span class="country">MX</span><span class="country">CO</span>Salud de marca</h2>
+          <p>Salud de marca mes a mes: percepción (Brand Lift, exit poll), búsqueda (Trends, Search Console) y demanda (tráfico home y formulario, pauta vs orgánico).</p>
+        </a>
+
         <a class="card" href="wbr-2-0/">
           <h2><span class="country">CO</span><span class="country">MX</span>WBR 2.0</h2>
           <p>Drill-down semanal: fuente → canal → plataforma. Tabla con cumplimiento de meta + variación vs semana anterior y vs prom 7s, charts de tendencias por nivel de filtro.</p>
@@ -116,11 +157,6 @@
           <p>Distribución semanal de leads tipificados A/B/C en HubSpot (campo prioridad_gestion_market_maker), últimas 18 semanas con selector de país.</p>
         </a>
 
-        <a class="card" href="tablero-marketing/">
-          <h2><span class="country">CO</span><span class="country">MX</span>Funnel Sellers</h2>
-          <p>Calificación de leads para Market Maker vs Inmobiliaria por fuente, país y período.</p>
-        </a>
-
         <a class="card" href="okr-marketing/">
           <h2><span class="country">CO</span><span class="country">MX</span>OKR Marketing</h2>
           <p>Leads asignados, inversión y CPLA: seguimiento mensual vs metas del Q y comparación YoY.</p>
@@ -129,11 +165,6 @@
         <a class="card" href="creativo-pamela/">
           <h2><span class="country">MX</span>Creativo Pamela Longoria</h2>
           <p>Funnel cohorte del creativo con la influencer Pamela Longoria vs todo Web Paid Facebook MX, lado a lado.</p>
-        </a>
-
-        <a class="card" href="funnel-fuentes/">
-          <h2><span class="country">CO</span>Funnel por fuente de lead</h2>
-          <p>Web habi.co · Help-to-sell · Ayuda Venta (Inmo): etapas del formulario (Segment) y conversión a HubSpot vía chain UUID. Vista Funnel + Tendencia.</p>
         </a>
 
         <a class="card" href="calificados-mm-inmo/">
@@ -151,14 +182,9 @@
           <p>Calificados MM live del día actual, hora por hora. Selector país + multi-select de fuentes. Comparativo hoy vs hace 7 días vs promedio últimos 4 mismos días. Auto-refresh cada 15 min.</p>
         </a>
 
-        <a class="card" href="funnel-reinteresados-mx/">
-          <h2><span class="country">MX/CO</span>Funnel campaña Reinteresados — WEB (MX + CO)</h2>
-          <p>Funnel y antifunnel de la campaña de retargeting de reinteresados (WEB), con selector de país (México / Colombia) y filtro geográfico: Registros → Calificados (MM/Inmo) → Owner → Asignados (WBR Mart) → Citas → Cierres/Contrato, por estado/ciudad. Fuente: hubspot.deals (~7 min de lag), refresco cada 10 min.</p>
-        </a>
-
-        <a class="card" href="funnel-web-mx/">
-          <h2><span class="country">MX</span>Funnel Web MX</h2>
-          <p>Diagnóstico paso a paso de la caída click→registro en MX fuente WEB, integrando tráfico real desde Segment. Funnel de 12 etapas + clusters por canal/plataforma, device y zona del inmueble.</p>
+        <a class="card" href="asignacion-co/">
+          <h2><span class="country">CO</span>Asignación · MM vs INMO (CO)</h2>
+          <p>Tres lentes: cosechas por fecha de creación, llegadas a INMO y llegadas a MM con sus rutas de origen (directo, GABI, cruce entre productos). Incluye reconciliación con el WBR mart.</p>
         </a>
       </div>
     </div>
@@ -175,9 +201,19 @@
           <p>Performance Max: registros diarios y % de leads sin ask_price por UTM. QA con objetivo &lt; 10%.</p>
         </a>
 
+        <a class="card" href="mmm/">
+          <h2><span class="country">CO</span><span class="country">MX</span>Marketing Mix Model</h2>
+          <p>Incrementalidad de la pauta sobre leads calificados, CO y MX. Contribución por canal, ROI marginal con intervalos de credibilidad, adstock, saturación y simulador de reasignación de presupuesto. Modelo bayesiano (Google Meridian) sobre ~5 años de serie semanal. Última corrida del modelo: 2026-09-21.</p>
+        </a>
+
         <a class="card" href="pauta-propiedades/">
           <h2><span class="country">MX</span>Pauta Propiedades.com</h2>
-          <p>Rendimiento de la pauta automatizada de publicaciones de Propiedades.com en Meta (objetivo Tráfico → listing). Métricas por publicación y por cliente inmobiliario: gasto, impresiones, clics al enlace, CTR y costo por clic. Selector de cliente y estado. Fuente: Marketing API de Meta, actualización manual.</p>
+          <p>Pauta automatizada de publicaciones de Propiedades.com en Meta: campañas de conversión por el evento interes_marketing del pixel, con control de gasto, comparativa por cliente y vigilancia de listings muertos.</p>
+        </a>
+
+        <a class="card" href="ranking-ads-meta/">
+          <h2><span class="country">CO</span><span class="country">MX</span>Ranking de ads — Meta</h2>
+          <p>Los ads de Meta que están entregando en CO y MX, ordenados por inversión, con su share del total y una miniatura del creativo. Inversión y entrega desde BigQuery; nombre, estado y creativo desde la Marketing API. Se actualiza solo, una vez al día.</p>
         </a>
       </div>
     </div>
@@ -257,6 +293,20 @@
           <h2><span class="country">MX</span>Segmentación JTBD — Vendedores Tuhabi MX</h2>
           <p>Re-lectura del estudio de GDV (n=291) por Job To Be Done en vez de buyer personas: 4 jobs (Urgencia, Soltar, Invertir, Crecer) desde P.4+P.22, transparencia del solapamiento (68% multi-job), re-corte de los cruces de GDV por job, y puente persona↔JTBD.</p>
         </a>
+
+        <a class="card" href="asignados-comercial-mm/">
+          <h2><span class="country">MX</span>Asignados comercial MM · ciclo ago 2026</h2>
+          <p>Documento de decisión: si el indicador de asignados a comercial de Market Maker quedó por debajo del 80% de la meta y si los leads del Descartador y de la cola de GABI deben contarse para el esquema de comisiones.</p>
+        </a>
+      </div>
+    </div>
+    <div class="column">
+      <h2 class="section-title"><span>Reference</span></h2>
+      <div class="card-stack">
+        <a class="card" href="https://camilootoya-habi.github.io/marketing-study-lab/">
+          <h2><span class="country">CO</span><span class="country">MX</span>Marketing Study Lab</h2>
+          <p>Biblioteca de estudio del equipo: cursos con objetivos, auto-quizzes y flashcards para Anki. Hoy — Marketing en la era de la IA (español), Git &amp; GitHub, y React · Python · Docker.</p>
+        </a>
       </div>
     </div>
   </div>
@@ -268,8 +318,8 @@
       <h2 class="section-title"><span>Reference</span></h2>
       <div class="card-stack">
         <a class="card" href="docs-marketing/">
-          <h2><span class="country">CO</span><span class="country">MX</span>Marketing Sellers · Docs</h2>
-          <p>Diccionario de tablas, fuentes (fuente_id), canales y cómo se hace el cruce UTM para establecer el canal. Referencia rápida para queries y tableros.</p>
+          <h2><span class="country">CO</span><span class="country">MX</span>Referencias - Marketing Sellers</h2>
+          <p>Documento, no tablero: no está conectado a BigQuery. Diccionario de tablas, fuentes (fuente_id), canales y cómo se hace el cruce UTM para establecer el canal. Referencia rápida para queries y tableros.</p>
         </a>
       </div>
     </div>

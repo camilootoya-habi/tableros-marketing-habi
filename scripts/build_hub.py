@@ -40,9 +40,13 @@ def render_card(d: dict) -> str:
         f'<span class="country">{escape(c.strip())}</span>'
         for c in country.split("&")
     ) if country else ""
+    # `featured: true` en el meta.json marca los tableros oficiales: se resaltan en
+    # verde neón y la leyenda del hub explica qué significa. Ver docs/marketing.
+    featured = " featured" if d.get("featured") else ""
+    badge = '<span class="badge-oficial">oficial</span>' if d.get("featured") else ""
     return (
-        f'        <a class="card" href="{escape(d["link"])}">\n'
-        f'          <h2>{chips}{escape(d["title"])}</h2>\n'
+        f'        <a class="card{featured}" href="{escape(d["link"])}">\n'
+        f'          <h2>{chips}{escape(d["title"])}{badge}</h2>\n'
         f'          <p>{escape(d["description"])}</p>\n'
         f'        </a>'
     )
@@ -93,7 +97,7 @@ def discover_dashboards(repo_root: Path):
                 "title": meta["title"], "description": meta["description"],
                 "country": meta["country"], "section": meta.get("section", "dashboard"),
                 "order": meta.get("order", 9999), "query": meta.get("query"),
-                "tab": meta.get("tab"),
+                "tab": meta.get("tab"), "featured": meta.get("featured", False),
             })
         except (ValueError, KeyError, OSError) as e:
             print(f"  ⚠ meta inválido, se salta: {meta_path} ({e})", file=sys.stderr)
@@ -122,14 +126,17 @@ def render_empty_panel() -> str:
 
 def render_tab_content(tab_id, tab_label, dashboards, leaders, config) -> str:
     """Owner-blocks dentro de una pestaña: general primero, luego líderes por order.
-    Las external_cards solo cuelgan de la pestaña marketing-general. El título del
-    bloque general es la etiqueta de la propia pestaña (no un texto fijo)."""
+    Las external_cards cuelgan de la pestaña que declaren en `tab`, o de
+    marketing-general si no la declaran. El título del bloque general es la
+    etiqueta de la propia pestaña (no un texto fijo)."""
     blocks = []
     general_cards = [d for d in dashboards if d["owner"] == "general"]
-    if tab_id == "marketing-general":
-        general_cards = general_cards + [
-            {**c, "link": c["url"]} for c in config.get("external_cards", [])
-        ]
+    externals = [
+        {**c, "link": c["url"]}
+        for c in config.get("external_cards", [])
+        if c.get("tab", "marketing-general") == tab_id
+    ]
+    general_cards = general_cards + externals
     if general_cards:
         blocks.append(render_owner_block(tab_label, general_cards))
     for lid in sorted(leaders, key=lambda k: leaders[k].get("order", 9999)):
