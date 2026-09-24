@@ -40,7 +40,11 @@ jobs:
           GH_READ_TOKEN:      ${{ secrets.GH_READ_TOKEN }}
           META_ACCESS_TOKEN:  ${{ secrets.META_ACCESS_TOKEN }}
           NEON_DATABASE_URL:  ${{ secrets.NEON_DATABASE_URL }}
+          # Supabase, donde viven hoy los envíos y las tablas de ventanas. Manda sobre
+          # NEON_DATABASE_URL (la base vieja, sin ventanas_backbone_intento).
+          DATABASE_URL:       ${{ secrets.DATABASE_URL }}
         run: |
+          if [ -z "$DATABASE_URL" ]; then echo "::error::Falta el secret DATABASE_URL (Supabase). Con solo NEON_DATABASE_URL el build lee la base vieja y se cae en ventanas."; exit 1; fi
           cd "$DIR"
           export BUILD_TS="$(date -u +%Y-%m-%dT%H:%MZ)"
           pip install "psycopg[binary]"
