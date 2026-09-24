@@ -801,7 +801,7 @@ def ventanas_cierres():
     from zoneinfo import ZoneInfo
     hoy = datetime.datetime.now(ZoneInfo(VENT_TZ)).date()
     vacio = {"cierres": 0, "cierres_mm": 0, "cierres_inmo": 0, "citas": 0}
-    out = {r: {k: dict(vacio) for k in ("hoy", "7", "30")} for r in VENT_RUTAS}
+    out = {r: {k: {**vacio, "prev": dict(vacio)} for k in ("hoy", "7", "30")} for r in VENT_RUTAS}
     try:
         filas = q_cached("query_ventanas_cierres.sql")
         ruta_de = {r["deal_id"]: r["ruta"] for r in N._rows(
@@ -827,11 +827,17 @@ def ventanas_cierres():
             if dias < 0:                      # citas agendadas a futuro: no son de ningún rango
                 continue
             for k, n in (("hoy", 0), ("7", 7), ("30", 30)):
+                # prev = el periodo del mismo largo justo antes (hoy → ayer, 7 d → los 7 previos)
                 if (dias == 0) if n == 0 else (dias < n):
-                    for r in (rt, "total"):
-                        out[r][k][met] += 1
-                        if met != "citas":
-                            out[r][k]["cierres"] += 1
+                    dst = [out[r][k] for r in (rt, "total")]
+                elif (dias == 1) if n == 0 else (n <= dias < 2 * n):
+                    dst = [out[r][k]["prev"] for r in (rt, "total")]
+                else:
+                    continue
+                for o in dst:
+                    o[met] += 1
+                    if met != "citas":
+                        o["cierres"] += 1
     return out
 
 
@@ -851,14 +857,24 @@ def ventanas_metricas():
         if dias == 0:
             return f"(f.ts AT TIME ZONE '{VENT_TZ}')::date = (now() AT TIME ZONE '{VENT_TZ}')::date"
         return f"f.ts > now() - interval '{int(dias)} days'"
+    def _cond_prev(dias):
+        """El periodo del mismo largo justo antes, para el comparativo de conversión."""
+        if dias == 0:
+            return (f"(f.ts AT TIME ZONE '{VENT_TZ}')::date = "
+                    f"(now() AT TIME ZONE '{VENT_TZ}')::date - 1")
+        return (f"f.ts <= now() - interval '{int(dias)} days' "
+                f"AND f.ts > now() - interval '{2 * int(dias)} days'")
     cierres = ventanas_cierres()
     rutas = {r: {} for r in VENT_RUTAS}
     with _SNC() as c:
         for k, d in ventanas_dias.items():
             por = {m: _vent_por_ruta(c, fuente, _cond(d)) for m, fuente in _VENT_MET.items()}
+            porp = {m: _vent_por_ruta(c, fuente, _cond_prev(d)) for m, fuente in _VENT_MET.items()}
             for r in VENT_RUTAS:
+                ci = dict(cierres[r][k]); cip = ci.pop("prev")
                 rutas[r][k] = {m: por[m][r] for m in _VENT_MET}
-                rutas[r][k].update(cierres[r][k])
+                rutas[r][k].update(ci)
+                rutas[r][k]["prev"] = {**{m: porp[m][r] for m in _VENT_MET}, **cip}
     return {"rangos": rutas["total"], "rutas": rutas, "pais": "CO"}
 
 
