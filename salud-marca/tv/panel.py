@@ -34,8 +34,18 @@ RAZON_CO = ("La campaña de TV abierta es solo de México. Para CO no hay emisio
             "ni export de GA4 con el que construir el contrafactual minuto a minuto.")
 
 
+def _origen(spots_d):
+    if not spots_d:
+        return None
+    return "proyectado" if any(f.get("origen") == "proyectado" for f in spots_d) else "as-run"
+
+
 def serie_diaria(serie, perfil, horas_sd, spots, desde, hasta, minutos_de_dia, est, hor, bl):
-    """[{fecha, observado, esperado, exceso, spots, anomalia, sigmas_max}, ...]"""
+    """[{fecha, observado, esperado, exceso, spots, spots_origen, anomalia, sigmas_max}, ...]
+
+    `spots_origen` (as-run | proyectado | None) deja al tablero distinguir los días cuyo conteo
+    de spots es real de los que salen del horario proyectado.
+    """
     out = []
     d = desde
     while d <= hasta:
@@ -53,6 +63,7 @@ def serie_diaria(serie, perfil, horas_sd, spots, desde, hasta, minutos_de_dia, e
                 "esperado": round(esp, 1),
                 "exceso": round(obs - esp, 1),
                 "spots": len(spots_d),
+                "spots_origen": _origen(spots_d),
                 "anomalia": bool(anom),
                 "sigmas_max": round(max(a[4] for a in anom), 1) if anom else None,
                 "horas_anomalas": [a[0] for a in anom],
@@ -86,10 +97,8 @@ def serie_minutal(serie, perfil, horas_sd, spots, dia, minutos_de_dia, est, hor,
               for m in range(1440)]
     marcas = sorted([f["ts"].hour * 60 + f["ts"].minute, f.get("canal", ""),
                      f.get("programa", "")] for f in spots_d)
-    origen = ("proyectado" if any(f.get("origen") == "proyectado" for f in spots_d)
-              else "as-run") if spots_d else None
     return {"fecha": dia.isoformat(), "puntos": puntos,
-            "spots": marcas, "spots_origen": origen,
+            "spots": marcas, "spots_origen": _origen(spots_d),
             "factor_dia": round(k, 3),
             "horas_con_spot": sorted(horas),
             "horas_anomalas": [{"hora": a[0], "observado": round(a[1], 1),
