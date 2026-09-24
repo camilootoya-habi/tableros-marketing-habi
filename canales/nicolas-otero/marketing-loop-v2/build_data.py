@@ -692,18 +692,32 @@ _RUTA_CTE = ("ruta AS (SELECT DISTINCT ON (phone) phone, "
              "  ORDER BY phone, received_at)")
 # Teléfonos que respondieron: texto libre al agente ∪ clic de botón (contact_status) cuyo último
 # envío aceptado fue de ventanas. `ts` es el momento de la respuesta.
+# Ventanas = WhatsApp + VOZ. Voz tiene un brazo de primer contacto por llamada (sin plantilla),
+# así que contactar y responder se miden en los dos canales. Llamada hecha = salió del marcador
+# (ni ENCOLADA ni FALLO); respondió = CONTESTADA. Los envíos se reconocen por campaign (no por
+# nombre de plantilla: la del rescate de voz sale de una variable de entorno).
+_ENV_WA = ("SELECT phone, attempted_at AS ts FROM send_log "
+           "WHERE campaign IN ('ventanas','hubspot') AND accepted")
+_LLAMADAS = ("SELECT phone, attempted_at AS ts FROM call_log "
+             "WHERE campaign='ventanas' AND country='CO' AND status NOT IN ('ENCOLADA','FALLO')")
+_CONTESTADAS = ("SELECT phone, attempted_at AS ts FROM call_log "
+                "WHERE campaign='ventanas' AND country='CO' AND status='CONTESTADA'")
 _RESP_UNION = (f"SELECT phone, ts FROM agent_thread WHERE campaign='ventanas' AND role='user' "
                f"UNION ALL "
                f"SELECT cs.phone, cs.responded_at AS ts FROM contact_status cs "
-               f"JOIN (SELECT DISTINCT ON (phone) phone, template FROM send_log WHERE accepted "
+               f"JOIN (SELECT DISTINCT ON (phone) phone, campaign FROM send_log WHERE accepted "
                f"      ORDER BY phone, attempted_at DESC) u ON u.phone = cs.phone "
-               f"WHERE cs.responded_at IS NOT NULL AND u.template LIKE 'ventanas%%'")
+               f"WHERE cs.responded_at IS NOT NULL AND u.campaign IN ('ventanas','hubspot') "
+               f"UNION ALL {_CONTESTADAS}")
 # Cada métrica = (fuente de teléfonos con su timestamp).  count(DISTINCT phone) por ruta y rango/día.
 _VENT_MET = {
     "recibidos":    ("SELECT phone, received_at AS ts FROM ventanas_hs_inbound "
                      "WHERE action NOT LIKE 'DRY:%%' AND action NOT LIKE 'RECUPERADO%%' AND phone IS NOT NULL"),
-    "enviadas":     "SELECT phone, attempted_at AS ts FROM send_log WHERE template LIKE 'ventanas%%' AND accepted",
+    "enviadas":     f"{_ENV_WA} UNION ALL {_LLAMADAS}",
+    "enviadas_wa":  _ENV_WA,
+    "llamadas":     _LLAMADAS,
     "respondieron": _RESP_UNION,
+    "contestaron":  _CONTESTADAS,
     "atendidos":    "SELECT phone, ts FROM agent_thread WHERE campaign='ventanas' AND role='user'",
     "deal_creado":  "SELECT phone, created_at AS ts FROM ventanas_backbone_intento WHERE country='CO' AND resultado='BACKBONE'",
     "deal_fallo":   ("SELECT b.phone, b.created_at AS ts FROM ventanas_backbone_intento b "

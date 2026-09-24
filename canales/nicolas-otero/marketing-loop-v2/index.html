@@ -1038,8 +1038,9 @@ const MET_HELP={
   vs3:'Entrevistas que quedaron completas ese día: completed_at de ventanas_intake.',
   vs4:'Teléfonos a los que el agente cerró con CLOSE_OPT_OUT ese día: pidieron no ser contactados.',
   ve1:'Teléfonos distintos que el webhook de HubSpot mandó al receptor en el rango (ventanas_hs_inbound). Excluye pruebas DRY y las tandas manuales RECUPERADO_*. Misma regla que la gráfica Usuarios por día.',
-  ve2:'Personas distintas con al menos un envío de plantilla ventanas% aceptado por Infobip en el rango (send_log). Incluye a quien entró por tanda de recuperación, por eso puede acercarse o superar a Personas recibidas. Aceptada no es entregada: la entrega real vive en el mart de BigQuery.',
-  ve3:'Personas distintas que respondieron en el rango: texto libre al agente (agent_thread) unido con clics de botón (contact_status.responded_at) cuyo último envío fue de ventanas.',
+  ve2:'Personas distintas contactadas en el rango: plantilla de Ventanas aceptada por Infobip (send_log, campaign ventanas) o llamada de voz hecha (call_log, que salió del marcador). Cada persona cuenta una vez aunque tenga las dos. Incluye tandas de recuperación. Aceptada no es entrega.',
+  ve3:'Personas distintas que respondieron en el rango: texto libre al agente (agent_thread), clics de botón (contact_status.responded_at) cuyo último envío fue de Ventanas, o llamada de voz CONTESTADA (call_log).',
+  ve8:'Deals de Ventanas (primer_agente marketing_loop_ventanas, incluye los de voz) cuya fecha_de_visita cae en el rango. Fuente: HubSpot en BigQuery.',
   ve4:'Personas distintas con al menos un turno propio hacia el agente en el rango (agent_thread, role user, campaign ventanas).',
   ve5:'Personas con resultado BACKBONE en la bitácora ventanas_backbone_intento (desde el 1 de septiembre). Es la única fuente de deal en todo el panel e incluye los disparados por el reloj de 72 h con la entrevista a medias. Fallaron = BACKBONE_FAILED sin un BACKBONE posterior.',
   ve6:'Entrevistas con completed_at en ventanas_intake: la captura terminó, con o sin deal.',
@@ -1491,12 +1492,14 @@ function renderVentanasPanel(){
   const R=(((V.rutas||{})[ventRutaSel])||V.rangos||{})[rangoVent]||{};
   const tabs=['hoy','7','30'].map(r=>`<button type="button" class="winbtn sm${r===rangoVent?' active':''}" onclick="setRangoVent('${r}')">${r==='hoy'?'Hoy':r+' d'}</button>`).join('');
   const rutaSeg=`<div class="seg" style="margin-bottom:20px">${Object.keys(_VRUTA_LBL).map(r=>`<button type="button" class="winbtn${r===ventRutaSel?' active':''}" onclick="setVentRuta('${r}')">${_VRUTA_LBL[r]}</button>`).join('')}</div>`;
+  // Ventanas = WhatsApp + voz: contactar y responder suman los dos canales (personas distintas).
   const pasos=[
-    {lab:'Personas recibidas'+IH('ve1'), k:'recibidos', color:'var(--accent)', pie:'teléfonos distintos · webhook, sin recuperados'},
-    {lab:'Plantillas enviadas'+IH('ve2'), k:'enviadas', color:'#A855F7', pie:'personas · Infobip aceptó, no es entrega'},
-    {lab:'Respondieron'+IH('ve3'), k:'respondieron', color:'#2DD4BF', pie:'botón + texto libre · personas'},
-    {lab:'Atendidos por el agente'+IH('ve4'), k:'atendidos', color:'#0EA5E9', pie:'personas, no turnos'},
-    {lab:'Deal creado'+IH('ve5'), k:'deal_creado', color:'#F59E0B', pie:(+R.deal_fallo||0)+' fallaron · bitácora del backbone'},
+    {lab:'Plantillas enviadas'+IH('ve2'), k:'enviadas', color:'#A855F7',
+     pie:`${fmt(+R.enviadas_wa||0)} por WhatsApp · ${fmt(+R.llamadas||0)} por llamada`},
+    {lab:'Respondieron'+IH('ve3'), k:'respondieron', color:'#2DD4BF',
+     pie:`${fmt(+R.contestaron||0)} contestaron llamada · resto botón o texto`},
+    {lab:'Deals creados'+IH('ve5'), k:'deal_creado', color:'#F59E0B', pie:(+R.deal_fallo||0)+' fallaron · bitácora del backbone'},
+    {lab:'Visita agendada'+IH('ve8'), k:'citas', color:'#0EA5E9', pie:'fecha_de_visita en HubSpot'},
     {lab:'Cierres'+IH('ve7'), k:'cierres', color:'var(--ok)',
      pie:`${fmt(+R.cierres_mm||0)} compra directa · ${fmt(+R.cierres_inmo||0)} inmobiliaria`},
   ];
@@ -1516,18 +1519,21 @@ function renderVentanasPanel(){
   <section class="card-sec">
     <div class="cardhead"><div>
       <div class="tabletitle">Embudo de Ventanas</div>
-      <span class="sub">de lead de HubSpot a deal · ${_RANGO_VENT[rangoVent]} · ${_VRUTA_LBL[ventRutaSel]} · Colombia</span></div>
+      <span class="sub">de contacto (WhatsApp o llamada) a cierre · ${_RANGO_VENT[rangoVent]} · ${_VRUTA_LBL[ventRutaSel]} · Colombia</span></div>
       <div class="seg">${tabs}</div></div>
     <div class="funnel">${emb}</div>
-    <div class="akpis" style="margin:16px 0 0;max-width:560px">
+    <div class="akpis" style="margin:16px 0 0;max-width:900px">
+      <div><div class="flab">Personas recibidas${IH('ve1')}</div><div class="fval">${fmt(R.recibidos||0)}</div></div>
+      <div><div class="flab">Atendidos por el agente${IH('ve4')}</div><div class="fval">${fmt(R.atendidos||0)}</div></div>
       <div><div class="flab">Se dieron de baja${IH('vs4')}</div><div class="fval">${fmt(R.bajas||0)}</div></div>
       <div><div class="flab">Enviados a Dapta${IH('vs5')}</div><div class="fval">${fmt(R.dapta||0)}</div></div>
     </div>
     <p class="note"><b>Personas recibidas</b> son teléfonos distintos que mandó el webhook, sin pruebas en seco ni tandas de recuperación: la misma regla de la gráfica de abajo.
     <b>Direct</b> = entró por el flujo compra_wa (primer contacto por WhatsApp); <b>Normal</b> = el resto (no contesta y tibio). La ruta es del teléfono, por su primer POST.
-    <b>Enviadas</b> significa que Infobip aceptó el mensaje, no que llegó: la entrega real vive en el mart de BigQuery, fuera de esta base.
-    <b>Respondieron</b> une los clics de botón (que procesa el bot y nunca llegan al agente) con el texto libre; medido con una sola fuente, el porcentaje llegó a dar 733%.
+    <b>Ventanas incluye voz</b>: voz tiene un brazo de primer contacto por llamada, sin plantilla, así que <b>Plantillas enviadas</b> suma las personas con plantilla de WhatsApp aceptada por Infobip (no es entrega) y las personas a las que se les hizo una llamada; cada persona cuenta una vez.
+    <b>Respondieron</b> une los clics de botón (que procesa el bot y nunca llegan al agente), el texto libre y las llamadas contestadas; medido con una sola fuente, el porcentaje llegó a dar 733%.
     <b>Deal creado</b> sale de la bitácora de intentos al backbone (desde el 1 de septiembre) e incluye los que disparó el reloj de 72 h sin turno del agente.
+    <b>Visita agendada</b> son deals de Ventanas con fecha_de_visita en el rango (HubSpot en BigQuery; los deals de voz también llevan la marca de Ventanas).
     <b>Cierres</b> suma las <b>dos líneas de negocio, que no son el mismo evento</b>: compra directa (Habi compró) y captación de la red de aliados (el dueño firmó mandato, no es una venta); la composición va debajo de la cifra. Vienen de HubSpot en BigQuery.
     La ventana cuenta por <b>cuándo pasó cada cosa</b>, no por cuándo se le escribió: es actividad, no tasa por cohorte.</p>
   </section>
