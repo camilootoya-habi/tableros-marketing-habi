@@ -1,0 +1,75 @@
+name: Actualizar Marketing Loop v2 (cada hora)
+
+# Tablero de Nicolas en canales/nicolas-otero/marketing-loop-v2/. Convive con marketing-loop/
+# (el de Camilo, update-marketing-loop.yml), que no se toca. Mismos secrets y mismo
+# facturador de BQ que ese workflow.
+
+on:
+  schedule:
+    - cron: '20 * * * *'
+  workflow_dispatch:
+
+concurrency:
+  group: update-marketing-loop-v2
+  cancel-in-progress: false
+
+env:
+  DIR: canales/nicolas-otero/marketing-loop-v2
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: google-github-actions/setup-gcloud@v2
+
+      - name: Authenticate with user credentials
+        run: |
+          echo '${{ secrets.GCP_CREDENTIALS }}' > /tmp/adc.json
+          gcloud config set project sellers-main-prod
+          echo "CLOUDSDK_AUTH_CREDENTIAL_FILE_OVERRIDE=/tmp/adc.json" >> $GITHUB_ENV
+          echo "GOOGLE_APPLICATION_CREDENTIALS=/tmp/adc.json" >> $GITHUB_ENV
+
+      - name: Build data.json
+        env:
+          INFOBIP_BASE_URL:   ${{ secrets.INFOBIP_BASE_URL }}
+          INFOBIP_MX_API_KEY: ${{ secrets.INFOBIP_MX_API_KEY }}
+          INFOBIP_CO_API_KEY: ${{ secrets.INFOBIP_CO_API_KEY }}
+          GH_READ_TOKEN:      ${{ secrets.GH_READ_TOKEN }}
+          META_ACCESS_TOKEN:  ${{ secrets.META_ACCESS_TOKEN }}
+          NEON_DATABASE_URL:  ${{ secrets.NEON_DATABASE_URL }}
+        run: |
+          cd "$DIR"
+          export BUILD_TS="$(date -u +%Y-%m-%dT%H:%MZ)"
+          pip install "psycopg[binary]"
+          python3 build_data.py
+
+      # build_data.py degrada en silencio si BQ o Neon fallan: mejor no publicar que pisar
+      # los datos buenos con un data.json vacío.
+      - name: Sanidad del data.json
+        run: |
+          python3 - <<'EOF'
+          import json, os, sys
+          d = json.load(open(os.path.join(os.environ['DIR'], 'data.json')))
+          problemas = [k for k in ('updated', 'embudo', 'diario', 'contact_status') if not d.get(k)]
+          if problemas:
+              print('::error::data.json salio degradado, vacio: ' + ', '.join(problemas))
+              sys.exit(1)
+          print('data.json OK, updated =', d['updated'])
+          EOF
+
+      - name: Commit and push
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add "$DIR/data.json"
+          if git diff --staged --quiet; then echo "sin cambios"; exit 0; fi
+          git commit -m "Auto-update marketing-loop-v2 data.json $(date -u +%Y-%m-%dT%H:%MZ)"
+          for i in 1 2 3 4 5; do
+            if git push; then echo "push OK"; exit 0; fi
+            git fetch origin main
+            git rebase origin/main || { git rebase --abort; exit 1; }
+          done
+          echo "no se pudo pushear"; exit 1
