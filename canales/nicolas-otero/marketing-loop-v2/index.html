@@ -1100,7 +1100,7 @@ function _serieDatos(){
         +(rArr?' · '+rArr.lab+': envío de arranque ('+fmt(rArr.env)+' envíos, '+fmt(rArr.lei)+' leídos) fuera de la gráfica para que se lea la escala; sí está en la tabla y los totales':''),
       ocultar:['env','lei'],
       kpis:[['Envíos',fmt(t.env),'env'],['Entregados',fmt(t.ent),'ent'],['Leídos',fmt(t.lei),'lei'],['Interesados',fmt(t.inte),'inte'],['Creados',fmt(t.cre),'cre'],['Re-asignados',fmt(t.re),'re'],['% interesados',t.ent>0?pct(t.inte/t.ent*100):'·','pinte'],['% pasa asignación',t.cre>0?pct(t.re/t.cre*100):'·','ppasa']],
-      series:[{k:'env',lab:'Envíos',line:true},{k:'lei',lab:'Leídos (apertura)'},{k:'cre',lab:'Creados',labels:true},{k:'re',lab:'Re-asignados',labels:true}], extra:[['Entregados','ent'],['Interesados','inte']], rows,
+      series:[{k:'env',lab:'Envíos',line:true},{k:'lei',lab:'Leídos (apertura)',eje:'y2'},{k:'cre',lab:'Creados',labels:true},{k:'re',lab:'Re-asignados',labels:true}], extra:[['Entregados','ent'],['Interesados','inte']], rows,
       tabla:`<table><thead><tr><th>Día</th><th style="text-align:right">Envíos</th><th style="text-align:right">Entregados</th><th style="text-align:right">Leídos</th>
         <th style="text-align:right">Interesados</th><th style="text-align:right">Creados</th><th style="text-align:right">Re-asignados</th><th style="text-align:right">% pasa</th></tr></thead><tbody>
         ${rows.map(r=>`<tr><td>${r.lab}</td>${td(r.env)}${td(r.ent)}${td(r.lei)}
@@ -1139,7 +1139,7 @@ function renderSerie(){
       ? {type:'line', label:x.lab, data:d.rows.map(r=>_valGraf(d,r,x.k)), borderColor:col[x.k], backgroundColor:col[x.k],
          borderWidth:2, tension:.3, pointRadius:3, pointHoverRadius:5, order:0, yAxisID:'y2'}
       : {label:x.lab, data:d.rows.map(r=>_valGraf(d,r,x.k)), backgroundColor:col[x.k], borderRadius:4, borderSkipped:'bottom',
-         maxBarThickness:28, order:1, _labels:!!x.labels})},
+         maxBarThickness:28, order:1, _labels:!!x.labels, yAxisID:x.eje||'y'})},
     options:{responsive:true, maintainAspectRatio:false, interaction:{mode:'index', intersect:false},
       datasets:{bar:{categoryPercentage:.7, barPercentage:.85}},
       plugins:{legend:{display:false}, barLabels:{color:dark?'#D6D0DD':'#404040'}, tooltip:{callbacks:{
@@ -1149,12 +1149,12 @@ function renderSerie(){
           return fuera.concat(d.extra.map(([l,k])=>l+': '+fmt(r[k]))); }}}},
       scales:{x:{ticks:{color:tick, maxRotation:0, autoSkip:true, maxTicksLimit:14}, grid:{display:false}, border:{display:false}},
         y:{beginAtZero:true, position:'left', ticks:{color:tick, precision:0, maxTicksLimit:6}, grid:{color:grid}, border:{display:false},
-           title:{display:true, text:d.series.filter(x=>!x.line).map(x=>x.lab).join(' · '), color:tick, font:{size:11}}},
-        // La línea (volumen) va en un eje derecho propio, pedido así: las barras quedan legibles
-        // en el izquierdo. Los ejes NO son comparables entre sí; el título de cada uno lo dice.
+           title:{display:true, text:d.series.filter(x=>!x.line && !x.eje).map(x=>x.lab).join(' · '), color:tick, font:{size:11}}},
+        // Volumen (Envíos y Leídos) va en el eje derecho, pedido así: el izquierdo queda solo
+        // para Creados y Re-asignados, que son pocos y sin eso no se leen. Los ejes NO son comparables entre sí; el título de cada uno lo dice.
         y2:{beginAtZero:true, position:'right', ticks:{color:col[d.series.find(x=>x.line).k], precision:0, maxTicksLimit:6},
            grid:{drawOnChartArea:false}, border:{display:false},
-           title:{display:true, text:d.series.find(x=>x.line).lab, color:col[d.series.find(x=>x.line).k], font:{size:11}}}}}});
+           title:{display:true, text:d.series.filter(x=>x.line || x.eje==='y2').map(x=>x.lab).join(' · '), color:col[d.series.find(x=>x.line).k], font:{size:11}}}}}});
 }
 function renderAgentePanel(){ /* absorbido por renderSerie (pestaña "Agente IA") */ }
 
