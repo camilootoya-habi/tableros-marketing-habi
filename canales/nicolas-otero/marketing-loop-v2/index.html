@@ -1,0 +1,2302 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🔁</text></svg>">
+<title>Marketing Loop — Reinterés de leads</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Montserrat:wght@600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+  :root{
+    --bg:#0f172a;--card:#1e293b;--border:#334155;--border-strong:#475569;
+    --text:#e2e8f0;--text-title:#f8fafc;--text-muted:#94a3b8;
+    --accent:#818cf8;--ok:#34d399;--warn:#fbbf24;--bad:#f87171;--sky:#38bdf8;--barbg:#0f1e33;
+    --card-hover:#263348;--row-total:#1a2744;--accent-on:#f8fafc;--backdrop:rgba(15,23,42,.75);
+    --shadow:0 10px 30px rgba(0,0,0,.35);
+  }
+  body.light{
+    --bg:#f5f7fa;--card:#fff;--border:#e2e8f0;--border-strong:#cbd5e1;
+    --text:#334155;--text-title:#0f172a;--text-muted:#64748b;
+    --accent:#6366f1;--ok:#10b981;--warn:#b45309;--bad:#dc2626;--sky:#0ea5e9;--barbg:#eef2f7;
+    --card-hover:#f1f5f9;--row-total:#eef2ff;--accent-on:#fff;--backdrop:rgba(15,23,42,.35);
+    --shadow:0 10px 30px rgba(15,23,42,.10);
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,-apple-system,sans-serif;padding:24px;line-height:1.5}
+  .wrap{width:100%}
+  .controls{display:flex;gap:12px;flex-wrap:wrap;margin:14px 0}
+  .control-card{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:11px 16px}
+  .control-card.grow{flex:1;min-width:220px}
+  .control-label{font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--text-muted);font-weight:700;margin-bottom:8px}
+  .filter-bar{display:flex;gap:4px;flex-wrap:wrap;align-items:center}
+  .filter-bar label{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--text);cursor:pointer;padding:4px 10px;border-radius:6px}
+  .filter-bar label:hover{background:var(--border)}
+  .filter-bar .select-all{border-right:1px solid var(--border);padding-right:12px;margin-right:4px}
+  select.sel{background:var(--bg);color:var(--text);border:1px solid var(--border-strong);border-radius:6px;padding:8px 12px;font:inherit;font-size:13px;cursor:pointer}
+  a.back{display:inline-flex;gap:6px;align-items:center;padding:6px 12px;background:var(--card);border:1px solid var(--border);border-radius:8px;color:var(--text-muted);text-decoration:none;font-size:13px}
+  a.back:hover{color:var(--accent);border-color:var(--accent)}
+  .theme-btn{float:right;background:var(--card);border:1px solid var(--border);color:var(--text);border-radius:8px;padding:6px 12px;font-size:13px;cursor:pointer}
+  h1{font-size:23px;color:var(--text-title);margin:14px 0 2px;font-weight:800;letter-spacing:-.3px}
+  .sub{color:var(--text-muted);font-size:13px;margin-bottom:14px}
+  .pills{display:flex;gap:8px;margin:14px 0}
+  .pill{cursor:pointer;border:1px solid var(--border);background:var(--card);color:var(--text);border-radius:999px;padding:7px 16px;font:inherit;font-size:14px;font-weight:600}
+  .pill.on{background:var(--accent);color:#fff;border-color:var(--accent)}
+  .eyebrow{font-size:11px;text-transform:uppercase;letter-spacing:.8px;color:var(--text-muted);font-weight:700;margin:22px 0 8px;display:flex;align-items:center;gap:6px}
+  .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:12px}
+  .stat{min-width:0}
+  .stat .s{overflow-wrap:anywhere}
+  .kpi3{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin:8px 0 2px}
+  .kpi3 .kl{display:block;font-size:9.5px;letter-spacing:.7px;text-transform:uppercase;color:var(--text-muted);font-weight:800}
+  .kpi3 .kv{display:block;font-size:21px;font-weight:800;color:var(--text-title);line-height:1.15;font-variant-numeric:tabular-nums}
+  .stat{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:15px 16px}
+  .stat.key{border:1.5px solid var(--warn);background:rgba(251,191,36,.12);box-shadow:0 0 0 3px rgba(251,191,36,.08)}
+  .stat.key .v{color:var(--warn)}
+  .stat.key-blue{border:1.5px solid var(--sky);background:rgba(56,189,248,.12);box-shadow:0 0 0 3px rgba(56,189,248,.08)}
+  .stat.key-blue .v{color:var(--sky)}
+  .stat .l{font-size:11.5px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.4px;font-weight:600}
+  .stat .v{font-size:28px;font-weight:800;color:var(--text-title);margin-top:3px;line-height:1.1}
+  .stat .s{font-size:12px;color:var(--text-muted);margin-top:2px}
+  .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;align-items:stretch}
+  .panel{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:18px;display:flex;flex-direction:column}
+  .panel.wide{grid-column:1 / -1}
+  @media(max-width:1100px){.grid{grid-template-columns:1fr 1fr}}
+  .panel h3{font-size:14.5px;color:var(--text-title);font-weight:700;margin-bottom:14px;display:flex;align-items:center;gap:6px}
+  .muted{color:var(--text-muted)}
+  .chip{display:inline-block;padding:3px 11px;border-radius:999px;font-size:13px;font-weight:800;color:#0b1220}
+  .rowline{display:flex;align-items:center;gap:12px;margin:9px 0}
+  .rowline .lab{width:96px;font-size:13px;flex:0 0 auto}
+  .bar{flex:1;background:var(--barbg);border-radius:6px;height:22px;overflow:hidden}
+  .bar>div{height:100%;border-radius:6px;min-width:3px}
+  .rowline .val{width:130px;font-size:13px;flex:0 0 auto;text-align:right}
+  table{border-collapse:collapse;width:100%;font-size:13px}
+  th,td{padding:7px 10px;border-bottom:1px solid var(--border);text-align:left;white-space:nowrap}
+  .tbl-wrap{overflow-x:auto}
+  .tabletitle{font-size:16px;color:var(--text-title);font-weight:700;margin:24px 0 10px;display:flex;align-items:center;gap:6px}
+  .ch{position:relative;height:180px}
+  .ch.tall{height:280px}
+  .leg{display:flex;flex-wrap:wrap;gap:6px 18px;font-size:12.5px;color:var(--text-muted);margin:2px 0 10px}
+  .leg i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:6px;vertical-align:-1px}
+  .info{display:inline-flex;width:14px;height:14px;border-radius:50%;background:var(--border-strong);color:var(--card);
+    font-size:9.5px;font-weight:800;font-style:normal;align-items:center;justify-content:center;cursor:help;margin-left:5px;
+    vertical-align:1px;position:relative;outline:none}
+  .info:hover,.info:focus{background:var(--accent);color:var(--accent-on)}
+  .info::after{content:attr(data-tip);position:absolute;left:50%;bottom:calc(100% + 8px);transform:translateX(-50%);
+    width:max-content;max-width:300px;white-space:normal;background:var(--text-title);color:var(--card);font-size:12px;
+    font-weight:400;line-height:1.45;padding:8px 11px;border-radius:8px;box-shadow:var(--shadow);opacity:0;visibility:hidden;
+    pointer-events:none;transition:opacity .12s;z-index:40;text-align:left}
+  .info:hover::after,.info:focus::after{opacity:1;visibility:visible}
+  .leg i.ln{height:3px;width:16px;border-radius:2px;vertical-align:3px}
+  .tbltoggle{margin-top:10px}
+  .linkbtn{background:none;border:0;padding:0;color:var(--text-muted);font-size:12.5px;cursor:pointer;text-decoration:underline dotted}
+  .linkbtn:hover{color:var(--text)}
+  /* Evolución diaria: 5 columnas × 2 filas, ajustadas al viewport (borde a borde, sin scroll) */
+  .g5{grid-template-columns:repeat(5,1fr);gap:12px}
+  .g5 .panel{padding:12px 13px 10px}
+  .g5 .ch{height:clamp(110px,27vh,210px)}
+  @media(max-width:820px){.g5{grid-template-columns:1fr 1fr}.g5 .ch{height:190px}}
+  @media(max-width:480px){.g5{grid-template-columns:1fr}}
+  .panel h3.sm{font-size:12.5px;margin-bottom:10px}
+  .g5 .panel h3.sm{font-size:11.5px;margin-bottom:6px;min-height:2.5em;align-items:flex-start;line-height:1.25}
+  /* Formato de tabla copiado del tablero de referencia (tablero-marketing) — tabla sola, contenedor propio */
+  .ftab{background:var(--card);border:1px solid var(--border);border-radius:10px;overflow-x:auto;margin-bottom:8px}
+  .ftab table{width:100%;border-collapse:separate;border-spacing:0;font-size:13px}
+  .ftab thead th{background:var(--border);color:var(--text-muted);font-weight:600;text-transform:uppercase;font-size:11px;letter-spacing:.5px;padding:11px 13px;text-align:right;position:sticky;top:0;z-index:2;white-space:nowrap;border:none}
+  .ftab thead th:first-child{text-align:left;width:264px;min-width:264px;max-width:264px;white-space:normal;vertical-align:middle;position:sticky;left:0;z-index:3;background:var(--border);border-right:2px solid var(--border-strong)}
+  .ftab thead th.cur{font-style:italic;color:var(--warn)}
+  .ftab thead th.cur::after{content:'*';margin-left:3px}
+  .ftab tbody td{padding:10px 13px;text-align:right;border-top:1px solid var(--border);white-space:nowrap}
+  .ftab tbody td:first-child{text-align:left;font-weight:500;color:var(--text-muted);white-space:normal;width:264px;min-width:264px;max-width:264px;position:sticky;left:0;z-index:1;background:var(--card);border-right:2px solid var(--border-strong)}
+  .ftab tbody tr:hover td{background:var(--card-hover)}
+  .ftab tbody tr:hover td:first-child{background:var(--card-hover)}
+  .ftab tbody tr.row-total td{font-weight:700;color:var(--text-title);font-size:14px;background:var(--row-total)}
+  .ftab tbody tr.row-total td:first-child{background:var(--row-total)}
+  .ftab tbody tr.row-loop td{background:rgba(52,211,153,.14);color:var(--ok);font-weight:700}
+  .ftab tbody tr.row-loop td:first-child{background:rgba(52,211,153,.14);border-left:3px solid var(--ok)}
+  .ftab tbody tr.resp-detail{display:none}
+  .ftab tbody.resp-open tr.resp-detail{display:table-row}
+  .ftab tbody tr.row-blue td{background:rgba(56,189,248,.14);color:var(--sky);font-weight:700}
+  .ftab tbody tr.row-blue td:first-child{background:rgba(56,189,248,.14);border-left:3px solid var(--sky)}
+  .ftab tbody tr.row-orange td{background:rgba(251,191,36,.14);color:var(--warn);font-weight:700}
+  .ftab tbody tr.row-orange td:first-child{background:rgba(251,191,36,.14);border-left:3px solid var(--warn)}
+  .ftab tbody tr.row-red td{background:rgba(248,113,113,.13);color:var(--bad);font-weight:700}
+  .ftab tbody tr.row-red td:first-child{background:rgba(248,113,113,.13);border-left:3px solid var(--bad)}
+  /* Columna clave (Interesado rate) del A/B: resaltada en amarillo */
+  th.ab-key{background:rgba(251,191,36,.20);color:var(--warn)}
+  td.ab-key{background:rgba(251,191,36,.14);font-weight:700;color:var(--warn)}
+  /* veredicto bayesiano A/B */
+  .veredicto{border-radius:12px;padding:12px 15px;margin:0 0 12px;border:1px solid var(--border)}
+  .veredicto.vd-ok{border-color:var(--ok);background:rgba(52,211,153,.10)}
+  .veredicto.vd-wait{border-color:var(--warn);background:rgba(251,191,36,.08)}
+  .vd-main{font-size:14px;color:var(--text);margin-bottom:6px}
+  .vd-sub{font-size:12px;color:var(--text-muted);display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+  .vd-chip{padding:2px 8px;border-radius:20px;font-weight:700;font-size:11px}
+  .vd-c-ok{background:rgba(52,211,153,.18);color:var(--ok)}
+  .vd-c-no{background:rgba(148,163,184,.18);color:var(--text-muted)}
+  .help-btn{display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;border-radius:50%;background:var(--border);color:var(--text-muted);border:none;font-size:11px;font-weight:700;cursor:pointer;margin-left:6px;vertical-align:middle;padding:0;line-height:1}
+  .help-btn:hover{background:var(--accent);color:var(--accent-on)}
+  .ftab tbody tr.row-stage .n{font-weight:600;color:var(--text)}
+  .ftab tbody tr.row-stage .p{font-size:11px;opacity:.85;margin-left:6px}
+  .help-dialog{background:var(--card);color:var(--text);border:1px solid var(--border);border-radius:10px;padding:24px 28px;max-width:560px;box-shadow:var(--shadow)}
+  .help-dialog::backdrop{background:var(--backdrop)}
+  .help-dialog h3{color:var(--text-title);font-size:16px;font-weight:700;margin-bottom:14px}
+  .help-dialog p{font-size:13px;line-height:1.55;color:var(--text-muted);margin-bottom:9px}
+  .help-dialog code{background:var(--border);padding:1px 5px;border-radius:4px;font-size:12px;color:var(--text-title)}
+  .help-dialog b{color:var(--accent)}
+  .help-dialog .close-btn{margin-top:14px;background:var(--border);color:var(--text);border:none;padding:7px 18px;border-radius:6px;cursor:pointer;font-size:13px;font-weight:600}
+  .help{display:inline-flex;width:15px;height:15px;border-radius:50%;background:var(--border-strong);color:var(--card);font-size:10px;align-items:center;justify-content:center;cursor:help;font-weight:800}
+  .btnsel{cursor:pointer;border:1px solid var(--border);background:transparent;color:var(--text);border-radius:8px;padding:5px 12px;font:inherit;font-size:12.5px}
+  .note{color:var(--text-muted);font-size:12px;margin-top:10px}
+  @media(max-width:760px){.grid{grid-template-columns:1fr}}
+  /* --- multi-hoja --- */
+  .sheet[hidden]{display:none!important}
+  .tabs{position:sticky;top:0;z-index:30;display:flex;gap:10px;flex-wrap:wrap;align-items:center;
+    background:var(--bg);padding:12px 0;margin:6px 0 22px;border-bottom:1px solid var(--border)}
+  .tabnav{flex:1;display:flex;justify-content:center;gap:7px;flex-wrap:wrap;align-items:center}
+  .navsep{width:1px;height:22px;background:var(--border-strong);margin:0 3px}
+  .granwrap{display:flex;align-items:center;gap:6px;font-size:11px;text-transform:uppercase;letter-spacing:.4px;color:var(--text-muted);font-weight:700;white-space:nowrap}
+  .tab{cursor:pointer;border:1px solid var(--border);background:var(--card);color:var(--text-muted);
+    border-radius:9px;padding:8px 15px;font:inherit;font-size:13.5px;font-weight:600;white-space:nowrap;transition:background .12s,color .12s,border-color .12s}
+  .tab:hover{color:var(--text);border-color:var(--border-strong)}
+  /* Selector de ventana del funnel. Clase propia a propósito: go() hace
+     querySelectorAll('.tab') y le quita `active` a todo lo que no tenga data-tab, así que
+     reutilizar .tab dejaba el botón elegido sin marcar. */
+  .winbtn{cursor:pointer;border:1px solid var(--border);background:var(--card);color:var(--text-muted);
+    border-radius:9px;padding:6px 13px;font:inherit;font-size:13px;font-weight:600;white-space:nowrap}
+  .winbtn:hover{color:var(--text);border-color:var(--border-strong)}
+  .winbtn.active{background:var(--accent);color:#fff;border-color:var(--accent)}
+  .tab.active{background:var(--accent);color:#fff;border-color:var(--accent)}
+  .tab:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+  .sheet-head{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-bottom:6px}
+  .sheet-head h2{font-size:22px;font-weight:800;color:var(--text-title);margin:0}
+  .expseg{display:inline-flex;border:1px solid var(--border);border-radius:9px;overflow:hidden}
+  .expseg button{font:inherit;font-size:13px;font-weight:700;padding:6px 15px;border:0;background:transparent;color:var(--text-muted);cursor:pointer}
+  .expseg button.on{background:var(--accent);color:#fff}
+  /* tablas de Neon (muestra) */
+  .rawtbl{width:100%;overflow-x:auto;margin:0 0 24px;border:1px solid var(--border);border-radius:10px}
+  .rawtbl table{border-collapse:collapse;font-size:12px;white-space:nowrap;width:100%}
+  .rawtbl th{background:var(--border);color:var(--text-muted);text-transform:uppercase;font-size:10px;letter-spacing:.4px;padding:7px 11px;text-align:left;position:sticky;top:0}
+  .rawtbl td{padding:6px 11px;border-top:1px solid var(--border);color:var(--text);max-width:320px;overflow:hidden;text-overflow:ellipsis}
+  .rawtbl tbody tr:hover td{background:var(--border)}
+  /* explorador */
+  .exp-prop{margin-top:26px}
+  .exp-prop h3{font-size:16px;font-weight:700;color:var(--text-title);margin:0 0 2px;display:flex;gap:9px;align-items:baseline}
+  .exp-prop h3 .n{font-size:11.5px;font-weight:600;color:var(--text-muted)}
+  .exp-prop .cap{font-size:12.5px;color:var(--text-muted);font-family:ui-monospace,monospace;margin:0 0 10px}
+  .exp-tbl{background:var(--card);border:1px solid var(--border);border-radius:12px;overflow:hidden}
+  .exp-tbl table{border-collapse:collapse;width:100%;font-size:13px}
+  .exp-tbl th,.exp-tbl td{padding:6px 13px;text-align:right;border-bottom:1px solid var(--border);white-space:nowrap;font-variant-numeric:tabular-nums}
+  .exp-tbl th:first-child,.exp-tbl td:first-child{text-align:left;white-space:normal;width:50%}
+  .exp-tbl thead th{color:var(--text-muted);font-size:10.5px;letter-spacing:.05em;text-transform:uppercase;font-weight:700}
+  .exp-tbl tbody tr:hover{background:var(--border)}
+  .exp-tbl tr.exc td{color:var(--text-muted)}
+  .exp-tbl tr.exc td:first-child{opacity:.7}
+  .exp-tbl .val{font-weight:600;color:var(--text)}
+  .exbar{display:inline-block;height:6px;border-radius:3px;vertical-align:middle;margin-left:7px;background:var(--accent)}
+  .pill{display:inline-block;font-size:10.5px;font-weight:700;padding:2px 8px;border-radius:999px}
+  .pill.inc{background:color-mix(in srgb,var(--ok) 20%,transparent);color:var(--ok)}
+  .pill.exc{background:var(--border);color:var(--text-muted)}
+  /* docs */
+  .docs{max-width:820px}
+  .docs h3{font-size:15px;font-weight:800;color:var(--text-title);margin:28px 0 4px;letter-spacing:-.01em}
+  .docs p{font-size:14px;color:var(--text-muted);line-height:1.6;margin:0 0 10px}
+  .docs .kv{background:var(--card);border:1px solid var(--border);border-radius:12px;overflow:hidden;margin:10px 0}
+  .docs .kv table{border-collapse:collapse;width:100%;font-size:13.5px;table-layout:fixed}
+  .docs .kv td{padding:9px 14px;border-bottom:1px solid var(--border);vertical-align:top;overflow-wrap:anywhere;white-space:normal}
+  .docs .kv td:first-child{color:var(--text-muted);font-weight:600;width:180px;white-space:nowrap}
+  .docs .kv td:last-child{color:var(--text)}
+  .docs code{background:var(--border);padding:2px 7px;border-radius:5px;font-size:12.5px;color:var(--text-title);word-break:break-all}
+  .docs .flag{font-size:22px;vertical-align:-3px;margin-right:4px}
+  .docs .docfilters{margin:8px 0 10px 4px;padding-left:22px}
+  .docs .docfilters li{font-size:13.5px;line-height:1.55;color:var(--text-muted);margin-bottom:7px}
+  .docs .docfilters li b{color:var(--text)}
+
+  /* ==========================================================================
+     UI de Habi Loop (Claude Design · "Habi Loop General v2"). Va como capa al
+     final a propósito: el tablero ya era 100% token-based, así que retematizar
+     es cambiar valores y no reescribir 1.100 líneas que funcionan.
+     Claro es el tema por defecto porque el diseño es claro; el oscuro queda
+     como contraparte fiel (mismo morado, mismos roles).
+     ========================================================================== */
+  :root{
+    --bg:#FAFAFA;--card:#fff;--border:#E5E5E5;--border-strong:#D4D4D4;
+    --text:#404040;--text-title:#171717;--text-muted:#737373;
+    --accent:#7E22CE;--accent-on:#fff;--accent-wash:#FAF5FF;--accent-line:#E9D5FF;
+    --ok:#15803D;--ok-wash:#F0FDF4;--bad:#B91C1C;--bad-wash:#FEF2F2;
+    --sky:#1D4ED8;--sky-wash:#EFF6FF;--warn:#B45309;
+    --barbg:#F5F5F5;--card-hover:#F5F5F5;--row-total:#FAF5FF;
+    --backdrop:rgba(23,23,23,.35);--shadow:0 1px 3px rgba(23,23,23,.06);
+    --shadow-pop:0 12px 24px rgba(23,23,23,.16);
+    --font:'Inter',system-ui,sans-serif;--font-title:'Montserrat',system-ui,sans-serif;
+    --font-mono:'JetBrains Mono',ui-monospace,monospace;
+  }
+  body.dark{
+    --bg:#141118;--card:#1C1820;--border:#2E2836;--border-strong:#453D50;
+    --text:#D6D0DD;--text-title:#F7F5F9;--text-muted:#9A92A5;
+    --accent:#C084FC;--accent-on:#1C1820;--accent-wash:#241C2E;--accent-line:#3D2F4D;
+    --ok:#4ADE80;--ok-wash:#16251C;--bad:#F87171;--bad-wash:#2A1719;
+    --sky:#60A5FA;--sky-wash:#151E2E;--warn:#FBBF24;
+    --barbg:#221D29;--card-hover:#252030;--row-total:#241C2E;
+    --backdrop:rgba(10,8,12,.7);--shadow:0 1px 3px rgba(0,0,0,.4);
+    --shadow-pop:0 12px 24px rgba(0,0,0,.5);
+  }
+
+  body{font-family:var(--font);font-size:14px;color:var(--text);background:var(--bg);padding:0}
+  h1,h2,h3,.tabletitle,.sheet-head h2{font-family:var(--font-title);letter-spacing:-0.015em}
+  .tabletitle{font-size:17px;font-weight:600;color:var(--text-title);margin:0 0 4px}
+  .sheet-head h2{font-size:28px;font-weight:700;letter-spacing:-0.42px}
+  code,.kv,td.num,.exbar,.n{font-family:var(--font-mono)}
+
+  /* Sección = tarjeta blanca con encabezado, el patrón del diseño */
+  .card-sec{background:var(--card);border:1px solid var(--border);border-radius:12px;
+    padding:24px;box-shadow:var(--shadow);margin-bottom:20px}
+  .card-sec > .tabletitle{margin-top:0}
+  .card-sec .sub{font-size:13px;color:var(--text-muted);display:block;margin-bottom:16px}
+  .panel{background:transparent;border:0;box-shadow:none;padding:0}
+  .tbl-wrap{border-radius:8px;border:1px solid var(--border)}
+  .stat{background:var(--card);border:1px solid var(--border);border-radius:12px;
+    padding:18px 20px;box-shadow:var(--shadow)}
+  .stat .l{font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--text-muted)}
+  .stat .s{font-size:12px;color:var(--text-muted);margin-top:2px}
+  .kpi3 .kv{font-size:22px;font-weight:600;color:var(--text-title)}
+  .kpi3 .kl{font-size:10px;color:var(--text-muted)}
+
+  /* Controles segmentados (ventana del funnel, temporalidad) */
+  .winbtn{border-radius:6px;padding:8px 16px;font-size:13px;font-weight:500;
+    border:0;background:transparent;color:var(--text-muted)}
+  .winbtn:hover{background:var(--card-hover);color:var(--text)}
+  .winbtn.active{background:var(--accent);color:var(--accent-on)}
+  .seg{display:inline-flex;background:var(--card);border:1px solid var(--border);
+    border-radius:8px;padding:3px;gap:2px}
+  .sel{border-radius:8px;border:1px solid var(--border);background:var(--card);color:var(--text);padding:7px 10px}
+
+  /* Navegación lateral */
+  .side{position:fixed;top:0;left:0;bottom:0;width:232px;background:var(--card);
+    border-right:1px solid var(--border);padding:20px 14px;display:flex;flex-direction:column;gap:4px;z-index:40;overflow-y:auto}
+  .side .brand{display:flex;align-items:center;gap:10px;padding:0 6px 18px}
+  .side .brand svg{width:34px;height:34px;flex:none}
+  .side .brand b{font-family:var(--font-title);font-weight:700;font-size:15px;color:var(--text-title);line-height:1.15;display:block}
+  .side .brand span{font-size:11.5px;color:var(--text-muted)}
+  .side .grp{font-size:10.5px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;
+    color:var(--text-muted);padding:14px 8px 6px}
+  .navit{display:flex;align-items:center;gap:9px;width:100%;text-align:left;cursor:pointer;
+    border:0;background:transparent;color:var(--text-muted);font:inherit;font-size:13.5px;font-weight:500;
+    padding:9px 10px;border-radius:8px}
+  .navit:hover{background:var(--card-hover);color:var(--text)}
+  .navit.active{background:var(--accent-wash);color:var(--accent);font-weight:600}
+  body.dark .navit.active{background:var(--accent-wash)}
+  .wrap{margin-left:232px;padding:28px 32px 90px;width:auto;max-width:none;min-width:0}
+  .pagehead{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:24px}
+  .pagehead h1{font-size:28px;font-weight:700;letter-spacing:-0.42px;margin:0;color:var(--text-title)}
+  .pagehead .who{font-size:14px;color:var(--text);margin-top:4px}
+  @media(max-width:920px){
+    .side{position:static;width:auto;flex-direction:row;flex-wrap:wrap;align-items:center;border-right:0;border-bottom:1px solid var(--border)}
+    .side .grp{display:none}
+    .wrap{margin-left:0;padding:16px 16px 90px;width:auto}
+  }
+
+  /* Realces de fila: el diseño usa washes OPACOS. Los rgba(...,.14) del tema viejo dejaban
+     ver el contenido que pasa por debajo de la primera columna sticky — invisible en oscuro,
+     evidente sobre blanco (se leía "M13rketing loop"). */
+  .ftab thead th, .ftab thead th:first-child{background:var(--barbg);color:var(--text-muted)}
+  .ftab tbody td:first-child{background:var(--card)}
+  .ftab tbody tr.row-total td, .ftab tbody tr.row-total td:first-child{background:var(--row-total)}
+  .ftab tbody tr.row-loop td, .ftab tbody tr.row-loop td:first-child{background:var(--ok-wash);color:var(--ok)}
+  .ftab tbody tr.row-blue td, .ftab tbody tr.row-blue td:first-child{background:var(--sky-wash);color:var(--sky)}
+  .ftab tbody tr.row-orange td, .ftab tbody tr.row-orange td:first-child{background:var(--bad-wash);color:var(--bad)}
+  .ftab tbody tr.row-loop td:first-child{border-left:3px solid var(--ok)}
+  .ftab tbody tr.row-blue td:first-child{border-left:3px solid var(--sky)}
+  .ftab tbody tr.row-orange td:first-child{border-left:3px solid var(--bad)}
+  .bar{background:var(--barbg);border-radius:9999px}
+  .bar>div{border-radius:9999px}
+
+  /* Barra superior de filtros globales y embudo del panel (diseño Habi Loop) */
+  .topbar{display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding-bottom:16px;
+    margin-bottom:24px;border-bottom:1px solid var(--border)}
+  .topbar .tl{font-size:13px;font-weight:500;color:var(--text-muted)}
+  .navit svg{opacity:.9}
+  .cardhead{display:flex;align-items:flex-start;gap:12px;flex-wrap:wrap;margin-bottom:24px}
+  .cardhead>div:first-child{flex:1;min-width:200px}
+  .winbtn.sm{padding:5px 12px;font-size:12px}
+  .funnel{display:flex;gap:0;flex-wrap:wrap;align-items:stretch}
+  .fstep{flex:1;min-width:180px;display:flex;align-items:stretch}
+  .fbody{flex:1;display:flex;flex-direction:column;gap:8px;padding:0 20px 0 0;min-width:0}
+  .flab{font-size:13px;font-weight:500;color:var(--text-muted)}
+  .fval{font-weight:600;font-size:30px;letter-spacing:-0.5px;font-variant-numeric:tabular-nums;
+    line-height:1.05;white-space:nowrap;color:var(--text-title)}
+  .fprev{font-size:11.5px;color:var(--text-muted);font-variant-numeric:tabular-nums;white-space:nowrap;
+    margin:-2px 0 2px}
+  .fprev b{font-weight:600}
+  .fprev .up{color:var(--ok)} .fprev .down{color:var(--bad)}
+  .fbar{height:10px;background:var(--barbg);border-radius:9999px;overflow:hidden}
+  .fbar>div{height:100%;border-radius:9999px}
+  .fsplit{font-size:11.5px;color:var(--text-muted);font-variant-numeric:tabular-nums;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .fconv{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;padding:0 20px 0 0;flex:none}
+  .fpill{font-size:12px;font-weight:600;color:var(--accent);background:var(--accent-wash);
+    border-radius:9999px;padding:2px 9px;font-variant-numeric:tabular-nums;white-space:nowrap}
+  .grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(380px,1fr));gap:24px;align-items:start}
+  .grid2 .card-sec{margin-bottom:0}
+  .akpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:14px;margin-bottom:18px}
+  .akpis .fval{font-size:26px}
+
+  .tplcard{cursor:pointer;transition:border-color .12s,box-shadow .12s}
+  .tplcard:hover{border-color:var(--border-strong)}
+  .tplcard.sel{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-wash)}
+  .tplhead{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:10px}
+  .tplhead code{font-size:13.5px;font-weight:600;color:var(--text-title);background:none;padding:0}
+  .tplpais{margin-left:auto;font-size:12px;color:var(--text-muted)}
+  .chip2{font-size:11.5px;font-weight:500;color:var(--text-muted);background:var(--barbg);
+    border-radius:9999px;padding:2px 9px;white-space:nowrap}
+  .chip2.ok{color:var(--ok);background:var(--ok-wash)}
+  .tplbody{font-size:13.5px;color:var(--text);margin:0 0 10px;line-height:1.55}
+  .tplmet{font-size:12.5px;color:var(--text-muted);font-variant-numeric:tabular-nums}
+  .tplprev{background:var(--barbg);border:1px solid var(--border);border-radius:12px;
+    padding:16px 18px;font-size:14px;line-height:1.6;white-space:pre-wrap}
+  .tplvars{font-size:12.5px;color:var(--text-muted);margin-top:12px}
+  .tplwarn{margin-top:18px;background:var(--bad-wash);border-left:3px solid var(--bad);
+    border-radius:8px;padding:14px 16px;font-size:13px;line-height:1.6}
+  .cmd{font-family:var(--font-mono);font-size:11.5px;background:var(--card);border:1px solid var(--border);
+    border-radius:6px;padding:8px 10px;margin-top:8px;overflow-x:auto;white-space:pre}
+  .abver{font-size:15px;font-weight:600;color:var(--text-title)}
+
+  .tplsend{margin-top:18px;background:var(--accent-wash);border:1px solid var(--accent-line);
+    border-radius:12px;padding:16px 18px}
+  .tplsend .sub{margin-bottom:12px}
+  .sendrow{display:flex;gap:8px;flex-wrap:wrap}
+  .sendrow input{flex:1;min-width:180px;font-variant-numeric:tabular-nums}
+  #tplSendMsg:empty{display:none}
+  #tplSendMsg{margin-top:10px}
+
+  .knobwrap{display:flex;gap:20px;align-items:center;flex-wrap:wrap;margin-top:8px}
+  .knob{width:180px;height:180px;cursor:grab;touch-action:none;outline:none}
+  .knob:active{cursor:grabbing}
+  .knob:focus-visible .khandle{stroke:var(--accent);stroke-width:3}
+  .ktrack{fill:none;stroke:var(--barbg);stroke-width:14;stroke-linecap:round}
+  .kfill{fill:none;stroke:var(--accent);stroke-width:14;stroke-linecap:round}
+  .khandle{fill:var(--card);stroke:var(--accent);stroke-width:4}
+  .kval{text-anchor:middle;font-family:var(--font-title);font-weight:700;font-size:34px;fill:var(--text-title)}
+  .kcap{text-anchor:middle;font-size:11px;fill:var(--text-muted);letter-spacing:.08em;text-transform:uppercase}
+  .knobside{flex:1;min-width:170px;display:flex;flex-direction:column;gap:10px}
+  .presets{display:flex;gap:6px;flex-wrap:wrap}
+  #envioMsg{margin-top:18px}
+  .simchk{display:flex;align-items:center;gap:7px;font-size:12.5px;color:var(--text-muted);cursor:pointer}
+
+  /* Chips de nodo del pipeline (vista de ejecuciones) */
+  .nchip{display:inline-block;font-size:11.5px;font-weight:600;padding:3px 9px;border-radius:9999px;
+    white-space:nowrap;max-width:150px;overflow:hidden;text-overflow:ellipsis;vertical-align:middle;cursor:help}
+  .n-ok{background:var(--ok-wash);color:var(--ok)}
+  .n-error{background:var(--bad-wash);color:var(--bad)}
+  .n-guarda{background:var(--barbg);color:var(--text-muted)}
+  .n-espera{background:transparent;color:var(--text-muted);border:1px dashed var(--border-strong);font-weight:500}
+  .n-info{background:var(--accent-wash);color:var(--accent)}
+  .n-fin{background:var(--barbg);color:var(--text);border:1px solid var(--border-strong)}
+  .pulso{display:flex;gap:18px;align-items:center;flex-wrap:wrap;font-size:13px;color:var(--text-muted);
+    background:var(--barbg);border-radius:8px;padding:10px 14px;margin-bottom:16px}
+  .pulso b{color:var(--text-title);font-variant-numeric:tabular-nums}
+  .pulso .malo b{color:var(--bad)}
+  .ftab td .nchip{margin:0}
+
+  /* Franja de alertas de Ventanas */
+  .alerta{display:flex;gap:11px;align-items:flex-start;border-radius:10px;padding:12px 16px;
+    margin-bottom:10px;font-size:13.5px;line-height:1.5;border:1px solid}
+  .alerta .apunto{font-size:14px;line-height:1.4;flex:none}
+  .alerta.roja{background:var(--bad-wash);border-color:var(--bad);color:var(--bad)}
+  .alerta.ambar{background:#FFF7ED;border-color:#B45309;color:#B45309}
+  body.dark .alerta.ambar{background:#2A2114;border-color:#FBBF24;color:#FBBF24}
+  .alerta.ok{background:var(--ok-wash);border-color:var(--ok);color:var(--ok)}
+  .alerta b{color:inherit}
+  .alerta .muted{color:inherit;opacity:.78;font-weight:400}
+</style>
+</head>
+<body>
+<aside class="side">
+    <div class="brand"><svg viewBox="0 0 56 56" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M50 42.5612V28.8696C50 27.1357 49.3107 25.4758 48.0783 24.2599L32.4334 8.82379C29.9687 6.39207 26.0313 6.39207 23.5666 8.82379L7.92167 24.2599C6.6893 25.4758 6 27.1357 6 28.8696V42.5612C6 46.1137 8.84073 49 12.3603 49H43.6501C47.1593 49 50 46.1242 50 42.5612Z" fill="#7E22CE"></path><path d="M25.0986 32.8932C26.1939 32.8932 26.9494 33.264 27.3535 33.8903L27.5127 33.0729H30.2031V40.7477H27.5547L27.4277 39.9196C26.7684 40.6625 25.7471 40.9278 24.8857 40.8854C22.6316 40.7473 21.3662 39.1444 21.3662 36.9049C21.3662 34.6335 22.8656 32.8933 25.0986 32.8932ZM34.7432 33.7204H34.7539C35.1793 33.2111 35.9029 32.8932 36.8916 32.8932C39.135 32.8934 40.624 34.5594 40.624 36.9049C40.624 39.3249 39.3579 40.7474 37.1035 40.8854C36.2423 40.9278 35.2217 40.6623 34.5625 39.9196L34.4346 40.7477H31.8828V29.8678H34.7432V33.7204ZM44.7812 33.1901V40.7477H41.9004V33.1901H44.7812ZM15.1562 33.8903C15.6985 33.19 16.2938 32.8933 17.208 32.8932C18.7605 32.8932 20.2284 33.9011 20.2285 36.4801V40.737H17.3779V36.4909C17.346 35.6207 16.9101 35.3551 16.3359 35.3551C15.7724 35.3553 15.156 35.7801 15.1348 36.6715V40.7262H12.2529V29.8678H15.1562V33.8903ZM36.2314 35.2174C35.2215 35.2176 34.6904 36.056 34.6904 36.9899C34.6904 37.7964 35.264 38.5922 36.2314 38.5924C37.0928 38.5924 37.7734 37.9877 37.7734 36.9157C37.7734 35.8436 37.0928 35.2174 36.2314 35.2174ZM25.7686 35.2067C24.9179 35.2173 24.2266 35.8329 24.2266 36.9049C24.2266 37.9769 24.9073 38.5816 25.7686 38.5817C26.7362 38.5817 27.3535 37.8071 27.3535 36.9049C27.3535 35.8753 26.7788 35.2067 25.7686 35.2067Z" fill="white"></path><path d="M43.3883 15.6027C44.5746 15.6027 45.5363 14.6428 45.5363 13.4587C45.5363 12.2745 44.5746 11.3146 43.3883 11.3146C42.2019 11.3146 41.2402 12.2745 41.2402 13.4587C41.2402 14.6428 42.2019 15.6027 43.3883 15.6027Z" fill="#F45201"></path></svg><div><b>habi</b><span>loop general</span></div></div>
+    <button class="navit" data-nav="dash"   onclick="irVista('dash')"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="flex:none"><path d="M3 3v18h18M18 17V9M13 17V5M8 17v-3"></path></svg><span>Panel</span></button>
+    <button class="navit" data-nav="inbox"  onclick="irVista('inbox')"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="flex:none"><path d="M22 12h-6l-2 3h-4l-2-3H2M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"></path></svg><span>Inbox</span></button>
+    <button class="navit" data-nav="envio" onclick="irVista('envio')"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="flex:none"><path d="M22 2 11 13M22 2l-7 20-4-9-9-4z"></path></svg><span>Envío</span></button>
+    <button class="navit" data-nav="plantillas" onclick="irVista('plantillas')"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="flex:none"><path d="M3 3h18v7H3zM14 14h7v7h-7zM3 14h7v7H3z"></path></svg><span>Plantillas</span></button>
+    <button class="navit" data-nav="agente" onclick="irVista('agente')"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="flex:none"><path d="M12 2v4M8 6h8a3 3 0 0 1 3 3v8a3 3 0 0 1-3 3H8a3 3 0 0 1-3-3V9a3 3 0 0 1 3-3zM9 12h.01M15 12h.01"></path></svg><span>Agente IA</span></button>
+    <button class="navit" data-nav="docs"   onclick="irVista('docs')"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="flex:none"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></svg><span>Documentación</span></button>
+    <div class="grp">Datos</div>
+    <button class="navit" data-nav="exp"    onclick="irVista('exp')"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="flex:none"><path d="M11 19a8 8 0 1 0 0-16 8 8 0 0 0 0 16zM21 21l-4.3-4.3"></path></svg><span>Base</span></button>
+    <button class="navit" data-nav="tablas" onclick="irVista('tablas')"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="flex:none"><path d="M12 8c4.97 0 9-1.34 9-3s-4.03-3-9-3-9 1.34-9 3 4.03 3 9 3zM3 5v14c0 1.66 4.03 3 9 3s9-1.34 9-3V5M3 12c0 1.66 4.03 3 9 3s9-1.34 9-3"></path></svg><span>Tablas</span></button>
+    <button class="navit" data-nav="ventanas" onclick="irVista('ventanas')"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="flex:none"><path d="M3 3h18v18H3zM3 9h18M9 21V9"></path></svg><span>Tablero de Ventanas</span></button>
+    <div style="margin-top:auto;padding-top:18px">
+      <a class="navit" href="https://camilootoya-habi.github.io/tableros-marketing-habi/"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="flex:none"><path d="m12 19-7-7 7-7M19 12H5"></path></svg><span>Volver al Hub</span></a>
+      <button class="navit" id="themeBtn" type="button"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="flex:none"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9z"></path></svg><span>Oscuro</span></button>
+    </div>
+  </aside>
+<div class="wrap">
+  <div class="topbar">
+    <span class="tl">País</span>
+    <div class="seg" id="paisSeg">
+      <button type="button" class="winbtn" data-pais="CO" onclick="irPais('CO')">Colombia</button>
+      <button type="button" class="winbtn" data-pais="MX" onclick="irPais('MX')">México</button>
+    </div>
+    <span class="tl" style="margin-left:8px">Canal</span>
+    <div class="seg" id="canalSeg">
+      <button type="button" class="winbtn" data-canal="agregado" onclick="irCanal('agregado')">Agregado</button>
+      <button type="button" class="winbtn" data-canal="web" onclick="irCanal('web')">Web</button>
+      <button type="button" class="winbtn" data-canal="ventanas" onclick="irCanal('ventanas')">Ventanas</button>
+    </div>
+    <span class="tl" style="font-weight:400">Aplica a todo: panel, inbox, plantillas y agente IA</span>
+  </div>
+
+  <!-- ===== HOJA 1/2: TABLERO ===== -->
+  <div id="sheet-dash" class="sheet" hidden>
+  <!-- selección de país oculta (se maneja por tabs); radios usados por el JS -->
+  <div style="display:none">
+    <input type="radio" name="pais" value="MX" checked>
+    <input type="radio" name="pais" value="CO">
+  </div>
+
+  <div class="pagehead">
+    <div>
+      <h1 id="dashTitulo">Marketing loop general</h1>
+      <div class="who"><span id="paisLabel">Colombia · Web + Ventanas (agregado)</span> <span class="muted" id="upd"></span></div>
+    </div>
+    <div class="seg" id="granSeg">
+      <button type="button" class="winbtn" data-gran="dia" onclick="setGran('dia')">Diario</button>
+      <button type="button" class="winbtn" data-gran="semana" onclick="setGran('semana')">Semanal</button>
+      <button type="button" class="winbtn" data-gran="mes" onclick="setGran('mes')">Mensual</button>
+    </div>
+  </div>
+
+  <dialog id="helpCard" class="help-dialog">
+    <h3 id="helpCardT"></h3><div id="helpCardB"></div>
+    <button class="close-btn" onclick="document.getElementById('helpCard').close()">Cerrar</button>
+  </dialog>
+
+  <div id="panelLoop">
+  <section class="card-sec" id="embudoCard"></section>
+
+  <section class="card-sec" id="serieCard">
+    <div class="cardhead">
+      <div><div class="tabletitle" id="serieTitle">Serie del loop</div>
+      <span class="sub" id="serieSub"></span></div>
+      <div class="seg" id="serieSeg">
+        <button type="button" class="winbtn sm active" data-st="loop" onclick="setSerieTab('loop')">Serie del loop</button>
+        <button type="button" class="winbtn sm" data-st="agente" onclick="setSerieTab('agente')">Agente IA</button>
+      </div>
+    </div>
+    <div id="serieKpis"></div>
+    <div class="leg" id="serieLeg"></div>
+    <div class="ch tall"><canvas id="c_serie"></canvas></div>
+    <div class="tbltoggle"><button type="button" class="linkbtn" id="serieTblBtn" onclick="toggleSerieTabla()">Ver tabla</button></div>
+    <div class="tbl-wrap ftab" id="serieTab" hidden></div>
+  </section>
+    </section>
+
+  <section class="card-sec">
+    <div class="tabletitle">Errores de entrega <button type="button" class="help-btn" onclick="openHelp('err')" aria-label="Explicación">?</button></div>
+    <span class="sub" id="errSub">no entregados por período, desglosados por tipo de error</span>
+    <div class="tbl-wrap ftab" id="errores"></div>
+  </section>
+
+  <section class="card-sec">
+    <div class="tabletitle">Inventario del pool · niveles de prioridad</div>
+    <span class="sub">stock y consumo diario por nivel P1-P4</span>
+    <div class="tbl-wrap ftab" id="inventario"></div>
+  </section>
+
+  <section class="card-sec">
+    <div class="tabletitle">Mejor hora de envío</div>
+    <span class="sub" id="horaSub">read rate y respond rate por hora del día · plantilla ganadora v2</span>
+    <div style="position:relative;height:300px"><canvas id="c_porhora"></canvas></div>
+    <p class="note" id="porhoraNote"></p>
+  </section>
+  </div><!-- /panelLoop: las tres cards de arriba son del loop y se ocultan con Ventanas (8-sep) -->
+
+  </div>
+
+  <!-- Ventanas no comparte semántica con el loop: su embudo empieza en un lead de HubSpot,
+       no en un envío, y no tiene pool ni plantilla ganadora. Por eso es otra vista, no un
+       filtro sobre la misma. -->
+  <div id="panelVentanas" hidden></div>
+
+  </div><!-- /sheet-dash -->
+
+  <!-- ===== HOJA 3/4: EXPLORADOR DE LA BASE ===== -->
+  <div id="sheet-exp" class="sheet" hidden>
+    <div class="sheet-head">
+      <h2 id="expTitle">Explorador de la base · CO</h2>
+      <span class="note" id="expUpd"></span>
+    </div>
+    <p class="note" style="max-width:80ch">Ventana <b>2023-01-01 → creación &lt; hoy−180d</b>. Por cada propiedad-filtro: todos los valores, cuántas filas hay en la ventana (<b>en ventana</b>) y cuántas sobreviven TODA la cadena de filtros <b>a nivel fila</b> del query vigente (<b>en base</b>). Fuente por país (MX 3,47 · CO 3,47,7,20). Conteos a nivel fila (<b>pre-dedup y pre-guard a nivel persona</b>, con fanout de deals) → magnitud relativa e indicador incluido/excluido.</p>
+    <div id="expBody"></div>
+  </div>
+
+  <!-- ===== HOJA: TABLAS DE NEON (muestra) ===== -->
+  <div id="sheet-tablas" class="sheet" hidden>
+    <div class="sheet-head"><h2 id="tablasTitle">Tablas de Neon · CO</h2></div>
+    <p class="note" style="max-width:80ch">Últimos <b>5 registros</b> de cada tabla de <b>Neon</b> (Postgres — el único estado propio del loop) con <b>todas sus columnas</b>, filtrados por país. A modo de explicación de qué guarda el sistema.</p>
+    <div id="tablasBody"></div>
+  </div>
+
+  <!-- ===== HOJA: ENVÍO ===== -->
+  <div id="sheet-envio" class="sheet" hidden>
+    <div class="pagehead"><div><h1>Envío</h1>
+      <div class="who">manda una tanda a pedido · el ciclo diario sigue corriendo aparte a las 9:30</div></div>
+      <button class="winbtn" type="button" onclick="cargarEnvio()">Actualizar</button>
+    </div>
+    <div id="envioHoy" class="stats"></div>
+    <div class="grid2" id="envioPerillas"></div>
+    <div id="envioMsg" class="note"></div>
+  </div>
+
+  <!-- ===== HOJA: PLANTILLAS ===== -->
+  <div id="sheet-plantillas" class="sheet" hidden>
+    <div class="pagehead"><div><h1>Plantillas</h1>
+      <div class="who"><span id="plantLabel"></span></div></div></div>
+    <div class="grid2">
+      <div>
+        <div id="plantLista"></div>
+        <section class="card-sec"><div class="tabletitle">Experimento A/B</div>
+          <span class="sub" id="abSub"></span>
+          <div id="plantAB"></div>
+        </section>
+      </div>
+      <section class="card-sec" id="plantDetalle"></section>
+    </div>
+  </div>
+
+  <!-- ===== HOJA: AGENTE IA ===== -->
+  <div id="sheet-agente" class="sheet" hidden>
+    <div class="pagehead"><div><h1>Agente IA</h1>
+      <div class="who"><span id="agLabel"></span></div></div></div>
+    <section class="card-sec"><div class="tabletitle">Desenlace de las conversaciones</div>
+      <span class="sub">qué hizo el agente con cada conversación · últimos 30 días</span>
+      <div class="tbl-wrap ftab" id="agAcciones"></div>
+    </section>
+    <section class="card-sec"><div class="tabletitle">Rollout</div>
+      <span class="sub">estado por país de la línea compartida</span>
+      <div id="agRollout"></div>
+    </section>
+  </div>
+
+  <!-- ===== HOJA: VENTANAS (tablero del otro programa de la misma línea) ===== -->
+  <div id="sheet-ventanas" class="sheet" hidden>
+    <div class="sheet-head"><h2>Ventanas</h2></div>
+    <p class="note" style="max-width:80ch">Tablero del programa <b>Ventanas</b> (outbound frío a dueños con letrero), servido por el
+      agente en <code>agente-sdr-ten.vercel.app/ventanas</code>. Comparte la línea de WhatsApp de Colombia con reactivación,
+      por eso vive en esta misma navegación. Usa el <b>mismo token</b> que el inbox.</p>
+    <p class="note" style="max-width:80ch;border-left:3px solid var(--bad);background:var(--bad-wash);padding:12px 16px;border-radius:8px">
+      <b>Hoy responde 404.</b> El deploy vigente del agente salió del worktree que no incluye <code>ventanas/</code>,
+      así que la ruta no existe en producción. En cuanto la sesión de Ventanas redespliegue, esta vista carga sola —
+      no hay nada que cambiar acá.</p>
+    <div id="ventanasGate"></div>
+    <div id="ventanasFrame"></div>
+  </div>
+
+  <!-- ===== HOJA: INBOX (conversaciones del agente SDR) ===== -->
+  <div id="sheet-inbox" class="sheet" hidden>
+    <div class="sheet-head"><h2>Inbox · conversaciones del agente SDR</h2></div>
+    <p class="note" style="max-width:80ch">Conversaciones reales de WhatsApp entre los sellers y el agente SDR, en vivo desde
+      <code>agente-sdr-ten.vercel.app</code>. Este tablero es un sitio <b>público</b>, así que el token de acceso
+      <b>no vive en el código</b>: se pide una vez y queda guardado solo en este navegador.</p>
+    <div id="inboxSub"></div>
+    <div id="inboxGate"></div>
+    <div id="inboxFrame"></div>
+  </div>
+
+  <!-- ===== HOJA 5: DOCUMENTACIÓN ===== -->
+  <div id="sheet-docs" class="sheet" hidden>
+    <div class="sheet-head"><h2 id="docsTitle">Documentación · Marketing Loop · MX</h2></div>
+    <div id="docsBody" class="docs"></div>
+  </div>
+</div>
+
+<script>
+let D=null, country='MX', cicloTipo='dia', ventFunnel=14, porhoraChart=null, cohorteChart=null, AUDIT=null, expC='CO', tbC='CO', docC='MX';
+const CIP={MX:'mexico',CO:'colombia'};
+const fmt=v=>(v==null?'—':Number(v).toLocaleString('es-CO'));
+const pct=v=>(v==null?'—':Number(v).toFixed(1)+'%');
+const z=v=>(+v)?fmt(v):'<span class="muted">·</span>';   // muestra "·" en períodos vacíos
+// fecha de descarga vía query (última corrida del cron) → legible + "hace cuánto"
+function fmtUpdated(iso){
+  const m=(iso||'').match(/(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})/); if(!m) return iso||'—';
+  const MES=['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+  const utc=new Date(Date.UTC(+m[1],+m[2]-1,+m[3],+m[4],+m[5]));
+  const dm=Math.max(0,Math.round((Date.now()-utc.getTime())/60000));
+  const rel = dm<60?`hace ${dm} min` : dm<1440?`hace ${Math.floor(dm/60)}h ${dm%60}m` : `hace ${Math.floor(dm/1440)}d`;
+  const cd=new Date(utc.getTime()-6*3600000);   // CDMX = UTC-6 (sin horario de verano desde 2022)
+  const p=n=>String(n).padStart(2,'0');
+  return `${cd.getUTCDate()} ${MES[cd.getUTCMonth()]} ${cd.getUTCFullYear()}, ${p(cd.getUTCHours())}:${p(cd.getUTCMinutes())} CDMX · ${rel}`;
+}
+// --- eje de períodos: últimos N buckets de la granularidad (incluye vacíos), formato igual a build_data.bucket() ---
+const pad2=x=>String(x).padStart(2,'0');
+const ymd=d=>d.getFullYear()+'-'+pad2(d.getMonth()+1)+'-'+pad2(d.getDate());
+const pyWd=d=>(d.getDay()+6)%7;   // Lun=0 … Dom=6 (como Python weekday)
+function periodBucket(d,tipo){
+  if(tipo==='mes') return d.getFullYear()+'-'+pad2(d.getMonth()+1)+'-01';
+  if(tipo==='semana'){const x=new Date(d);x.setDate(x.getDate()-pyWd(x));return ymd(x);}         // lunes
+  if(tipo==='ciclo'){const x=new Date(d);x.setDate(x.getDate()-((((pyWd(x)-2)%7)+7)%7));return ymd(x);} // miércoles
+  return ymd(d);
+}
+function lastPeriods(tipo,n){
+  const out=[], now=new Date();
+  if(tipo==='mes'){ let y=now.getFullYear(),m=now.getMonth();
+    for(let i=0;i<n;i++){ out.push(y+'-'+pad2(m+1)+'-01'); if(--m<0){m=11;y--;} } }
+  else{ const cur=periodBucket(now,tipo), [Y,M,D]=cur.split('-').map(Number), base=new Date(Y,M-1,D), step=(tipo==='dia')?1:7;
+    for(let i=0;i<n;i++){ const t=new Date(base); t.setDate(t.getDate()-step*i); out.push(ymd(t)); } }
+  return out.reverse();   // ascendente, último = período en curso
+}
+// tooltip "?" por fila (igual que la tabla Impacto en asignados)
+const H=t=>`<span class="help" title="${(t||'').replace(/"/g,'&quot;')}">?</span> `;
+// explicación por estado del backbone (antifunnel)
+function stateHelp(lab){
+  const s=(lab||'').toLowerCase().trim();
+  const M={
+    'no gestionado':'Calificado MM (estado 20): pasó el backbone y quedó listo para gestión comercial, aún sin gestionar.',
+    'sin pricing inicial':'Calificado MM (estado 63): calificó pero sin precio inicial automático.',
+    'duplicado':'El backbone lo marcó duplicado de un lead previo (mismo contacto+inmueble). Con la receta señuelo no debería pasar; los que quedan son de métodos viejos.',
+    'fuera de la zona':'Descartado: el inmueble quedó fuera de la zona de cobertura de Habi.',
+    'revisar dirección':'Dirección incompleta o ambigua: el backbone no pudo geolocalizarla bien.',
+    'revisar direccion':'Dirección incompleta o ambigua: el backbone no pudo geolocalizarla bien.',
+    'no hay suficientes datos para comparar':'Sin comparables suficientes en la zona para estimar precio.',
+    'descartado por precio elevado':'Descartado: precio por encima del rango que compra Habi.',
+    'descartado por precio':'Descartado por precio fuera de rango.',
+    'descartado por antiguedad':'Descartado por antigüedad del inmueble.',
+    'descartado por inmueble':'Tipo de inmueble no comprado por Habi.',
+    'descartado por inmueble no habi':'Tipo de inmueble no comprado por Habi.',
+    'sin precio automático':'El backbone no pudo calcular un precio automático.',
+    'sin precio automatico':'El backbone no pudo calcular un precio automático.',
+    'sin precio automático inicial':'El backbone no pudo calcular un precio automático inicial.',
+    'backbone':'En evaluación por el backbone (estado transitorio).',
+    'incompleto desde web':'Registro incompleto desde el formulario web.',
+    'confirmación de datos':'Pendiente de confirmar datos con el cliente.',
+    'confirmacion de datos':'Pendiente de confirmar datos con el cliente.'
+  };
+  return M[s] || ('Estado del backbone: '+lab+'.');
+}
+
+async function load(){
+  try{ D=await (await fetch('data.json?t='+Date.now())).json(); }
+  catch(e){ document.getElementById('stats').innerHTML='<p class="muted">Error cargando data.json</p>'; return; }
+  document.getElementById('upd').innerHTML = D.updated
+    ? `<span style="display:inline-block;margin-top:6px;padding:3px 10px;border-radius:999px;background:var(--card);border:1px solid var(--border);font-size:12px;color:var(--text-muted)">🕓 Datos descargados vía query: <b style="color:var(--text)">${fmtUpdated(D.updated)}</b></span>`
+    : '';
+  try{ AUDIT=await (await fetch('audit.json?t='+Date.now())).json(); }catch(e){ AUDIT=null; }
+  document.querySelectorAll('input[name=pais]').forEach(r=>r.onchange=()=>selectCountry(r.value));
+  
+  go('dash','MX');
+}
+
+// ===== router multi-hoja (tabs) =====
+let vista='dash', paisSel='MX';
+const _PAIS_LBL={MX:'México',CO:'Colombia'};
+function irVista(v){ vista=v; go(v, paisSel); }
+function irPais(c){ paisSel=c; go(vista, c); }
+function go(sheet, c){
+  const map={dash:'sheet-dash', exp:'sheet-exp', tablas:'sheet-tablas', docs:'sheet-docs', inbox:'sheet-inbox', ventanas:'sheet-ventanas', plantillas:'sheet-plantillas', agente:'sheet-agente', envio:'sheet-envio'};
+  const id=map[sheet]||'sheet-dash';
+  vista=sheet; if(c) paisSel=c;
+  country = paisSel;   // una sola fuente de verdad para todas las vistas
+  document.querySelectorAll('.sheet').forEach(s=>{ s.hidden = (s.id!==id); });
+  if(sheet==='dash'){
+    const r=document.querySelector('input[name=pais][value='+paisSel+']'); if(r) r.checked=true;
+    selectCountry(paisSel);
+    const pl=document.getElementById('paisLabel');
+    if(pl) pl.textContent=_PAIS_LBL[paisSel]+' · '+_CANAL_LBL[canalSel];
+  }
+  else if(sheet==='exp'){ setExp(paisSel); }
+  else if(sheet==='tablas'){ setTablas(paisSel); }
+  else if(sheet==='docs'){ setDocs(paisSel); }
+  else if(sheet==='inbox'){ renderInbox(); }
+  else if(sheet==='ventanas'){ renderVentanas(); }
+  else if(sheet==='plantillas'){ renderPlantillas(); }
+  else if(sheet==='envio'){ cargarEnvio(); }
+  else if(sheet==='agente'){ renderAgenteScreen(); }
+  // La barra lateral marca la VISTA y el segmentado marca el PAÍS: son ejes distintos, a
+  // diferencia de las pestañas viejas que multiplicaban vista × país en ocho botones.
+  document.querySelectorAll('.navit[data-nav]').forEach(b=>b.classList.toggle('active', b.dataset.nav===sheet));
+  document.querySelectorAll('#paisSeg [data-pais]').forEach(b=>b.classList.toggle('active', b.dataset.pais===paisSel));
+  document.querySelectorAll('#canalSeg [data-canal]').forEach(b=>b.classList.toggle('active', b.dataset.canal===canalSel));
+  window.scrollTo(0,0);
+}
+function setExp(c){ expC=c; const t=document.getElementById('expTitle'); if(t) t.textContent='Explorador de la base · '+c; renderExplorer(); }
+const escx=s=>String(s).replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+function setTablas(c){ tbC=c; const t=document.getElementById('tablasTitle'); if(t) t.textContent='Tablas de Neon · '+c; renderTablas(); }
+function renderTablas(){
+  const el=document.getElementById('tablasBody'); if(!el) return;
+  const d=(D.neon_tablas||{})[tbC]||{};
+  const meta={send_log:'un registro por intento de envío de WhatsApp',
+              recreation:'un registro por lead re-creado en el backbone',
+              contact_status:'estado actual por teléfono (enviado / reinteresado / ya_vendio / baja …)'};
+  const order=['send_log','recreation','contact_status'];
+  el.innerHTML=order.map(t=>{
+    const tb=d[t]||{cols:[],rows:[]};
+    const head=`<div class="tabletitle" style="margin-bottom:6px"><code>${escx(t)}</code> <span class="note" style="font-weight:400;text-transform:none;letter-spacing:0">— ${meta[t]||''}</span></div>`;
+    if(!tb.cols||!tb.cols.length) return head+'<p class="note">Sin registros para '+tbC+'.</p>';
+    const th=tb.cols.map(c=>`<th>${escx(c)}</th>`).join('');
+    const rows=tb.rows.map(r=>`<tr>${r.map(v=>`<td>${v==null?'<span class="muted">·</span>':escx(v)}</td>`).join('')}</tr>`).join('');
+    return head+`<div class="rawtbl"><table><thead><tr>${th}</tr></thead><tbody>${rows}</tbody></table></div>`;
+  }).join('');
+}
+
+const DOCS={
+  MX:{
+    lineas:[['Envíos (línea activa)','<code>52 1 55 9548 3481</code> · <code>5215595483481</code>'],
+            ['Histórico (línea vieja)','<code>52 1 55 9088 3423</code> · <code>5215590883423</code> — ya no envía; se lee solo para el histórico de entregas del repo anterior']],
+    tpls:[['v1 · control','<code>reactivacion_sellers_mx_v1_jul26</code> · header TEXT'],
+          ['v2 · oferta','<code>reactivacion_sellers_mx_v2_oferta_jul26</code> · header IMAGE (<code>jcmm_mexico.png</code>)'],
+          ['Anterior (repo viejo)','<code>bot_reactivacion_leads_mx_sellers_camilootoya_16jun26</code>']],
+    utm:'mex-sellers-paid-experiments-web-without-leads-retargeting-national-reinteresados',
+    fuente_desc:'WEB (3) + Lead Forms (47)',
+    ab_result:{
+      status:'decidido', winner:'v2 · oferta',
+      since:'16 jul 2026', closed:'22 jul 2026', dias:7,
+      prob:99.7, loss:'0,002', fisher:'0,007', ic:'[1,26 – 7,45] pp',
+      rows:[
+        ['v1 · control', 732, 306, '41,8%', '2,3%', '8,8%'],
+        ['v2 · oferta',  924, 389, '42,1%', '6,7%', '10,8%'],
+      ],
+      desc:[
+        ['v1 · control','Header <b>TEXT</b>, sin imagen. Mensaje corto de reactivación.'],
+        ['v2 · oferta','Header <b>IMAGE</b> (<code>jcmm_mexico.png</code>) + copy de <b>dos productos</b> (vender <i>y</i> comprar con Habi). Propuesta más rica.'],
+      ],
+      conclusion:'<b>v2 casi triplica la tasa de interesados</b> (6,7% vs 2,3%) con <b>la misma entrega</b> (~42%): el temor a que el header de imagen bajara la entrega (device-error) no se materializó. El leve exceso de bajas de v2 (10,8% vs 8,8%) queda ampliamente compensado por las positivas. <b>v2 queda como plantilla única</b> y como control del próximo A/B.'},
+  },
+  CO:{
+    lineas:[['Envíos (línea activa)','<code>57 300 911 0453</code> · <code>573009110453</code>']],
+    tpls:[['v1 · control','<code>reactivacion_sellers_co_v1_jul26</code> · header TEXT'],
+          ['v2 · oferta','<code>reactivacion_sellers_co_v2_oferta_jul26</code> · header IMAGE (<code>jcmm_colombia.png</code>)'],
+          ['Anterior (repo viejo)','<code>bot_reactivacion_leads_co_sellers_camilootoya_19jun26</code>']],
+    utm:'col-sellers-paid-experiments-web-without-leads-retargeting-national-reinteresados',
+    fuente_desc:'WEB (3) + Lead Forms (47) + Estudio Inmueble/Habímetro (7) + CRM (20)',
+    ab_result:{
+      status:'analogia', winner:'v2 · oferta',
+      since:'17 jul 2026', closed:'22 jul 2026',
+      desc:[
+        ['v1 · control','Header <b>TEXT</b>, sin imagen. Mensaje corto de reactivación.'],
+        ['v2 · oferta','Header <b>IMAGE</b> (<code>jcmm_colombia.png</code>) + copy de <b>dos productos</b> (vender <i>y</i> comprar con Habi). Propuesta más rica.'],
+      ],
+      conclusion:'CO no acumuló muestra propia suficiente para un veredicto estadístico (y el reporte tiene un <i>bug</i> que impide medir CO por separado, pendiente de arreglar). Dado el resultado <b>decisivo de v2 en MX</b> y que la familia de copy es la misma, <b>se adopta v2 en CO por analogía</b>. En el próximo A/B se medirá CO con su propio dato.'},
+  },
+};
+function setDocs(c){ docC=c; const t=document.getElementById('docsTitle'); if(t) t.textContent='Documentación · Marketing Loop · '+c; renderDocs(); }
+function renderDocs(){
+  const el=document.getElementById('docsBody'); if(!el) return;
+  const x=DOCS[docC]||DOCS.MX;
+  const kv=arr=>`<div class="kv"><table>${arr.map(([k,v])=>`<tr><td>${k}</td><td>${v}</td></tr>`).join('')}</table></div>`;
+  const abResult=()=>{
+    const a=x.ab_result; if(!a) return '';
+    const decided=a.status==='decidido';
+    const card=`<div class="veredicto ${decided?'vd-ok':'vd-wait'}">
+      <div class="vd-main"><b>${decided?'✅ DECIDIDO':'◐ Adoptado por analogía'}</b> — ganadora <b>${a.winner}</b>${decided?` · P(mejor) <b>${a.prob}%</b> · pérdida esperada <b>${a.loss} pp</b> · Fisher p <b>${a.fisher}</b>`:''}</div>
+      <div class="vd-sub">${decided
+        ? `<span class="vd-chip vd-c-ok">✓ ${a.dias} días</span> <span class="vd-chip vd-c-ok">✓ IC95 de la diferencia ${a.ic}</span> <span class="muted">· experimento ${a.since} → cerrado ${a.closed}</span>`
+        : `<span class="vd-chip vd-c-no">○ sin muestra propia suficiente</span> <span class="muted">· cerrado ${a.closed}</span>`}</div>
+    </div>`;
+    const tbl=a.rows?`<div class="rawtbl" style="margin:0 0 12px"><table class="ftab"><thead><tr>
+      <th>Plantilla</th><th>Enviados</th><th>Entregados</th><th>Entrega</th><th class="ab-key">Interesado</th><th>Baja</th></tr></thead><tbody>
+      ${a.rows.map(r=>`<tr>${r.map((c,j)=>`<td class="${j===4?'ab-key':''}"${j===0?'':' style="text-align:right"'}>${c}</td>`).join('')}</tr>`).join('')}
+      </tbody></table></div>`:'';
+    return `
+    <h3>Resultados del A/B testing entre plantillas — ${docC}</h3>
+    ${card}
+    ${tbl}
+    <p><b>Plantillas comparadas:</b></p>
+    ${kv(a.desc)}
+    <p><b>Conclusiones:</b> ${a.conclusion}</p>
+    <p class="note">Metodología del veredicto abajo. El próximo A/B enfrentará a v2 (ganadora) contra una plantilla retadora nueva.</p>`;
+  };
+  el.innerHTML=`
+    <p>Reactivación de leads de sellers estancados: se les manda un WhatsApp; a quien responde <b>INTERESADO</b> se le <b>re-crea el lead</b> en el backbone para que vuelva a gestión comercial (GABI lo llama).</p>
+
+    <h3>Líneas de WhatsApp (Infobip · BSP) — ${docC}</h3>
+    ${kv(x.lineas)}
+
+    <h3>Plantillas — ${docC}</h3>
+    ${kv(x.tpls)}
+    <p><b>Cuál usamos hoy:</b> desde el <b>22 jul 2026</b> se envía <b>100% v2 (oferta)</b>, ganadora del A/B (ver <b>Resultados</b> abajo). v1 fue el control; la anterior es del repo viejo (ya no se envía). Body «<b>¿Aún vendes tu inmueble?</b>» fijo; botones QUICK_REPLY «Quiero vender con Habi» (→ INTERESADO) y «Ya no vendo» (→ baja). Payloads <code>activacion_NewLeads_INTERESADO_{NID}</code> / <code>…_YAVENDIÓ_{NID}</code> — el NID viaja embebido para identificar al lead que respondió.</p>
+
+    ${abResult()}
+
+    <h3>Cómo funciona el A/B testing (metodología)</h3>
+    <p><b>Asignación:</b> durante un A/B activo, en cada envío se elige la plantilla al <b>azar 50/50</b>, así ambas reciben audiencias comparables el mismo día.</p>
+    <p><b>Métrica ganadora:</b> el <b>Interesado rate</b> (interesados ÷ entregados), que es el objetivo del loop. El Delivery rate se mide sobre enviados; read/respond/interesado sobre entregados. Se excluyen los fallos por plantilla sin imagen (error 7008).</p>
+    <p><b>Decisión (prueba bayesiana Beta-Binomial):</b> se declara ganadora una plantilla cuando <b>P(es mejor) ≥ 95%</b> y la <b>pérdida esperada ≤ 0,5 pp</b>, exigiendo al menos <b>300 entregados por brazo</b> y <b>7 días</b> de corrida. Si a los <b>21 días</b> no hay diferencia clara, se corta y se queda el control (v1). Mientras no haya ganadora, se sigue repartiendo 50/50.</p>
+    <p class="note">El avance en vivo está en la tabla <b>A/B de plantillas</b> del tablero (columna Interesado rate resaltada en amarillo).</p>
+
+    <h3>UTM de las recreaciones (<code>utm_campaign</code>)</h3>
+    ${kv([['UTM',`<code>${x.utm}</code>`],['Agente (creador)','<code>claude-camilo-otoya-reinteres</code>']])}
+
+    <h3>Cómo se arma la base a reinteresar (filtros) — ${docC}</h3>
+    <p>El universo son leads de sellers <b>estancados pero aún calificados</b> que el comercial ya no está trabajando. Se filtran así (detalle valor por valor en la hoja <b>Base</b>):</p>
+    <ol class="docfilters">
+      <li><b>Calificado hoy</b> — el negocio está <b>actualmente</b> en estado 20/36/63 (MM) o 20/36/73 (Inmo) según el <b>backbone</b> (fuente de verdad, no el espejo de HubSpot).</li>
+      <li><b>Fuente de marketing</b> — ${x.fuente_desc}.</li>
+      <li><b>Ventana de creación</b> — creado desde <b>2023-01-01</b> y con <b>más de 180 días</b> (SLA: si tiene &lt;180d, el comercial lo trabaja; no se lo quitamos).</li>
+      <li><b>No terminal en Market Maker</b> — excluye cierre/vendido/descartado (<code>oportunidad_del_negocio</code>).</li>
+      <li><b>No cerrado/avanzado en Inmobiliaria</b> — excluye contrato/oferta/legal/vendido (<code>oportunidad_inmobiliaria</code>).</li>
+      <li><b>Etapa HubSpot (pipeline-aware)</b> — en los pipelines <b>vivos</b> de gestión solo entra la etapa «Perdido»; en cualquier otro, se toma.</li>
+      <li><b>No rechazado por remodelaciones</b> — excluye rechazos de comité (grietas, humedad grave, &gt;40 años, etc.).</li>
+      <li><b>Con dirección</b> — debe tener calle (el comercial la necesita para gestionar/visitar).</li>
+      <li><b>Descarte duro</b> — excluye descartes permanentes (ya vendió, duplicado, datos incorrectos, rechazo definitivo…). <b>Mantiene</b> «Ya no quiere vender» (reactivable).</li>
+      <li><b>Teléfono válido</b> — 10 dígitos y no todos iguales.</li>
+      <li><b>Dedup</b> — 1 fila por persona (NID + teléfono + correo), quedándose con el lead <b>más reciente</b>.</li>
+      <li><b>Guard a nivel persona</b> — se <b>excluye el teléfono</b> si su lead <b>más reciente</b> (de cualquier estado) sigue dentro del SLA (&lt;180d) o ya es <b>terminal</b> (vendió/cerró/descartó). Evita pisar al comercial o recontactar a quien ya transó.</li>
+    </ol>
+    <p class="note">Además, en el <b>envío</b>: no se re-contacta a quien ya recibió (entregado) ni a bloqueos/opt-out permanentes; freq-cap y no-entregados transitorios sí reintentan tras un cooldown de 30 días.</p>`;
+}
+const EXPMETA={
+  "00.pipeline":["Pipeline","dónde vive el deal; solo importan los 2 pipelines vivos"],
+  "01.estado_MM":["Estado backbone · MM","calificado si ∈ 20/36/63 (o Inmo ∈ 20/36/73)"],
+  "02.estado_Inmo":["Estado backbone · Inmo","calificado si ∈ 20/36/73 (o MM ∈ 20/36/63)"],
+  "03.oport_MM":["Disposición MM","oportunidad_del_negocio: excluye cierre/vendido/descartado…"],
+  "04.oport_Inmo":["Disposición Inmo","oportunidad_inmobiliaria: excluye contrato/oferta/legal/vendido…"],
+  "05.etapa":["Etapa HubSpot","PIPELINE-AWARE: en pipelines vivos solo entra 'Perdido'"],
+  "06.comite_remo":["Comité remodelaciones","estado_comite_remodelaciones ≠ REJECTED"],
+  "07.remo_razon":["Razón rechazo remodelaciones","excluye lista estructural"],
+  "08.descartado":["Descarte duro","razon_de_descartado: excluir si poblado"],
+  "09.descarte_MM":["Descarte MM","excluye duras (mantiene 'Ya no quiere vender')"],
+  "10.descarte_Inmo":["Descarte Inmo","excluye duras (mantiene 'Ya no quiere vender')"],
+};
+let subflujoInbox='todo';
+function setSubflujoInbox(s){ subflujoInbox=s; renderInbox(); }
+const INBOX_BASE='https://agente-sdr-ten.vercel.app/inbox';
+const VENTANAS_BASE='https://agente-sdr-ten.vercel.app/ventanas';
+// Ventanas usa el MISMO token que el inbox (los dos los sirve el agente y validan INBOX_TOKEN),
+// así que no se pide dos veces: si ya está guardado, la vista abre directo.
+function renderVentanas(){
+  const gate=document.getElementById('ventanasGate'), frame=document.getElementById('ventanasFrame');
+  if(!gate||!frame) return;
+  let tok=''; try{ tok=localStorage.getItem('ml-inbox-token')||''; }catch(e){}
+  if(!tok){
+    frame.innerHTML='';
+    pedirToken('ventanasGate', renderVentanas);
+    return;
+  }
+  const url=VENTANAS_BASE+'?token='+encodeURIComponent(tok);
+  gate.innerHTML='<p class="note"><a href="'+url+'" target="_blank" rel="noopener">Abrir en pestaña nueva ↗</a></p>';
+  frame.innerHTML='<iframe src="'+url+'" title="Tablero de Ventanas" style="width:100%;height:78vh;border:1px solid var(--border);border-radius:12px;background:#fff"></iframe>';
+}
+function renderInbox(){
+  const gate=document.getElementById('inboxGate'), frame=document.getElementById('inboxFrame');
+  if(!gate||!frame) return;
+  let tok=''; try{ tok=localStorage.getItem('ml-inbox-token')||''; }catch(e){}
+  if(!tok){
+    frame.innerHTML='';
+    gate.innerHTML=`<section class="card-sec" style="max-width:620px">
+      <h3 class="sm">Pega el token del inbox</h3>
+      <p class="note">Es el <code>INBOX_TOKEN</code> del agente SDR. Queda guardado solo en este navegador; no se manda a ningún lado ni queda en el repositorio.</p>
+      <form style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px" onsubmit="return saveInboxToken(event)">
+        <input id="inboxTok" type="text" class="sel" style="flex:1;min-width:240px" placeholder="token"
+               autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" data-1p-ignore data-lpignore="true">
+        <button class="winbtn active" type="submit">Abrir inbox</button>
+      </form></section>`;
+    return;
+  }
+  // El inbox hereda los selectores del tablero: si estás mirando Ventanas en CO, las
+  // conversaciones que se abren son las de esa campaña y ese país, no todas.
+  const filtro=(canalSel==='ventanas'?'&campaign=ventanas':(canalSel==='web'?'&campaign=reactivacion':''))
+    +'&country='+encodeURIComponent(country)
+    +(canalSel==='ventanas' && subflujoInbox!=='todo' ? '&subflujo='+encodeURIComponent(subflujoInbox) : '');
+  // Las pestañas de sub-flujo solo tienen sentido dentro de ventanas: en reactivación no hay
+  // caminos que separar, y mostrarlas ahí sería ofrecer un filtro que no filtra nada.
+  const sb=document.getElementById('inboxSub');
+  if(sb) sb.innerHTML = canalSel!=='ventanas' ? '' :
+    '<div class="seg" style="margin:12px 0">'+SUBF.map(([k,lab])=>
+      `<button type="button" class="winbtn sm${k===subflujoInbox?' active':''}" onclick="setSubflujoInbox('${k}')">${lab}</button>`).join('')+'</div>';
+  const url=INBOX_BASE+'?token='+encodeURIComponent(tok)+filtro;
+  const fc=document.getElementById('inboxFiltro');
+  if(fc){ fc.textContent=_PAIS_LBL[country]+' · '+_CANAL_LBL[canalSel];
+    // Ventanas solo existe en CO: con MX el inbox saldría vacío y parecería roto.
+    if(canalSel==='ventanas' && country!=='CO') fc.textContent += ' — ventanas solo opera en Colombia';
+  }
+  gate.innerHTML=`<p class="note"><a href="${url}" target="_blank" rel="noopener">Abrir en pestaña nueva ↗</a> · <a href="#" onclick="clearInboxToken();return false">Olvidar el token de este navegador</a></p>`;
+  frame.innerHTML=`<iframe src="${url}" title="Inbox del agente SDR" style="width:100%;height:78vh;border:1px solid rgba(128,128,128,.35);border-radius:10px;background:#fff"></iframe>`;
+}
+function saveInboxToken(ev){ if(ev) ev.preventDefault();
+  const i=document.getElementById('inboxTok'); const v=(i&&i.value||'').trim(); if(!v) return false;
+  try{ localStorage.setItem('ml-inbox-token',v); }catch(e){} renderInbox(); return false; }
+function clearInboxToken(){ try{ localStorage.removeItem('ml-inbox-token'); }catch(e){} renderInbox(); }
+
+function renderExplorer(){
+  const d=(AUDIT||{})[expC], el=document.getElementById('expBody');
+  document.getElementById('expUpd').textContent = (AUDIT&&AUDIT.updated) ? 'datos: '+fmtUpdated(AUDIT.updated) : '';
+  if(!d){ el.innerHTML='<p class="note">Sin datos del explorador (audit.json aún no disponible; se genera en un job aparte).</p>'; return; }
+  const parts=[];
+  for(const k of Object.keys(EXPMETA)){
+    const rows=(d[k]||[]); if(!rows.length) continue;
+    const maxB=Math.max(1,...rows.map(r=>r.base)), inc=rows.filter(r=>r.base>0).length, m=EXPMETA[k];
+    const body=rows.map(r=>{
+      const ex=r.base===0, w=Math.round(r.base/maxB*80);
+      return '<tr class="'+(ex?'exc':'')+'"><td><span class="val">'+escx(r.valor)+'</span></td>'
+        +'<td>'+(+r.ventana).toLocaleString('es')+'</td>'
+        +'<td>'+(+r.base).toLocaleString('es')+(r.base>0?'<span class="exbar" style="width:'+w+'px"></span>':'')+'</td>'
+        +'<td><span class="pill '+(ex?'exc':'inc')+'">'+(ex?'excluido':'incluido')+'</span></td></tr>';
+    }).join('');
+    parts.push('<div class="exp-prop"><h3>'+m[0]+'<span class="n">'+k.slice(3)+' · '+inc+'/'+rows.length+' incluidos</span></h3>'
+      +'<p class="cap">'+escx(m[1])+'</p>'
+      +'<div class="exp-tbl"><table><thead><tr><th>Valor</th><th>En ventana</th><th>En base</th><th></th></tr></thead><tbody>'+body+'</tbody></table></div></div>');
+  }
+  el.innerHTML=parts.join('');
+}
+
+// ===== PANEL (diseño Habi Loop) =====
+let canalSel='agregado', rangoFunnel='30';
+const _CANAL_LBL={agregado:'Web + Ventanas (agregado)', web:'Web', ventanas:'Ventanas'};
+const _RANGO_LBL={hoy:'Hoy','7':'Últimos 7 días','30':'Últimos 30 días','90':'Últimos 90 días'};
+const _RANGO_BQ={hoy:'0','7':'7','30':'30','90':'90'};
+function irCanal(c){ canalSel=c; go(vista, paisSel); }
+function setRango(r){ rangoFunnel=r; renderEmbudo(); }
+function setGran(g){ cicloTipo=g; document.querySelectorAll('#granSeg [data-gran]').forEach(b=>b.classList.toggle('active', b.dataset.gran===g));
+  renderSerie(); renderAgentePanel(); renderErrores(); }
+
+// Embudo del loop: entrega → re-asignación → cita → cierre, con la conversión de cada salto.
+// Ventanas todavía no crea leads propios (le falta su atribución), así que de la segunda etapa
+// en adelante su columna es 0 DE VERDAD, no un dato que falte.
+function renderEmbudo(){
+  const el=document.getElementById('embudoCard'); if(!el) return;
+  const P=((D.panel||{})[country]||{});
+  const R=(P[canalSel]||{})[rangoFunnel]||{};
+  const bq=((D.panel_bq||{})[country]||{})[_RANGO_BQ[rangoFunnel]]||{};
+  const soloVent = canalSel==='ventanas';
+  const RP=R.prev||{}, bqP=bq.prev||{};
+  const citas   = soloVent?0:(+bq.citas||0);
+  const cierres = soloVent?0:((+bq.cierres_mm||0)+(+bq.cierres_inmo||0));
+  const citasP  = soloVent?0:(+bqP.citas||0);
+  const cierresP= soloVent?0:((+bqP.cierres_mm||0)+(+bqP.cierres_inmo||0));
+  const sp=(k)=>{ if(canalSel!=='agregado') return ''; const w=((P.web||{})[rangoFunnel]||{})[k]||0, v=((P.ventanas||{})[rangoFunnel]||{})[k]||0;
+    return 'Web '+fmt(w)+' · Ventanas '+fmt(v); };
+  // prev = periodo contiguo del mismo largo justo antes (hoy → ayer). Solo se pinta si el
+  // data.json ya lo trae; un build viejo simplemente no muestra la línea.
+  const hayPrev = !!(R.prev || bq.prev);
+  const pasos=[
+    {lab:'Envíos entregados'+I('f_ent'), val:+R.entregados||0, prev:+RP.entregados||0, color:'var(--accent)', split:sp('entregados')},
+    {lab:'Leads re-asignados'+I('f_re'), val:+R.reasignados||0, prev:+RP.reasignados||0, color:'#A855F7', split:sp('reasignados')},
+    {lab:'Citas agendadas'+I('f_cita'), val:citas, prev:citasP, color:'#2DD4BF', split:''},
+    {lab:'Cierres'+I('f_cie'), val:cierres, prev:cierresP, color:'var(--ok)', split:''},
+  ];
+  const prevLbl = rangoFunnel==='hoy' ? 'ayer' : 'periodo anterior';
+  const prevHtml=(s)=>{
+    if(!hayPrev) return '';
+    let d='';
+    if(s.prev>0){ const p=(s.val-s.prev)/s.prev*100; const cls=p>0?'up':(p<0?'down':'');
+      d=` <span class="${cls}">${p>0?'+':''}${Math.round(p)}%</span>`; }
+    return `<div class="fprev">${prevLbl} <b>${fmt(s.prev)}</b>${d}</div>`; };
+  const base=pasos[0].val||1;
+  const tabs=['hoy','7','30','90'].map(r=>`<button type="button" class="winbtn sm${r===rangoFunnel?' active':''}" onclick="setRango('${r}')">${r==='hoy'?'Hoy':r+' d'}</button>`).join('');
+  const cuerpo=pasos.map((s,i)=>{
+    const ancho=Math.max(2,Math.round(s.val/base*100));
+    const sig=pasos[i+1];
+    const conv=sig ? (s.val>0 ? pct(sig.val/s.val*100) : '·') : null;
+    return `<div class="fstep">
+      <div class="fbody">
+        <div class="flab">${s.lab}</div>
+        <div class="fval">${fmt(s.val)}</div>
+        ${prevHtml(s)}
+        <div class="fbar"><div style="width:${ancho}%;background:${s.color}"></div></div>
+        ${s.split?`<div class="fsplit">${s.split}</div>`:''}
+      </div>
+      ${conv!==null?`<div class="fconv">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"></path></svg>
+        <span class="fpill">${conv}</span></div>`:''}
+    </div>`;}).join('');
+  el.innerHTML=`<div class="cardhead">
+      <div><div class="tabletitle">Embudo del loop</div>
+      <span class="sub">de entrega a cierre · ${_RANGO_LBL[rangoFunnel]} · ${_CANAL_LBL[canalSel]}</span></div>
+      <div class="seg">${tabs}</div>
+    </div>
+    <div class="funnel">${cuerpo}</div>`;
+}
+
+const _DIAS=['dom','lun','mar','mié','jue','vie','sáb'];
+function _dia(b){ if(!/^\d{4}-\d{2}-\d{2}$/.test(b)) return b;
+  const d=new Date(b+'T12:00:00'); return _DIAS[d.getDay()]+' '+d.getDate(); }
+// Serie del loop / Agente IA: una card, dos pestañas, una gráfica de barras agrupadas por
+// periodo (Temporalidad). Colores fijos por ENTIDAD (no por posición): re-asignados = acento,
+// interesados = teal, atendidos = ámbar. Validados (dataviz) en claro y oscuro.
+// Cómo se calcula cada métrica (la "i" al lado del nombre).
+const MET_HELP={
+  env:'Mensajes de reactivación enviados (aceptados por Infobip) en el periodo, por fecha de envío. Fuente: send_log (Neon), un registro por intento.',
+  ent:'Envíos que llegaron al celular (estado DELIVERED). Se cruza el message_id de cada envío con el estado de entrega de Infobip (mart + API /logs) y la entrega persistida en Neon.',
+  lei:'Apertura: entregados con marca de lectura (SEEN) reportada por WhatsApp vía Infobip. El día en curso llega con rezago y WhatsApp no la reporta en todos los casos.',
+  inte:'Destinatarios que respondieron con el botón «Estoy interesado» del mensaje (payload INTERESADO). Fuente: mart inbound de Infobip. Es el objetivo del envío.',
+  re:'Leads re-asignados: interesados cuyo lead se recreó en el backbone (nuevo negocio en HubSpot con UTM reinteresados) y pasó a gestión comercial. Por fecha de creación.',
+  pinte:'Interesados ÷ Entregados del periodo mostrado.',
+  at:'Conversaciones de texto libre atendidas por el agente IA en vivo: teléfonos únicos con al menos un turno del agente ese día (los modos SHADOW no cuentan).',
+  ainte:'Conversaciones donde el agente detectó intención de vender (intent = INTERESTED) durante el diálogo.',
+  are:'Conversaciones que el agente cerró disparando el lead al backbone (acción BACKBONE): el lead quedó recreado y asignado.',
+  pconv:'Re-asignados ÷ Atendidos, sobre toda la serie del agente.',
+  f_ent:'Mensajes del loop entregados (DELIVERED) en el rango, por fecha de envío. Agregado = Web + Ventanas.',
+  f_re:'Leads recreados en el backbone en el rango: los del loop vía recreation y los de Ventanas vía BACKBONE del agente.',
+  f_cita:'Negocios con UTM reinteresados cuya fecha_de_visita cae en el rango (HubSpot deals).',
+  vs1:'Teléfonos distintos que el webhook de HubSpot mandó al receptor ese día (ventanas_hs_inbound). Excluye pruebas DRY y las tandas manuales de recuperación.',
+  vs2:'Teléfonos cuya PRIMERA respuesta fue ese día (cada persona cuenta una sola vez, así la suma coincide con el embudo): texto libre al agente (agent_thread, campaign ventanas) unido con clics de botón (contact_status.responded_at) cuyo último envío fue de ventanas. La unión es obligatoria: los clics nunca llegan al agente.',
+  vs3:'Entrevistas que quedaron completas ese día: completed_at de ventanas_intake.',
+  vs4:'Teléfonos a los que el agente cerró con CLOSE_OPT_OUT ese día: pidieron no ser contactados.',
+  ve1:'Teléfonos distintos que el webhook de HubSpot mandó al receptor en el rango (ventanas_hs_inbound). Excluye pruebas DRY y las tandas manuales RECUPERADO_*. Misma regla que la gráfica Usuarios por día.',
+  ve2:'Personas distintas con al menos un envío de plantilla ventanas% aceptado por Infobip en el rango (send_log). Incluye a quien entró por tanda de recuperación, por eso puede acercarse o superar a Personas recibidas. Aceptada no es entregada: la entrega real vive en el mart de BigQuery.',
+  ve3:'Personas distintas que respondieron en el rango: texto libre al agente (agent_thread) unido con clics de botón (contact_status.responded_at) cuyo último envío fue de ventanas.',
+  ve4:'Personas distintas con al menos un turno propio hacia el agente en el rango (agent_thread, role user, campaign ventanas).',
+  ve5:'Personas con resultado BACKBONE en la bitácora ventanas_backbone_intento (desde el 1 de septiembre). Es la única fuente de deal en todo el panel e incluye los disparados por el reloj de 72 h con la entrevista a medias. Fallaron = BACKBONE_FAILED sin un BACKBONE posterior.',
+  ve6:'Entrevistas con completed_at en ventanas_intake: la captura terminó, con o sin deal.',
+  ve7:'Cierres de los deals que creó Ventanas, en el rango. Son DOS líneas de negocio que NO son el mismo evento: compra directa (Habi compró el inmueble, por oportunidad_del_negocio «Cierre - Comprado» y fechado por closedate) e inmobiliaria (el dueño firmó el mandato de venta con la red de aliados, fechado por fecha_captacion_inmobiliaria: es una captación, no una venta). Se suman, y debajo se muestra la composición. Fuente: HubSpot en BigQuery; los deals se identifican por el agente marketing_loop_ventanas del backbone.',
+  vs5:'Teléfonos enviados a Dapta ese día o en el rango (ventanas_dapta_handoff): SIN_RESPUESTA_24H es la salida normal de quien no contestó; PIDE_LLAMADA es intención positiva.',
+  f_cie:'Dos líneas sumadas: compra directa (Cierre - Comprado, por closedate) + captación de la red de aliados (contrato/mandato firmado). No son el mismo evento.'};
+const I=k=>MET_HELP[k]?`<span class="info" tabindex="0" data-tip="${MET_HELP[k].replace(/"/g,'&quot;')}">i</span>`:'';
+const IH=I;   // alias: renderVentanasPanel tiene un `I` local (intake) que tapa el helper
+let serieTabSel='loop', serieChart=null, serieTablaVisible=false;
+// re-asignados = acento · interesados = teal · leídos/apertura = ámbar · volumen (línea) = neutro.
+const _SERIE_COL=()=>document.body.classList.contains('dark')
+  ? {re:'#9F67F5', inte:'#0D9488', lei:'#D97706', env:'#D6D0DD', at:'#D6D0DD'}
+  : {re:'#7E22CE', inte:'#0D9488', lei:'#D97706', env:'#525252', at:'#525252'};
+// Etiqueta con el valor encima de las barras marcadas con _labels (re-asignados: son pocos
+// frente al volumen de la línea y sin la cifra no se leen).
+const _barLabels={id:'barLabels',afterDatasetsDraw(ch,_a,o){const {ctx}=ch;
+  ch.data.datasets.forEach((ds,i)=>{ if(!ds._labels) return; const m=ch.getDatasetMeta(i); if(m.hidden) return;
+    ctx.save(); ctx.font='600 11px system-ui,-apple-system,sans-serif'; ctx.fillStyle=o.color||'#404040';
+    ctx.textAlign='center'; ctx.textBaseline='bottom';
+    m.data.forEach((b,j)=>{ const v=ds.data[j]; if(v>0) ctx.fillText(fmt(v), b.x, b.y-3); }); ctx.restore(); });}};
+const _GRAN_LBL={dia:'Diario',semana:'Semanal',mes:'Mensual'};
+function setSerieTab(t){ serieTabSel=t;
+  document.querySelectorAll('#serieSeg [data-st]').forEach(b=>b.classList.toggle('active', b.dataset.st===t));
+  renderSerie(); }
+function toggleSerieTabla(){ serieTablaVisible=!serieTablaVisible; renderSerie(); }
+// Re-asignados por bucket: reasignados_dia viene por DÍA; para semana/mes se suman los días
+// que caen entre este bucket y el siguiente (antes solo casaba el día exacto del bucket).
+function _reasigPorBucket(buckets, rec){
+  const out={}; const keys=Object.keys(rec).sort();
+  buckets.forEach((b,i)=>{ const nx=buckets[i+1]||'9999-12-31';
+    out[b]=keys.filter(d=>d>=b && d<nx).reduce((a,d)=>a+(+rec[d]||0),0); });
+  return out;
+}
+function _kpis(items){ return `<div class="akpis">${items.map(([l,v,k])=>`<div><div class="flab">${l}${I(k)}</div><div class="fval">${v}</div></div>`).join('')}</div>`; }
+function _serieDatos(){
+  if(serieTabSel==='loop'){
+    const raw=(((D.cosecha||{})[country]||{})[cicloTipo]||[]).slice(-14);
+    const rec=_reasigPorBucket(raw.map(r=>r.bucket), (D.reasignados_dia||{})[country]||{});
+    const rows=raw.map(r=>({lab:_dia(r.bucket), env:+r.enviados||0, ent:+r.entregados||0, lei:+r.leidos||0, inte:+r.interesados||0, re:rec[r.bucket]||0}));
+    const t=rows.reduce((a,r)=>({env:a.env+r.env,ent:a.ent+r.ent,lei:a.lei+r.lei,inte:a.inte+r.inte,re:a.re+r.re}),{env:0,ent:0,lei:0,inte:0,re:0});
+    return {titulo:'Serie del loop', sub:'Envíos, entregas y conversión · '+_GRAN_LBL[cicloTipo]+' · solo reactivación',
+      kpis:[['Envíos',fmt(t.env),'env'],['Entregados',fmt(t.ent),'ent'],['Leídos',fmt(t.lei),'lei'],['Interesados',fmt(t.inte),'inte'],['Re-asignados',fmt(t.re),'re'],['% interesados',t.ent>0?pct(t.inte/t.ent*100):'·','pinte']],
+      series:[{k:'env',lab:'Envíos',line:true},{k:'lei',lab:'Leídos (apertura)'},{k:'re',lab:'Re-asignados',labels:true}], extra:[['Entregados','ent'],['Interesados','inte']], rows,
+      tabla:`<table><thead><tr><th>Día</th><th style="text-align:right">Envíos</th><th style="text-align:right">Entregados</th><th style="text-align:right">Leídos</th>
+        <th style="text-align:right">Interesados</th><th style="text-align:right">Re-asignados</th></tr></thead><tbody>
+        ${rows.map(r=>`<tr><td>${r.lab}</td><td style="text-align:right">${fmt(r.env)}</td><td style="text-align:right">${fmt(r.ent)}</td><td style="text-align:right">${fmt(r.lei)}</td>
+        <td style="text-align:right"><b>${fmt(r.inte)}</b></td><td style="text-align:right;color:var(--accent);font-weight:600">${fmt(r.re)}</td></tr>`).join('')}</tbody></table>`};
+  }
+  const serie=((D.agente_ia||{})[country]||[]);
+  const tot=serie.reduce((a,r)=>({at:a.at+(+r.conversaciones||0), inte:a.inte+(+r.interesados||0), re:a.re+(+r.reasignados||0)}),{at:0,inte:0,re:0});
+  const rows=serie.slice(-14).map(r=>({lab:_dia(r.fecha), at:+r.conversaciones||0, inte:+r.interesados||0, re:+r.reasignados||0}));
+  return {titulo:'Solo agente IA', sub:'Respuestas de texto libre · '+_GRAN_LBL[cicloTipo]+' · todas las campañas',
+    kpis:[['Atendidos',fmt(tot.at),'at'],['Interesados',fmt(tot.inte),'ainte'],['Re-asignados',fmt(tot.re),'are'],['% conversión',tot.at>0?pct(tot.re/tot.at*100):'·','pconv']],
+    series:[{k:'at',lab:'Atendidos',line:true},{k:'inte',lab:'Interesados'},{k:'re',lab:'Re-asignados',labels:true}], extra:[], rows,
+    tabla:`<table><thead><tr><th>Día</th><th style="text-align:right">Atendidos</th><th style="text-align:right">Interesados</th>
+      <th style="text-align:right">Re-asignados</th><th style="text-align:right">% conv.</th></tr></thead><tbody>
+      ${rows.map(r=>`<tr><td>${r.lab}</td><td style="text-align:right">${fmt(r.at)}</td><td style="text-align:right">${fmt(r.inte)}</td>
+      <td style="text-align:right;color:var(--accent);font-weight:600">${fmt(r.re)}</td><td style="text-align:right">${r.at>0?pct(r.re/r.at*100):'·'}</td></tr>`).join('')}</tbody></table>`};
+}
+function renderSerie(){
+  const card=document.getElementById('serieCard'); if(!card) return;
+  const d=_serieDatos(), col=_SERIE_COL(), dark=document.body.classList.contains('dark');
+  document.getElementById('serieTitle').textContent=d.titulo;
+  document.getElementById('serieSub').textContent=d.sub;
+  document.getElementById('serieKpis').innerHTML=_kpis(d.kpis);
+  document.getElementById('serieLeg').innerHTML=d.series.map(x=>`<span><i class="${x.line?'ln':''}" style="background:${col[x.k]}"></i>${x.lab}</span>`).join('');
+  const tab=document.getElementById('serieTab'), btn=document.getElementById('serieTblBtn');
+  tab.hidden=!serieTablaVisible; tab.innerHTML=serieTablaVisible?d.tabla:''; btn.textContent=serieTablaVisible?'Ocultar tabla':'Ver tabla';
+  if(serieChart){ serieChart.destroy(); serieChart=null; }
+  const el=document.getElementById('c_serie'); if(!el||!window.Chart) return;
+  if(!d.rows.length){ return; }
+  const tick=dark?'#9A92A5':'#737373', grid=dark?'#2E2836':'#EEEEEE';
+  serieChart=new Chart(el,{type:'bar',
+    plugins:[_barLabels],
+    data:{labels:d.rows.map(r=>r.lab), datasets:d.series.map(x=>x.line
+      ? {type:'line', label:x.lab, data:d.rows.map(r=>r[x.k]), borderColor:col[x.k], backgroundColor:col[x.k],
+         borderWidth:2, tension:.3, pointRadius:3, pointHoverRadius:5, order:0, yAxisID:'y2'}
+      : {label:x.lab, data:d.rows.map(r=>r[x.k]), backgroundColor:col[x.k], borderRadius:4, borderSkipped:'bottom',
+         maxBarThickness:28, order:1, _labels:!!x.labels})},
+    options:{responsive:true, maintainAspectRatio:false, interaction:{mode:'index', intersect:false},
+      datasets:{bar:{categoryPercentage:.7, barPercentage:.85}},
+      plugins:{legend:{display:false}, barLabels:{color:dark?'#D6D0DD':'#404040'}, tooltip:{callbacks:{
+        label:c=>' '+c.dataset.label+': '+fmt(c.parsed.y),
+        afterBody:items=>{ const r=d.rows[items[0].dataIndex]; return d.extra.map(([l,k])=>l+': '+fmt(r[k])); }}}},
+      scales:{x:{ticks:{color:tick, maxRotation:0, autoSkip:true, maxTicksLimit:14}, grid:{display:false}, border:{display:false}},
+        y:{beginAtZero:true, position:'left', ticks:{color:tick, precision:0, maxTicksLimit:6}, grid:{color:grid}, border:{display:false},
+           title:{display:true, text:d.series.filter(x=>!x.line).map(x=>x.lab).join(' · '), color:tick, font:{size:11}}},
+        // La línea (volumen) va en un eje derecho propio, pedido así: las barras quedan legibles
+        // en el izquierdo. Los ejes NO son comparables entre sí; el título de cada uno lo dice.
+        y2:{beginAtZero:true, position:'right', ticks:{color:col[d.series.find(x=>x.line).k], precision:0, maxTicksLimit:6},
+           grid:{drawOnChartArea:false}, border:{display:false},
+           title:{display:true, text:d.series.find(x=>x.line).lab, color:col[d.series.find(x=>x.line).k], font:{size:11}}}}}});
+}
+function renderAgentePanel(){ /* absorbido por renderSerie (pestaña "Agente IA") */ }
+
+// Puerta del token, reutilizable. Antes cada pantalla que lo necesitaba mandaba al Inbox a
+// buscarlo: una indirección tonta, porque el token es el mismo para todas.
+function pedirToken(contenedorId, alGuardar){
+  const el=document.getElementById(contenedorId); if(!el) return;
+  window._trasToken=alGuardar;
+  // Formulario de verdad (no un input suelto): así Enter guarda. Y type=text, no password:
+  // con password el gestor de contraseñas del sistema se monta encima del campo y estorba.
+  el.innerHTML=`<section class="card-sec" style="max-width:620px">
+      <div class="tabletitle">Pega el token</div>
+      <span class="sub">Es el <code>INBOX_TOKEN</code> del agente. Se guarda solo en este navegador y sirve para inbox, plantillas y envío.</span>
+      <form class="sendrow" onsubmit="return guardarToken(event)">
+        <input id="gateTok" class="sel" type="text" placeholder="token" autocomplete="off"
+               autocapitalize="off" autocorrect="off" spellcheck="false" data-1p-ignore data-lpignore="true">
+        <button class="winbtn active" type="submit">Guardar</button>
+      </form>
+      <div id="gateMsg" class="note"></div></section>`;
+  const i=document.getElementById('gateTok'); if(i) i.focus();
+}
+function guardarToken(ev){
+  if(ev) ev.preventDefault();
+  const i=document.getElementById('gateTok'); const v=(i&&i.value||'').trim();
+  const m=document.getElementById('gateMsg');
+  if(!v){ if(m) m.textContent='Pega el token antes de guardar.'; return false; }
+  let ok=false;
+  try{ localStorage.setItem('ml-inbox-token', v); ok = localStorage.getItem('ml-inbox-token')===v; }catch(e){}
+  if(!ok){
+    // Pasa en modo incógnito o con el almacenamiento bloqueado: mejor decirlo que dejar al
+    // usuario pegando el token una y otra vez sin entender por qué no se queda.
+    if(m) m.textContent='Tu navegador no dejó guardarlo (¿ventana de incógnito o almacenamiento bloqueado?). Sin eso hay que pegarlo en cada recarga.';
+    return false;
+  }
+  if(m) m.textContent='Token guardado en este navegador.';
+  if(typeof window._trasToken==='function') window._trasToken();
+  return false;
+}
+
+// ===== VENTANAS · conversaciones por sub-flujo =====
+// El sub-flujo NO es una columna: se deriva por teléfono en el backend con una precedencia
+// fija (compra_wa gana sobre el camino llamada; SV: es pool frío). Acá solo se pinta.
+const SUBF=[['todo','Agregado'],['ventanas','Ventanas'],['ventanas_direct','Ventanas Direct'],['web','Web']];
+const SUBF_LBL={ventanas:'Ventanas', ventanas_direct:'Direct', web:'Web'};
+const SUBF_PIE={
+  ventanas:'camino llamada · llegó por HubSpot ("NO CONTACTABLE 3" / "Contactar por WhatsApp")',
+  ventanas_direct:'camino nuevo compra_wa · primer contacto por WhatsApp',
+  web:'pool frío del CSV ingestado'};
+let subflujoSel='todo', ventConv=null, ventConvCargando=false;
+function setSubflujo(s){ subflujoSel=s; renderVentanasPanel(); }
+async function cargarConversaciones(){
+  let tok=''; try{ tok=localStorage.getItem('ml-inbox-token')||''; }catch(e){}
+  if(!tok) return 'sin-token';
+  ventConvCargando=true;
+  try{
+    const r=await fetch(API_BASE+'/api/ventanas/conversaciones?dias=30&token='+encodeURIComponent(tok));
+    ventConv=(await r.json()).conversaciones||[];
+    return 'ok';
+  }catch(e){ return 'error'; } finally{ ventConvCargando=false; }
+}
+function renderConversaciones(){
+  if(ventConv===null){
+    if(!ventConvCargando) cargarConversaciones().then(res=>{
+      if(res==='sin-token'){ return; }
+      renderVentanasPanel();
+    });
+    return `<section class="card-sec"><div class="tabletitle">Conversaciones</div>
+      <p class="note">Cargando…</p></section>`;
+  }
+  const todas=ventConv;
+  const cuenta=s=> s==='todo' ? todas.length : todas.filter(h=>h.subflujo===s).length;
+  const lista=(subflujoSel==='todo'?todas:todas.filter(h=>h.subflujo===subflujoSel));
+  const respondieron=lista.filter(h=>h.respondio).length;
+  const tabs=SUBF.map(([k,lab])=>`<button type="button" class="winbtn sm${k===subflujoSel?' active':''}"
+      onclick="setSubflujo('${k}')">${lab} <span class="muted">${cuenta(k)}</span></button>`).join('');
+  const desglose = subflujoSel==='todo'
+    ? `<span class="muted"> · ${cuenta('ventanas')} ventanas / ${cuenta('ventanas_direct')} direct / ${cuenta('web')} web</span>` : '';
+  let cuerpo;
+  if(!lista.length){
+    // La pestaña Web vacía es CORRECTA hoy: el pool frío del CSV todavía no ha enviado nada.
+    // Ocultarla haría creer que ese camino no existe, y existe: solo no ha arrancado.
+    cuerpo = subflujoSel==='web'
+      ? `<p class="note">Sin conversaciones todavía. El pool frío del CSV aún no ha enviado
+         (<code>ventanas_contact</code> está sin envíos), así que esta pestaña vacía es el estado correcto,
+         no un error.</p>`
+      : `<p class="note">Sin conversaciones en este sub-flujo.</p>`;
+  } else {
+    cuerpo = `<div class="tbl-wrap ftab"><table><thead><tr>
+        <th>Conversación</th><th>Sub-flujo</th><th style="text-align:right">Turnos</th>
+        <th>Última</th><th>Desenlace</th></tr></thead><tbody>
+      ${lista.map(h=>`<tr>
+        <td><b>${escx(h.nombre||'(sin nombre)')}</b>
+          <div class="muted" style="font-size:12px">···${escx((h.phone||'').slice(-4))} · ${escx(h.ultimo_texto||'')}</div></td>
+        <td><span class="nchip ${h.subflujo==='ventanas_direct'?'n-info':(h.subflujo==='web'?'n-guarda':'n-ok')}"
+             title="${escx(SUBF_PIE[h.subflujo]||'')}">${escx(SUBF_LBL[h.subflujo]||h.subflujo)}</span></td>
+        <td style="text-align:right">${fmt(h.turnos)}</td>
+        <td>${escx(h.ultima||'—')}</td>
+        <td>${h.desenlace?`<span class="nchip ${h.desenlace==='BACKBONE'?'n-ok':(h.desenlace==='BACKBONE_FAILED'?'n-error':'n-guarda')}">${escx(h.desenlace)}</span>`:'<span class="muted">—</span>'}</td>
+      </tr>`).join('')}</tbody></table></div>`;
+  }
+  return `<section class="card-sec">
+    <div class="cardhead"><div>
+      <div class="tabletitle">Conversaciones</div>
+      <span class="sub"><b>${fmt(lista.length)}</b> conversaciones · <b>${fmt(respondieron)}</b> respondieron${desglose}</span>
+    </div><div class="seg">${tabs}</div></div>
+    ${cuerpo}
+    <p class="note">El sub-flujo se deriva por teléfono, no es una columna: gana <b>Direct</b> si alguna llegada del teléfono fue <code>compra_wa</code> o si su último envío fue la plantilla de compra; si no, <b>Ventanas</b> cuando vino por HubSpot y <b>Web</b> cuando el envío trae procedencia <code>SV:</code> del pool frío. Los <code>RE:</code> son re-enganches y heredan el sub-flujo del teléfono, no lo definen.</p>
+  </section>`;
+}
+
+// ===== VENTANAS · franja de alertas =====
+// Se piden a la API (no a data.json) porque el tablero se reconstruye cada 10 minutos y una
+// alerta que llega con ese retraso no sirve para reaccionar. Se refrescan cada 60s.
+let ventAlertas=null, ventAlertasCargando=false;
+function _hace(iso){
+  if(!iso) return 'nunca';
+  const m=Math.round((Date.now()-new Date(iso).getTime())/60000);
+  if(m<1) return 'recién'; if(m<60) return 'hace '+m+' min';
+  const h=Math.round(m/60); return h<48 ? 'hace '+h+' h' : 'hace '+Math.round(h/24)+' días';
+}
+async function cargarAlertas(){
+  let tok=''; try{ tok=localStorage.getItem('ml-inbox-token')||''; }catch(e){}
+  if(!tok) return 'sin-token';
+  ventAlertasCargando=true;
+  try{
+    const r=await fetch(API_BASE+'/api/ventanas/alertas?token='+encodeURIComponent(tok));
+    ventAlertas=(await r.json()).alertas||[];
+    return 'ok';
+  }catch(e){ return 'error'; } finally{ ventAlertasCargando=false; }
+}
+function renderAlertas(){
+  if(ventAlertas===null){
+    if(!ventAlertasCargando) cargarAlertas().then(res=>{ if(res==='ok') renderVentanasPanel(); });
+    return '';
+  }
+  const act=ventAlertas.filter(a=>a.activa);
+  if(!act.length){
+    // Decirlo explícito importa: un panel que solo habla cuando algo falla no distingue
+    // "todo bien" de "no llegué a medir".
+    return `<div class="alerta ok"><span class="apunto">✓</span>
+      <div><b>Sin alertas.</b> Las 6 condiciones evaluadas en las últimas 24h (silencio, 48h) están en cero.</div></div>`;
+  }
+  return act.map(a=>`<div class="alerta ${a.nivel==='rojo'?'roja':'ambar'}">
+      <span class="apunto">${a.nivel==='rojo'?'▲':'●'}</span>
+      <div><b>${escx(a.titulo)}</b>${a.id!=='silencio'?` · <b>${fmt(a.n)}</b> en 24h`:''}
+        <span class="muted">· último evento ${_hace(a.ultimo)}</span>
+        <div class="muted" style="margin-top:2px">${escx(a.detalle)}</div></div>
+    </div>`).join('');
+}
+
+// ===== VENTANAS · vista B: ejecuciones por lead (estilo n8n) =====
+let ventVista='funnel', ventRango='7', ventSoloErr=false, ventCierre='';
+const NODOS=['Webhook','Receptor','Plantilla','Respondió','Consintió','Entrevista','Deal'];
+const GUARDA=new Set(['DEDUP','TERMINAL','CAP_DIARIO','PROGRAMA_AJENO']);
+const ERROR_RX=new Set(['SEND_FAIL','SIN_DIRECCION','NO_TEMPLATE','TEMPLATE_NO_VENTANAS','BAD_PHONE']);
+const SALIDA={CLOSE_OPT_OUT:'baja / ya vendió', CLOSE_YA_CON_HABI:'ya está con un asesor',
+              CLOSE_NO_CONSENT:'no autorizó sus datos'};
+function setVentVista(v){ ventVista=v; renderVentanasPanel(); }
+function setVentRango(r){ ventRango=r; renderVentanasPanel(); }
+function toggleSoloErr(){ ventSoloErr=!ventSoloErr; renderVentanasPanel(); }
+function setVentCierre(v){ ventCierre=v; renderVentanasPanel(); }
+
+// El estado de cada nodo. Nota deliberada: el nodo "Plantilla" se lee SIEMPRE de send_log y
+// nunca del `action` del webhook — las tandas de recuperación mandan por fuera del receptor,
+// así que derivarlo mostraría como "no enviado" a quien sí recibió el mensaje.
+function _nodos(r){
+  const n=[];
+  n.push(r.action==='RECUPERADO_26AGO'
+    ? {e:'info', t:'recuperado', d:'backfill del incidente del 26-ago'}
+    : {e:'ok', t:'llegó', d:'POST del workflow · '+(r.llegada||'')});
+  if(r.action==='SENT')                 n.push({e:'ok', t:'enviar', d:'el receptor decidió enviar'});
+  else if(r.action==='RECUPERADO_26AGO')n.push({e:'info', t:'fuera del receptor', d:'entró por la tanda de recuperación'});
+  else if(GUARDA.has(r.action))         n.push({e:'guarda', t:r.action, d:'guarda funcionando, no es falla'});
+  else if(ERROR_RX.has(r.action))       n.push({e:'error', t:r.action, d:'el receptor no pudo enviar'});
+  else                                  n.push({e:'espera', t:r.action||'—', d:''});
+  if(r.accepted===true)       n.push({e:'ok', t:(r.template||'').replace(/^ventanas_/,'')||'enviada', d:'Infobip aceptó · '+(r.envio_hora||'')});
+  else if(r.accepted===false) n.push({e:'error', t:'rechazada', d:'Infobip rechazó el envío'});
+  else                        n.push({e:'espera', t:'sin envío', d:'no hay fila en send_log'});
+  n.push(r.respuesta_hora ? {e:'ok', t:r.respuesta_hora, d:'primera respuesta'}
+                          : {e:'espera', t:'sin respuesta', d:'todavía no escribe — no es error'});
+  if(r.consent===true)                    n.push({e:'ok', t:'consintió', d:'autorizó el tratamiento de datos'});
+  else if(r.cierre==='CLOSE_NO_CONSENT')  n.push({e:'guarda', t:'no autorizó', d:'Ley 1581: sin permiso no se crea lead'});
+  else if(r.step==='consent')             n.push({e:'espera', t:'preguntado', d:'esperando la autorización'});
+  else                                    n.push({e:'espera', t:'—', d:''});
+  if(r.completada)      n.push({e:'ok', t:'completa', d:'entrevista terminada'});
+  else if(r.step && r.step!=='consent') n.push({e:'espera', t:'paso '+r.step, d:'entrevista en curso'});
+  else                  n.push({e:'espera', t:'—', d:''});
+  if(r.deal_id)                    n.push({e:'ok', t:'#'+r.deal_id, d:'negocio creado en backbone'});
+  else if(r.cierre==='BACKBONE')   n.push({e:'ok', t:'creado', d:'el agente lo creó'});
+  else if(r.lead_disparado)        n.push({e:'ok', t:'disparado', d:'lead enviado al backbone'});
+  else if(r.cierre==='BACKBONE_FAILED') n.push({e:'error', t:'falló', d:'prometió asesor y el deal no se creó'});
+  else if(SALIDA[r.cierre])        n.push({e:'fin', t:SALIDA[r.cierre], d:'salida lateral, no es error'});
+  else                             n.push({e:'espera', t:'—', d:''});
+  return n;
+}
+function _dentroRango(r){
+  if(!r.recibido) return true;
+  const d=new Date(r.recibido.replace(' ','T'));
+  const ms=Date.now()-d.getTime();
+  return ventRango==='hoy' ? (new Date().toDateString()===d.toDateString())
+       : ms <= (+ventRango)*86400000;
+}
+let ventEjec=null, ventEjecCargando=false;
+async function cargarEjecuciones(){
+  let tok=''; try{ tok=localStorage.getItem('ml-inbox-token')||''; }catch(e){}
+  if(!tok) return 'sin-token';
+  ventEjecCargando=true;
+  try{
+    const r=await fetch(API_BASE+'/api/ventanas/ejecuciones?dias=30&token='+encodeURIComponent(tok));
+    const d=await r.json();
+    ventEjec = d.ejecuciones||[];
+    return 'ok';
+  }catch(e){ return 'error'; }
+  finally{ ventEjecCargando=false; }
+}
+function renderEjecuciones(){
+  if(ventEjec===null){
+    if(!ventEjecCargando) cargarEjecuciones().then(res=>{
+      if(res==='sin-token'){ pedirToken('panelVentanas', ()=>{ ventEjec=null; renderVentanasPanel(); }); return; }
+      renderVentanasPanel();
+    });
+    return `<section class="card-sec"><p class="note">Cargando ejecuciones…</p></section>`;
+  }
+  const E=ventEjec.filter(_dentroRango);
+  const conNodos=E.map(r=>({r, n:_nodos(r)}));
+  const filtrados=conNodos.filter(x=>{
+    if(ventSoloErr && !x.n.some(k=>k.e==='error')) return false;
+    if(ventCierre && (x.r.cierre||'')!==ventCierre) return false;
+    return true;
+  });
+  const hoy=E.filter(r=>{const d=new Date(r.recibido.replace(' ','T')); return new Date().toDateString()===d.toDateString();});
+  const errHoy=hoy.filter(r=>_nodos(r).some(k=>k.e==='error')).length;
+  const ult=E[0] ? Math.round((Date.now()-new Date(E[0].recibido.replace(' ','T')).getTime())/60000) : null;
+  const cierres=[...new Set(E.map(r=>r.cierre).filter(Boolean))];
+  const chip=(k,i)=>`<span class="nchip n-${k.e}" title="${escx(NODOS[i]+(k.d?' — '+k.d:''))}">${escx(k.t)}</span>`;
+  return `<section class="card-sec">
+    <div class="cardhead"><div>
+      <div class="tabletitle">Ejecuciones por lead</div>
+      <span class="sub">cada llegada al webhook es una fila; cada etapa, un nodo · pasa el cursor por un chip para ver qué significa</span></div>
+      <div class="seg">${['hoy','7','30'].map(r=>`<button type="button" class="winbtn sm${r===ventRango?' active':''}" onclick="setVentRango('${r}')">${r==='hoy'?'Hoy':r+' d'}</button>`).join('')}</div>
+    </div>
+    <div class="pulso">
+      <span><b>${ult===null?'—':(ult<60?ult+' min':Math.round(ult/60)+' h')}</b> desde la última llegada</span>
+      <span><b>${fmt(hoy.length)}</b> llegadas hoy</span>
+      <span class="${errHoy?'malo':''}"><b>${fmt(errHoy)}</b> con error hoy</span>
+      <span style="margin-left:auto;display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+        <label class="simchk"><input type="checkbox" ${ventSoloErr?'checked':''} onchange="toggleSoloErr()"> Solo errores</label>
+        <select class="sel" onchange="setVentCierre(this.value)">
+          <option value="">Todos los desenlaces</option>
+          ${cierres.map(c=>`<option value="${escx(c)}" ${c===ventCierre?'selected':''}>${escx(c)}</option>`).join('')}
+        </select></span>
+    </div>
+    <div class="tbl-wrap ftab"><table><thead><tr>
+      <th>Lead</th>${NODOS.map(x=>`<th>${x}</th>`).join('')}</tr></thead>
+      <tbody>${filtrados.length?filtrados.slice(0,200).map(({r,n})=>`<tr>
+        <td><b>${escx(r.nombre||'(sin nombre)')}</b><br>
+          <span class="muted">${escx(r.llegada||'')} · ${escx((r.phone||'').slice(-4).padStart(7,'·'))} · nid ${escx(r.nid||'—')}</span></td>
+        ${n.map((k,i)=>`<td>${chip(k,i)}</td>`).join('')}</tr>`).join('')
+        :'<tr><td colspan="8">Ninguna ejecución con esos filtros.</td></tr>'}</tbody></table></div>
+    <p class="note">${fmt(filtrados.length)} de ${fmt(E.length)} ejecuciones en el rango${filtrados.length>200?' (se listan las 200 más recientes)':''}.
+    Estas filas <b>no salen del tablero</b> sino de la API del agente, con tu token: traen nombre y teléfono de personas reales y este sitio es público.
+    El nodo <b>Plantilla</b> se lee siempre de <code>send_log</code>, nunca del desenlace del receptor: las tandas de recuperación mandan por fuera del webhook y derivarlo mostraría como "no enviado" a quien sí recibió el mensaje.
+    ⏳ gris no es error: es una etapa que todavía no ocurrió.</p>
+  </section>`;
+}
+// Ventanas · la única gráfica del panel: usuarios por día. Línea = recibidos por el webhook
+// (eje derecho, ticks del color de la línea: los dos ejes NO son comparables); barras = una
+// apilada con respondieron + completaron el registro y otra aparte con bajas (eje izquierdo).
+let ventSerieChart=null, ventSerieTabla=false;
+// [clave, etiqueta, ayuda, tipo]  tipo: 'line' | 'a' (barra apilada) | 'b' (barra aparte)
+const _VS=[['recibidos','Usuarios recibidos (webhook)','vs1','line'],['respondieron','Respondieron','vs2','a'],
+           ['completaron','Completaron el registro','vs3','a'],['bajas','Se dieron de baja','vs4','b'],
+           ['dapta','Enviados a Dapta','vs5','c']];
+const _VS_COL=()=>document.body.classList.contains('dark')
+  ? {recibidos:'#D6D0DD', respondieron:'#0D9488', completaron:'#9F67F5', bajas:'#D97706', dapta:'#3B82F6'}
+  : {recibidos:'#525252', respondieron:'#0D9488', completaron:'#7E22CE', bajas:'#D97706', dapta:'#2563EB'};
+// Valor de una métrica en el día, para la ruta seleccionada (total/directa/normal).
+const _vsv=(s,k)=>+(((s[ventRutaSel]||s)[k])||0);
+function toggleVentSerieTabla(){ ventSerieTabla=!ventSerieTabla; renderVentanasPanel(); }
+// Recorta los días vacíos del arranque (el programa empezó el 19-ago): sin dato no hay nada que leer.
+function _serieVent(){ const S=((D.ventanas||{}).serie||[]); const i=S.findIndex(s=>_VS.some(([k])=>_vsv(s,k)>0)); return i<0?S:S.slice(Math.max(0,i-1)); }
+function renderSerieVentanas(){
+  const S=_serieVent();
+  if(!S.length) return '';
+  const col=_VS_COL();
+  const leg=_VS.map(([k,lab,h,t])=>`<span><i class="${t==='line'?'ln':''}" style="background:${col[k]}"></i>${lab}${I(h)}</span>`).join('');
+  const tabla=!ventSerieTabla?'':`<div class="tbl-wrap ftab" style="margin-top:10px"><table><thead><tr><th>Día</th>${_VS.map(([k,lab])=>`<th style="text-align:right">${lab}</th>`).join('')}</tr></thead>
+    <tbody>${[...S].reverse().map(s=>`<tr><td>${_dia(s.fecha)}</td>${_VS.map(([k])=>`<td style="text-align:right">${fmt(_vsv(s,k))}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`;
+  return `<section class="card-sec">
+    <div class="tabletitle">Usuarios por día</div>
+    <span class="sub">recibidos por el webhook, respondieron, completaron el registro, bajas y enviados a Dapta · ${_VRUTA_LBL[ventRutaSel]} · últimos ${S.length} días · día calendario de Bogotá</span>
+    <div class="leg" style="margin-top:10px">${leg}</div>
+    <div class="ch tall"><canvas id="c_vent_serie"></canvas></div>
+    <div class="tbltoggle"><button type="button" class="linkbtn" onclick="toggleVentSerieTabla()">${ventSerieTabla?'Ocultar tabla':'Ver tabla'}</button></div>
+    ${tabla}</section>`;
+}
+function drawSerieVentanas(){
+  const el=document.getElementById('c_vent_serie');
+  if(ventSerieChart){ ventSerieChart.destroy(); ventSerieChart=null; }
+  if(!el||!window.Chart) return;
+  const S=_serieVent(), col=_VS_COL(), dark=document.body.classList.contains('dark');
+  const tick=dark?'#9A92A5':'#737373', grid=dark?'#2E2836':'#EEEEEE', lineCol=col.recibidos;
+  ventSerieChart=new Chart(el,{type:'bar',
+    data:{labels:S.map(s=>_dia(s.fecha)), datasets:_VS.map(([k,lab,h,t])=>t==='line'
+      ? {type:'line', label:lab, data:S.map(s=>_vsv(s,k)), borderColor:col[k], backgroundColor:col[k],
+         borderWidth:2, tension:.3, pointRadius:3, pointHoverRadius:5, order:0, yAxisID:'y2'}
+      : {label:lab, data:S.map(s=>_vsv(s,k)), backgroundColor:col[k], stack:t, borderRadius:3, maxBarThickness:22, order:1, yAxisID:'y'})},
+    options:{responsive:true, maintainAspectRatio:false, interaction:{mode:'index', intersect:false},
+      datasets:{bar:{categoryPercentage:.7, barPercentage:.9}},
+      plugins:{legend:{display:false}, tooltip:{callbacks:{label:c=>' '+c.dataset.label+': '+fmt(c.parsed.y)}}},
+      scales:{x:{stacked:true, ticks:{color:tick, maxRotation:0, autoSkip:true, maxTicksLimit:15}, grid:{display:false}, border:{display:false}},
+        y:{stacked:true, beginAtZero:true, position:'left', ticks:{color:tick, precision:0, maxTicksLimit:6}, grid:{color:grid}, border:{display:false},
+           title:{display:true, text:'Respondieron + Completaron · Bajas · Dapta', color:tick, font:{size:11}}},
+        y2:{beginAtZero:true, position:'right', ticks:{color:lineCol, precision:0, maxTicksLimit:6}, grid:{drawOnChartArea:false}, border:{display:false},
+           title:{display:true, text:'Usuarios recibidos', color:lineCol, font:{size:11}}}}}});
+}
+
+let rangoVent='7';
+const _RANGO_VENT={hoy:'Hoy','7':'Últimos 7 días','30':'Últimos 30 días'};
+function setRangoVent(r){ rangoVent=r; renderVentanasPanel(); }
+// Ventanas es SOLO CO (así lo dice su propia sesión): un panel por país acá no agrega nada
+// y puede mezclar líneas, así que con MX seleccionado se dice y no se inventan cifras.
+let ventRutaSel='total';
+const _VRUTA_LBL={total:'Total ventanas', directa:'Ventanas direct', normal:'Ventanas normal'};
+function setVentRuta(r){ ventRutaSel=r; renderVentanasPanel(); }
+// Panel de Ventanas (8-sep): SOLO el embudo y la gráfica "Usuarios por día", ambos con el corte
+// Total / Direct (flujo compra_wa) / Normal. Ventanas opera solo en Colombia: en México el panel
+// va en blanco. Las demás cards (desenlace, entrevista, conversaciones, supresión, alertas,
+// ejecuciones) siguen calculadas o definidas, pero no se pintan aquí.
+function renderVentanasPanel(){
+  const el=document.getElementById('panelVentanas'); if(!el) return;
+  const V=D.ventanas||{};
+  if(country!=='CO'){ el.innerHTML=''; if(ventSerieChart){ ventSerieChart.destroy(); ventSerieChart=null; } return; }
+  const R=(((V.rutas||{})[ventRutaSel])||V.rangos||{})[rangoVent]||{};
+  const tabs=['hoy','7','30'].map(r=>`<button type="button" class="winbtn sm${r===rangoVent?' active':''}" onclick="setRangoVent('${r}')">${r==='hoy'?'Hoy':r+' d'}</button>`).join('');
+  const rutaSeg=`<div class="seg" style="margin-bottom:20px">${Object.keys(_VRUTA_LBL).map(r=>`<button type="button" class="winbtn${r===ventRutaSel?' active':''}" onclick="setVentRuta('${r}')">${_VRUTA_LBL[r]}</button>`).join('')}</div>`;
+  const pasos=[
+    {lab:'Personas recibidas'+IH('ve1'), k:'recibidos', color:'var(--accent)', pie:'teléfonos distintos · webhook, sin recuperados'},
+    {lab:'Plantillas enviadas'+IH('ve2'), k:'enviadas', color:'#A855F7', pie:'personas · Infobip aceptó, no es entrega'},
+    {lab:'Respondieron'+IH('ve3'), k:'respondieron', color:'#2DD4BF', pie:'botón + texto libre · personas'},
+    {lab:'Atendidos por el agente'+IH('ve4'), k:'atendidos', color:'#0EA5E9', pie:'personas, no turnos'},
+    {lab:'Deal creado'+IH('ve5'), k:'deal_creado', color:'#F59E0B', pie:(+R.deal_fallo||0)+' fallaron · bitácora del backbone'},
+    {lab:'Cierres'+IH('ve7'), k:'cierres', color:'var(--ok)',
+     pie:`${fmt(+R.cierres_mm||0)} compra directa · ${fmt(+R.cierres_inmo||0)} inmobiliaria`},
+  ];
+  const base=+R[pasos[0].k]||1;
+  const emb=pasos.map((s,i)=>{
+    const v=+R[s.k]||0, sig=pasos[i+1];
+    const conv=sig ? ((v>0)?pct((+R[sig.k]||0)/v*100):'·') : null;
+    return `<div class="fstep"><div class="fbody">
+        <div class="flab">${s.lab}</div>
+        <div class="fval">${fmt(v)}</div>
+        <div class="fbar"><div style="width:${Math.max(2,Math.round(v/base*100))}%;background:${s.color}"></div></div>
+        <div class="fsplit">${s.pie}</div></div>
+      ${conv!==null?`<div class="fconv">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"></path></svg>
+        <span class="fpill">${conv}</span></div>`:''}</div>`;}).join('');
+  el.innerHTML=rutaSeg+`
+  <section class="card-sec">
+    <div class="cardhead"><div>
+      <div class="tabletitle">Embudo de Ventanas</div>
+      <span class="sub">de lead de HubSpot a deal · ${_RANGO_VENT[rangoVent]} · ${_VRUTA_LBL[ventRutaSel]} · Colombia</span></div>
+      <div class="seg">${tabs}</div></div>
+    <div class="funnel">${emb}</div>
+    <div class="akpis" style="margin:16px 0 0;max-width:560px">
+      <div><div class="flab">Se dieron de baja${IH('vs4')}</div><div class="fval">${fmt(R.bajas||0)}</div></div>
+      <div><div class="flab">Enviados a Dapta${IH('vs5')}</div><div class="fval">${fmt(R.dapta||0)}</div></div>
+    </div>
+    <p class="note"><b>Personas recibidas</b> son teléfonos distintos que mandó el webhook, sin pruebas en seco ni tandas de recuperación: la misma regla de la gráfica de abajo.
+    <b>Direct</b> = entró por el flujo compra_wa (primer contacto por WhatsApp); <b>Normal</b> = el resto (no contesta y tibio). La ruta es del teléfono, por su primer POST.
+    <b>Enviadas</b> significa que Infobip aceptó el mensaje, no que llegó: la entrega real vive en el mart de BigQuery, fuera de esta base.
+    <b>Respondieron</b> une los clics de botón (que procesa el bot y nunca llegan al agente) con el texto libre; medido con una sola fuente, el porcentaje llegó a dar 733%.
+    <b>Deal creado</b> sale de la bitácora de intentos al backbone (desde el 1 de septiembre) e incluye los que disparó el reloj de 72 h sin turno del agente.
+    <b>Cierres</b> suma las <b>dos líneas de negocio, que no son el mismo evento</b>: compra directa (Habi compró) y captación de la red de aliados (el dueño firmó mandato, no es una venta); la composición va debajo de la cifra. Vienen de HubSpot en BigQuery.
+    La ventana cuenta por <b>cuándo pasó cada cosa</b>, no por cuándo se le escribió: es actividad, no tasa por cohorte.</p>
+  </section>
+
+  ${renderSerieVentanas()}`;
+  drawSerieVentanas();
+}
+
+// ===== ENVÍO: perilla por país =====
+// La perilla es un arco de 270° (de 7:30 a 4:30 del reloj). El salto de 25 no es estético:
+// afinar de a 1 con el mouse invita a errores de un dígito, y acá un dígito de más son
+// cientos de WhatsApps reales. Los presets cubren los valores que de verdad se usan.
+const ENVIO_MAX=600, ENVIO_PASO=25;
+let envioVal={MX:100, CO:100}, envioEstado=null;
+const _ANG0=135, _ANGSPAN=270;
+const _pol=(cx,cy,r,deg)=>{const a=(deg-90)*Math.PI/180; return [cx+r*Math.cos(a), cy+r*Math.sin(a)];};
+function _arco(cx,cy,r,d0,d1){
+  const [x0,y0]=_pol(cx,cy,r,d0), [x1,y1]=_pol(cx,cy,r,d1);
+  return `M ${x0.toFixed(2)} ${y0.toFixed(2)} A ${r} ${r} 0 ${(d1-d0)>180?1:0} 1 ${x1.toFixed(2)} ${y1.toFixed(2)}`;
+}
+function _perilla(pais){
+  const v=envioVal[pais], frac=v/ENVIO_MAX, deg=_ANG0+frac*_ANGSPAN;
+  const [hx,hy]=_pol(90,90,64,deg);
+  return `<svg viewBox="0 0 180 180" class="knob" role="slider" tabindex="0"
+      aria-label="Mensajes a enviar en ${pais}" aria-valuemin="0" aria-valuemax="${ENVIO_MAX}" aria-valuenow="${v}"
+      data-pais="${pais}" onpointerdown="knobDown(event,'${pais}')" onkeydown="knobKey(event,'${pais}')">
+    <path d="${_arco(90,90,64,_ANG0,_ANG0+_ANGSPAN)}" class="ktrack"></path>
+    <path d="${_arco(90,90,64,_ANG0,Math.max(_ANG0+0.01,deg))}" class="kfill"></path>
+    <circle cx="${hx.toFixed(2)}" cy="${hy.toFixed(2)}" r="9" class="khandle"></circle>
+    <text x="90" y="86" class="kval">${fmt(v)}</text>
+    <text x="90" y="106" class="kcap">mensajes</text>
+  </svg>`;
+}
+function _setVal(pais,v){
+  v=Math.round(v/ENVIO_PASO)*ENVIO_PASO;
+  envioVal[pais]=Math.max(0,Math.min(ENVIO_MAX,v));
+  const cont=document.getElementById('knob-'+pais);
+  if(cont) cont.innerHTML=_perilla(pais);
+}
+function knobDown(e,pais){
+  const svg=e.currentTarget; svg.setPointerCapture(e.pointerId);
+  const mover=(ev)=>{
+    const r=svg.getBoundingClientRect();
+    const cx=r.left+r.width/2, cy=r.top+r.height/2;
+    let deg=Math.atan2(ev.clientY-cy, ev.clientX-cx)*180/Math.PI+90;
+    if(deg<0) deg+=360;
+    let frac=(deg-_ANG0)/_ANGSPAN;
+    if(frac<-0.15) frac=1; else if(frac<0) frac=0; else if(frac>1) frac=1;
+    _setVal(pais, frac*ENVIO_MAX);
+    const nuevo=document.getElementById('knob-'+pais).firstElementChild;
+    if(nuevo && nuevo!==svg){ nuevo.onpointermove=mover; nuevo.onpointerup=soltar; try{nuevo.setPointerCapture(e.pointerId);}catch(_){} }
+  };
+  const soltar=()=>{ document.removeEventListener('pointermove',mover); document.removeEventListener('pointerup',soltar); };
+  document.addEventListener('pointermove',mover); document.addEventListener('pointerup',soltar);
+  mover(e);
+}
+function knobKey(e,pais){
+  const k=e.key;
+  if(k==='ArrowUp'||k==='ArrowRight'){ _setVal(pais, envioVal[pais]+ENVIO_PASO); e.preventDefault(); }
+  else if(k==='ArrowDown'||k==='ArrowLeft'){ _setVal(pais, envioVal[pais]-ENVIO_PASO); e.preventDefault(); }
+  else if(k==='Home'){ _setVal(pais,0); e.preventDefault(); }
+  else if(k==='End'){ _setVal(pais,ENVIO_MAX); e.preventDefault(); }
+  const c=document.getElementById('knob-'+pais); if(c&&c.firstElementChild) c.firstElementChild.focus();
+}
+async function cargarEnvio(){
+  const hoy=document.getElementById('envioHoy'), per=document.getElementById('envioPerillas');
+  if(!hoy||!per) return;
+  let tok=''; try{ tok=localStorage.getItem('ml-inbox-token')||''; }catch(e){}
+  if(!tok){ hoy.innerHTML=''; pedirToken('envioPerillas', cargarEnvio); return; }
+  hoy.innerHTML='<div class="note">Cargando…</div>';
+  try{
+    const r=await fetch(API_BASE+'/api/envio/estado?token='+encodeURIComponent(tok));
+    envioEstado=await r.json();
+  }catch(e){ hoy.innerHTML='<div class="note">No se pudo hablar con el backend: '+String(e).slice(0,100)+'</div>'; return; }
+  const H=envioEstado.hoy||{};
+  hoy.innerHTML=['MX','CO'].map(p=>{
+    const d=H[p]||{total:0,aceptados:0,ultimo:null,por_campana:{}};
+    const det=Object.entries(d.por_campana||{}).map(([k,v])=>escx(k)+' '+fmt(v)).join(' · ')||'nada todavía';
+    return `<div class="stat"><div class="l">${_PAIS_LBL[p]} · enviados hoy</div>
+      <div class="kpi3"><div><span class="kl">total</span><span class="kv">${fmt(d.total)}</span></div>
+      <div><span class="kl">aceptados</span><span class="kv">${fmt(d.aceptados)}</span></div>
+      <div><span class="kl">último</span><span class="kv">${d.ultimo||'—'}</span></div></div>
+      <div class="s">${det}</div></div>`;}).join('');
+  per.innerHTML=['MX','CO'].map(p=>`<section class="card-sec">
+      <div class="tabletitle">${_PAIS_LBL[p]}</div>
+      <span class="sub">cuántos mandar ahora · tope ${ENVIO_MAX} por tanda</span>
+      <div class="knobwrap"><div id="knob-${p}"></div>
+        <div class="knobside">
+          <div class="presets">${[100,200,300,600].map(n=>`<button type="button" class="winbtn sm" onclick="_setVal('${p}',${n})">${n}</button>`).join('')}</div>
+          <button class="winbtn active" style="width:100%" type="button" onclick="dispararEnvio('${p}')">Enviar en ${_PAIS_LBL[p]}</button>
+          <label class="simchk"><input type="checkbox" id="dry-${p}"> Solo simular (no manda nada)</label>
+        </div>
+      </div>
+    </section>`).join('');
+  ['MX','CO'].forEach(p=>_setVal(p, envioVal[p]));
+  if(envioEstado && envioEstado.disponible===false){
+    document.getElementById('envioMsg').innerHTML='⚠ El backend no tiene <code>GH_DISPATCH_TOKEN</code>: puede leer el conteo del día, pero <b>no puede disparar el envío</b> hasta que se cargue ese secreto.';
+  }
+}
+async function dispararEnvio(pais){
+  const msg=document.getElementById('envioMsg');
+  const n=envioVal[pais];
+  if(n<1){ msg.textContent='Sube la perilla: 0 no manda nada.'; return; }
+  const ya=((envioEstado||{}).hoy||{})[pais]||{total:0};
+  const chk=document.getElementById('dry-'+pais);
+  const simular=!!(chk&&chk.checked);
+  if(!simular && !confirm(`Vas a mandar ${n} WhatsApps reales en ${_PAIS_LBL[pais]}.\n\nHoy ya salieron ${ya.total}. ¿Seguimos?`)) return;
+  let tok=''; try{ tok=localStorage.getItem('ml-inbox-token')||''; }catch(e){}
+  msg.textContent='Disparando la tanda…';
+  try{
+    const r=await fetch(API_BASE+'/api/envio?token='+encodeURIComponent(tok),{
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({country:pais, cantidad:n, dry:simular})});
+    const d=await r.json();
+    msg.innerHTML = (r.ok&&d.ok)
+      ? `${d.dry?'🧪 <b>Simulación</b>':'✅ Tanda'} de <b>${fmt(n)}</b> ${d.dry?'armada':'disparada'} en ${_PAIS_LBL[pais]}. Corre en GitHub Actions porque el pool vive en BigQuery — <a href="${escx(d.seguimiento)}" target="_blank" rel="noopener">seguir la corrida ↗</a>. Tarda unos minutos en aparecer en el conteo.`
+      : '⚠ No se disparó: '+escx(String(d.error||d.detail||('HTTP '+r.status)));
+  }catch(e){ msg.textContent='No se pudo hablar con el backend: '+String(e).slice(0,120); }
+}
+
+const API_BASE='https://agente-sdr-ten.vercel.app';
+// El envío sale del backend del agente, que es quien tiene las llaves de Infobip. El tablero
+// solo pasa el token que el usuario ya guardó para el inbox: acá nunca hay secretos.
+async function enviarPrueba(tpl){
+  const msg=document.getElementById('tplSendMsg'), inp=document.getElementById('tplTel');
+  if(!msg||!inp) return;
+  let tok=''; try{ tok=localStorage.getItem('ml-inbox-token')||''; }catch(e){}
+  if(!tok){ pedirToken('tplSendMsg', ()=>{ renderPlantillas(); }); return; }
+  const to=(inp.value||'').replace(/\D/g,'');
+  if(to.length<10){ msg.textContent='Escribe el número completo con indicativo (ej. 573001234567).'; return; }
+  msg.textContent='Enviando…';
+  try{
+    const r=await fetch(API_BASE+'/api/plantillas/prueba?token='+encodeURIComponent(tok),{
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({country:country, template:tpl, to:to})});
+    const d=await r.json();
+    if(r.ok && d.ok){
+      msg.innerHTML='✅ Enviada a <b>'+escx(d.to)+'</b> · id <code>'+escx(String(d.message_id||'—'))+'</code>'
+        +' · quedan '+d.restantes_esta_hora+' pruebas esta hora.';
+    } else {
+      msg.innerHTML='⚠ No salió: '+escx(String(d.error||d.detalle||d.detail||('HTTP '+r.status)));
+    }
+  }catch(e){ msg.textContent='No se pudo hablar con el backend del agente: '+String(e).slice(0,120); }
+}
+
+let tplSel=0;
+function selTpl(i){ tplSel=i; renderPlantillas(); }
+function _canalTpl(n){ if(n.startsWith('ventanas')) return 'Ventanas'; if(n.startsWith('brokermatch')) return 'Brokermatch'; if(n.startsWith('hs_')) return 'HubSpot'; return 'Web'; }
+function renderPlantillas(){
+  const lb=document.getElementById('plantLabel');
+  const lista=document.getElementById('plantLista'), det=document.getElementById('plantDetalle');
+  if(!lista||!det) return;
+  let tpls=((D.plantillas||{})[country]||[]);
+  if(canalSel!=='agregado'){
+    const q = canalSel==='ventanas' ? 'Ventanas' : 'Web';
+    const f = tpls.filter(x=>_canalTpl(x.nombre)===q);
+    if(f.length) tpls=f;
+  }
+  if(lb) lb.textContent=`${tpls.length} plantillas · experimentos A/B · ${_CANAL_LBL[canalSel]}`;
+  if(!tpls.length){ lista.innerHTML='<p class="note">Sin plantillas con envíos en '+country+'.</p>'; det.innerHTML=''; return; }
+  if(tplSel>=tpls.length) tplSel=0;
+  const p100=(n,d)=> d>0 ? pct(n/d*100) : '·';
+  lista.innerHTML=tpls.map((x,i)=>`<section class="card-sec tplcard${i===tplSel?' sel':''}" onclick="selTpl(${i})">
+      <div class="tplhead">
+        <code>${escx(x.nombre)}</code>
+        <span class="chip2 ${x.en_uso?'ok':''}">${x.en_uso?'En uso':'Disponible'}</span>
+        <span class="chip2">${_canalTpl(x.nombre)}</span>
+        <span class="tplpais">${country}</span>
+      </div>
+      <p class="tplbody">${escx((x.body||'(sin copy en la línea)').slice(0,180))}</p>
+      <div class="tplmet">${fmt(x.enviados)} envíos · ${p100(x.clics,x.entregados)} clics a botón · ${p100(x.bajas,x.entregados)} bajas</div>
+    </section>`).join('');
+  const x=tpls[tplSel];
+  const vars=[...new Set((x.body||'').match(/\{\{\d+\}\}/g)||[])];
+  det.innerHTML=`<div class="cardhead"><div><div class="tabletitle">Vista previa</div>
+      <span class="sub">${escx(x.nombre)} · ${escx(x.estado)}${x.categoria?' · '+escx(x.categoria):''}</span></div></div>
+    <div class="tplprev">${escx(x.body||'(esta plantilla ya no está en la línea; solo queda su histórico de envíos)')}</div>
+    <div class="tplvars">${vars.length?('Variables: '+vars.map(v=>`<code>${escx(v)}</code>`).join(' ')):'Sin variables'}
+      · ${(x.body||'').length} caracteres${x.botones?' · '+x.botones+' botones':''}</div>
+    <div class="tplsend">
+      <div class="tabletitle" style="font-size:15px">Enviar prueba</div>
+      <span class="sub">manda esta plantilla a un número para ver cómo llega · no toca el pool ni quema el lead</span>
+      <div class="sendrow">
+        <input id="tplTel" class="sel" inputmode="numeric" placeholder="57 300 000 0000" autocomplete="off">
+        <button class="winbtn active" type="button" onclick="enviarPrueba('${escx(x.nombre)}')">Enviar prueba</button>
+      </div>
+      <div id="tplSendMsg" class="note"></div>
+    </div>
+    <div class="tplwarn">
+      <b>Crear plantilla y declarar ganadora todavía no.</b>
+      Someter copy a Meta es irreversible y un rechazo penaliza la calidad de la línea que comparten
+      reactivación y ventanas, así que falta definir quién aprueba el copy antes de someterlo.
+      Y declarar ganadora no sirve de nada mientras la plantilla vigente viva en <code>countries/</code>:
+      es código, o sea un commit y un deploy. Ese es el cambio que desbloquea el botón.
+    </div>`;
+  // Experimento A/B, con lo que realmente hay configurado
+  const ab=document.getElementById('plantAB'), abs=document.getElementById('abSub');
+  const v=((D.ab_veredicto||{})[country]||{});
+  const rows=((D.ab_templates||{})[country]||[]);
+  if(abs) abs.textContent = v.disponible ? `${v.decidido?'cerrado':'en curso'} · ${v.dias||0} días` : 'sin experimento activo';
+  if(ab) ab.innerHTML = !v.disponible ? '<p class="note">No hay experimento de plantillas corriendo en '+country+'.</p>'
+    : `<div class="abver">${v.decidido?'DECIDIDO':'EN CURSO'} — gana <b>${escx(v.ganador||'')}</b>
+         · P(mejor) <b>${pct((v.prob||0)*100)}</b> · pérdida esperada ${v.loss_pp}pp</div>
+       ${rows.length?`<div class="tbl-wrap ftab" style="margin-top:14px"><table><thead><tr>
+         ${Object.keys(rows[0]).map((c,i)=>`<th${i?' style="text-align:right"':''}>${escx(c)}</th>`).join('')}</tr></thead>
+         <tbody>${rows.map(r=>`<tr>${Object.keys(rows[0]).map((c,i)=>`<td${i?' style="text-align:right"':''}>${escx(r[c]===null?'·':r[c])}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`:''}
+       <p class="note">El reparto del experimento vive en <code>config.py</code> / <code>countries/</code>, o sea en código:
+       declarar ganadora es un commit y un deploy, no un botón. Para que fuera un botón habría que mover esa
+       configuración a la base.</p>`;
+}
+
+function renderAgenteScreen(){
+  const el=document.getElementById('agAcciones'), ro=document.getElementById('agRollout');
+  const lb=document.getElementById('agLabel'); if(lb) lb.textContent=_PAIS_LBL[country]+' · '+_CANAL_LBL[canalSel];
+  if(el){
+    const rows=((D.agente_acciones||{})[country]||[]);
+    el.innerHTML = rows.length
+      ? `<table><thead><tr><th>Desenlace</th><th style="text-align:right">Turnos</th><th style="text-align:right">Teléfonos</th></tr></thead>
+         <tbody>${rows.map(r=>`<tr><td>${escx(r.accion)}</td><td style="text-align:right">${fmt(r.n)}</td><td style="text-align:right">${fmt(r.telefonos)}</td></tr>`).join('')}</tbody></table>`
+      : '<p class="note">El agente no registró turnos en '+country+' en los últimos 30 días.</p>';
+  }
+  if(ro){
+    const s=((D.agente_ia||{})[country]||[]);
+    const vivo=s.some(r=>(+r.reasignados||0)>0);
+    ro.innerHTML=`<p class="note">${vivo
+      ? 'El agente <b>responde y crea leads</b> en '+_PAIS_LBL[country]+'.'
+      : 'En '+_PAIS_LBL[country]+' no se registran leads creados por el agente: o está en modo escucha, o su ruta al backbone está fallando.'}
+      La línea de WhatsApp es compartida con Ventanas, así que el volumen del agente y el del loop compiten por la misma reputación.</p>`;
+  }
+}
+
+function selectCountry(c){ country=c;
+  // Canal Ventanas cambia de VISTA, no de filtro: su embudo empieza en un lead de HubSpot y
+  // no tiene pool, plantilla ganadora ni serie del loop. Mostrar esas tarjetas vacías sería
+  // peor que no mostrarlas.
+  const esVent = canalSel==='ventanas';
+  const pl=document.getElementById('panelLoop'), pv=document.getElementById('panelVentanas');
+  if(pl) pl.hidden = esVent;
+  if(pv) pv.hidden = !esVent;
+  const h1=document.getElementById('dashTitulo'), gs=document.getElementById('granSeg');
+  if(h1) h1.textContent = esVent ? 'Ventanas' : 'Marketing loop general';
+  // La temporalidad es del loop (cosecha, errores). La vista de ventanas tiene su propio
+  // selector de rango, así que mostrar los dos confunde sobre cuál manda.
+  if(gs) gs.hidden = esVent;
+  if(esVent){ renderVentanasPanel(); return; }
+  renderEmbudo(); renderSerie(); renderAgentePanel(); renderErrores(); renderInventario(); renderPorHoraChart();
+  document.querySelectorAll('#granSeg [data-gran]').forEach(b=>b.classList.toggle('active', b.dataset.gran===cicloTipo)); }
+// Celdas "valor + %" con heatmap por fila (verde=conversión alta, rojo=baja), copiado del tablero de referencia.
+function heatCells(values, denoms){
+  const pcts=values.map((v,i)=> denoms[i]>0 ? v/denoms[i]*100 : null);   // período sin base → null (celda vacía)
+  const valid=pcts.filter(p=>p!=null);
+  const min=valid.length?Math.min(...valid):0, max=valid.length?Math.max(...valid):0, realRange=max-min, range=realRange||1;
+  const last=values.length-1;
+  return values.map((v,i)=>{
+    if(pcts[i]==null) return `<td${i===last?' class="cur"':''} style="text-align:right"><span class="muted">·</span></td>`;
+    let clr;
+    if(realRange<0.05){ clr='var(--text-muted)'; }                    // fila plana (ej. Creados=100%): color neutro, no rojo
+    else{ const ratio=(pcts[i]-min)/range;
+      clr=`rgb(${Math.round(248-ratio*196)},${Math.round(52+ratio*159)},${Math.round(52+ratio*101)})`; }
+    const ps=pcts[i]>=10?pcts[i].toFixed(1):pcts[i].toFixed(2);
+    return `<td${i===last?' class="cur"':''} style="text-align:right"><span class="n">${fmt(v)}</span><span class="p" style="color:${clr}">${ps}%</span></td>`;
+  }).join('');
+}
+// Igual que heatCells pero con la escala de color invertida (alto %=rojo, bajo %=verde) — para tasas de FALLA (freq-cap, device-error).
+function heatCellsInv(values, denoms){
+  const pcts=values.map((v,i)=> denoms[i]>0 ? v/denoms[i]*100 : null);
+  const valid=pcts.filter(p=>p!=null);
+  const min=valid.length?Math.min(...valid):0, max=valid.length?Math.max(...valid):0, realRange=max-min, range=realRange||1;
+  const last=values.length-1;
+  return values.map((v,i)=>{
+    if(pcts[i]==null) return `<td${i===last?' class="cur"':''} style="text-align:right"><span class="muted">·</span></td>`;
+    let clr;
+    if(realRange<0.05){ clr='var(--text-muted)'; }
+    else{ const ratio=1-(pcts[i]-min)/range;   // invertido
+      clr=`rgb(${Math.round(248-ratio*196)},${Math.round(52+ratio*159)},${Math.round(52+ratio*101)})`; }
+    const ps=pcts[i]>=10?pcts[i].toFixed(1):pcts[i].toFixed(2);
+    return `<td${i===last?' class="cur"':''} style="text-align:right"><span class="n">${fmt(v)}</span><span class="p" style="color:${clr}">${ps}%</span></td>`;
+  }).join('');
+}
+function renderAntifunnel(){
+  const el=document.getElementById('antifunnel'); if(!el) return;
+  if(!(D.antifunnel||{})[country]){ el.innerHTML='<p class="note">Sin datos de antifunnel para '+country+' (aún no disponible).</p>'; return; }
+  const src=((D.antifunnel||{})[country]||{})[cicloTipo]||[];
+  const byB={}; src.forEach(r=>byB[r.bucket]=r);
+  const rows=lastPeriods(cicloTipo,20).map(b=>byB[b]||{bucket:b,estados:{}}); // últimos 20 períodos, rellena vacíos
+  const MES=['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+  const lbl=b=> cicloTipo==='mes' ? (MES[+b.slice(5,7)-1]+' '+b.slice(2,4)) : b.slice(5);
+  const last=rows.length-1, cur=i=> i===last?' class="cur"':'';
+  // totales por estado (sobre los períodos mostrados) y por período (denominador)
+  const totals={}; rows.forEach(r=>{ for(const k in (r.estados||{})) totals[k]=(totals[k]||0)+r.estados[k]; });
+  const colTot=rows.map(r=>Object.values(r.estados||{}).reduce((s,n)=>s+n,0));
+  const estados=Object.keys(totals).sort((a,b)=>totals[b]-totals[a]);   // por volumen desc (sin mapeo calificado/label todavía)
+  const th=rows.map((r,i)=>`<th${cur(i)} style="text-align:right">${lbl(r.bucket)}</th>`).join('');
+  const totalRow=`<tr class="row-total"><td>${H('Total de leads WEB recreados en el período (fuente 3/47, excluye Web Scraping). Es el denominador de los % de cada estado.')}Total creados</td>${rows.map((r,i)=>`<td${cur(i)} style="text-align:right">${z(colTot[i])}</td>`).join('')}</tr>`;
+  const dispLab=lab=> lab==='sin estado' ? 'Sin estado (aún no vinculado en TIG)' : ('Estado '+lab);
+  const body=estados.map(lab=>
+    `<tr class="row-stage"><td>${H(stateHelp(lab))}${dispLab(lab)}</td>${heatCells(rows.map(r=>(r.estados||{})[lab]||0),colTot)}</tr>`
+  ).join('');
+  el.innerHTML=`<table><thead><tr><th>Estado</th>${th}</tr></thead><tbody>${totalRow}${body}</tbody></table>`;
+  el.scrollLeft=el.scrollWidth;
+}
+
+let diaCharts=[];
+function movavg(a,w){return a.map((_,i)=>{const s=a.slice(Math.max(0,i-w+1),i+1).filter(x=>x!=null);return s.length?s.reduce((x,y)=>x+y,0)/s.length:null;});}
+function mkChart(id,labels,data,o={}){
+  const light=document.body.classList.contains('light'), el=document.getElementById(id); if(!el||!window.Chart) return;
+  diaCharts.push(new Chart(el,{type:o.type||'line',data:{labels,datasets:[{data,
+      borderColor:'#818cf8',backgroundColor:o.type==='bar'?(light?'#c7d2fe':'#3b3f7a'):'#818cf8',
+      tension:.35,pointRadius:0,borderWidth:2,borderRadius:3,spanGaps:true}]},
+    options:{responsive:true,maintainAspectRatio:false,interaction:{mode:'index',intersect:false},
+      plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>{
+        const y=c.parsed.y; if(y==null) return '—';
+        if(o.pct){ const n=o.num&&o.num[c.dataIndex], d=o.den&&o.den[c.dataIndex];
+          return y.toFixed(1)+'%'+((n!=null&&d!=null)?` (${fmt(n)} de ${fmt(d)})`:''); }
+        return fmt(Math.round(y)); }}}},
+      scales:{x:{ticks:{color:light?'#64748b':'#94a3b8',maxTicksLimit:8},grid:{display:false}},
+        y:{beginAtZero:!o.pct,ticks:{color:light?'#64748b':'#94a3b8',callback:o.pct?(v=>v+'%'):undefined},grid:{color:light?'#e2e8f0':'#22304a'}}}}}));
+}
+// --- estándar del "?": modal reutilizable (openHelp) ---
+const CARD_HELP={
+  pendientes:{t:'Interesados pendientes por crear',b:'<p>Leads del loop que respondieron <b>«Estoy interesado»</b> y cuyo lead <b>aún no se ha recreado</b> en el backbone. Es el <b>backlog real</b> de recreación.</p><p>Cuenta solo si: (1) no está en <code>recreation</code>, (2) es lead del loop (<b>en <code>send_log</code></b>), y (3) NO está en estado terminal (<b>baja / ya vendió / respondió otra cosa</b>). Así no cuenta opt-outs post-interesado ni interesados del repo viejo que nunca enviamos. Fuente: mart inbound (lag 1–2 días).</p>'},
+  cos_nocreado:{t:'Interesados aún no creados',b:'<p>De los <b>interesados</b> de ese período de envío, cuántos siguen <b>sin recrear</b> — mismo criterio refinado del card: del loop, no recreados y en estado no-terminal (excluye bajas y respuestas de otro tipo).</p>'},
+  quality:{t:'Calidad de línea',b:'<p>Calificación que <b>Meta</b> le da al número de WhatsApp según cómo reacciona quien recibe los mensajes (bloqueos, reportes, lecturas).</p><p><b>ALTA</b> = línea sana · <b>MEDIA</b> = cuidar el ritmo · <b>BAJA</b> = en riesgo de que Meta la limite o suspenda · <b>UNKNOWN</b> = sin histórico reciente suficiente.</p><p>Es la señal <b>más importante</b> para no quemar la línea. Fuente: Meta (WhatsApp Business Management API).</p>'},
+  tier:{t:'Tier de mensajería (24h)',b:'<p>Límite que Meta asigna al número: a cuántos usuarios <b>únicos nuevos</b> se les puede escribir en 24h (<b>1K / 10K / 100K / ilimitado</b>).</p><p>Sube automáticamente si la calidad se mantiene y se usa el volumen; baja si la calidad cae. Define el <b>techo</b> de cuánto podemos enviar por día. Fuente: Meta (respaldo Infobip).</p>'},
+  estado:{t:'Estado de la línea',b:'<p>Estado de conexión del número en Meta/WhatsApp. <b>Conectada</b> = operativa y habilitada para enviar.</p><p>Cualquier otro estado (desconectada, pendiente, restringida) significa que los envíos pueden fallar. Fuente: Meta.</p>'},
+  review:{t:'Revisión de la cuenta',b:'<p>Estado de revisión de la cuenta de WhatsApp Business ante Meta. <b>Aprobada</b> = pasó la verificación de Meta y puede operar con normalidad.</p><p>Si no está aprobada (en revisión / rechazada), Meta puede limitar o bloquear el envío. Fuente: Meta (account_review_status).</p>'},
+  hoy:{t:'Leads creados hoy',b:'<p>Negocios con la <b>UTM del marketing loop</b> (<code>%reinteresados%</code>) creados <b>hoy</b> en HubSpot. Es la fuente que más rápido refresca (~7 min), por eso va casi en vivo.</p><p>Hora local del país.</p>'},
+  imp:{t:'Impacto en asignados',b:'<p>Aporte de los leads del <b>marketing loop</b> (UTM <code>%reinteresados%</code>) a los <b>asignados de marketing</b>, por período (según Temporalidad). Cruza la <b>WBR de asignados</b> con <code>hubspot.deals</code>.</p><p>Columnas = los 20 períodos más recientes; <code>*</code> = período en curso.</p>'},
+  imp_total:{t:'Total Marketing',b:'<p>Asignados de marketing del período: leads que pasaron a <b>gestión comercial</b>, de las <b>6 fuentes de marketing</b> (fuente_id_tig). Fuente: WBR asignados mart.</p>'},
+  imp_web:{t:'WEB',b:'<p>De los asignados, solo los de <b>fuente WEB</b> (fuente_id_tig = 3).</p>'},
+  imp_loop:{t:'Marketing loop (WEB)',b:'<p>De los asignados, los que traen la <b>UTM del loop</b> (<code>%reinteresados%</code> en hubspot.deals). Son WEB. Es el <b>aporte directo</b> del loop.</p>'},
+  imp_loopvstotal:{t:'Loop vs Total Marketing',b:'<p>Loop ÷ Total Marketing: qué <b>porción de todo el marketing asignado</b> vino del loop.</p>'},
+  imp_loopvsweb:{t:'Loop vs WEB',b:'<p>Loop ÷ WEB: qué <b>porción de los asignados WEB</b> vino del loop.</p>'},
+  imp_sinloop:{t:'Total Marketing sin loop',b:'<p>Total Marketing − loop: los asignados que <b>habríamos tenido sin el programa</b> (contrafactual).</p>'},
+  cos:{t:'Cosecha de envío · avance por período',b:'<p>Agrupa los mensajes por su <b>período de envío</b> (Temporalidad: día / semana / mes, hora CDMX). Primero 5 filas de <b>valores absolutos</b> (Enviados → Entregados → Leídos → Respondidos → Interesados) y al final las <b>tasas de conversión (%)</b> entre etapas.</p><p>Columnas = los 20 períodos más recientes; <code>*</code> = período en curso.</p>'},
+  cos_env:{t:'Enviados (valor absoluto)',b:'<p><b>Cuántos</b> mensajes de reactivación se enviaron en el período. Cosecha por <b>fecha de envío</b> (hora CDMX).</p><p>Fuente: tabla <code>send_log</code> (Neon) — un registro por intento de envío.</p>'},
+  cos_entr:{t:'Entregados (valor absoluto)',b:'<p><b>Cuántos</b> de esos envíos llegaron al celular (estado DELIVERED).</p><p>Se cruza el <code>message_id</code> de cada envío contra el estado de entrega del <b>mart de Infobip</b> (<code>mart_infobip_messages_daily_mx</code>, BigQuery) unido con la <b>API /logs de Infobip</b> (tiempo real, para vencer el lag ~28h del mart).</p>'},
+  cos_leidos:{t:'Leídos (valor absoluto)',b:'<p><b>Cuántos</b> de los entregados fueron leídos (marca <code>seen_at</code> del mart de Infobip).</p><p>⚠ WhatsApp no reporta SEEN por esta vía en envíos recientes, así que casi siempre sale <b>0</b>. La entrega sí es fiable; la lectura no.</p>'},
+  cos_resp:{t:'Respondidos (valor absoluto)',b:'<p><b>Cuántos</b> destinatarios del período respondieron (botón o texto).</p><p>Se marca si el <b>teléfono</b> del envío aparece entre los que respondieron en el <b>mart de Infobip</b> (servicio <code>WhatsApp Inbound</code>).</p>'},
+  cos_int:{t:'Interesados (valor absoluto)',b:'<p><b>Cuántos</b> respondieron con el botón <b>«Estoy interesado»</b> (payload INTERESADO).</p><p>Sale del mismo <b>mart inbound</b>, parseando el campo <code>respuesta_cliente</code> del botón. Es el objetivo del loop.</p>'},
+  cos_dr:{t:'% Delivery Rate',b:'<p><b>Entregados ÷ Enviados</b> del período: % de mensajes que llegaron al celular. Verde = mejor entrega.</p>'},
+  cos_rr:{t:'% Read Rate',b:'<p><b>Leídos ÷ Entregados.</b> ⚠ WhatsApp no reporta SEEN por esta vía en envíos recientes → suele salir 0.</p>'},
+  cos_rsp:{t:'% Respond Rate',b:'<p><b>Respondidos ÷ Entregados:</b> % de entregados que respondieron (botón o texto).</p>'},
+  cos_ir:{t:'% Interesados Rate',b:'<p><b>Interesados ÷ Entregados:</b> % de entregados que dijeron «Estoy interesado». Es el rate que <b>más importa</b> para el loop.</p>'},
+  err:{t:'Errores de entrega',b:'<p>Por qué <b>NO</b> llegaron los mensajes, por período de envío (Temporalidad). Fila 1 = <b>total no entregados</b>; luego el <b>volumen absoluto</b> de cada tipo de error; luego el <b>% de cada error</b> sobre el total de no entregados.</p><p>Fuente: <code>error_name</code> del mart de Infobip + API /logs. Incluye el bug <b>7008</b> (plantilla sin imagen). Columnas = 20 períodos recientes.</p>'},
+  ab:{t:'A/B de plantillas',b:'<p>Comparativo de las plantillas que se envían <b>en simultáneo</b> (asignación aleatoria del A/B). Una <b>fila por plantilla</b>; columnas = enviados, entregados, delivery / read / respond / interesado rate.</p><p>Excluye los envíos fallidos por bug de plantilla sin imagen (7008, culpa nuestra). ⚠ <b>Read rate</b> no disponible por esta vía (SEEN). v1 = control · v2 = oferta.</p>'},
+  ab_env:{t:'Enviados',b:'<p><b>Cuántos</b> mensajes de esta plantilla se enviaron (aceptados por Infobip).</p><p>Excluye los fallidos por el bug de plantilla sin imagen (<b>7008</b>, culpa nuestra) para no ensuciar la comparación.</p>'},
+  ab_entr:{t:'Entregados',b:'<p>De los enviados, <b>cuántos llegaron al celular</b> (estado DELIVERED del mart de Infobip + API /logs).</p>'},
+  ab_leidos:{t:'Leídos',b:'<p><b>Cuántos</b> de los entregados fueron leídos (marca SEEN del mart). ⚠ WhatsApp no siempre reporta SEEN → puede salir 0.</p>'},
+  ab_resp:{t:'Respondidos',b:'<p><b>Cuántos</b> destinatarios respondieron (cualquier botón o texto), cruzando el teléfono contra el <b>mart inbound</b>.</p>'},
+  ab_int:{t:'Interesados',b:'<p><b>Cuántos</b> tocaron el botón <b>«Estoy interesado»</b> (payload INTERESADO). Es el objetivo del loop.</p>'},
+  ab_dr:{t:'% Delivery Rate',b:'<p><b>Entregados ÷ Enviados.</b> Es el <b>único</b> rate calculado sobre el <b>total de envíos</b> — mide qué tan bien entrega la línea/plantilla.</p>'},
+  ab_rr:{t:'% Read Rate',b:'<p><b>Leídos ÷ Entregados.</b> % de los <b>entregados</b> que el usuario abrió (marca SEEN del mart). ⚠ WhatsApp no siempre reporta SEEN → puede salir 0.</p>'},
+  ab_rp:{t:'% Respond Rate',b:'<p><b>Respondieron ÷ Entregados.</b> % de los <b>entregados</b> que respondieron (cualquier botón o texto).</p>'},
+  ab_ir:{t:'% Interesado Rate',b:'<p><b>Interesados ÷ Entregados.</b> % de los <b>entregados</b> que tocaron el botón «Estoy interesado».</p><p>Es el <b>indicador MÁS clave</b> del loop y por eso va resaltado en amarillo: define qué plantilla/fuente gana.</p>'},
+  ab_bayes:{t:'Veredicto bayesiano del A/B',b:'<p>Compara las dos plantillas sobre el <b>Interesado rate</b> con una prueba <b>bayesiana Beta-Binomial</b>. <b>P(mejor)</b> = probabilidad de que la plantilla líder sea realmente la mejor. <b>Pérdida esperada</b> = cuánto interesado-rate arriesgas si eliges al líder y estás equivocado (en puntos porcentuales).</p><p>Se declara <b>DECIDIDO</b> cuando P(mejor) ≥ <b>95%</b> y pérdida esperada ≤ <b>0,5 pp</b>, con al menos <b>300 entregados por brazo</b> y <b>7 días</b>. Si a los <b>21 días</b> no hay señal, gana el de mayor probabilidad. Los chips muestran el progreso hacia esos mínimos.</p>'},
+  ab_yv:{t:'Ya no vendo (opt-out)',b:'<p><b>Cuántos</b> tocaron el botón <b>«Ya no vendo»</b> (payload YAVENDIÓ). Es la <b>interacción negativa</b> — se dieron de baja por el botón (no bloquearon).</p>'},
+  ab_or:{t:'% Opt-out Rate',b:'<p><b>«Ya no vendo» ÷ Entregados.</b> % de los <b>entregados</b> que se dieron de baja por el botón. Sirve para comparar si una plantilla <b>molesta/rechaza más</b> que otra.</p><p>⚠ Los <b>bloqueos</b> de usuario (que castigan la calidad de la línea) NO se pueden medir por plantilla — son una señal agregada de Meta a nivel línea, post-entrega. El opt-out es el proxy negativo medible por plantilla.</p>'},
+  abf:{t:'Comparación por fuente',b:'<p>Igual que el <b>A/B de plantillas</b> pero agrupando por la <b>fuente del lead original</b> (WEB, Estudio Inmueble/Habímetro, CRM, Lead Forms…) en vez de por plantilla. Una fila por fuente; mismas columnas y denominadores (delivery sobre enviados; read/respond/interesado sobre entregados).</p><p>Enlace envío→fuente por <code>nid</code> contra TIG. Sirve para decidir <b>qué fuentes vale la pena reactivar</b> (las que convierten a «interesado»). Read rate no disponible por esta vía (SEEN).</p>'},
+  resp:{t:'Respuestas por período',b:'<p>Respuestas recibidas en la línea (<b>mart inbound</b> de Infobip) bucketeadas por su <b>fecha de llegada</b> (Temporalidad: día / semana / mes). Filas fijas: total, botón <b>Interesado</b>, botón <b>Ya no vendo</b>, y <b>Baja</b> (escribieron «baja» como texto).</p><p><b>Respuestas Abiertas</b> resume el resto del texto libre; ábrela con ▸ para ver cada respuesta con su conteo por período. Columnas = 20 períodos recientes.</p>'},
+  resp_tot:{t:'Respondieron (total)',b:'<p>Total de respuestas recibidas en los últimos 14 días (botones + texto libre).</p>'},
+  resp_int:{t:'Interesado',b:'<p>Respondieron con el botón <b>«Estoy interesado»</b> (INTERESADO).</p>'},
+  resp_baja:{t:'Ya no vendo',b:'<p>Respondieron con el botón <b>«Ya no vendo»</b> (YAVENDIÓ / baja).</p>'},
+  resp_bajatxt:{t:'Baja',b:'<p>Respondieron con <b>texto libre</b> que dice «baja» (escribieron «baja / darme de baja» en vez de tocar el botón «Ya no vendo»).</p>'},
+  kpi_contactados:{t:'Usuarios contactados',b:'<p><b>Personas únicas</b> a las que el mensaje les <b>llegó de verdad</b>: teléfonos distintos con al menos un WhatsApp en estado <b>entregado</b>. No son envíos.</p><p>Un mensaje que rebota —número no entregable, bloqueado, tope de frecuencia de Meta— no contactó a nadie, y contarlo infla la base de todo el funnel. Por eso se excluyen. Fuente: <code>send_log</code> + confirmación de entrega del mart y de Infobip.</p><p><b>MTD</b> = del 1 del mes a hoy · <b>WTD</b> = del lunes a hoy · <b>YTD</b> = del 1 de enero a hoy. Se bucketea por <b>fecha de envío</b>.</p>'},
+  kpi_leads:{t:'Leads cerrados',b:'<p>Negocios del loop <b>creados en el backbone</b> (<code>hubspot.deals</code> con la UTM de reinteresados), contados por <code>createdate</code>. Incluye los que crea el ciclo diario y los que crea el agente SDR cuando alguien contesta que sí.</p>'},
+  kpi_citas:{t:'Citas agendadas',b:'<p>Leads del loop con <b>visita agendada</b>, contados por <code>fecha_de_visita</code> — no por la fecha en que se creó el lead. Un lead de marzo con cita en agosto cuenta en agosto, que es cuando pasó el evento.</p>'},
+  kpi_cierres:{t:'Cierres',b:'<p>Suma de las <b>dos líneas de negocio</b>, que en HubSpot viven en campos distintos:</p><ul><li><b>Compra directa (Market Maker)</b>: <code>oportunidad_del_negocio = \'Cierre - Comprado\'</code>, fechado por <code>closedate</code>.</li><li><b>Inmobiliaria (red de aliados)</b>: <code>oportunidad_inmobiliaria = \'Contrato firmado\'</code>, fechado por <code>fecha_captacion_inmobiliaria</code>.</li></ul><p>Contar solo la primera —como hacía este tablero hasta el 21-ago— dejaba fuera la mayoría de los cierres del loop: en CO son 29 contratos de inmobiliaria contra 9 compras directas en el año.</p><p><code>fecha_de_firma</code> no sirve para fechar nada: está vacía en toda la tabla.</p>'},
+  creados_sem:{t:'Leads creados esta semana',b:'<p>Negocios del loop creados en el backbone en los <b>últimos 7 días</b>, contados por <code>createdate</code> en <code>hubspot.deals</code> con la UTM de reinteresados. Incluye tanto los que crea el ciclo diario como los que crea el agente SDR cuando alguien contesta que sí.</p>'},
+  cierres_sem:{t:'Cierres de la semana',b:'<p>Negocios del loop que <b>se cerraron</b> (comprados) en los últimos 7 días, contados por <code>closedate</code> — no por fecha de creación: un lead creado esta semana no alcanza a cerrarse esta semana.</p><p>Ojo con la escala: son pocos por definición. El ciclo de compra tarda semanas, así que un cero en una semana puntual no dice nada; la serie sí.</p>'},
+  cos_agente:{t:'Cosecha de envío · solo agente SDR',b:'<p>Los mismos números de la cosecha, pero <b>restringidos a los envíos cuyo destinatario terminó conversando con el agente SDR</b>. Sirve para comparar el desenlace de una conversación atendida por el agente contra el promedio de la campaña.</p><p>Se excluyen a propósito los turnos en <b>shadow</b> y los que quedan fuera del muestreo del piloto: ahí el agente propone la respuesta pero <b>no la manda</b>, así que el desenlace no es mérito suyo.</p>'},
+  comparativa:{t:'Funnel comparativo · reinteresados vs WEB nuevo',b:'<p>Compara <b>Reinteresados</b> (UTM del loop) contra <b>WEB nuevo</b> (leads del sitio sin esa UTM). Cada etapa trae el % sobre la base de su cohorte y el <b>conteo absoluto</b>: Calificado → Asignado → Cita → Cierre.</p><p><b>El selector L7d / L14d / L30d / L60d</b> cambia la ventana, que filtra por <b>fecha de creación</b> del lead. Las etapas cuentan lo que le pasó a esa gente, sin importar cuándo pasó.</p><p><b>Qué ventana usar:</b> las cortas sirven para ver la reacción reciente (respuesta, calificación, asignación); el <b>cierre</b> en L7d sale 0 casi siempre porque el ciclo de compra es más largo que la ventana, así que para juzgar cierre hay que irse a <b>L60d</b>.</p><p><b>Cierre suma las dos líneas de negocio</b>, que en HubSpot viven en campos distintos: compra directa (<code>oportunidad_del_negocio</code>) y contrato firmado con la red de aliados (la fecha de firma: <code>fecha_captacion_inmobiliaria</code> en CO, <code>fecha_de_contrato_firmado_mx</code> en MX). El desglose va bajo el título de cada funnel.</p><p><b>No confundir con los KPIs de cabecera:</b> acá los cierres son los de esta cohorte, ocurridos cuando haya sido; arriba son los cierres ocurridos en el mes / semana / año.</p>'},
+  calidad:{t:'Calidad por antigüedad del lead original',b:'<p>Bucketea los envíos por el <b>trimestre en que se creó el lead original</b> (no la fecha de envío) y mide por trimestre: <b>Respond rate</b> (barras = respondieron ÷ enviados) y <b>% Interesados</b> (línea = de los que respondieron, cuántos eligieron «Interesado»).</p><p><b>Solo mensajes nuevos del log de Neon</b> (motor actual): enlace envío→trimestre por <code>nid</code> (directo y confiable), respuesta por teléfono (inbound del mart). NO incluye los envíos del repo viejo (esos no traen nid y unirlos por teléfono no daba confianza). La tabla se irá poblando a medida que se acumulen envíos nuevos.</p>'},
+  diario:{t:'Evolución diaria',b:'<p>Serie diaria del embudo: fila 1 = valor absoluto/tasa por día (barras); fila 2 = <b>promedio móvil de 7 días</b> (línea). Enviados → Conversión a respuesta → resp→interesado → interesado→creado → creado→calificado MM.</p><p>Fuente en vivo: <code>send_log</code> (Neon) · inbound (mart) · <code>recreation</code> (Neon). ⚠ Las recreaciones son por evento, así que creados/calificados pueden verse planos hasta que haya más volumen.</p>'},
+};
+function openHelp(k){const h=CARD_HELP[k]; if(!h) return;
+  document.getElementById('helpCardT').textContent=h.t;
+  document.getElementById('helpCardB').innerHTML=h.b;
+  document.getElementById('helpCard').showModal();}
+const _hb=k=>`<button type="button" class="help-btn" onclick="openHelp('${k}')" aria-label="Explicación">?</button>`;
+
+function renderStats(){
+  const K=(D.kpis||{})[country]||{}, C=(D.contactados||{})[country]||{};
+  const l=(D.linea||{})[country]||{};
+  // MTD / WTD / YTD: acumulados del mes, de la semana (lunes→hoy) y del año en curso.
+  // Van en el orden que pidió el equipo, no en orden de tamaño.
+  const tri=(mtd,wtd,ytd)=>`<div class="kpi3">
+      <div><span class="kl">MTD</span><span class="kv">${fmt(+mtd||0)}</span></div>
+      <div><span class="kl">WTD</span><span class="kv">${fmt(+wtd||0)}</span></div>
+      <div><span class="kl">YTD</span><span class="kv">${fmt(+ytd||0)}</span></div>
+    </div>`;
+  const cards=[
+    ['Usuarios contactados '+_hb('kpi_contactados'), tri(C.mtd,C.wtd,C.ytd), 'personas únicas con mensaje ENTREGADO · excluye rebotes', 'key-blue'],
+    ['Leads cerrados '+_hb('kpi_leads'),             tri(K.creados_mtd,K.creados_wtd,K.creados_ytd), 'negocios del loop creados en el backbone', 'key'],
+    ['Citas agendadas '+_hb('kpi_citas'),            tri(K.citas_mtd,K.citas_wtd,K.citas_ytd), 'por fecha de la visita', ''],
+    ['Cierres '+_hb('kpi_cierres'),                  tri(K.cierres_mtd,K.cierres_wtd,K.cierres_ytd),
+      `YTD: ${fmt(+K.cierres_mm_ytd||0)} compra directa + ${fmt(+K.cierres_inmo_ytd||0)} inmobiliaria`, 'key'],
+  ];
+  document.getElementById('stats').innerHTML=cards.map(([lab,v,s,cls])=>
+    `<div class="stat${cls?' '+cls:''}"><div class="l">${lab}</div>${v}<div class="s">${s||''}</div></div>`).join('');
+  // La salud de la línea deja de ser tarjeta pero no se pierde: es una línea de estado.
+  const est=[ l.quality?('calidad '+l.quality):null,
+              l.tier?('tier '+String(l.tier).replace('LIMIT_','')):null,
+              l.status?(l.status==='CONNECTED'?'conectada':l.status):null,
+              l.review?(l.review==='APPROVED'?'revisión aprobada':('revisión '+l.review)):null,
+              l.sender?('línea '+l.sender):null ].filter(Boolean).join(' · ');
+  const lt=document.getElementById('lineaTip');
+  if(lt) lt.textContent = est ? ('Salud de la línea: '+est) : 'Sin datos de salud de la línea (Meta no respondió).';
+}
+
+function renderResp(){
+  const el=document.getElementById('resp'); if(!el) return;
+  const rawS=((D.respuestas||{})[country]||{})[cicloTipo]||[];
+  if(!rawS.length){ el.innerHTML='<p class="note">Sin datos de respuestas para '+country+' (aún no disponible).</p>'; return; }
+  const byB={}; rawS.forEach(r=>byB[r.bucket]=r);
+  const arr=lastPeriods(cicloTipo,20).map(b=>byB[b]||{bucket:b,total:0,interesado:0,ya_vendio:0,baja_texto:0,abiertas_total:0,abiertas:{}});
+  const MES=['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+  const lbl=b=> cicloTipo==='mes' ? (MES[+b.slice(5,7)-1]+' '+b.slice(2,4)) : b.slice(5);
+  const last=arr.length-1, cur=i=>i===last?' class="cur"':'';
+  const th=arr.map((r,i)=>`<th${cur(i)} style="text-align:right">${lbl(r.bucket)}</th>`).join('');
+  const hcol={dia:'Día',semana:'Semana (inicia Lun)',mes:'Mes'}[cicloTipo]||'Período';
+  const row=(lab,key,cls='row-stage')=>`<tr class="${cls}"><td>${lab}</td>${arr.map((r,i)=>`<td${cur(i)} style="text-align:right">${z(+r[key])}</td>`).join('')}</tr>`;
+  const texts={}; arr.forEach(r=>Object.entries(r.abiertas||{}).forEach(([t,n])=>texts[t]=(texts[t]||0)+n));
+  const detail=Object.keys(texts).sort((a,b)=>texts[b]-texts[a]).map(t=>
+    `<tr class="resp-detail"><td style="padding-left:30px;color:var(--text-muted);font-weight:400">${escx(t)}</td>${arr.map((r,i)=>`<td${cur(i)} style="text-align:right">${z(+(r.abiertas||{})[t]||0)}</td>`).join('')}</tr>`).join('');
+  el.innerHTML=`<table><thead><tr><th>${hcol}</th>${th}</tr></thead><tbody id="respBody">
+    ${row(_hb('resp_tot')+'Respondieron (total)','total','row-total')}
+    ${row(_hb('resp_int')+'Interesado','interesado','row-loop')}
+    ${row(_hb('resp_baja')+'Ya no vendo','ya_vendio')}
+    ${row(_hb('resp_bajatxt')+'Baja','baja_texto')}
+    <tr class="row-total"><td><button type="button" id="respToggleBtn" class="help-btn" onclick="toggleAbiertas()" aria-label="Abrir/cerrar respuestas abiertas">▸</button> Respuestas Abiertas</td>${arr.map((r,i)=>`<td${cur(i)} style="text-align:right">${z(+r.abiertas_total)}</td>`).join('')}</tr>
+    ${detail}
+  </tbody></table>
+  <p class="note" style="padding:8px 13px">Respuestas recibidas en la línea (mart inbound) por período de llegada (según Temporalidad). «Respuestas Abiertas» agrupa el texto libre distinto de los botones — ábrela con ▸ para ver el detalle por período.</p>`;
+  el.scrollLeft=el.scrollWidth;
+}
+function toggleAbiertas(){
+  const b=document.getElementById('respBody'); if(!b) return;
+  const open=b.classList.toggle('resp-open');
+  const btn=document.getElementById('respToggleBtn'); if(btn) btn.textContent=open?'▾':'▸';
+}
+function setVentanaFunnel(n){ ventFunnel=n; renderComparativa(); }
+function renderComparativa(){
+  const el=document.getElementById('comparativa'); if(!el) return;
+  const todas=(D.comparativa||[]).filter(x=>x.pais===country);
+  if(!todas.length){ el.innerHTML='<p class="muted">Sin datos.</p>'; return; }
+  const rows=todas.filter(x=>String(x.ventana)===String(ventFunnel));
+  const R=rows.find(x=>x.cohorte==='Reinteresados')||{}, N=rows.find(x=>x.cohorte==='WEB nuevo')||{};
+  const sel=[7,14,30,60].map(v=>`<button type="button" class="winbtn${v===ventFunnel?' active':''}" onclick="setVentanaFunnel(${v})">L${v}d</button>`).join('');
+  // Cierre = MM + inmobiliaria. El desglose va bajo el título de cada funnel: en ventanas
+  // cortas el cierre es casi todo inmobiliaria, y sin el detalle parece un dato raro.
+  const mets=[['Calificado','calif_pct','calif_n'],['Asignado','asignado_pct','asignado_n'],
+              ['Cita','cita_pct','cita_n'],['Cierre','cierre_pct','cierres']];
+  const miniFunnel=(titulo,C,color)=>`
+    <div style="flex:1;min-width:230px">
+      <div style="font-size:13px;font-weight:700;color:var(--text-title);margin-bottom:2px">${titulo}</div>
+      <div class="muted" style="font-size:12px;margin-bottom:12px">${fmt(+C.leads||0)} leads creados en los últimos ${ventFunnel} días · cierres: ${fmt(+C.cierres_mm||0)} compra directa + ${fmt(+C.cierres_inmo||0)} inmobiliaria</div>
+      ${mets.map(([n,k,nk])=>{const v=+C[k]||0, cnt=+C[nk]||0; return `<div class="rowline">
+        <div class="lab" style="width:82px">${n}</div>
+        <div class="bar"><div style="width:${Math.max(0.5,v).toFixed(1)}%;background:${color}"></div></div>
+        <div class="val" style="width:108px;text-align:right"><b>${pct(v)}</b> <span class="muted" style="font-weight:400">${fmt(cnt)}</span></div></div>`;}).join('')}
+    </div>`;
+  const acR=(+R.asignado_n>0)?(+R.cita_n/+R.asignado_n*100):0;
+  const acN=(+N.asignado_n>0)?(+N.cita_n/+N.asignado_n*100):0;
+  el.innerHTML=`<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px">${sel}</div>
+  <div style="display:flex;gap:16px;flex-wrap:wrap">
+    ${miniFunnel('🔁 Reinteresados', R, 'var(--accent)')}
+    ${miniFunnel('🌐 WEB nuevo', N, 'var(--text-muted)')}
+  </div>
+  <div style="margin-top:16px;background:rgba(251,191,36,.14);border:1px solid var(--warn);border-radius:10px;padding:14px 16px">
+    <div style="font-size:11.5px;text-transform:uppercase;letter-spacing:.5px;color:var(--warn);font-weight:800;margin-bottom:8px">Conversión asignado → cita agendada</div>
+    <div style="font-size:20px;font-weight:800;color:var(--text-title)">🔁 Reinteresados <span style="color:var(--accent)">${pct(acR)}</span> &nbsp;·&nbsp; 🌐 WEB nuevo <span style="color:var(--text-muted)">${pct(acN)}</span></div>
+  </div>
+  <p class="note">La ventana filtra por <b>fecha de creación</b> del lead; las etapas cuentan lo que le pasó a esa gente, sin importar cuándo pasó.
+  <b>Ojo con las ventanas cortas:</b> a 7 días el cierre sale en 0 casi siempre — no falta el dato, es que el ciclo de compra no cabe ahí. Para juzgar cierre, L60d.
+  <b>Cierre</b> suma las dos líneas de negocio: compra directa (Market Maker) y contrato firmado con la red de aliados, que viven en campos distintos de HubSpot.
+  Estos cierres son los de <b>esta cohorte</b>, ocurridos cuando haya sido; los KPIs de arriba cuentan los cierres <b>ocurridos</b> en el mes, la semana o el año.
+  WEB nuevo = leads del sitio sin la UTM del loop.</p>`;
+}
+function renderCalidad(){
+  const el=document.getElementById('c_cohorte'); if(!el||!window.Chart) return;
+  const arr=(D.cohorte_origen||{})[country]||[];
+  const light=document.body.classList.contains('light');
+  const labels=arr.map(r=>r.bucket);
+  const sent=arr.map(r=>+r.enviados), resp=arr.map(r=>+r.respondieron), intr=arr.map(r=>+r.interesados);
+  const rr=arr.map(r=>+r.enviados>0?(+r.respondieron/+r.enviados*100):null);
+  const ir=arr.map(r=>+r.respondieron>0?(+r.interesados/+r.respondieron*100):null);
+  if(cohorteChart) cohorteChart.destroy();
+  cohorteChart=new Chart(el,{data:{labels,datasets:[
+    {type:'bar',label:'Respond rate (resp ÷ enviados)',data:rr,yAxisID:'y',order:2,
+      backgroundColor:light?'#c7d2fe':'#3b3f7a',borderColor:'#818cf8',borderWidth:1,borderRadius:3},
+    {type:'line',label:'% Interesados (de respuestas)',data:ir,yAxisID:'y1',order:1,
+      borderColor:'#34d399',backgroundColor:'#34d399',tension:.3,pointRadius:3,borderWidth:2,spanGaps:true},
+  ]},options:{responsive:true,maintainAspectRatio:false,interaction:{mode:'index',intersect:false},
+    plugins:{legend:{display:true,labels:{color:light?'#334155':'#e2e8f0',boxWidth:12,font:{size:11}}},
+      tooltip:{callbacks:{label:c=>{const i=c.dataIndex;
+        return c.dataset.yAxisID==='y'
+          ? `Respond rate: ${rr[i]==null?'—':rr[i].toFixed(1)+'%'} (${fmt(resp[i])}/${fmt(sent[i])})`
+          : `% Interesados: ${ir[i]==null?'—':ir[i].toFixed(1)+'%'} (${fmt(intr[i])}/${fmt(resp[i])})`;}}}},
+    scales:{x:{ticks:{color:light?'#64748b':'#94a3b8'},grid:{display:false}},
+      y:{position:'left',beginAtZero:true,title:{display:true,text:'Respond rate %',color:'#818cf8'},
+        ticks:{color:light?'#64748b':'#94a3b8',callback:v=>v+'%'},grid:{color:light?'#e2e8f0':'#22304a'}},
+      y1:{position:'right',beginAtZero:true,max:100,title:{display:true,text:'% Interesados',color:'#34d399'},
+        ticks:{color:light?'#64748b':'#94a3b8',callback:v=>v+'%'},grid:{display:false}}}}});
+}
+function renderDiario(){
+  const arr=(D.diario||{})[country]||[];
+  const labels=arr.map(r=>r.fecha.slice(5));
+  const env=arr.map(r=>+r.enviados), resp=arr.map(r=>+r.respuestas), inter=arr.map(r=>+r.interesados),
+        crea=arr.map(r=>+r.creados), cal=arr.map(r=>+r.calificados);
+  const MIN_N=5;
+  const div=(a,b)=>a.map((_,i)=>b[i]>=MIN_N?(a[i]/b[i]*100):null);
+  const cr=div(resp,env), ci=div(inter,resp), ic=div(crea,inter), cc=div(cal,crea);
+  diaCharts.forEach(c=>c.destroy()); diaCharts=[];
+  mkChart('c_env',labels,env,{type:'bar'});
+  mkChart('c_cr',labels,cr,{type:'bar',pct:true,num:resp,den:env});
+  mkChart('c_ci',labels,ci,{type:'bar',pct:true,num:inter,den:resp});
+  mkChart('c_ic',labels,ic,{type:'bar',pct:true,num:crea,den:inter});
+  mkChart('c_cc',labels,cc,{type:'bar',pct:true,num:cal,den:crea});
+  const ag=(D.agente_ia||{})[country]||[];
+  mkChart('c_agente',ag.map(r=>r.fecha.slice(5)),ag.map(r=>+r.reasignados),{type:'bar'});
+  mkChart('c_env_ma',labels,movavg(env,7));
+  mkChart('c_cr_ma',labels,movavg(cr,7),{pct:true});
+  mkChart('c_ci_ma',labels,movavg(ci,7),{pct:true});
+  mkChart('c_ic_ma',labels,movavg(ic,7),{pct:true});
+  mkChart('c_cc_ma',labels,movavg(cc,7),{pct:true});
+}
+
+
+const COMP_LABELS={direccion:'Dirección',telefono:'Teléfono',email:'Email',nombre:'Nombre',geo:'Geo (lat/lon)',zona:'Zona mediana',tipo:'Tipo de inmueble',area:'Área',banos:'Baños',medios_banos:'Medios baños',habitaciones:'Habitaciones',garaje:'Garaje',ascensor:'Ascensor',piso:'Piso',antiguedad:'Antigüedad',precio:'Precio',estrato:'Estrato'};
+const COMP_ORDER=['direccion','telefono','email','nombre','geo','zona','tipo','area','banos','medios_banos','habitaciones','garaje','ascensor','piso','antiguedad','precio','estrato'];
+function renderCompletitud(){
+  const el=document.getElementById('completitud'); if(!el) return;
+  const c=(D.completitud||{})[country]||{};
+  const byB={}; ((c.series||{})[cicloTipo]||[]).forEach(r=>byB[r.bucket]=r);
+  const rows=lastPeriods(cicloTipo,20).map(b=>byB[b]||{bucket:b,total:0});   // últimos 20 períodos, rellena vacíos
+  const na=new Set(c.na||[]);
+  const MES=['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+  const lbl=b=> cicloTipo==='mes' ? (MES[+b.slice(5,7)-1]+' '+b.slice(2,4)) : b.slice(5);
+  const last=rows.length-1, cur=i=> i===last?' class="cur"':'';
+  const th=rows.map((r,i)=>`<th${cur(i)} style="text-align:right">${lbl(r.bucket)}</th>`).join('');
+  const tot=rows.map(r=>+r.total||0);
+  const totalRow=`<tr class="row-total"><td>${H('Total de leads recreados (WEB) creados en el período. Es el denominador de los % de abajo.')}Leads creados</td>${rows.map((r,i)=>`<td${cur(i)} style="text-align:right">${z(+r.total)}</td>`).join('')}</tr>`;
+  const body=COMP_ORDER.filter(f=>!na.has(f)).map(f=>
+    `<tr class="row-stage"><td>${H('Cuántos de los leads creados tienen «'+COMP_LABELS[f]+'» poblado en el backbone.')}${COMP_LABELS[f]}</td>${heatCells(rows.map(r=>+r[f]||0),tot)}</tr>`
+  ).join('');
+  el.innerHTML=`<table><thead><tr><th>Campo</th>${th}</tr></thead><tbody>${totalRow}${body}</tbody></table>`;
+  el.scrollLeft=el.scrollWidth;
+}
+
+const ERR_ROWS=[['freq_cap','Freq-cap (límite Meta)'],['device_error','Error de dispositivo'],['template','Plantilla sin imagen (7008)'],['bloqueado','Bloqueado por operador'],['invalido','Número inválido'],['otro','Otro']];
+function renderImpacto(){
+  const el=document.getElementById('impacto'); if(!el) return;
+  let rows=(D.asignados||[]).filter(r=>r.pais===CIP[country] && r.tipo===cicloTipo).sort((a,b)=>a.bucket<b.bucket?-1:1);
+  rows=rows.slice(-20);
+  if(!rows.length){ el.innerHTML='<p class="muted">Sin datos de asignados para '+country+'.</p>'; return; }
+  const MES=['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+  const lbl=b=> cicloTipo==='mes' ? (MES[+b.slice(5,7)-1]+' '+b.slice(2,4)) : b.slice(5);
+  const last=rows.length-1;
+  const cur=i=> i===last?' class="cur"':'';
+  const th=rows.map((r,i)=>`<th${cur(i)} style="text-align:right">${lbl(r.bucket)}</th>`).join('');
+  const tr=(lab,f,cls='')=>`<tr class="${cls}"><td>${lab}</td>${rows.map((r,i)=>f(r,i)).join('')}</tr>`;
+  const ratio=(num,den,i)=>`<td${cur(i)} style="text-align:right;font-weight:800;color:${num>0?'var(--accent)':'var(--text-muted)'}">${den?(num/den*100).toFixed(1):'0.0'}%</td>`;
+  const hcol={dia:'Día',semana:'Semana (inicia Lun)',mes:'Mes'}[cicloTipo]||'Periodo';
+  el.innerHTML=`<table><thead><tr><th>${hcol}</th>${th}</tr></thead><tbody>
+    ${tr(_hb('imp_total')+'Total Marketing',(r,i)=>`<td${cur(i)} style="text-align:right">${fmt(+r.total_asignados)}</td>`,'row-total')}
+    ${tr(_hb('imp_sinloop')+'Total Marketing sin loop',(r,i)=>`<td${cur(i)} style="text-align:right;color:var(--text-muted)">${fmt((+r.total_asignados)-(+r.asignados_reint))}</td>`)}
+    ${tr(_hb('imp_loop')+'Marketing loop (WEB)',(r,i)=>`<td${cur(i)} style="text-align:right">${fmt(+r.asignados_reint)}</td>`,'row-loop')}
+    ${tr(_hb('imp_web')+'WEB',(r,i)=>`<td${cur(i)} style="text-align:right">${fmt(+r.asignados_web)}</td>`)}
+    ${tr(_hb('imp_loopvstotal')+'<b>Loop vs Total Marketing</b>',(r,i)=>ratio(+r.asignados_reint,+r.total_asignados,i))}
+    ${tr(_hb('imp_loopvsweb')+'<b>Loop vs WEB</b>',(r,i)=>ratio(+r.asignados_reint,+r.asignados_web,i))}
+  </tbody></table>`;
+  el.scrollLeft=el.scrollWidth;
+}
+function renderErrores(){
+  const el=document.getElementById('errores'); if(!el) return;
+  const raw=((D.errores||{})[country]||{})[cicloTipo]||[];
+  if(!raw.length){ el.innerHTML='<p class="note">Sin datos de errores para '+country+' (aún no disponible).</p>'; return; }
+  const byB={}; raw.forEach(r=>byB[r.bucket]=r);
+  const zero={no_entregados:0}; ERR_ROWS.forEach(([k])=>zero[k]=0);
+  const arr=lastPeriods(cicloTipo,20).map(b=>byB[b]||{bucket:b,...zero});
+  const MES=['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+  const lbl=b=> cicloTipo==='mes' ? (MES[+b.slice(5,7)-1]+' '+b.slice(2,4)) : b.slice(5);
+  const last=arr.length-1, cur=i=>i===last?' class="cur"':'';
+  const th=arr.map((r,i)=>`<th${cur(i)} style="text-align:right">${lbl(r.bucket)}</th>`).join('');
+  const hcol={dia:'Día',semana:'Semana (inicia Lun)',mes:'Mes'}[cicloTipo]||'Período';
+  const totalRow=`<tr class="row-total"><td>No entregados</td>${arr.map((r,i)=>`<td${cur(i)} style="text-align:right">${z(+r.no_entregados)}</td>`).join('')}</tr>`;
+  const absRow=([k,lab])=>{const cls=k==='freq_cap'?'row-orange':'row-red';return `<tr class="${cls}"><td>${lab}</td>${arr.map((r,i)=>`<td${cur(i)} style="text-align:right">${z(+r[k])}</td>`).join('')}</tr>`;};
+  const pctRow=([k,lab])=>`<tr class="row-stage"><td>% ${lab}</td>${arr.map((r,i)=>{const t=+r.no_entregados||0,v=+r[k]||0;return `<td${cur(i)} style="text-align:right">${t?(v/t*100).toFixed(1)+'%':'<span class="muted">·</span>'}</td>`;}).join('')}</tr>`;
+  el.innerHTML=`<table><thead><tr><th>${hcol}</th>${th}</tr></thead><tbody>
+    ${totalRow}
+    ${ERR_ROWS.map(absRow).join('')}
+    ${ERR_ROWS.map(pctRow).join('')}
+  </tbody></table>`;
+  el.scrollLeft=el.scrollWidth;
+}
+
+// Tabla comparativa estilo A/B — reutilizada por plantillas y por fuentes (misma estructura y columnas).
+function _abRender(elId, arr, firstHdr, firstVal, emptyMsg, note){
+  const el=document.getElementById(elId); if(!el) return;
+  if(!arr||!arr.length){ el.innerHTML='<p class="note">'+emptyMsg+'</p>'; return; }
+  const rate=v=>pct(v==null?null:v*100);
+  const cols=[
+    {h:'Enviados',       f:t=>fmt(t.enviados),         k:'ab_env'},
+    {h:'Entregados',     f:t=>fmt(t.entregados),       k:'ab_entr'},
+    {h:'Leídos',         f:t=>fmt(t.leidos),           k:'ab_leidos'},
+    {h:'Respondidos',    f:t=>fmt(t.respondieron),     k:'ab_resp'},
+    {h:'Interesados',    f:t=>fmt(t.interesados),      k:'ab_int'},
+    {h:'Ya no vendo',    f:t=>fmt(t.yavendio),         k:'ab_yv'},
+    {h:'Delivery rate',  f:t=>rate(t.delivery_rate),   k:'ab_dr'},
+    {h:'Read rate',      f:t=>rate(t.read_rate),       k:'ab_rr'},
+    {h:'Respond rate',   f:t=>rate(t.respond_rate),    k:'ab_rp'},
+    {h:'Interesado rate',f:t=>rate(t.interesado_rate), k:'ab_ir', hl:true},
+    {h:'Opt-out rate',   f:t=>rate(t.optout_rate),     k:'ab_or'}];
+  const th=cols.map(c=>`<th style="text-align:right" class="${c.hl?'ab-key':''}">${c.h} ${_hb(c.k)}</th>`).join('');
+  const rows=arr.map(t=>`<tr class="row-stage"><td>${firstVal(t)}</td>${cols.map(c=>`<td style="text-align:right" class="${c.hl?'ab-key':''}">${c.f(t)}</td>`).join('')}</tr>`).join('');
+  el.innerHTML=`<table><thead><tr><th>${firstHdr}</th>${th}</tr></thead><tbody>${rows}</tbody></table>`+(note?`<p class="note" style="padding:8px 13px">${note}</p>`:'');
+}
+function renderAB(){
+  const arr=(D.ab_templates||{})[country];
+  _abRender('ab', arr, 'Plantilla', t=>escx(t.template),
+    'Sin datos de A/B para '+country+' (aún no disponible).',
+    (arr&&arr.length<2)?'Solo una plantilla activa — sin comparación A/B todavía.':'v1 = control · v2 = oferta. Excluye envíos fallidos por plantilla sin imagen (7008). Read rate no disponible por esta vía (SEEN).');
+  renderVeredicto();
+}
+function renderVeredicto(){
+  const el=document.getElementById('abVeredicto'); if(!el) return;
+  const v=(D.ab_veredicto||{})[country];
+  if(!v||!v.disponible){ el.innerHTML=''; return; }
+  const gcls=v.decidido?'vd-ok':'vd-wait';
+  const prob=(v.prob*100).toFixed(0), loss=v.loss_pp.toFixed(2);
+  const musA=v.entregados.v1>=v.min_brazo, musB=v.entregados.v2>=v.min_brazo, musOK=musA&&musB;
+  const diasOK=v.dias>=v.min_dias;
+  const chip=(ok,txt)=>`<span class="vd-chip ${ok?'vd-c-ok':'vd-c-no'}">${ok?'✓':'○'} ${txt}</span>`;
+  el.innerHTML=`<div class="veredicto ${gcls}">
+    <div class="vd-main">${_hb('ab_bayes')} Veredicto bayesiano (sobre Interesado rate):
+      <b>${v.decidido?'DECIDIDO':'aún sin decisión'}</b> — gana provisionalmente <b>${v.ganador}</b>
+      · P(mejor) <b>${prob}%</b> · pérdida esperada <b>${loss} pp</b></div>
+    <div class="vd-sub">${chip(diasOK,`${v.dias}/${v.min_dias} días`)} ${chip(musA,`v1 ${fmt(v.entregados.v1)}/${v.min_brazo} entregados`)} ${chip(musB,`v2 ${fmt(v.entregados.v2)}/${v.min_brazo} entregados`)} · <span class="muted">${v.razon}</span></div>
+  </div>`;
+}
+function renderPoolAB(){
+  const el=document.getElementById('poolAB'); if(!el) return;
+  const v=(D.pool_ab||{})[country];
+  if(!v||!v.disponible){ el.innerHTML='<p class="note" style="padding:8px 13px">Experimento de pool sin datos para '+country+' todavía.</p>'; return; }
+  const light=document.body.classList.contains('light');
+  const S=v.brazos.segmento, C=v.brazos.control;
+  const rmax=Math.max(S.pos_rate||0, C.pos_rate||0, 1e-9);
+  const bar=(name,a,color)=>{
+    const pct=((a.pos_rate||0)*100).toFixed(1), w=Math.max(3,((a.pos_rate||0)/rmax*100));
+    return `<div style="margin:7px 0">
+      <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:3px">
+        <span><b>${name}</b> · ${fmt(a.interesados)} interesados / ${fmt(a.entregados)} entregados (de ${fmt(a.enviados)} env, entrega ${((a.delivery_rate||0)*100).toFixed(0)}%)</span>
+        <b>${pct}%</b></div>
+      <div style="background:${light?'#e2e8f0':'#1e293b'};border-radius:6px;height:14px;overflow:hidden">
+        <div style="width:${w}%;height:100%;background:${color};border-radius:6px"></div></div></div>`;
+  };
+  const lider=v.ganador==='segmento'?'Segmento':'Control';
+  const prob=(v.prob*100).toFixed(0);
+  const minDel=Math.min(S.entregados,C.entregados);
+  const pmuestra=Math.min(100, minDel/v.min_brazo*100).toFixed(0);
+  const pdias=Math.min(100, v.dias/v.min_dias*100).toFixed(0);
+  const chip=(ok,txt)=>`<span class="vd-chip ${ok?'vd-c-ok':'vd-c-no'}">${ok?'✓':'○'} ${txt}</span>`;
+  const estado=v.decidido?`DECIDIDO — ganó <b>${lider}</b>`:`ganando <b>${lider}</b> · P(mejor) <b>${prob}%</b>`;
+  const eta=v.decidido?'':` · veredicto estimado en <b>~${v.eta_dias} día${v.eta_dias===1?'':'s'}</b>`;
+  el.innerHTML=`<div class="veredicto ${v.decidido?'vd-ok':'vd-wait'}">
+    <div class="vd-main">Targeting del pool (misma plantilla en ambos brazos) — métrica: Interesado rate sobre entregados. ${estado}${eta}</div>
+    ${bar('Segmento (comité+2025)',S,'#34d399')}
+    ${bar('Control (aleatorio)',C,'#818cf8')}
+    <div class="vd-sub" style="margin-top:6px">
+      ${chip(minDel>=v.min_brazo,`muestra ${fmt(minDel)}/${v.min_brazo} entregados por brazo (${pmuestra}%)`)}
+      ${chip(v.dias>=v.min_dias,`día ${v.dias}/${v.min_dias} mín (${pdias}%) · tope ${v.max_dias}`)}
+      · pérdida esperada <b>${v.loss_pp.toFixed(2)} pp</b> · <span class="muted">${v.razon} · desde ${v.since}</span></div>
+  </div>`;
+}
+function renderInventario(){
+  const el=document.getElementById('inventario'); if(!el) return;
+  const v=(D.inventario||{})[country];
+  if(!v||!v.disponible){ el.innerHTML='<p class="note" style="padding:8px 13px">Sin snapshots de inventario aún para '+country+' (se generan con el ciclo diario).</p>'; return; }
+  const DEF={P1:'Comité + 2025 (segmento ganador)',P2:'Recientes 2025+',P3:'Comité viejo',P4:'Resto'};
+  const rows=['P1','P2','P3','P4'].filter(t=>v.tiers[t]).map(t=>{
+    const a=v.tiers[t];
+    const rep=a.repuesto_hoy==null?'—':fmt(a.repuesto_hoy);
+    const run=a.runway_dias==null?'—':(a.runway_dias+' días');
+    return `<tr class="row-stage"><td><b>${t}</b> · ${DEF[t]}</td>
+      <td style="text-align:right"><b>${fmt(a.stock)}</b></td>
+      <td style="text-align:right">${fmt(a.enviados_hoy)}</td>
+      <td style="text-align:right">${rep}</td>
+      <td style="text-align:right">${run}</td></tr>`;}).join('');
+  el.innerHTML=`<table><thead><tr><th>Nivel</th><th style="text-align:right">Stock elegible</th>
+    <th style="text-align:right">Enviados hoy</th><th style="text-align:right">Repuestos hoy</th>
+    <th style="text-align:right">Runway</th></tr></thead><tbody>${rows}</tbody></table>
+    <p class="note" style="padding:8px 13px">${v.nota} Runway = stock / consumo promedio 7d del nivel. La reposición diaria son leads que cruzan los 180 días del SLA.</p>`;
+}
+function renderABFuente(){
+  const arr=(D.ab_fuentes||{})[country];
+  _abRender('ab_fuente', arr, 'Fuente', t=>escx(t.fuente_lead),
+    'Sin datos por fuente para '+country+' (aún no disponible).',
+    'Misma comparación que el A/B pero por FUENTE del lead original (enlace envío→fuente por nid contra TIG). Excluye fallidos 7008. Read rate no disponible por esta vía (SEEN).');
+}
+
+function renderPorHoraChart(){
+  const el=document.getElementById('c_porhora'); if(!el||!window.Chart||!D) return;
+  const ph=(D.por_hora||{})[country]||{};
+  const serie=ph.serie||[];
+  const note=document.getElementById('porhoraNote');
+  if(!serie.length){ if(porhoraChart){porhoraChart.destroy();porhoraChart=null;} el.getContext('2d').clearRect(0,0,el.width,el.height);
+    if(note) note.textContent='Aún sin datos — '+(ph.nota||'pendiente')+'.'; return; }
+  const light=document.body.classList.contains('light');
+  const labels=serie.map(r=>String(r.hora).padStart(2,'0')+':00');
+  // MIN_N: horas con muestra chica no dibujan tasa (1 mensaje leido = "100%" y distorsiona la lectura
+  // de mejor hora). El volumen si se dibuja siempre, para ver DONDE falta muestra.
+  const MIN_ENV=30, MIN_ENT=20;
+  const dr=serie.map(r=>(+r.enviados>=MIN_ENV && r.entregados!=null)?+((+r.entregados/+r.enviados)*100).toFixed(1):null);
+  const rd=serie.map(r=>(+r.entregados>=MIN_ENT && r.read_rate!=null)?+(r.read_rate*100).toFixed(1):null);
+  const rp=serie.map(r=>(+r.entregados>=MIN_ENT && r.respond_rate!=null)?+(r.respond_rate*100).toFixed(1):null);
+  const ent=serie.map(r=>+r.entregados); const vol=serie.map(r=>+r.enviados);
+  if(porhoraChart) porhoraChart.destroy();
+  porhoraChart=new Chart(el,{data:{labels,datasets:[
+    {type:'bar',label:'Volumen enviado',data:vol,yAxisID:'y2',order:3,borderWidth:0,barPercentage:.94,categoryPercentage:.98,
+      backgroundColor:light?'rgba(148,163,184,.30)':'rgba(148,163,184,.16)'},
+    {type:'line',label:'Delivery rate',data:dr,yAxisID:'y',order:1,borderColor:'#f59e0b',backgroundColor:'#f59e0b',tension:.3,pointRadius:3,borderWidth:2,spanGaps:true},
+    {type:'line',label:'Open rate (leídos)',data:rd,yAxisID:'y',order:1,borderColor:'#818cf8',backgroundColor:'#818cf8',tension:.3,pointRadius:3,borderWidth:2,spanGaps:true},
+    {type:'line',label:'Response rate',data:rp,yAxisID:'y1',order:1,borderColor:'#34d399',backgroundColor:'#34d399',tension:.3,pointRadius:3,borderWidth:2,spanGaps:true},
+  ]},options:{responsive:true,maintainAspectRatio:false,interaction:{mode:'index',intersect:false},
+    plugins:{legend:{display:true,labels:{color:light?'#334155':'#e2e8f0',boxWidth:12,font:{size:11}}},
+      tooltip:{callbacks:{label:c=>{const i=c.dataIndex,ax=c.dataset.yAxisID,lb=c.dataset.label;
+        if(ax==='y2') return `Volumen enviado: ${fmt(vol[i])}`;
+        if(lb==='Delivery rate') return `Delivery: ${dr[i]==null?'— (muestra chica)':dr[i].toFixed(1)+'%'} (${fmt(ent[i])}/${fmt(vol[i])})`;
+        if(lb&&lb.startsWith('Open')) return `Open: ${rd[i]==null?'— (muestra chica)':rd[i].toFixed(1)+'%'} (n entregados ${fmt(ent[i])})`;
+        return `Response: ${rp[i]==null?'— (muestra chica)':rp[i].toFixed(1)+'%'} (n entregados ${fmt(ent[i])})`;}}}},
+    scales:{x:{ticks:{color:light?'#64748b':'#94a3b8'},grid:{display:false}},
+      y:{position:'left',beginAtZero:true,title:{display:true,text:'Read rate %',color:'#818cf8'},
+        ticks:{color:light?'#64748b':'#94a3b8',callback:v=>v+'%'},grid:{color:light?'#e2e8f0':'#22304a'}},
+      y1:{position:'right',beginAtZero:true,title:{display:true,text:'Respond rate %',color:'#34d399'},
+        ticks:{color:light?'#64748b':'#94a3b8',callback:v=>v+'%'},grid:{display:false}},
+      y2:{display:false,beginAtZero:true}}}});
+  if(note) note.textContent=ph.nota||'';
+}
+
+function renderCohorteOrigen(){ renderCosechaTabla('cohorteTab','cosecha','Sin datos de cosecha para '+country+' (aún no disponible).'); }
+function renderCosechaAgente(){ renderCosechaTabla('cosechaAgente','cosecha_agente','El agente aún no ha atendido conversaciones en '+country+' fuera de shadow, así que no hay cosecha propia que mostrar.'); }
+function renderCosechaTabla(elId, srcKey, vacio){
+  const el=document.getElementById(elId); if(!el) return;
+  const raw=((D[srcKey]||{})[country]||{})[cicloTipo]||[];
+  if(!raw.length){ el.innerHTML='<p class="note">'+vacio+'</p>'; return; }
+  const byB={}; raw.forEach(r=>byB[r.bucket]=r);
+  const arr=lastPeriods(cicloTipo,20).map(b=>byB[b]||{bucket:b,enviados:0,entregados:0,leidos:0,respondidos:0,interesados:0,interesados_no_creados:0});  // 20 períodos más recientes (rellena vacíos)
+  const MES=['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+  const lbl=b=> cicloTipo==='mes' ? (MES[+b.slice(5,7)-1]+' '+b.slice(2,4)) : b.slice(5);
+  const last=arr.length-1, cur=i=>i===last?' class="cur"':'';
+  const col=k=>arr.map(r=>+r[k]||0);
+  const th=arr.map((r,i)=>`<th${cur(i)} style="text-align:right">${lbl(r.bucket)}</th>`).join('');
+  const hcol={dia:'Día',semana:'Semana (inicia Lun)',mes:'Mes'}[cicloTipo]||'Período';
+  const absRow=(lab,key,cls='row-stage')=>`<tr class="${cls}"><td>${lab}</td>${arr.map((r,i)=>`<td${cur(i)} style="text-align:right">${z(+r[key])}</td>`).join('')}</tr>`;
+  const pctCells=(numK,denK)=>{
+    const ns=col(numK), ds=col(denK);
+    const pcts=ns.map((v,i)=> ds[i]>0 ? v/ds[i]*100 : null);
+    const valid=pcts.filter(p=>p!=null);
+    const min=valid.length?Math.min(...valid):0, max=valid.length?Math.max(...valid):0, range=(max-min)||1;
+    return pcts.map((p,i)=>{
+      if(p==null) return `<td${cur(i)} style="text-align:right"><span class="muted">·</span></td>`;
+      const ra=(p-min)/range, clr=`rgb(${Math.round(248-ra*196)},${Math.round(52+ra*159)},${Math.round(52+ra*101)})`;
+      return `<td${cur(i)} style="text-align:right;color:${clr}">${p>=10?p.toFixed(1):p.toFixed(2)}%</td>`;
+    }).join('');
+  };
+  const pctRow=(lab,numK,denK,cls='row-stage')=>`<tr class="${cls}"><td>${lab}</td>${pctCells(numK,denK)}</tr>`;
+  el.innerHTML=`<table><thead><tr><th>${hcol}</th>${th}</tr></thead><tbody>
+    <tr class="row-total"><td>${_hb('cos_env')}Enviados</td>${arr.map((r,i)=>`<td${cur(i)} style="text-align:right">${z(+r.enviados)}</td>`).join('')}</tr>
+    ${absRow(_hb('cos_entr')+'Entregados','entregados')}
+    ${absRow(_hb('cos_leidos')+'Leídos','leidos')}
+    ${absRow(_hb('cos_resp')+'Respondidos','respondidos')}
+    ${absRow(_hb('cos_int')+'Interesados','interesados','row-loop')}
+    ${absRow(_hb('cos_nocreado')+'Interesados aún no creados','interesados_no_creados','row-orange')}
+    ${pctRow(_hb('cos_dr')+'% Delivery Rate','entregados','enviados')}
+    ${pctRow(_hb('cos_rr')+'% Read Rate','leidos','entregados')}
+    ${pctRow(_hb('cos_rsp')+'% Respond Rate','respondidos','entregados')}
+    ${pctRow(_hb('cos_ir')+'% Interesados Rate','interesados','entregados','row-blue')}
+  </tbody></table>`;
+  el.scrollLeft=el.scrollWidth;
+}
+
+function applyTheme(t){const dark=t==='dark';document.body.classList.toggle('dark',dark);
+  const _tb=document.getElementById('themeBtn').querySelector('span');
+  if(_tb) _tb.textContent=dark?'Claro':'Oscuro';
+  if(window.Chart && D){ renderPorHoraChart(); renderSerie(); drawSerieVentanas(); }}
+document.getElementById('themeBtn').onclick=()=>{const n=document.body.classList.contains('dark')?'light':'dark';try{localStorage.setItem('ml-theme',n);}catch(e){}applyTheme(n);};
+applyTheme((()=>{try{return localStorage.getItem('ml-theme')||'light';}catch(e){return 'light';}})());
+// Auto-refresco: el tablero se reconstruye cada 10 min (cron del repo), así que re-pedir
+// data.json cada 60s mantiene la vista de ejecuciones cerca de lo que está pasando.
+setInterval(async ()=>{
+  if(vista!=='dash' || canalSel!=='ventanas') return;
+  const a=await cargarAlertas();
+  await cargarConversaciones();
+  if(ventVista==='ejec') await cargarEjecuciones();
+  if(a==='ok') renderVentanasPanel();
+}, 60000);
+load();
+</script>
+</body>
+</html>
