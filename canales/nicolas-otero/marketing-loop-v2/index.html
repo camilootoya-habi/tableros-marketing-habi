@@ -1508,9 +1508,12 @@ function renderVentanasPanel(){
   const base=+R[pasos[0].k]||1, RP=R.prev||{};
   const prevLbl=rangoVent==='hoy'?'ayer':'los '+rangoVent+' días anteriores';
   // Cambio de la conversión de cada salto vs el periodo anterior del mismo largo, en puntos
-  // porcentuales. Sin base en alguno de los dos periodos no hay comparación.
+  // porcentuales. Con menos de 30 personas en la etapa de partida del periodo anterior no se
+  // compara: una conversión sobre una base mínima (p. ej. antes de que arrancara Ventanas) da
+  // saltos enormes que no significan nada.
   const delta=(k0,k1)=>{
-    const a=+R[k0]||0, ap=+RP[k0]||0; if(!a || !ap || !R.prev) return '';
+    const a=+R[k0]||0, ap=+RP[k0]||0; if(!a || !R.prev) return '';
+    if(ap<30) return `<span class="fdelta" title="El periodo anterior (${prevLbl}) tiene ${fmt(ap)} en esta etapa: muy poco para comparar">sin base previa</span>`;
     const d=((+R[k1]||0)/a - (+RP[k1]||0)/ap)*100, cls=d>0.05?'up':(d<-0.05?'down':'');
     const txt=cls?`${cls==='up'?'▲':'▼'} ${Math.abs(d).toFixed(1)} pp`:'= igual';
     return `<span class="fdelta ${cls}" title="Conversión ${pct((+RP[k1]||0)/ap*100)} en ${prevLbl}">${txt}</span>`; };
