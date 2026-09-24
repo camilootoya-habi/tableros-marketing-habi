@@ -30,6 +30,54 @@ DATA_JSON = os.path.join(os.path.dirname(HERE), "data.json")
 # comparar visualmente.
 DESDE = datetime.date(2026, 8, 31)
 
+# Contrafactual de leads: la MEDIANA de cada día de semana en el mismo tramo previo a la TV que
+# usa el baseline de tráfico. Mediana y no promedio porque ese tramo trae dos semanas infladas
+# por pauta digital (17-30 ago): con el promedio, el "normal" queda alto y cualquier semana de
+# campaña parece caer. Con 7 semanas por día de semana, la mediana ignora esas dos.
+BASE_LEADS = (datetime.date(2026, 7, 20), datetime.date(2026, 9, 6))
+SERIES_LEADS = ("directo", "marca", "web")
+
+
+def serie_leads(leads, spots, desde, hasta, hor, base=BASE_LEADS):
+    """{base_desde, base_hasta, series: {tv|directo|marca|web: [{fecha, observado, esperado,
+    exceso, spots, spots_origen}]}, ruido: {serie: sd diario del residuo en el tramo base}}.
+
+    `tv` = directo + marca: los dos tipos de lead que una emisión puede mover sin pasar por
+    presupuesto digital. `ruido` va en el bloque para que el tablero diga cuánto se mueve un
+    día normal: sin eso, cualquier diferencia de ±20 leads se lee como efecto.
+    """
+    import statistics
+    if not leads:
+        return None
+    tipos = ("tv",) + SERIES_LEADS
+    val = {d: {**v, "tv": v["directo"] + v["marca"]} for d, v in leads.items()}
+    en_base = [d for d in val if base[0] <= d <= base[1]]
+    esperado = {}
+    for t in tipos:
+        por_dow = {}
+        for d in en_base:
+            por_dow.setdefault(d.weekday(), []).append(val[d][t])
+        esperado[t] = {w: statistics.median(x) for w, x in por_dow.items()}
+    ruido = {}
+    for t in tipos:
+        res = [val[d][t] - esperado[t][d.weekday()] for d in en_base]
+        ruido[t] = round(statistics.pstdev(res), 1) if len(res) > 1 else None
+    series = {t: [] for t in tipos}
+    d = desde
+    while d <= hasta:
+        if d in val:
+            spots_d = hor.para_fecha(spots, d)
+            for t in tipos:
+                e = esperado[t].get(d.weekday())
+                o = val[d][t]
+                series[t].append({"fecha": d.isoformat(), "observado": o, "esperado": e,
+                                  "exceso": None if e is None else round(o - e, 1),
+                                  "spots": len(spots_d), "spots_origen": _origen(spots_d)})
+        d += datetime.timedelta(days=1)
+    return {"base_desde": base[0].isoformat(), "base_hasta": base[1].isoformat(),
+            "series": series, "ruido": ruido}
+
+
 RAZON_CO = ("La campaña de TV abierta es solo de México. Para CO no hay emisiones que medir "
             "ni export de GA4 con el que construir el contrafactual minuto a minuto.")
 
@@ -107,7 +155,7 @@ def serie_minutal(serie, perfil, horas_sd, spots, dia, minutos_de_dia, est, hor,
 
 
 def construir(serie, perfil, horas_sd, spots, hasta, minutos_de_dia, est, hor, bl,
-              contrato, ahora):
+              contrato, ahora, leads=None):
     """El bloque `metrics.tv` completo, listo para inyectar en data.json."""
     diaria = serie_diaria(serie, perfil, horas_sd, spots, DESDE, hasta,
                           minutos_de_dia, est, hor, bl)
@@ -122,6 +170,9 @@ def construir(serie, perfil, horas_sd, spots, hasta, minutos_de_dia, est, hor, b
                           minutos_de_dia, est, hor, bl)
         if m:
             mx["minuto"] = m
+        ld = serie_leads(leads, spots, DESDE, hasta, hor)
+        if ld:
+            mx["leads"] = ld
     return {"MX": mx, "CO": contrato.metric("not_available", reason=RAZON_CO)}
 
 

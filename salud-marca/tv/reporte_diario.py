@@ -69,6 +69,39 @@ GROUP BY 1
 """
 
 
+# Leads WEB de México por día (hora CDMX: `fecha_creacion` ya viene en hora local), partidos
+# según qué tan plausible es que la TV los mueva:
+#   directo — sin UTM: alguien que llegó escribiendo la URL o por orgánico.
+#   marca   — Google Ads de búsqueda de MARCA (campañas `sem_brand`): alguien que buscó "habi".
+#   web     — todos los WEB. La mayoría es pauta de Meta/Google y se mueve con el presupuesto
+#             digital, no con la TV: el salto del 17-30 ago fue eso. Va solo como contexto.
+SQL_LEADS = """
+SELECT
+  FORMAT_DATE('%Y-%m-%d', DATE(fecha_creacion)) AS dia,
+  COUNTIF(utm_source IS NULL) AS directo,
+  COUNTIF(utm_source = 'google' AND LOWER(campana_mercadeo) LIKE '%sem_brand%') AS marca,
+  COUNT(*) AS web
+FROM `papyrus-data-mx.habi_wh_bi.tabla_inmuebles_general`
+WHERE fuente_id = 3
+  AND DATE(fecha_creacion) BETWEEN '{ini}' AND '{fin}'
+GROUP BY 1
+"""
+
+
+def consultar_leads(desde, hasta, max_bytes=1_000_000_000):
+    """{date: {directo, marca, web}} de leads WEB MX, entre dos `date` inclusive."""
+    sql = SQL_LEADS.format(ini=desde.isoformat(), fin=hasta.isoformat())
+    out = subprocess.run(
+        ["bq", "query", "--use_legacy_sql=false", "--format=json", "--max_rows=10000",
+         f"--maximum_bytes_billed={max_bytes}"],
+        input=sql, capture_output=True, text=True, timeout=600)
+    if out.returncode != 0:
+        raise RuntimeError(f"bq falló consultando leads: {out.stderr.strip()[:400]}")
+    return {datetime.date.fromisoformat(f["dia"]):
+            {k: int(f[k]) for k in ("directo", "marca", "web")}
+            for f in json.loads(out.stdout or "[]")}
+
+
 def consultar_trafico(desde, hasta, max_bytes=20_000_000_000):
     """Sesiones por minuto en hora CDMX, entre dos `date` inclusive.
 
@@ -231,8 +264,16 @@ def main():
 
     if not args.sin_panel:
         try:
+            # Los leads son un agregado aparte: si su consulta falla, el panel de tráfico
+            # sale igual y la sección de leads simplemente no aparece.
+            try:
+                leads = consultar_leads(PANEL.BASE_LEADS[0], hasta)
+            except Exception as e:
+                leads = None
+                print(f"WARN leads: {type(e).__name__}: {e}")
             bloque = PANEL.construir(serie, perfil, horas_sd, spots, hasta,
-                                     minutos_de_dia, EST, HOR, BL, CONTRATO, ahora())
+                                     minutos_de_dia, EST, HOR, BL, CONTRATO, ahora(),
+                                     leads=leads)
             ruta = PANEL.inyectar(bloque)
             n = len(bloque["MX"].get("series") or [])
             print(f"  panel: {n} días escritos en {os.path.relpath(ruta)}")

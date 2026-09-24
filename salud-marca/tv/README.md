@@ -160,6 +160,28 @@ gráficas del tablero:
 
 Los días con alguna hora anómala salen con punto rojo en la serie diaria.
 
+### Leads diarios
+
+`metrics.tv.MX.leads` compara los leads WEB de México (`tabla_inmuebles_general`,
+`fuente_id=3`) contra un contrafactual por día de semana. Se parten en cuatro series porque
+no todas responden igual a una emisión:
+
+| Serie | Qué es | Por qué |
+|---|---|---|
+| **De marca** (default) | Directo + búsqueda de marca | Lo que la TV puede mover sin pasar por el presupuesto digital |
+| **Directo** | Sin UTM | URL escrita u orgánico |
+| **Búsqueda de marca** | Google Ads `sem_brand` | Alguien buscó "habi". También depende del presupuesto de esas campañas |
+| **Todos WEB** | Todo `fuente_id=3` | Contexto. La mayoría es pauta de Meta/Google |
+
+El contrafactual es la **mediana** de cada día de semana del 20-jul al 6-sep, no el promedio:
+el 17-30 ago la pauta digital infló los leads WEB (~+60/día, casi todo con UTM de Facebook y
+Google) y con el promedio cualquier semana de campaña parecería caer. El tablero dice cuánto
+se mueve un día normal (`ruido`) y avisa si la serie ya subía la semana previa al primer spot.
+
+Es descriptivo, como el tráfico diario. Primera lectura (7-23 sep): +129 leads de marca, pero
++123 son del **22-sep** (integración en *La Rosa de Guadalupe*); el resto de los días queda
+dentro del ruido.
+
 Solo se guarda **un día** de minuto a minuto (~25 KB, 1.440 puntos). Una semana metería
 ~10.000 puntos en un `data.json` que el navegador descarga entero antes de pintar.
 

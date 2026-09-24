@@ -60,3 +60,40 @@ def test_serie_diaria_rotula_origen_de_spots():
     # Entre medio no hay as-run de ese día de semana: ni spots ni origen.
     lunes = (antes + datetime.timedelta(days=5)).isoformat()
     assert por_fecha[lunes]["spots"] == 0 and por_fecha[lunes]["spots_origen"] is None
+
+
+def _leads(desde, hasta, f):
+    out, d = {}, desde
+    while d <= hasta:
+        out[d] = f(d)
+        d += datetime.timedelta(days=1)
+    return out
+
+
+def test_leads_contrafactual_es_mediana_por_dia_de_semana():
+    base = (datetime.date(2026, 7, 20), datetime.date(2026, 9, 6))
+    # 7 semanas de base con directo=50; dos semanas infladas a 90 (como la pauta de 17-30 ago).
+    def f(d):
+        inflada = datetime.date(2026, 8, 17) <= d <= datetime.date(2026, 8, 30)
+        return {"directo": 90 if inflada else 50, "marca": 20, "web": 200}
+    leads = _leads(base[0], DIA, f)
+    ld = panel.serie_leads(leads, [], datetime.date(2026, 9, 7), DIA, horario, base=base)
+    fila = ld["series"]["tv"][0]
+    # La mediana ignora las dos semanas infladas: el normal es 50+20, no el promedio (~81).
+    assert fila["esperado"] == 70 and fila["observado"] == 70 and fila["exceso"] == 0
+    assert len(ld["series"]["tv"]) == (DIA - datetime.date(2026, 9, 7)).days + 1
+    assert set(ld["series"]) == {"tv", "directo", "marca", "web"}
+    assert ld["ruido"]["directo"] > 0 and ld["ruido"]["marca"] == 0
+
+
+def test_leads_rotula_spots_del_dia():
+    base = (DIA - datetime.timedelta(days=14), DIA - datetime.timedelta(days=1))
+    leads = _leads(base[0], DIA, lambda d: {"directo": 5, "marca": 1, "web": 10})
+    ld = panel.serie_leads(leads, [_spot(DIA, 20, 8)], DIA, DIA, horario, base=base)
+    fila = ld["series"]["marca"][0]
+    assert fila["spots"] == 1 and fila["spots_origen"] == "as-run"
+
+
+def test_sin_leads_no_hay_bloque():
+    assert panel.serie_leads(None, [], DIA, DIA, horario) is None
+    assert panel.serie_leads({}, [], DIA, DIA, horario) is None

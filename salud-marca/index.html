@@ -431,6 +431,10 @@ let DATA = null, PAIS = 'MX', PLAZA = 'Todas', MESES = '24 meses';
 // cuando el horario es proyectado y el spot pudo salir un cuarto de hora antes o después.
 const BLOQUES = ['10', '30'];
 let BLOQUE = '10';
+// Qué leads mira el panel de incrementalidad. "De marca" va primero porque es lo único que una
+// emisión puede mover sin pasar por el presupuesto digital; "Todos WEB" queda de contexto.
+const LEADS_OPC = { 'De marca': 'tv', 'Directo': 'directo', 'Búsqueda de marca': 'marca', 'Todos WEB': 'web' };
+let LEADS_SEL = 'De marca';
 
 // ── El corazón del tablero: cada métrica se dibuja según su `status`, no según si su
 // serie viene vacía. Un `not_available` explica qué fuente falta; jamás pinta un chart
@@ -471,6 +475,7 @@ const hhmm = m => String(Math.floor(m / 60)).padStart(2, '0') + ':' + String(m %
 
 function drawTV(host, serie) {
   const m = ((DATA.metrics.tv || {})[PAIS] || {}).minuto;
+  const ld = ((DATA.metrics.tv || {})[PAIS] || {}).leads;
 
   host.innerHTML = `<div class="panel"><h3>Tráfico diario contra el contrafactual</h3>
       <div class="cap">Sesiones observadas frente a lo que predice el baseline sin televisión
@@ -482,6 +487,7 @@ function drawTV(host, serie) {
       <div class="ch alto"><canvas id="tv-dia"></canvas></div>
       ${legend([[C.azul, 'Observado'], [C.gris, 'Contrafactual'], [C.ambar, 'Spots del día'],
                 [C.rojo, 'Día con hora anómala']])}</div>`
+    + panelLeads(ld)
     + (m ? `<div class="panel"><h3>Intradía · ${m.fecha} · bloques de ${BLOQUE} min</h3>
       <div class="cap">El último día cerrado, sumado en bloques de ${BLOQUE} minutos. Por minuto
       llegan tan pocas visitas (~7) que el azar solo ya da agujas de ±3, y la gráfica parecía
@@ -517,6 +523,7 @@ function drawTV(host, serie) {
   ], { fmt: 'num', fmtDerecha: 'num', sinBandas: true, maxDerecha: maxSpots ? maxSpots * 3 : undefined,
        pieTooltip: i => proy(serie[i]) ? ['Spots según horario proyectado'] : [] });
 
+  drawLeads(ld);
   if (!m) return;
   // Se suma, no se promedia: el eje queda en "visitas por bloque", que es la unidad en la que
   // se lee el exceso de un spot. tension 0: suavizar redondearía justo el bloque del pico.
@@ -533,6 +540,58 @@ function drawTV(host, serie) {
   ], { fmt: 'num', sinBandas: true,
        spots: { indices: spots.map(sp => Math.floor(sp[0] / n)), color: C.ambar },
        pieTooltip: i => spotsDe(i).map(sp => `Spot ${hhmm(sp[0])} · ${sp[1]}${sp[2] ? ' · ' + sp[2] : ''}`) });
+}
+
+// ── Leads diarios contra su contrafactual ─────────────────────────────────────────
+// Mismo formato que el tráfico diario, para leerlos lado a lado. Dos cosas que el texto dice con
+// números en vez de dejarlas a la intuición: cuánto se mueve un día normal (`ruido`) y cómo
+// venía la serie la semana ANTES del primer spot — si ya subía, el alza no es de la TV.
+const PRIMER_SPOT = '2026-09-07';
+const LEADS_NOTA = {
+  tv: 'Directo (sin UTM) + búsqueda de marca en Google: los leads que una emisión puede mover sin pasar por el presupuesto digital.',
+  directo: 'Leads WEB sin UTM: llegaron escribiendo la URL o por orgánico.',
+  marca: 'Leads de Google Ads en campañas de búsqueda de marca (<code>sem_brand</code>): alguien buscó "habi". También se mueve con el presupuesto de esas campañas.',
+  web: 'Todos los leads WEB. <strong>La mayoría es pauta de Meta y Google</strong> y sube o baja con el presupuesto digital (el salto del 17-30 ago fue eso), así que aquí la TV queda enterrada: va como contexto.',
+};
+function panelLeads(ld) {
+  if (!ld) return '';
+  const k = LEADS_OPC[LEADS_SEL], S = ld.series[k] || [], ruido = (ld.ruido || {})[k];
+  const suma = f => S.filter(f).reduce((a, r) => a + (r.exceso || 0), 0);
+  const esp = f => S.filter(f).reduce((a, r) => a + (r.esperado || 0), 0);
+  const camp = r => r.fecha >= PRIMER_SPOT, previa = r => r.fecha < PRIMER_SPOT;
+  const dias = S.filter(camp).length, ex = suma(camp), pct = esp(camp) ? 100 * ex / esp(camp) : null;
+  const fmtS = v => (v >= 0 ? '+' : '') + Math.round(v).toLocaleString('es-MX');
+  const exPrev = suma(previa), nPrev = S.filter(previa).length;
+  const avisoPrev = ruido && nPrev && Math.abs(exPrev / nPrev) > ruido / 3
+    ? ` <strong>Ojo: la semana previa al primer spot ya iba ${fmtS(exPrev)} (${fmtS(exPrev / nPrev)}/día)</strong>, así que una parte del alza venía de antes y no es atribuible a TV.` : '';
+  return `<div class="panel"><h3>Leads diarios contra el contrafactual · ${LEADS_SEL}</h3>
+    <div class="cap">${LEADS_NOTA[k]} El contrafactual es la <strong>mediana de cada día de semana</strong>
+    del ${ld.base_desde.slice(8)}-${ld.base_desde.slice(5, 7)} al ${ld.base_hasta.slice(8)}-${ld.base_hasta.slice(5, 7)},
+    antes de la TV. <strong>Desde el primer spot (${dias} días): ${fmtS(ex)} leads${pct != null ? ` (${pct >= 0 ? '+' : ''}${pct.toFixed(1)}%)` : ''},
+    ${fmtS(ex / (dias || 1))} por día.</strong> Un día normal se mueve ±${ruido} leads solo por azar: los
+    puntos verdes y rojos marcan días que se salen de dos veces eso.${avisoPrev}
+    Es descriptivo, igual que el tráfico diario: la brecha incluye todo lo que movió el día, no solo TV.</div>
+    ${chips('Leads', Object.keys(LEADS_OPC), LEADS_SEL, 'leads')}
+    <div class="ch alto"><canvas id="tv-leads"></canvas></div>
+    ${legend([[C.azul, 'Observado'], [C.gris, 'Contrafactual'], [C.ambar, 'Spots del día'],
+              [C.verde, 'Día sobre lo normal (>2σ)'], [C.rojo, 'Día bajo lo normal']])}</div>`;
+}
+function drawLeads(ld) {
+  if (!ld) return;
+  const k = LEADS_OPC[LEADS_SEL], S = ld.series[k] || [], r2 = 2 * ((ld.ruido || {})[k] || Infinity);
+  const color = r => r.exceso > r2 ? C.verde : r.exceso < -r2 ? C.rojo : C.azul;
+  const maxSpots = Math.max(0, ...S.map(r => r.spots || 0));
+  const proy = r => r.spots_origen === 'proyectado';
+  mkMulti('tv-leads', S.map(r => r.fecha.slice(5)), [
+    { label: 'Contrafactual', color: C.gris, data: S.map(r => r.esperado), dash: [5, 4], puntoRadio: 0 },
+    { label: 'Observado', color: C.azul, data: S.map(r => r.observado),
+      puntoRadio: S.map(r => color(r) === C.azul ? 2 : 5), puntoColor: S.map(color) },
+    { type: 'bar', label: 'Spots', eje: 'y1', orden: 1, color: C.ambar, grosor: 0,
+      fill: S.map(r => proy(r) ? C.ambar + '40' : C.ambar + 'b3'),
+      data: S.map(r => r.spots || null) },
+  ], { fmt: 'num', fmtDerecha: 'num', sinBandas: true, maxDerecha: maxSpots ? maxSpots * 3 : undefined,
+       pieTooltip: i => [`Diferencia: ${S[i].exceso >= 0 ? '+' : ''}${S[i].exceso} leads`]
+         .concat(proy(S[i]) ? ['Spots según horario proyectado'] : []) });
 }
 
 // ── Brand Lift ────────────────────────────────────────────────────────────────
@@ -901,7 +960,7 @@ window.rerender = render;
 // La vista queda en la URL: así se puede mandar "el tablero de Colombia" por Slack en vez de
 // "abre el tablero y dale click a CO".
 function syncURL() {
-  const q = new URLSearchParams({ pais: PAIS, plaza: PLAZA, meses: MESES, bloque: BLOQUE });
+  const q = new URLSearchParams({ pais: PAIS, plaza: PLAZA, meses: MESES, bloque: BLOQUE, leads: LEADS_SEL });
   history.replaceState(null, '', `?${q}`);
 }
 function readURL() {
@@ -910,6 +969,7 @@ function readURL() {
   if (['Todas', 'MTY', 'GDL', 'CDMX', 'Resto'].includes(q.get('plaza'))) PLAZA = q.get('plaza');
   if (VENTANAS.includes(q.get('meses'))) MESES = q.get('meses');
   if (BLOQUES.includes(q.get('bloque'))) BLOQUE = q.get('bloque');
+  if (q.get('leads') in LEADS_OPC) LEADS_SEL = q.get('leads');
 }
 
 document.addEventListener('click', e => {
@@ -917,6 +977,7 @@ document.addEventListener('click', e => {
   if (b.dataset.pick === 'pais') PAIS = b.dataset.val;
   else if (b.dataset.pick === 'meses') MESES = b.dataset.val;
   else if (b.dataset.pick === 'bloque') BLOQUE = b.dataset.val;
+  else if (b.dataset.pick === 'leads') LEADS_SEL = b.dataset.val;
   else PLAZA = b.dataset.val;
   syncURL();
   render();
