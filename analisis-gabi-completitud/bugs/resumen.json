@@ -1,0 +1,441 @@
+{
+  "total": {
+    "convs": {
+      "B": 9076,
+      "A": 868
+    }
+  },
+  "por_tipo": {
+    "ambigua_registrada": {
+      "hallazgos": 132,
+      "convs": {
+        "B": 119,
+        "A": 2
+      },
+      "pct_convs": {
+        "B": 1.3,
+        "A": 0.2
+      },
+      "pct_convs_con_respuesta": {
+        "B": 3.2,
+        "A": 0.4
+      },
+      "subtipos": {
+        "sin_numeros": 73,
+        "marcador_ambiguo": 59
+      },
+      "por_etapa": {
+        "B": {
+          "6_completo_o_paso": 81,
+          "2_murio_en_tipo": 8,
+          "3_murio_en_direccion": 16,
+          "5_murio_en_reask_m2": 12,
+          "4_murio_ante_bloque": 2
+        },
+        "A": {
+          "2_murio_en_consentimiento": 1,
+          "5_murio_en_tipo_m2_recamaras": 1
+        }
+      },
+      "ruteo": {
+        "con_bug": 66.1,
+        "sin_bug": 18.3
+      }
+    },
+    "duplicado_gabi": {
+      "hallazgos": 18,
+      "convs": {
+        "B": 9,
+        "A": 2
+      },
+      "pct_convs": {
+        "B": 0.1,
+        "A": 0.2
+      },
+      "pct_convs_con_respuesta": {
+        "B": 0.2,
+        "A": 0.4
+      },
+      "subtipos": {
+        "-": 18
+      },
+      "por_etapa": {
+        "B": {
+          "4_murio_ante_bloque": 1,
+          "2_murio_en_tipo": 4,
+          "6_completo_o_paso": 2,
+          "1_nunca_respondio": 1,
+          "5_murio_en_reask_m2": 1
+        },
+        "A": {
+          "2_murio_en_consentimiento": 1,
+          "1_nunca_respondio": 1
+        }
+      },
+      "ruteo": {
+        "con_bug": 45.5,
+        "sin_bug": 18.9
+      }
+    },
+    "hora_no_monotona": {
+      "hallazgos": 810,
+      "convs": {
+        "A": 402,
+        "B": 407
+      },
+      "pct_convs": {
+        "A": 46.3,
+        "B": 4.5
+      },
+      "pct_convs_con_respuesta": {
+        "A": 71.8,
+        "B": 10.9
+      },
+      "subtipos": {
+        "-": 810
+      },
+      "por_etapa": {
+        "A": {
+          "4_murio_en_antiguedad_precio": 88,
+          "6_murio_en_banos_estac": 63,
+          "7_completo": 21,
+          "3_murio_en_direccion": 140,
+          "2_murio_en_consentimiento": 64,
+          "5_murio_en_tipo_m2_recamaras": 25,
+          "1_nunca_respondio": 1
+        },
+        "B": {
+          "2_murio_en_tipo": 50,
+          "6_completo_o_paso": 62,
+          "1_nunca_respondio": 147,
+          "3_murio_en_direccion": 122,
+          "4_murio_ante_bloque": 22,
+          "5_murio_en_reask_m2": 4
+        }
+      },
+      "ruteo": {
+        "con_bug": 17.3,
+        "sin_bug": 19.0
+      }
+    },
+    "intencion_ignorada": {
+      "hallazgos": 9,
+      "convs": {
+        "B": 9
+      },
+      "pct_convs": {
+        "B": 0.1
+      },
+      "pct_convs_con_respuesta": {
+        "B": 0.2
+      },
+      "subtipos": {
+        "pide_humano": 6,
+        "numero_equivocado": 1,
+        "opt_out": 2
+      },
+      "por_etapa": {
+        "B": {
+          "6_completo_o_paso": 3,
+          "2_murio_en_tipo": 3,
+          "3_murio_en_direccion": 3
+        }
+      },
+      "ruteo": {
+        "con_bug": 44.4,
+        "sin_bug": 18.9
+      }
+    },
+    "latencia_alta": {
+      "hallazgos": 121,
+      "convs": {
+        "B": 36,
+        "A": 57
+      },
+      "pct_convs": {
+        "B": 0.4,
+        "A": 6.6
+      },
+      "pct_convs_con_respuesta": {
+        "B": 1.0,
+        "A": 10.2
+      },
+      "subtipos": {
+        "mas_de_1_dia": 107,
+        "5h": 1,
+        "10-60min": 6,
+        "3h": 2,
+        "13h": 1,
+        "1h": 1,
+        "11h": 1,
+        "20h": 1,
+        "18h": 1
+      },
+      "por_etapa": {
+        "B": {
+          "4_murio_ante_bloque": 4,
+          "3_murio_en_direccion": 5,
+          "2_murio_en_tipo": 18,
+          "6_completo_o_paso": 9
+        },
+        "A": {
+          "2_murio_en_consentimiento": 57
+        }
+      },
+      "ruteo": {
+        "con_bug": 18.3,
+        "sin_bug": 18.9
+      }
+    },
+    "loop_repeticion": {
+      "hallazgos": 1430,
+      "convs": {
+        "A": 344,
+        "B": 571
+      },
+      "pct_convs": {
+        "A": 39.6,
+        "B": 6.3
+      },
+      "pct_convs_con_respuesta": {
+        "A": 61.4,
+        "B": 15.2
+      },
+      "subtipos": {
+        "mensaje_repetido": 1330,
+        "campo_repreguntado_3x": 100
+      },
+      "por_etapa": {
+        "A": {
+          "4_murio_en_antiguedad_precio": 52,
+          "1_nunca_respondio": 99,
+          "6_murio_en_banos_estac": 21,
+          "2_murio_en_consentimiento": 107,
+          "3_murio_en_direccion": 48,
+          "7_completo": 10,
+          "5_murio_en_tipo_m2_recamaras": 7
+        },
+        "B": {
+          "2_murio_en_tipo": 76,
+          "6_completo_o_paso": 113,
+          "1_nunca_respondio": 219,
+          "3_murio_en_direccion": 123,
+          "4_murio_ante_bloque": 22,
+          "5_murio_en_reask_m2": 18
+        }
+      },
+      "ruteo": {
+        "con_bug": 16.4,
+        "sin_bug": 19.2
+      }
+    },
+    "media_no_manejado": {
+      "hallazgos": 8,
+      "convs": {
+        "B": 6
+      },
+      "pct_convs": {
+        "B": 0.1
+      },
+      "pct_convs_con_respuesta": {
+        "B": 0.2
+      },
+      "subtipos": {
+        "ubicacion": 8
+      },
+      "por_etapa": {
+        "B": {
+          "4_murio_ante_bloque": 1,
+          "2_murio_en_tipo": 2,
+          "6_completo_o_paso": 2,
+          "5_murio_en_reask_m2": 1
+        }
+      },
+      "ruteo": {
+        "con_bug": 50.0,
+        "sin_bug": 18.9
+      }
+    },
+    "nudge_anomalo": {
+      "hallazgos": 45,
+      "convs": {
+        "B": 45
+      },
+      "pct_convs": {
+        "B": 0.5
+      },
+      "pct_convs_con_respuesta": {
+        "B": 1.2
+      },
+      "subtipos": {
+        "nudge_tras_usuario": 44,
+        "nudge_doble": 1
+      },
+      "por_etapa": {
+        "B": {
+          "6_completo_o_paso": 3,
+          "2_murio_en_tipo": 30,
+          "3_murio_en_direccion": 12
+        }
+      },
+      "ruteo": {
+        "con_bug": 2.2,
+        "sin_bug": 19.0
+      }
+    },
+    "plantilla_rota": {
+      "hallazgos": 8,
+      "convs": {
+        "B": 6,
+        "A": 1
+      },
+      "pct_convs": {
+        "B": 0.1,
+        "A": 0.1
+      },
+      "pct_convs_con_respuesta": {
+        "B": 0.2,
+        "A": 0.2
+      },
+      "subtipos": {
+        "-": 8
+      },
+      "por_etapa": {
+        "B": {
+          "1_nunca_respondio": 4,
+          "3_murio_en_direccion": 1,
+          "6_completo_o_paso": 1
+        },
+        "A": {
+          "2_murio_en_consentimiento": 1
+        }
+      },
+      "ruteo": {
+        "con_bug": 28.6,
+        "sin_bug": 18.9
+      }
+    },
+    "pregunta_ignorada": {
+      "hallazgos": 6,
+      "convs": {
+        "A": 2,
+        "B": 3
+      },
+      "pct_convs": {
+        "A": 0.2,
+        "B": 0.0
+      },
+      "pct_convs_con_respuesta": {
+        "A": 0.4,
+        "B": 0.1
+      },
+      "subtipos": {
+        "repitio_mensaje_anterior": 3,
+        "siguio_nudge": 3
+      },
+      "por_etapa": {
+        "A": {
+          "2_murio_en_consentimiento": 2
+        },
+        "B": {
+          "3_murio_en_direccion": 1,
+          "2_murio_en_tipo": 2
+        }
+      },
+      "ruteo": {
+        "con_bug": 0.0,
+        "sin_bug": 18.9
+      }
+    },
+    "repregunta_dato_ya_dado": {
+      "hallazgos": 64,
+      "convs": {
+        "B": 53,
+        "A": 1
+      },
+      "pct_convs": {
+        "B": 0.6,
+        "A": 0.1
+      },
+      "pct_convs_con_respuesta": {
+        "B": 1.4,
+        "A": 0.2
+      },
+      "subtipos": {
+        "recamaras": 12,
+        "cajones": 11,
+        "precio": 16,
+        "banos": 7,
+        "antiguedad": 8,
+        "area": 10
+      },
+      "por_etapa": {
+        "B": {
+          "6_completo_o_paso": 46,
+          "3_murio_en_direccion": 1,
+          "5_murio_en_reask_m2": 4,
+          "2_murio_en_tipo": 2
+        },
+        "A": {
+          "4_murio_en_antiguedad_precio": 1
+        }
+      },
+      "ruteo": {
+        "con_bug": 83.3,
+        "sin_bug": 18.6
+      }
+    },
+    "silencio_bot": {
+      "hallazgos": 260,
+      "convs": {
+        "B": 139,
+        "A": 121
+      },
+      "pct_convs": {
+        "B": 1.5,
+        "A": 13.9
+      },
+      "pct_convs_con_respuesta": {
+        "B": 3.7,
+        "A": 21.6
+      },
+      "subtipos": {
+        "solo_nudge": 65,
+        "sin_respuesta_final": 195
+      },
+      "por_etapa": {
+        "B": {
+          "2_murio_en_tipo": 66,
+          "6_completo_o_paso": 62,
+          "3_murio_en_direccion": 11
+        },
+        "A": {
+          "4_murio_en_antiguedad_precio": 4,
+          "6_murio_en_banos_estac": 5,
+          "2_murio_en_consentimiento": 104,
+          "3_murio_en_direccion": 8
+        }
+      },
+      "ruteo": {
+        "con_bug": 20.0,
+        "sin_bug": 18.9
+      }
+    }
+  },
+  "latencia_gabi_s": {
+    "B": {
+      "mediana": 34,
+      "p90": 42,
+      "n": 9752
+    },
+    "A": {
+      "mediana": 39,
+      "p90": 23854192,
+      "n": 184
+    }
+  },
+  "convs_con_respuesta": {
+    "B": 3751,
+    "A": 560
+  }
+}

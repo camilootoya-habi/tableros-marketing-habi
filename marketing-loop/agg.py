@@ -228,3 +228,30 @@ def merge_neon_delivery(mbm, nbm):
         if prev is None or v.get("status") in _NEON_TERMINAL:
             mbm[mid] = {**(prev or {}), **v}
     return mbm
+
+
+# ---- Panel del loop: rango actual y el periodo inmediatamente anterior ----
+def rango_periodos(hoy, nd):
+    """Ventana de `nd+1` días que termina HOY (incl.) y la ventana contigua del mismo largo
+    justo antes. nd=0 → hoy vs ayer; nd=6 → últimos 7 días vs los 7 anteriores. ISO strings."""
+    L = nd + 1
+    ini = hoy - datetime.timedelta(days=nd)
+    return {"ini": ini.isoformat(), "fin": hoy.isoformat(),
+            "prev_ini": (ini - datetime.timedelta(days=L)).isoformat(),
+            "prev_fin": (ini - datetime.timedelta(days=1)).isoformat()}
+
+
+_PANEL_BQ_KEYS = ("citas", "cierres_mm", "cierres_inmo")
+
+def panel_bq_shape(rows):
+    """query_panel.sql → {pais: {rango: {citas, cierres_mm, cierres_inmo, prev:{...}}}}.
+    Las columnas *_prev son el periodo inmediatamente anterior del mismo largo; si el query
+    no las trae (versión vieja) quedan en 0."""
+    out = {"MX": {}, "CO": {}}
+    for r in rows:
+        p = r.get("pais")
+        if p not in out: continue
+        cur = {k: int(r.get(k) or 0) for k in _PANEL_BQ_KEYS}
+        cur["prev"] = {k: int(r.get(k + "_prev") or 0) for k in _PANEL_BQ_KEYS}
+        out[p][str(r["dias"])] = cur
+    return out

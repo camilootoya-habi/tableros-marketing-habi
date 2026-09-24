@@ -3,8 +3,14 @@ import os, psycopg
 # tz local por país para que el bucketeo por fecha sea hora local, no UTC.
 TZ = {"MX": "America/Mexico_City", "CO": "America/Bogota"}
 
+def _db_url():
+    """DATABASE_URL manda sobre NEON_DATABASE_URL — misma precedencia que config.db_url()
+    del motor (marketing-loop-sellers), para que el cutover a Supabase sea agregar la var
+    y el rollback borrarla, sin tocar código ni acá ni allá."""
+    return os.environ.get("DATABASE_URL") or os.environ["NEON_DATABASE_URL"]
+
 def _rows(sql, args=()):
-    with psycopg.connect(os.environ["NEON_DATABASE_URL"]) as c:
+    with psycopg.connect(_db_url()) as c:
         cur=c.execute(sql,args); cols=[d.name for d in cur.description]
         return [dict(zip(cols,r)) for r in cur.fetchall()]
 
@@ -28,7 +34,7 @@ def tabla_muestra(tabla, order_col, country=None, n=5):
     args=[]
     if country: q+=" WHERE country=%s"; args=[country]
     q+=f" ORDER BY {order_col} DESC NULLS LAST LIMIT {int(n)}"
-    with psycopg.connect(os.environ["NEON_DATABASE_URL"]) as c:
+    with psycopg.connect(_db_url()) as c:
         cur=c.execute(q, tuple(args)); cols=[d.name for d in cur.description]
         rows=[[_mask_pii(col, v) for col,v in zip(cols, r)] for r in cur.fetchall()]
     return {"cols": cols, "rows": rows}
@@ -36,7 +42,9 @@ def tabla_muestra(tabla, order_col, country=None, n=5):
 def send_log_rows(days=None, country=None):
     # attempted_at convertido a tz local del país (country=None -> comportamiento actual: sin filtro, tz Mexico_City).
     tz = TZ.get(country, "America/Mexico_City")
-    q=f"SELECT nid,deal_id,phone,line,template,message_id,api_http_code,accepted,(attempted_at AT TIME ZONE '{tz}')::text AS attempted_at FROM send_log"
+    # `campaign` distingue el canal (ventanas vs el loop) y la comparte la línea de CO:
+    # sin ella el panel no puede separar los dos programas.
+    q=f"SELECT nid,deal_id,phone,line,template,message_id,api_http_code,accepted,campaign,(attempted_at AT TIME ZONE '{tz}')::text AS attempted_at FROM send_log"
     where=[]; args=[]
     if country: where.append("country=%s"); args.append(country)
     if days: where.append(f"attempted_at >= now() - make_interval(days => {int(days)})")
