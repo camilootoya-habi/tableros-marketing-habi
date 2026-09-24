@@ -1080,6 +1080,9 @@ function _diaPorCanal(src){
   const o={}; ['web','ventanas'].forEach(c=>Object.entries(s[c]||{}).forEach(([d,n])=>{ o[d]=(o[d]||0)+(+n||0); }));
   return o;
 }
+// Envío masivo de arranque (plantilla vieja): su volumen aplasta la escala de la gráfica.
+// Solo se ocultan Envíos y Leídos de ese periodo EN LA GRÁFICA; la tabla y los KPIs siguen reales.
+const _ARRANQUE={CO:{semana:'2026-06-22', mes:'2026-06-01'}};
 function _kpis(items){ return `<div class="akpis">${items.map(([l,v,k])=>`<div><div class="flab">${l}${I(k)}</div><div class="fval">${v}</div></div>`).join('')}</div>`; }
 function _serieDatos(){
   if(serieTabSel==='loop'){
@@ -1088,10 +1091,14 @@ function _serieDatos(){
     const raw=(cs[cicloTipo]||[]).slice(-14), bks=raw.map(r=>r.bucket);
     const cre=_reasigPorBucket(bks, _diaPorCanal(D.creados_dia));
     const rea=_reasigPorBucket(bks, _diaPorCanal(D.reasignados_dia));
-    const rows=raw.map(r=>({lab:_dia(r.bucket), env:+r.enviados||0, ent:+r.entregados||0, lei:+r.leidos||0, inte:+r.interesados||0, cre:cre[r.bucket]||0, re:rea[r.bucket]||0}));
+    const arr=(_ARRANQUE[country]||{})[cicloTipo];
+    const rows=raw.map(r=>({lab:_dia(r.bucket), env:+r.enviados||0, ent:+r.entregados||0, lei:+r.leidos||0, inte:+r.interesados||0, cre:cre[r.bucket]||0, re:rea[r.bucket]||0, arranque:r.bucket===arr}));
+    const rArr=rows.find(r=>r.arranque);
     const t=rows.reduce((a,r)=>({env:a.env+r.env,ent:a.ent+r.ent,lei:a.lei+r.lei,inte:a.inte+r.inte,cre:a.cre+r.cre,re:a.re+r.re}),{env:0,ent:0,lei:0,inte:0,cre:0,re:0});
     const td=v=>`<td style="text-align:right">${fmt(v)}</td>`;
-    return {titulo:'Serie del loop', sub:'Envíos, entregas y conversión · '+_GRAN_LBL[cicloTipo]+' · '+_CANAL_LBL[canalSel],
+    return {titulo:'Serie del loop', sub:'Envíos, entregas y conversión · '+_GRAN_LBL[cicloTipo]+' · '+_CANAL_LBL[canalSel]
+        +(rArr?' · '+rArr.lab+': envío de arranque ('+fmt(rArr.env)+' envíos, '+fmt(rArr.lei)+' leídos) fuera de la gráfica para que se lea la escala; sí está en la tabla y los totales':''),
+      ocultar:['env','lei'],
       kpis:[['Envíos',fmt(t.env),'env'],['Entregados',fmt(t.ent),'ent'],['Leídos',fmt(t.lei),'lei'],['Interesados',fmt(t.inte),'inte'],['Creados',fmt(t.cre),'cre'],['Re-asignados',fmt(t.re),'re'],['% interesados',t.ent>0?pct(t.inte/t.ent*100):'·','pinte'],['% pasa asignación',t.cre>0?pct(t.re/t.cre*100):'·','ppasa']],
       series:[{k:'env',lab:'Envíos',line:true},{k:'lei',lab:'Leídos (apertura)'},{k:'cre',lab:'Creados',labels:true},{k:'re',lab:'Re-asignados',labels:true}], extra:[['Entregados','ent'],['Interesados','inte']], rows,
       tabla:`<table><thead><tr><th>Día</th><th style="text-align:right">Envíos</th><th style="text-align:right">Entregados</th><th style="text-align:right">Leídos</th>
@@ -1111,6 +1118,8 @@ function _serieDatos(){
       ${rows.map(r=>`<tr><td>${r.lab}</td><td style="text-align:right">${fmt(r.at)}</td><td style="text-align:right">${fmt(r.inte)}</td>
       <td style="text-align:right;color:var(--accent);font-weight:600">${fmt(r.re)}</td><td style="text-align:right">${r.at>0?pct(r.re/r.at*100):'·'}</td></tr>`).join('')}</tbody></table>`};
 }
+// Valor para la gráfica: null (hueco) en el periodo de arranque para las series que lo aplastan.
+function _valGraf(d,r,k){ return (r.arranque && (d.ocultar||[]).includes(k)) ? null : r[k]; }
 function renderSerie(){
   const card=document.getElementById('serieCard'); if(!card) return;
   const d=_serieDatos(), col=_SERIE_COL(), dark=document.body.classList.contains('dark');
@@ -1127,15 +1136,17 @@ function renderSerie(){
   serieChart=new Chart(el,{type:'bar',
     plugins:[_barLabels],
     data:{labels:d.rows.map(r=>r.lab), datasets:d.series.map(x=>x.line
-      ? {type:'line', label:x.lab, data:d.rows.map(r=>r[x.k]), borderColor:col[x.k], backgroundColor:col[x.k],
+      ? {type:'line', label:x.lab, data:d.rows.map(r=>_valGraf(d,r,x.k)), borderColor:col[x.k], backgroundColor:col[x.k],
          borderWidth:2, tension:.3, pointRadius:3, pointHoverRadius:5, order:0, yAxisID:'y2'}
-      : {label:x.lab, data:d.rows.map(r=>r[x.k]), backgroundColor:col[x.k], borderRadius:4, borderSkipped:'bottom',
+      : {label:x.lab, data:d.rows.map(r=>_valGraf(d,r,x.k)), backgroundColor:col[x.k], borderRadius:4, borderSkipped:'bottom',
          maxBarThickness:28, order:1, _labels:!!x.labels})},
     options:{responsive:true, maintainAspectRatio:false, interaction:{mode:'index', intersect:false},
       datasets:{bar:{categoryPercentage:.7, barPercentage:.85}},
       plugins:{legend:{display:false}, barLabels:{color:dark?'#D6D0DD':'#404040'}, tooltip:{callbacks:{
         label:c=>' '+c.dataset.label+': '+fmt(c.parsed.y),
-        afterBody:items=>{ const r=d.rows[items[0].dataIndex]; return d.extra.map(([l,k])=>l+': '+fmt(r[k])); }}}},
+        afterBody:items=>{ const r=d.rows[items[0].dataIndex];
+          const fuera=r.arranque?d.series.filter(x=>(d.ocultar||[]).includes(x.k)).map(x=>x.lab+': '+fmt(r[x.k])+' (fuera de la gráfica)'):[];
+          return fuera.concat(d.extra.map(([l,k])=>l+': '+fmt(r[k]))); }}}},
       scales:{x:{ticks:{color:tick, maxRotation:0, autoSkip:true, maxTicksLimit:14}, grid:{display:false}, border:{display:false}},
         y:{beginAtZero:true, position:'left', ticks:{color:tick, precision:0, maxTicksLimit:6}, grid:{color:grid}, border:{display:false},
            title:{display:true, text:d.series.filter(x=>!x.line).map(x=>x.lab).join(' · '), color:tick, font:{size:11}}},
