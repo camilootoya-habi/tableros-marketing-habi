@@ -34,8 +34,10 @@ jobs:
         with:
           python-version: '3.12'
 
-      # Sin `pip install`: el job corre con pura stdlib. openpyxl solo hace falta para
-      # `ingesta.py`, que convierte el xlsx de la central y se ejecuta en local, no aquí.
+      # El job corre con pura stdlib; solo pytest hace falta, para el paso de tests. openpyxl
+      # solo lo usa `ingesta.py`, que convierte el xlsx de la central y se ejecuta en local.
+      - name: Instalar pytest
+        run: python -m pip install --quiet pytest
 
       - uses: google-github-actions/setup-gcloud@v2
 
