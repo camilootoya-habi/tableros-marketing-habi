@@ -255,3 +255,23 @@ def panel_bq_shape(rows):
         cur["prev"] = {k: int(r.get(k + "_prev") or 0) for k in _PANEL_BQ_KEYS}
         out[p][str(r["dias"])] = cur
     return out
+
+def canal_envio(campaign):
+    """Canal del panel para un envío de send_log según su `campaign`.
+    'web' = el loop de reactivación (y las filas viejas sin campaign, que son todas del loop).
+    'ventanas' = el programa de letreros, voz incluida (voz escribe campaign='ventanas') y la
+    etiqueta vieja 'hubspot', que eran envíos de ventanas antes de renombrarla.
+    None = no es del loop (brokermatch): no entra ni a Web ni a Agregado."""
+    if campaign in ("ventanas", "hubspot"):
+        return "ventanas"
+    if campaign == "brokermatch":
+        return None
+    return "web"
+
+def canal_creado(rec_row, ventanas_refs, ventanas_nids):
+    """Canal de una fila de `recreation`. La tabla no guarda la campaña: ventanas y voz insertan
+    ahí con old_nid = lead_ref de su bitácora (ventanas_backbone_intento) y el deal nuevo queda
+    con primer_agente marketing_loop_ventanas en el backbone (ventanas_nids). El resto es web."""
+    if str(rec_row.get("old_nid")) in ventanas_refs or str(rec_row.get("new_nid")) in ventanas_nids:
+        return "ventanas"
+    return "web"

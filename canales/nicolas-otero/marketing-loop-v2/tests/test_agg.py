@@ -140,3 +140,24 @@ def test_panel_bq_shape_sin_prev_en_filas_viejas():
     # query viejo (sin columnas *_prev) → prev en 0, no explota
     out = panel_bq_shape([{"pais": "CO", "dias": 30, "citas": 1, "cierres_mm": 0, "cierres_inmo": 0}])
     assert out["CO"]["30"]["prev"] == {"citas": 0, "cierres_mm": 0, "cierres_inmo": 0}
+
+
+# --- canal de cada envío / creado (filtro Web · Ventanas · Agregado del panel) ---
+from agg import canal_envio, canal_creado
+
+def test_canal_envio_reactivacion_y_viejos_son_web():
+    assert canal_envio("reactivacion") == "web"
+    assert canal_envio(None) == "web"          # filas viejas del loop, antes de escribir campaign
+
+def test_canal_envio_ventanas_incluye_voz_y_hubspot_historico():
+    assert canal_envio("ventanas") == "ventanas"   # voz también escribe campaign='ventanas'
+    assert canal_envio("hubspot") == "ventanas"    # etiqueta vieja de los envíos de ventanas
+
+def test_canal_envio_brokermatch_no_es_del_loop():
+    assert canal_envio("brokermatch") is None
+
+def test_canal_creado_por_lead_ref_o_por_nid_nuevo():
+    refs, nids = {"111"}, {"999"}
+    assert canal_creado({"old_nid": "111", "new_nid": None}, refs, nids) == "ventanas"
+    assert canal_creado({"old_nid": 222, "new_nid": 999}, refs, nids) == "ventanas"
+    assert canal_creado({"old_nid": "333", "new_nid": "444"}, refs, nids) == "web"
