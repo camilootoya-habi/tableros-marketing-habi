@@ -62,7 +62,13 @@ def serie_diaria(serie, perfil, horas_sd, spots, desde, hasta, minutos_de_dia, e
 
 
 def serie_minutal(serie, perfil, horas_sd, spots, dia, minutos_de_dia, est, hor, bl):
-    """{fecha, puntos: [[minuto, observado, esperado], ...], horas_anomalas, horas_con_spot}.
+    """{fecha, puntos: [[minuto, observado, esperado], ...], spots, spots_origen,
+    horas_anomalas, horas_con_spot}.
+
+    `spots` va al minuto ([[minuto, canal, programa], ...]) porque el tablero marca cada
+    emisión sobre la curva; con solo la hora no se puede ubicar dentro de un bloque de 10 min.
+    `spots_origen` dice si salen del as-run o del horario proyectado: un spot proyectado puede
+    haber salido minutos antes o después, y el tablero lo rotula así.
 
     El esperado va reescalado por el nivel del día, igual que en el estimador: si no, un día
     globalmente bajo pintaría toda la línea observada por debajo del contrafactual y se leería
@@ -78,7 +84,12 @@ def serie_minutal(serie, perfil, horas_sd, spots, dia, minutos_de_dia, est, hor,
     anom = est.horas_anomalas(mins, pdia, bl.sd_de_dia(horas_sd, dia.weekday()), k)
     puntos = [[m, round(mins.get(m, 0.0), 1), round(pdia.get(m, 0.0) * k, 2)]
               for m in range(1440)]
+    marcas = sorted([f["ts"].hour * 60 + f["ts"].minute, f.get("canal", ""),
+                     f.get("programa", "")] for f in spots_d)
+    origen = ("proyectado" if any(f.get("origen") == "proyectado" for f in spots_d)
+              else "as-run") if spots_d else None
     return {"fecha": dia.isoformat(), "puntos": puntos,
+            "spots": marcas, "spots_origen": origen,
             "factor_dia": round(k, 3),
             "horas_con_spot": sorted(horas),
             "horas_anomalas": [{"hora": a[0], "observado": round(a[1], 1),
