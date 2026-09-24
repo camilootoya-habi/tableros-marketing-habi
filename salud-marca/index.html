@@ -279,13 +279,16 @@ function mkMulti(id, labels, datasets, o = {}) {
          ticks: { color: tick, callback: FMT_EJE[izq] }, grid: { color: grid } },
   };
   if (usaDerecha) {
-    scales.y1 = { position: 'right', beginAtZero: false,
+    // `o.maxDerecha` sube el techo del eje derecho para que una serie de contexto (los spots
+    // del día) quede baja, debajo de las líneas, en vez de competir con ellas por la altura.
+    scales.y1 = { position: 'right', beginAtZero: !!o.maxDerecha, max: o.maxDerecha,
                   ticks: { color: tick, callback: FMT_EJE[der || 'pts'] },
                   grid: { drawOnChartArea: false } };
   }
   _charts.push(new Chart(c, {
     data: { labels, datasets: datasets.map(d => ({
       type: d.type || 'line', label: d.label, data: d.data, yAxisID: d.eje || 'y',
+      order: d.orden != null ? d.orden : 0,
       borderColor: d.color, backgroundColor: d.fill || d.color,
       borderDash: d.dash || [], tension: d.tension != null ? d.tension : .35,
       // `puntoRadio`/`puntoColor` aceptan arreglo: es como se marcan los días anómalos sin
@@ -472,10 +475,13 @@ function drawTV(host, serie) {
   host.innerHTML = `<div class="panel"><h3>Tráfico diario contra el contrafactual</h3>
       <div class="cap">Sesiones observadas frente a lo que predice el baseline sin televisión
       (20-jul a 6-sep, previo a la campaña). <strong>La brecha no es atribuible a TV por sí
-      sola</strong>: incluye pauta digital, feriados y estacionalidad. Los puntos rojos marcan
-      días con alguna hora anómala.</div>
+      sola</strong>: incluye pauta digital, feriados y estacionalidad. Las <strong>barras
+      ámbar</strong> son los spots de cada día (eje derecho): más tenues donde el conteo sale del
+      horario proyectado y no del as-run de la central. Los puntos rojos marcan días con alguna
+      hora anómala.</div>
       <div class="ch alto"><canvas id="tv-dia"></canvas></div>
-      ${legend([[C.azul, 'Observado'], [C.gris, 'Contrafactual'], [C.rojo, 'Día con hora anómala']])}</div>`
+      ${legend([[C.azul, 'Observado'], [C.gris, 'Contrafactual'], [C.ambar, 'Spots del día'],
+                [C.rojo, 'Día con hora anómala']])}</div>`
     + (m ? `<div class="panel"><h3>Intradía · ${m.fecha} · bloques de ${BLOQUE} min</h3>
       <div class="cap">El último día cerrado, sumado en bloques de ${BLOQUE} minutos. Por minuto
       llegan tan pocas visitas (~7) que el azar solo ya da agujas de ±3, y la gráfica parecía
@@ -496,12 +502,20 @@ function drawTV(host, serie) {
         .concat((m.spots || []).length ? [[C.ambar, 'Spot']] : []))}</div>` : '');
 
   const L = serie.map(r => r.fecha.slice(5));
+  // Barras al fondo (orden mayor = se dibuja antes) y con techo al triple del máximo: son
+  // contexto para leer la brecha, no una tercera serie del mismo tamaño que las líneas.
+  const maxSpots = Math.max(0, ...serie.map(r => r.spots || 0));
+  const proy = r => r.spots_origen === 'proyectado';
   mkMulti('tv-dia', L, [
     { label: 'Contrafactual', color: C.gris, data: serie.map(r => r.esperado), dash: [5, 4], puntoRadio: 0 },
     { label: 'Observado', color: C.azul, data: serie.map(r => r.observado),
       puntoRadio: serie.map(r => r.anomalia ? 5 : 2),
       puntoColor: serie.map(r => r.anomalia ? C.rojo : C.azul) },
-  ], { fmt: 'num', sinBandas: true });
+    { type: 'bar', label: 'Spots', eje: 'y1', orden: 1, color: C.ambar, grosor: 0,
+      fill: serie.map(r => proy(r) ? C.ambar + '40' : C.ambar + 'b3'),
+      data: serie.map(r => r.spots || null) },
+  ], { fmt: 'num', fmtDerecha: 'num', sinBandas: true, maxDerecha: maxSpots ? maxSpots * 3 : undefined,
+       pieTooltip: i => proy(serie[i]) ? ['Spots según horario proyectado'] : [] });
 
   if (!m) return;
   // Se suma, no se promedia: el eje queda en "visitas por bloque", que es la unidad en la que
