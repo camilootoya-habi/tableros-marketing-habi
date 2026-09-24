@@ -1,0 +1,80 @@
+name: Reporte diario TV → Google Chat
+
+# 15:00 UTC = 09:00 CDMX, todos los días. La hora NO es arbitraria: se midió que el export de
+# GA4 del día D aterriza en BigQuery entre las 13:00 y 13:48 UTC del día D+1, así que las 15:00
+# dejan 1-2 horas de colchón. México no tiene horario de verano desde 2022, así que 15:00 UTC
+# son siempre las 09:00 en CDMX y no hay que ajustar el cron dos veces al año.
+#
+# Workflow APARTE del de update-data.yml a propósito: comparten credenciales de BigQuery pero
+# nada más, y un fallo de este no debe tocar la actualización del hub.
+
+on:
+  schedule:
+    - cron: '0 15 * * *'
+  workflow_dispatch:
+    inputs:
+      fecha:
+        description: 'Día a reportar (YYYY-MM-DD). Vacío = ayer'
+        required: false
+      enviar:
+        description: 'Postear a Google Chat (false = solo calcular y ver el log)'
+        type: boolean
+        default: true
+
+jobs:
+  reporte:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write   # para commitear el panel de TV en salud-marca/data.json
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      # Sin `pip install`: el job corre con pura stdlib. openpyxl solo hace falta para
+      # `ingesta.py`, que convierte el xlsx de la central y se ejecuta en local, no aquí.
+
+      - uses: google-github-actions/setup-gcloud@v2
+
+      - name: Autenticar contra BigQuery
+        run: |
+          echo '${{ secrets.GCP_CREDENTIALS }}' > /tmp/adc.json
+          # Mismo criterio que update-data.yml: el proyecto que FACTURA va fijo. Estas
+          # credenciales no tienen bigquery.jobs.create en ningún papyrus-*, aunque sí leen
+          # sus tablas cross-project.
+          gcloud config set project sellers-main-prod
+          echo "CLOUDSDK_AUTH_CREDENTIAL_FILE_OVERRIDE=/tmp/adc.json" >> $GITHUB_ENV
+          echo "GOOGLE_APPLICATION_CREDENTIALS=/tmp/adc.json" >> $GITHUB_ENV
+
+      - name: Tests del estimador
+        run: python -m pytest salud-marca/tv/tests/ -q
+        # Corren antes de publicar: más vale un job en rojo que una cifra equivocada en el
+        # canal. El estimador ya tuvo un bug que daba -88 visitas donde había +591.
+
+      - name: Calcular y enviar
+        env:
+          GCHAT_WEBHOOK_TV: ${{ secrets.GCHAT_WEBHOOK_TV }}
+          # Inversión y TRP agregados por día y franja. Van en secret y no en el repo porque
+          # este repo es público y son tarifas negociadas. Si falta, el reporte sale sin
+          # cifras de dinero en vez de fallar.
+          TV_INVERSION_JSON: ${{ secrets.TV_INVERSION_JSON }}
+        run: |
+          python3 salud-marca/tv/reporte_diario.py \
+            ${{ inputs.fecha && format('--fecha {0}', inputs.fecha) || '' }} \
+            ${{ (github.event_name == 'schedule' || inputs.enviar) && '--enviar' || '' }}
+
+      - name: Commitear el panel
+        run: |
+          # Solo data.json: el resto del repo no lo toca este job. Si no cambió nada —porque
+          # GA4 no trajo datos nuevos— no se commitea, para no llenar el historial de commits
+          # vacíos diarios.
+          git config user.name  'github-actions[bot]'
+          git config user.email 'github-actions[bot]@users.noreply.github.com'
+          git add salud-marca/data.json
+          git diff --cached --quiet && echo "sin cambios en el panel" && exit 0
+          git commit -m "data(tv): panel de TV $(date -u +%Y-%m-%dT%H:%MZ)"
+          git pull --rebase --autostash origin ${{ github.ref_name }}
+          git push origin HEAD:${{ github.ref_name }}
