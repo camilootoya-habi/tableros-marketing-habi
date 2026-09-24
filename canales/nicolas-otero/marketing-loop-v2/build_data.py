@@ -34,6 +34,14 @@ def q(name):
     try: return json.loads(out.stdout)
     except Exception as e: print(f"WARN bq {name}: {e}\n{out.stdout[:300]}\n{out.stderr[:300]}"); return []
 
+_Q_CACHE = {}
+def q_cached(name):
+    """q() una sola vez por build: las queries que se usan en más de un lugar (panel por país
+    y panel de ventanas) no se pagan dos veces en BigQuery."""
+    if name not in _Q_CACHE:
+        _Q_CACHE[name] = q(name)
+    return _Q_CACHE[name]
+
 def n10(v):
     d = re.sub(r"[^0-9]","", v or ""); return d[-10:] if len(d)>=10 else None
 
@@ -405,9 +413,39 @@ def build_country(pais):
                 _cont[k].add(ph)
     contactados = {k: len(v) for k, v in _cont.items()}
     # ---- PANEL (diseño Habi Loop): embudo por RANGO y por CANAL ----
-    # Canal: el loop entra por WEB y ventanas se marca en send_log.campaign. Las filas viejas
-    # traen campaign NULL (el sender del loop todavía no la escribe), así que "web" = todo lo
-    # que NO es ventanas — que es exactamente lo que significa hoy.
+    # Canal de cada envío: agg.canal_envio (web = loop, ventanas = letreros + voz, brokermatch
+    # fuera). Agregado = web + ventanas, nada más.
+    # Dos etapas después del interesado, cada una por SU fecha:
+    #   creados     = se mandó al backbone y quedó en `recreation` (created_at). Canal por
+    #                 agg.canal_creado: la tabla no guarda la campaña.
+    #   reasignados = pasó los filtros de asignación: aparece en el mart de asignados de la WBR
+    #                 (dia). Web = UTM reinteresados (query_asignados.sql); ventanas = sus deals
+    #                 por primer_agente (query_ventanas_asignados.sql).
+    # La diferencia creados − reasignados es lo que se cae en los filtros de asignación.
+    vent_refs, vent_nids, vent_asig = set(), set(), []
+    if pais == "CO":
+        try:
+            vent_refs = {str(r["lead_ref"]) for r in N._rows(
+                "SELECT DISTINCT lead_ref FROM ventanas_backbone_intento "
+                "WHERE country=%s AND lead_ref IS NOT NULL", (pais,))}
+        except Exception as e:  # noqa: BLE001 — sin la bitácora, igual se separa por new_nid
+            print(f"WARN ventanas_backbone_intento: {str(e)[:120]}")
+        vent_asig = q_cached("query_ventanas_asignados.sql")
+        vent_nids = {str(r["nid"]) for r in vent_asig if r.get("nid")}
+    creados_dia = {"web": {}, "ventanas": {}}
+    for rr in rec:
+        f = str(rr.get("created_at") or "")[:10]
+        if not f: continue
+        d = creados_dia[agg.canal_creado(rr, vent_refs, vent_nids)]
+        d[f] = d.get(f, 0) + 1
+    _pais_bq = {"MX": "mexico", "CO": "colombia"}[pais]
+    reasignados_dia = {"web": {}, "ventanas": {}}
+    for r in ASIG:
+        if r.get("tipo") == "dia" and r.get("pais") == _pais_bq and int(r.get("asignados_reint") or 0):
+            reasignados_dia["web"][r["bucket"]] = int(r["asignados_reint"])
+    for r in vent_asig:
+        f = r.get("dia_asignado")
+        if f: reasignados_dia["ventanas"][f] = reasignados_dia["ventanas"].get(f, 0) + 1
     _rangos = {"hoy": 0, "7": 6, "30": 29, "90": 89}
     # Cada rango trae también `prev`: el periodo contiguo del mismo largo justo antes
     # (hoy vs ayer, 7d vs los 7 anteriores...), para el comparativo del embudo.
@@ -418,50 +456,42 @@ def build_country(pais):
         if L["ini"] <= f <= L["fin"]: return "cur"
         if L["prev_ini"] <= f <= L["prev_fin"]: return "prev"
         return None
-    _canal_de = lambda r: "ventanas" if (r.get("campaign") == "ventanas") else "web"
-    _vacio = lambda: {"entregados": 0, "enviados": 0, "reasignados": 0}
+    _vacio = lambda: {"entregados": 0, "enviados": 0, "creados": 0, "reasignados": 0,
+                      "citas": 0, "cierres_mm": 0, "cierres_inmo": 0}
     panel = {c: {k: {**_vacio(), "prev": _vacio()} for k in _rangos}
              for c in ("agregado", "web", "ventanas")}
     def _dst(c, k, b):
         return panel[c][k] if b == "cur" else panel[c][k]["prev"]
+    def _sumar(canal, f, campo, n=1):
+        for k in _rangos:
+            b = _bucket_rango(f, k)
+            if not b: continue
+            for c in (canal, "agregado"):
+                _dst(c, k, b)[campo] += n
+    sl_canal = {"web": [], "ventanas": []}
     for r in sl_cosecha:
+        cn = agg.canal_envio(r.get("campaign"))
+        if not cn: continue
+        sl_canal[cn].append(r)
         f = (r.get("attempted_at") or "")[:10]
         if not f: continue
         m = mbm.get(r.get("message_id") or "")
-        entregado = bool(m and m.get("status") == "delivered")
-        cn = _canal_de(r)
-        for k in _rangos:
-            b = _bucket_rango(f, k)
-            if not b: continue
-            for c in (cn, "agregado"):
-                _dst(c, k, b)["enviados"] += 1
-                if entregado: _dst(c, k, b)["entregados"] += 1
-    # Leads re-asignados por canal. El loop los crea vía `recreation`; ventanas NO pasa por ahí
-    # —su lead lo dispara el agente— así que se cuentan sus BACKBONE en agent_thread. Darlos por
-    # 0, como estaba antes, escondía que la campaña ya está generando leads.
-    for rr in rec:
-        f = str(rr.get("created_at") or "")[:10]
-        if not f: continue
-        for k in _rangos:
-            b = _bucket_rango(f, k)
-            if not b: continue
-            _dst("web", k, b)["reasignados"] += 1
-            _dst("agregado", k, b)["reasignados"] += 1
-    _vent = N._rows(
-        "SELECT (ts AT TIME ZONE %s)::date::text AS f, count(DISTINCT phone) AS n "
-        "FROM agent_thread WHERE country=%s AND campaign='ventanas' "
-        "  AND action_taken IN ('BACKBONE','BACKBONE_SANITIZED') GROUP BY 1", (N.TZ[pais], pais))
-    for r in _vent:
-        for k in _rangos:
-            b = _bucket_rango(r["f"], k)
-            if not b: continue
-            _dst("ventanas", k, b)["reasignados"] += int(r["n"] or 0)
-            _dst("agregado", k, b)["reasignados"] += int(r["n"] or 0)
-    # Serie del loop y del agente por día, para las dos tablas del panel
-    _rec_dia = {}
-    for rr in rec:
-        f = str(rr.get("created_at") or "")[:10]
-        if f: _rec_dia[f] = _rec_dia.get(f, 0) + 1
+        _sumar(cn, f, "enviados")
+        if m and m.get("status") == "delivered": _sumar(cn, f, "entregados")
+    for canal in ("web", "ventanas"):
+        for f, n in creados_dia[canal].items(): _sumar(canal, f, "creados", n)
+        for f, n in reasignados_dia[canal].items(): _sumar(canal, f, "reasignados", n)
+    # Citas y cierres de VENTANAS por rango (los de web salen de panel_bq, query por UTM, que
+    # no ve a ventanas porque sus deals no llevan UTM). Solo en `ventanas`, no en agregado:
+    # el tablero suma web + ventanas al pintar.
+    if pais == "CO":
+        for fila in q_cached("query_ventanas_cierres.sql"):
+            for campo, met in (("f_cita", "citas"), ("f_mm", "cierres_mm"), ("f_inmo", "cierres_inmo")):
+                f = str(fila.get(campo) or "")[:10]
+                if not f: continue
+                for k in _rangos:
+                    b = _bucket_rango(f, k)
+                    if b: _dst("ventanas", k, b)[met] += 1
     # recreados/calificados por old_nid
     recreated_oldnids={r["old_nid"] for r in rec if r.get("success")}
     qualified_oldnids={r["old_nid"] for r in rec if r.get("state_at_creation") in (20,63)}
@@ -486,7 +516,13 @@ def build_country(pais):
         "contactados": contactados,
         "plantillas": plantillas(pais, sl, mbm, interesado_phones, yavendio_phones),
         "panel": panel,
-        "reasignados_dia": _rec_dia,
+        # Serie del loop por canal: cada canal con SUS envíos; agregado = web + ventanas (sin
+        # brokermatch). creados/reasignados por día y canal, para la misma gráfica.
+        "cosecha_canal": {c: {t: agg.cosecha_serie(s, mbm, inbound_phones_wide, interesado_phones_wide, interesado_nocreado_phones, t, n=40) for t in ("dia","semana","mes")}
+                          for c, s in (("agregado", sl_canal["web"] + sl_canal["ventanas"]),
+                                       ("web", sl_canal["web"]), ("ventanas", sl_canal["ventanas"]))},
+        "creados_dia": creados_dia,
+        "reasignados_dia": reasignados_dia,
         "cosecha_agente": {t: agg.cosecha_serie(sl_agente, mbm, inbound_phones_wide, interesado_phones_wide, interesado_nocreado_phones, t, n=40) for t in ("dia","semana","mes")},
         "agente_conversaciones": len(agente_phones),
         "ab_templates": _ab(sl,mbm,inbound_phones,interesado_phones,yavendio_phones),
@@ -753,7 +789,7 @@ def ventanas_cierres():
     vacio = {"cierres": 0, "cierres_mm": 0, "cierres_inmo": 0, "citas": 0}
     out = {r: {k: dict(vacio) for k in ("hoy", "7", "30")} for r in VENT_RUTAS}
     try:
-        filas = q("query_ventanas_cierres.sql")
+        filas = q_cached("query_ventanas_cierres.sql")
         ruta_de = {r["deal_id"]: r["ruta"] for r in N._rows(
             "WITH ruta AS (SELECT DISTINCT ON (phone) phone, "
             "  CASE WHEN flujo='compra_wa' THEN 'directa' ELSE 'normal' END AS r "
@@ -843,7 +879,8 @@ def agente_ia(pais):
              "conversaciones": int(r["conversaciones"] or 0)} for r in rows]
 
 COMP = q("query_completitud.sql")
-RECRE = q("query_recreados.sql")   # recreados (UTM reinteresados) con estado real del backbone → Recreación + Antifunnel
+RECRE = q("query_recreados.sql")
+ASIG = q("query_asignados.sql")    # asignados de marketing (WBR mart): re-asignados reales del loop web   # recreados (UTM reinteresados) con estado real del backbone → Recreación + Antifunnel
 mx = build_country("MX")
 co = build_country("CO")
 
@@ -873,7 +910,7 @@ data={
                   for p in ("MX","CO")},
   "cohorte_origen": {"MX": mx["cohorte_origen"], "CO": co["cohorte_origen"]},
   "diario": {"MX": mx["diario"], "CO": co["diario"]},
-  "asignados": q("query_asignados.sql"),
+  "asignados": ASIG,
   # KPIs de cabecera: contactados sale de Neon (entrega real) y el resto de BQ, cada
   # métrica por su propia fecha (creado / cita / cierre). Ver query_kpis.sql.
   "contactados": {"MX": mx["contactados"], "CO": co["contactados"]},
@@ -882,6 +919,8 @@ data={
   # descarga sin auth; esos datos los sirve /api/ventanas/ejecuciones detrás del token.
   "ventanas": {**ventanas_metricas(), "serie": ventanas_serie()},
   "plantillas": {"MX": mx["plantillas"], "CO": co["plantillas"]},
+  "cosecha_canal": {"MX": mx["cosecha_canal"], "CO": co["cosecha_canal"]},
+  "creados_dia": {"MX": mx["creados_dia"], "CO": co["creados_dia"]},
   "reasignados_dia": {"MX": mx["reasignados_dia"], "CO": co["reasignados_dia"]},
   # citas y cierres por rango, indexados pais -> rango
   "panel_bq": agg.panel_bq_shape(q("query_panel.sql")),

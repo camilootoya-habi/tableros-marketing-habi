@@ -948,30 +948,33 @@ function setRango(r){ rangoFunnel=r; renderEmbudo(); }
 function setGran(g){ cicloTipo=g; document.querySelectorAll('#granSeg [data-gran]').forEach(b=>b.classList.toggle('active', b.dataset.gran===g));
   renderSerie(); renderAgentePanel(); renderErrores(); }
 
-// Embudo del loop: entrega → re-asignación → cita → cierre, con la conversión de cada salto.
-// Ventanas todavía no crea leads propios (le falta su atribución), así que de la segunda etapa
-// en adelante su columna es 0 DE VERDAD, no un dato que falte.
+// Embudo del loop: entrega → creado → re-asignado → cita → cierre, con la conversión de cada
+// salto. Respeta el canal (Web / Ventanas con voz / Agregado = suma); cada etapa por su fecha.
 function renderEmbudo(){
   const el=document.getElementById('embudoCard'); if(!el) return;
   const P=((D.panel||{})[country]||{});
   const R=(P[canalSel]||{})[rangoFunnel]||{};
+  // Citas y cierres por canal: web = deals con UTM reinteresados (panel_bq); ventanas = sus
+  // deals por primer_agente (panel.ventanas, sin UTM); agregado = la suma de los dos.
   const bq=((D.panel_bq||{})[country]||{})[_RANGO_BQ[rangoFunnel]]||{};
-  const soloVent = canalSel==='ventanas';
-  const RP=R.prev||{}, bqP=bq.prev||{};
-  const citas   = soloVent?0:(+bq.citas||0);
-  const cierres = soloVent?0:((+bq.cierres_mm||0)+(+bq.cierres_inmo||0));
-  const citasP  = soloVent?0:(+bqP.citas||0);
-  const cierresP= soloVent?0:((+bqP.cierres_mm||0)+(+bqP.cierres_inmo||0));
-  const sp=(k)=>{ if(canalSel!=='agregado') return ''; const w=((P.web||{})[rangoFunnel]||{})[k]||0, v=((P.ventanas||{})[rangoFunnel]||{})[k]||0;
+  const V=(P.ventanas||{})[rangoFunnel]||{};
+  const RP=R.prev||{}, bqP=bq.prev||{}, VP=V.prev||{};
+  const cie=o=>(+o.cierres_mm||0)+(+o.cierres_inmo||0);
+  const web={citas:+bq.citas||0, cierres:cie(bq), citasP:+bqP.citas||0, cierresP:cie(bqP)};
+  const ven={citas:+V.citas||0, cierres:cie(V), citasP:+VP.citas||0, cierresP:cie(VP)};
+  const cc=k=>canalSel==='web'?web[k]:(canalSel==='ventanas'?ven[k]:web[k]+ven[k]);
+  const sp=(k)=>{ if(canalSel!=='agregado') return '';
+    const w=(k in web)?web[k]:((P.web||{})[rangoFunnel]||{})[k]||0, v=(k in ven)?ven[k]:V[k]||0;
     return 'Web '+fmt(w)+' · Ventanas '+fmt(v); };
   // prev = periodo contiguo del mismo largo justo antes (hoy → ayer). Solo se pinta si el
   // data.json ya lo trae; un build viejo simplemente no muestra la línea.
   const hayPrev = !!(R.prev || bq.prev);
   const pasos=[
     {lab:'Envíos entregados'+I('f_ent'), val:+R.entregados||0, prev:+RP.entregados||0, color:'var(--accent)', split:sp('entregados')},
-    {lab:'Leads re-asignados'+I('f_re'), val:+R.reasignados||0, prev:+RP.reasignados||0, color:'#A855F7', split:sp('reasignados')},
-    {lab:'Citas agendadas'+I('f_cita'), val:citas, prev:citasP, color:'#2DD4BF', split:''},
-    {lab:'Cierres'+I('f_cie'), val:cierres, prev:cierresP, color:'var(--ok)', split:''},
+    {lab:'Creados'+I('f_cre'), val:+R.creados||0, prev:+RP.creados||0, color:'#60A5FA', split:sp('creados')},
+    {lab:'Re-asignados'+I('f_re'), val:+R.reasignados||0, prev:+RP.reasignados||0, color:'#A855F7', split:sp('reasignados')},
+    {lab:'Citas agendadas'+I('f_cita'), val:cc('citas'), prev:cc('citasP'), color:'#2DD4BF', split:sp('citas')},
+    {lab:'Cierres'+I('f_cie'), val:cc('cierres'), prev:cc('cierresP'), color:'var(--ok)', split:sp('cierres')},
   ];
   const prevLbl = rangoFunnel==='hoy' ? 'ayer' : 'periodo anterior';
   const prevHtml=(s)=>{
@@ -1018,15 +1021,18 @@ const MET_HELP={
   ent:'Envíos que llegaron al celular (estado DELIVERED). Se cruza el message_id de cada envío con el estado de entrega de Infobip (mart + API /logs) y la entrega persistida en Neon.',
   lei:'Apertura: entregados con marca de lectura (SEEN) reportada por WhatsApp vía Infobip. El día en curso llega con rezago y WhatsApp no la reporta en todos los casos.',
   inte:'Destinatarios que respondieron con el botón «Estoy interesado» del mensaje (payload INTERESADO). Fuente: mart inbound de Infobip. Es el objetivo del envío.',
-  re:'Leads re-asignados: interesados cuyo lead se recreó en el backbone (nuevo negocio en HubSpot con UTM reinteresados) y pasó a gestión comercial. Por fecha de creación.',
+  cre:'Creados: interesados que se mandaron al backbone y quedaron en la tabla recreation (Neon), por fecha de creación. Incluye los que el backbone saltó. Creados − Re-asignados = los que no pasan los filtros de asignación.',
+  re:'Re-asignados: pasaron los filtros de asignación y el lead quedó asignado a comercial. Fuente: mart de asignados de marketing de la WBR (el de los asignados oficiales), por fecha de asignación. Web = negocios con UTM reinteresados; Ventanas (incluye voz) = negocios con primer_agente marketing_loop_ventanas. El mart llega con rezago: el último periodo se ve bajo.',
   pinte:'Interesados ÷ Entregados del periodo mostrado.',
+  ppasa:'Re-asignados ÷ Creados del periodo mostrado: qué parte de lo que llega al backbone pasa los filtros de asignación. Cada etapa va por su fecha y el mart de asignados llega con rezago.',
   at:'Conversaciones de texto libre atendidas por el agente IA en vivo: teléfonos únicos con al menos un turno del agente ese día (los modos SHADOW no cuentan).',
   ainte:'Conversaciones donde el agente detectó intención de vender (intent = INTERESTED) durante el diálogo.',
   are:'Conversaciones que el agente cerró disparando el lead al backbone (acción BACKBONE): el lead quedó recreado y asignado.',
   pconv:'Re-asignados ÷ Atendidos, sobre toda la serie del agente.',
   f_ent:'Mensajes del loop entregados (DELIVERED) en el rango, por fecha de envío. Agregado = Web + Ventanas.',
-  f_re:'Leads recreados en el backbone en el rango: los del loop vía recreation y los de Ventanas vía BACKBONE del agente.',
-  f_cita:'Negocios con UTM reinteresados cuya fecha_de_visita cae en el rango (HubSpot deals).',
+  f_cre:'Interesados que se mandaron al backbone y quedaron en la tabla recreation, por fecha de creación. Web = el loop; Ventanas (incluye voz) = los que ventanas registró en su bitácora o cuyo negocio lleva primer_agente marketing_loop_ventanas.',
+  f_re:'Leads que pasaron los filtros de asignación en el rango: aparecen en el mart de asignados de marketing de la WBR, por fecha de asignación. Web = UTM reinteresados; Ventanas = primer_agente marketing_loop_ventanas. Llega con rezago.',
+  f_cita:'Negocios cuya fecha_de_visita cae en el rango (HubSpot deals). Web = UTM reinteresados; Ventanas = primer_agente marketing_loop_ventanas; Agregado = la suma.',
   vs1:'Teléfonos distintos que el webhook de HubSpot mandó al receptor ese día (ventanas_hs_inbound). Excluye pruebas DRY y las tandas manuales de recuperación.',
   vs2:'Teléfonos cuya PRIMERA respuesta fue ese día (cada persona cuenta una sola vez, así la suma coincide con el embudo): texto libre al agente (agent_thread, campaign ventanas) unido con clics de botón (contact_status.responded_at) cuyo último envío fue de ventanas. La unión es obligatoria: los clics nunca llegan al agente.',
   vs3:'Entrevistas que quedaron completas ese día: completed_at de ventanas_intake.',
@@ -1043,10 +1049,10 @@ const MET_HELP={
 const I=k=>MET_HELP[k]?`<span class="info" tabindex="0" data-tip="${MET_HELP[k].replace(/"/g,'&quot;')}">i</span>`:'';
 const IH=I;   // alias: renderVentanasPanel tiene un `I` local (intake) que tapa el helper
 let serieTabSel='loop', serieChart=null, serieTablaVisible=false;
-// re-asignados = acento · interesados = teal · leídos/apertura = ámbar · volumen (línea) = neutro.
+// re-asignados = acento · creados = azul · interesados = teal · leídos/apertura = ámbar · volumen (línea) = neutro.
 const _SERIE_COL=()=>document.body.classList.contains('dark')
-  ? {re:'#9F67F5', inte:'#0D9488', lei:'#D97706', env:'#D6D0DD', at:'#D6D0DD'}
-  : {re:'#7E22CE', inte:'#0D9488', lei:'#D97706', env:'#525252', at:'#525252'};
+  ? {re:'#9F67F5', cre:'#60A5FA', inte:'#0D9488', lei:'#D97706', env:'#D6D0DD', at:'#D6D0DD'}
+  : {re:'#7E22CE', cre:'#2563EB', inte:'#0D9488', lei:'#D97706', env:'#525252', at:'#525252'};
 // Etiqueta con el valor encima de las barras marcadas con _labels (re-asignados: son pocos
 // frente al volumen de la línea y sin la cifra no se leen).
 const _barLabels={id:'barLabels',afterDatasetsDraw(ch,_a,o){const {ctx}=ch;
@@ -1067,20 +1073,32 @@ function _reasigPorBucket(buckets, rec){
     out[b]=keys.filter(d=>d>=b && d<nx).reduce((a,d)=>a+(+rec[d]||0),0); });
   return out;
 }
+// {día: n} del canal elegido; agregado = web + ventanas. Tolera el formato viejo (sin canal).
+function _diaPorCanal(src){
+  const s=(src||{})[country]||{};
+  if(canalSel!=='agregado') return s[canalSel]||{};
+  const o={}; ['web','ventanas'].forEach(c=>Object.entries(s[c]||{}).forEach(([d,n])=>{ o[d]=(o[d]||0)+(+n||0); }));
+  return o;
+}
 function _kpis(items){ return `<div class="akpis">${items.map(([l,v,k])=>`<div><div class="flab">${l}${I(k)}</div><div class="fval">${v}</div></div>`).join('')}</div>`; }
 function _serieDatos(){
   if(serieTabSel==='loop'){
-    const raw=(((D.cosecha||{})[country]||{})[cicloTipo]||[]).slice(-14);
-    const rec=_reasigPorBucket(raw.map(r=>r.bucket), (D.reasignados_dia||{})[country]||{});
-    const rows=raw.map(r=>({lab:_dia(r.bucket), env:+r.enviados||0, ent:+r.entregados||0, lei:+r.leidos||0, inte:+r.interesados||0, re:rec[r.bucket]||0}));
-    const t=rows.reduce((a,r)=>({env:a.env+r.env,ent:a.ent+r.ent,lei:a.lei+r.lei,inte:a.inte+r.inte,re:a.re+r.re}),{env:0,ent:0,lei:0,inte:0,re:0});
-    return {titulo:'Serie del loop', sub:'Envíos, entregas y conversión · '+_GRAN_LBL[cicloTipo]+' · solo reactivación',
-      kpis:[['Envíos',fmt(t.env),'env'],['Entregados',fmt(t.ent),'ent'],['Leídos',fmt(t.lei),'lei'],['Interesados',fmt(t.inte),'inte'],['Re-asignados',fmt(t.re),'re'],['% interesados',t.ent>0?pct(t.inte/t.ent*100):'·','pinte']],
-      series:[{k:'env',lab:'Envíos',line:true},{k:'lei',lab:'Leídos (apertura)'},{k:'re',lab:'Re-asignados',labels:true}], extra:[['Entregados','ent'],['Interesados','inte']], rows,
+    // Cada canal con SUS envíos (Web / Ventanas con voz / Agregado = suma, sin brokermatch).
+    const cs=((D.cosecha_canal||{})[country]||{})[canalSel] || ((D.cosecha||{})[country]||{});
+    const raw=(cs[cicloTipo]||[]).slice(-14), bks=raw.map(r=>r.bucket);
+    const cre=_reasigPorBucket(bks, _diaPorCanal(D.creados_dia));
+    const rea=_reasigPorBucket(bks, _diaPorCanal(D.reasignados_dia));
+    const rows=raw.map(r=>({lab:_dia(r.bucket), env:+r.enviados||0, ent:+r.entregados||0, lei:+r.leidos||0, inte:+r.interesados||0, cre:cre[r.bucket]||0, re:rea[r.bucket]||0}));
+    const t=rows.reduce((a,r)=>({env:a.env+r.env,ent:a.ent+r.ent,lei:a.lei+r.lei,inte:a.inte+r.inte,cre:a.cre+r.cre,re:a.re+r.re}),{env:0,ent:0,lei:0,inte:0,cre:0,re:0});
+    const td=v=>`<td style="text-align:right">${fmt(v)}</td>`;
+    return {titulo:'Serie del loop', sub:'Envíos, entregas y conversión · '+_GRAN_LBL[cicloTipo]+' · '+_CANAL_LBL[canalSel],
+      kpis:[['Envíos',fmt(t.env),'env'],['Entregados',fmt(t.ent),'ent'],['Leídos',fmt(t.lei),'lei'],['Interesados',fmt(t.inte),'inte'],['Creados',fmt(t.cre),'cre'],['Re-asignados',fmt(t.re),'re'],['% interesados',t.ent>0?pct(t.inte/t.ent*100):'·','pinte'],['% pasa asignación',t.cre>0?pct(t.re/t.cre*100):'·','ppasa']],
+      series:[{k:'env',lab:'Envíos',line:true},{k:'lei',lab:'Leídos (apertura)'},{k:'cre',lab:'Creados',labels:true},{k:'re',lab:'Re-asignados',labels:true}], extra:[['Entregados','ent'],['Interesados','inte']], rows,
       tabla:`<table><thead><tr><th>Día</th><th style="text-align:right">Envíos</th><th style="text-align:right">Entregados</th><th style="text-align:right">Leídos</th>
-        <th style="text-align:right">Interesados</th><th style="text-align:right">Re-asignados</th></tr></thead><tbody>
-        ${rows.map(r=>`<tr><td>${r.lab}</td><td style="text-align:right">${fmt(r.env)}</td><td style="text-align:right">${fmt(r.ent)}</td><td style="text-align:right">${fmt(r.lei)}</td>
-        <td style="text-align:right"><b>${fmt(r.inte)}</b></td><td style="text-align:right;color:var(--accent);font-weight:600">${fmt(r.re)}</td></tr>`).join('')}</tbody></table>`};
+        <th style="text-align:right">Interesados</th><th style="text-align:right">Creados</th><th style="text-align:right">Re-asignados</th><th style="text-align:right">% pasa</th></tr></thead><tbody>
+        ${rows.map(r=>`<tr><td>${r.lab}</td>${td(r.env)}${td(r.ent)}${td(r.lei)}
+        <td style="text-align:right"><b>${fmt(r.inte)}</b></td>${td(r.cre)}<td style="text-align:right;color:var(--accent);font-weight:600">${fmt(r.re)}</td>
+        <td style="text-align:right">${r.cre>0?pct(r.re/r.cre*100):'·'}</td></tr>`).join('')}</tbody></table>`};
   }
   const serie=((D.agente_ia||{})[country]||[]);
   const tot=serie.reduce((a,r)=>({at:a.at+(+r.conversaciones||0), inte:a.inte+(+r.interesados||0), re:a.re+(+r.reasignados||0)}),{at:0,inte:0,re:0});
