@@ -72,12 +72,15 @@ def test_la_marca_focal_tampoco_se_cuenta_como_competidora():
     assert "TuHabi" not in [c["marca"] for c in fila()["competencia"]]
 
 
-# ── Recordación espontánea: se transcribe, no se interpreta ───────────────────
+# ── Recordación espontánea: misma agrupación que Q1 ───────────────────────────
 
-def test_la_espontanea_pasa_tal_cual_sin_codificar_marcas():
-    # Pulso agrupa por ortografía y NO interpreta (una variante mal escrita es su propio
-    # grupo). El tablero mantiene ese criterio: transcribe el ranking, no lo codifica.
-    assert fila()["espontanea"] == [{"texto": "Inmuebles24", "n": 30}, {"texto": "TuHabi", "n": 12}]
+def test_la_espontanea_usa_la_misma_agrupacion_que_q1():
+    # Si el ranking de la agrupación y el de Q1 usaran criterios distintos, la misma marca
+    # tendría dos cifras en el mismo tablero.
+    p = dict(PAYLOAD, q1={"items": [{"text": "Inmuebles 24", "count": 5},
+                                    {"text": "inmuebles24", "count": 2}], "distinct": 2, "total": 7})
+    assert fila(p)["espontanea"] == [{"texto": "Inmuebles24", "n": 7}]
+    assert fila(p)["preguntas"]["q1"]["grupos"] == [{"grupo": "Inmuebles24", "n": 7}]
 
 
 # ── Atributos ─────────────────────────────────────────────────────────────────
@@ -179,3 +182,76 @@ def test_fetch_combina_ola_y_audiencia_en_la_misma_url():
 def test_la_fila_deja_dicho_de_que_publico_es():
     f = P.fila({**PAYLOAD, "audience": "owner"})
     assert f["audiencia"] == "owner"
+
+
+# ── Pregunta por pregunta ─────────────────────────────────────────────────────
+
+def test_la_fila_trae_cada_pregunta_en_el_orden_de_la_encuesta():
+    q = fila()["preguntas"]
+    assert list(q) == ["q1", "q2", "q3", "q4", "q5", "q7", "q8"]   # no hay Q6
+    assert q["q1"]["grupos"][0] == {"grupo": "Inmuebles24", "n": 30}
+    assert q["q3"]["total"] == 72
+
+
+def test_q3_conserva_la_marca_ficticia_y_ninguna_para_mostrarlas_rotuladas():
+    ids = [b["id"] for b in fila()["preguntas"]["q3"]["barras"]]
+    assert "fake" in ids and "ninguna" in ids
+
+
+def test_q7_trae_todas_las_marcas_evaluadas_no_solo_la_focal():
+    otra = {"brand": "lamudi", "label": "Lamudi", "n": 10, "ns": 1,
+            "items": [{"id": "confio", "text": "Es una marca en la que confío", "avg": 3.0}]}
+    p = dict(PAYLOAD, q7=PAYLOAD["q7"] + [otra])
+    assert [m["marca"] for m in fila(p)["preguntas"]["q7"]] == ["tuhabi", "lamudi"]
+
+
+def test_las_abiertas_se_publican_agrupadas_no_como_texto_crudo():
+    p = dict(PAYLOAD, q8={"texts": ["Compran rápido", {"raro": 1}], "total": 5})
+    q8 = fila(p)["preguntas"]["q8"]
+    assert q8 == {"grupos": [{"grupo": "Compran tu casa", "n": 1, "ejemplo": "Compran rápido"}],
+                  "muestra": 1, "total": 5}
+
+
+# ── Agrupación de abiertas ────────────────────────────────────────────────────
+
+def test_variantes_de_una_marca_se_juntan():
+    g = P.agrupar_marcas([("Inmuebles 24", 24), ("Inmuebkes 24", 1), ("I24", 1),
+                          ("Inmuebles veinticuatro", 2)])
+    assert g == [{"grupo": "Inmuebles24", "n": 28}]
+
+
+def test_una_respuesta_con_varias_marcas_suma_a_cada_una():
+    g = {x["grupo"]: x["n"] for x in P.agrupar_marcas([("Century 21 y ibmuwbles 24", 1),
+                                                       ("Inmuebles 24 easy broker facebook", 1)])}
+    assert g == {"Inmuebles24": 2, "Century 21": 1, "EasyBroker": 1, "Facebook / Marketplace": 1}
+
+
+def test_lo_que_no_se_reconoce_queda_como_su_propio_grupo():
+    g = P.agrupar_marcas([("Maglen realty group", 1), ("Lamudi", 2)])
+    assert g == [{"grupo": "Lamudi", "n": 2}, {"grupo": "Maglen realty group", "n": 1}]
+
+
+def test_una_variante_corta_solo_cuenta_como_respuesta_entera():
+    # "ig" dentro de "Vigilancia" no es Instagram.
+    assert P.agrupar_marcas([("Vigilancia", 1)]) == [{"grupo": "Vigilancia", "n": 1}]
+    assert P.agrupar_marcas([("IG", 1)]) == [{"grupo": "Instagram", "n": 1}]
+
+
+def test_ninguna_no_se_suma_si_la_respuesta_nombra_marcas():
+    assert P.agrupar_marcas([("No recuerdo propiedades.com", 1)]) == [
+        {"grupo": "Propiedades.com", "n": 1}]
+
+
+def test_temas_q8_la_queja_gana_sobre_la_descripcion():
+    g = P.agrupar_temas(["Compran barato para vender caro", "Compra rápida de propiedades"])
+    assert {x["grupo"]: x["n"] for x in g} == {"Opinión negativa": 1, "Compran tu casa": 1}
+
+
+def test_temas_q8_lo_que_no_coincide_va_a_otras():
+    assert P.agrupar_temas(["Conectividad"]) == [
+        {"grupo": "Otras", "n": 1, "ejemplo": "Conectividad"}]
+
+
+def test_series_separa_duenos_y_brokers_de_la_misma_ola():
+    s = P.series([dict(PAYLOAD, audience="owner"), dict(PAYLOAD, audience="broker")])
+    assert [f["audiencia"] for f in s] == ["broker", "owner"]
