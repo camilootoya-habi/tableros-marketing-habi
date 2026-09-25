@@ -22,7 +22,20 @@ repo. Lo que falla es solo el disparo: un workflow lanzado por API (`workflow_di
 descarta. Por eso el disparo principal lo hace un **reloj externo gratuito** que llama a la API
 de GitHub; los cuatro cron quedan de respaldo.
 
-**La llamada** (una por horario: 9:07 y 9:31 CDMX):
+**Los jobs en cron-job.org** (cuenta de Nicolás; todos con `solo_si_falta`, así que después del
+primer envío los demás no hacen nada):
+
+| Hora CDMX | Para qué |
+|---|---|
+| 9:07 | Disparo principal |
+| 9:31 | Respaldo |
+| 12:07 | Reintento por si GA4 publica tarde |
+| 15:07 | Reintento por si GA4 publica tarde |
+
+cron-job.org avisa por correo si una llamada falla. Se administran por su API
+(`https://api.cron-job.org`, API key en la consola → Settings) o desde su consola web.
+
+**La llamada** (la misma en cada horario):
 
 ```
 POST https://api.github.com/repos/camilootoya-habi/tableros-marketing-habi/actions/workflows/tv-diario.yml/dispatches
