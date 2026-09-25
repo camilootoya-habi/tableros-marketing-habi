@@ -10,6 +10,20 @@ Live: https://camilootoya-habi.github.io/tableros-marketing-habi/
 3. No toques los pipelines a-medida del cron en `.github/workflows/update-data.yml` salvo que sepas exactamente lo que haces.
 4. **El cierre son SIEMPRE dos líneas de negocio, y NO son el mismo evento.** `oportunidad_del_negocio='Cierre - Comprado'` es compra directa (transacción cerrada); `oportunidad_inmobiliaria='Contrato firmado'` es una **captación** de la red de aliados (mandato firmado, no venta: de los 29 del loop, 0 tienen fecha de publicación o de venta). Hay que sumarlas —contar solo la primera reportaba 9 de 38 cierres en Colombia— pero al presentar el número afuera hay que decir la composición. Antes de escribir o editar cualquier query de cierres, lee `marketing-loop/METRICAS.md`.
 
+## ⚠ Un solo clon de este repo (25-sep, entrega del proyecto de Nicolás)
+
+- La carpeta de trabajo es **`~/habi/tableros-marketing-habi`**, con remoto
+  `camilootoya-habi/tableros-marketing-habi`. Trabaja siempre desde una rama nueva sobre
+  `origin/main` y abre el PR contra ESTE repo.
+- Las carpetas `~/habi/tableros-marketing-habi (desde carpeta habi)` y
+  `~/habi/tablero-neon-optim` se **borraron a propósito**: eran clones del fork viejo
+  `notero-88/tableros-marketing-habi` (rama `pool-ab-view`, ~2.349 commits detrás de `main`).
+  No las recrees. Un cambio hecho ahí terminaba en el fork y no en el tablero publicado.
+- El fork `notero-88/tableros-marketing-habi` está **obsoleto**: nadie publica ahí (el ciclo
+  diario dejó de hacerlo el 25-sep). No abras PRs contra él.
+- Si `~/habi/tableros-marketing-habi` tiene cambios sin commitear de otra sesión, no los toques:
+  `git worktree add <ruta-temporal> -b <rama> origin/main` y trabaja ahí.
+
 ## marketing-loop/ — frontera con el repo marketing-loop-sellers (31-ago)
 
 - `marketing-loop/data.json` y `audit.json` los escribe SOLO el ciclo diario del LOOP
