@@ -171,10 +171,30 @@ def collect(now):
     return contract.envelope(metrics, now)
 
 
+# Bloques de `metrics` que escribe OTRO job y que este build no debe borrar al reescribir el
+# archivo. `tv` lo inyecta tv/reporte_diario.py (tv-diario.yml): antes, correr build.py después
+# del reporte de TV dejaba el panel vacío y había que respetar un orden a mano.
+AJENOS = ("tv",)
+
+
+def conservar_ajenos(nuevo, ruta):
+    """Copia a `nuevo` los bloques AJENOS del data.json que ya existe en `ruta`."""
+    try:
+        with open(ruta, encoding="utf-8") as f:
+            viejo = json.load(f).get("metrics", {})
+    except (OSError, ValueError):
+        return nuevo
+    for k in AJENOS:
+        if k in viejo and k not in nuevo["metrics"]:
+            nuevo["metrics"][k] = viejo[k]
+    return nuevo
+
+
 if __name__ == "__main__":
     now = datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
-    data = collect(now)
-    with open(os.path.join(HERE, "data.json"), "w", encoding="utf-8") as f:
+    ruta = os.path.join(HERE, "data.json")
+    data = conservar_ajenos(collect(now), ruta)
+    with open(ruta, "w", encoding="utf-8") as f:
         json.dump(data, f, ensure_ascii=False, separators=(",", ":"))
     for k, per in data["metrics"].items():
         for c, m in per.items():

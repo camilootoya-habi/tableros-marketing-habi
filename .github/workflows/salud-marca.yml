@@ -1,0 +1,74 @@
+name: Actualizar Salud de marca (diario)
+
+# Corre salud-marca/build.py: Brand Lift (Meta), exit poll y tráfico por plaza (BigQuery) y el
+# encuestador (API pública de Pulso). Hasta el 25-sep NINGÚN workflow lo corría: se actualizaba
+# solo cuando alguien lo corría a mano, y Brand Lift quedó congelado desde el 31-ago.
+#
+# El panel de TV (metrics.tv) NO lo toca: lo escribe tv-diario.yml, y build.py lo conserva al
+# reescribir el archivo (build.conservar_ajenos).
+#
+# 7:41 CDMX: las métricas son mensuales, así que la hora no es crítica; minuto no redondo porque
+# GitHub descarta más los cron del minuto 0. Si un día GitHub lo salta, lo recupera el siguiente.
+
+on:
+  schedule:
+    - cron: '41 13 * * *'   # 07:41 CDMX
+  workflow_dispatch:
+
+# Mismo grupo que tv-diario.yml a propósito: los dos escriben salud-marca/data.json (una sola
+# línea), así que dos commits cruzados siempre chocarían. En fila, cada uno parte del último.
+concurrency:
+  group: salud-marca-data
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref_name }}
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Instalar pytest
+        run: python -m pip install --quiet pytest
+
+      - uses: google-github-actions/setup-gcloud@v2
+
+      - name: Autenticar contra BigQuery
+        run: |
+          echo '${{ secrets.GCP_CREDENTIALS }}' > /tmp/adc.json
+          # Mismo criterio que update-data.yml: el proyecto que FACTURA va fijo.
+          gcloud config set project sellers-main-prod
+          echo "CLOUDSDK_AUTH_CREDENTIAL_FILE_OVERRIDE=/tmp/adc.json" >> $GITHUB_ENV
+          echo "GOOGLE_APPLICATION_CREDENTIALS=/tmp/adc.json" >> $GITHUB_ENV
+
+      - name: Tests
+        run: python -m pytest salud-marca/tests/ -q
+
+      - name: Construir data.json
+        env:
+          # build.py toma META_SYSTEM_USER_TOKEN y, si falta, META_PCOM_TOKEN. Si Meta rechaza el
+          # token, Brand Lift sale "stale" desde el caché y el resto se actualiza igual.
+          META_SYSTEM_USER_TOKEN: ${{ secrets.META_ACCESS_TOKEN }}
+          META_PCOM_TOKEN: ${{ secrets.META_PCOM_TOKEN }}
+        run: cd salud-marca && python3 build.py
+
+      - name: Commitear
+        run: |
+          git config user.name  'github-actions[bot]'
+          git config user.email 'github-actions[bot]@users.noreply.github.com'
+          git add salud-marca/data.json salud-marca/brand_lift_cache.json
+          git diff --cached --quiet && echo "sin cambios" && exit 0
+          git commit -m "data(salud-marca): refresh $(date -u +%Y-%m-%dT%H:%MZ)"
+          for i in 1 2 3 4 5; do
+            if git push origin HEAD:${{ github.ref_name }}; then echo "push OK"; exit 0; fi
+            git pull --rebase --autostash origin ${{ github.ref_name }} || { git rebase --abort; exit 1; }
+            sleep $((i * 5))
+          done
+          exit 1
