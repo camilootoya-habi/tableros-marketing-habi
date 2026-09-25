@@ -142,6 +142,15 @@
   .pulso-lista { list-style: decimal inside; margin: 8px 0 0; padding: 0; font-size: 12.5px; color: var(--text-muted); }
   .pulso-lista li { display: flex; justify-content: space-between; gap: 10px; padding: 5px 0; border-bottom: 1px solid var(--row-border); }
   .pulso-lista li b { font-variant-numeric: tabular-nums; color: var(--text-muted-2); }
+  .pulso-bloque { font-size: 13px; font-weight: 700; color: var(--text-title); margin: 22px 0 10px; }
+  .pulso-bloque:first-of-type { margin-top: 12px; }
+  .pulso-q7 { width: 100%; border-collapse: collapse; font-size: 12.5px; margin-top: 8px; }
+  .pulso-q7 th, .pulso-q7 td { padding: 7px 8px; border-bottom: 1px solid var(--row-border); text-align: right; font-variant-numeric: tabular-nums; }
+  .pulso-q7 th { font-size: 11px; font-weight: 600; color: var(--text-muted-3); vertical-align: bottom; }
+  .pulso-q7 th:first-child, .pulso-q7 td:first-child { text-align: left; }
+  .pulso-q7 td { color: var(--text-muted); }
+  .pulso-q7 tr.focal td { color: var(--text-title); font-weight: 700; }
+  .pulso-q7-wrap { overflow-x: auto; }
   @media (max-width: 560px) {
     .pulso-fila { grid-template-columns: 1fr 44px; }
     .pulso-riel { grid-column: 1 / -1; }
@@ -435,6 +444,10 @@ let BLOQUE = '10';
 // puede mover sin pasar por ningún anuncio; "Todos WEB" queda de contexto.
 const LEADS_OPC = { 'Directo': 'directo', 'Búsqueda de marca': 'marca', 'Todos WEB': 'web' };
 let LEADS_SEL = 'Directo';
+// Público del encuestador. Dueños primero: son el cliente de TuHabi y sobre ellos se lee la
+// salud de marca. Brokers va aparte porque conocen la categoría como canal, no como cliente.
+const PUBLICOS = { 'Dueños': 'owner', 'Brokers': 'broker' };
+let PUBLICO = 'Dueños';
 
 // ── El corazón del tablero: cada métrica se dibuja según su `status`, no según si su
 // serie viene vacía. Un `not_available` explica qué fuente falta; jamás pinta un chart
@@ -726,10 +739,78 @@ const BARRA = (label, pct, color, nota, valor) => `
     <div class="pulso-pct">${valor === undefined ? pct + '%' : valor}</div>
   </div>${nota ? `<div class="pulso-nota">${nota}</div>` : ''}`;
 
-function drawEncuestador(host, serie) {
+// Lo que escribe la gente se pinta dentro del HTML: se escapa siempre.
+const esc = t => String(t == null ? '' : t).replace(/[&<>"']/g,
+  c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
+
+// El cuestionario vigente de Pulso (ENCUESTA.md del repo pulso-inmobiliario), en su orden.
+// No hay Q6: Pulso la retiró al reducir el cuestionario y conservó la numeración.
+const PULSO_Q = [
+  ['q1', 'Espontánea', 'Cuando piensas en empresas o plataformas para vender una casa o departamento, ¿cuál es la primera que se te viene a la mente?'],
+  ['q2', 'Espontánea (otras)', '¿Qué otras conoces? Escribe todas las que recuerdes.'],
+  ['q3', 'Conocimiento asistido', '¿Cuáles de estas conoces, aunque sea solo de nombre?'],
+  ['q4', 'Consideración', 'Si fueras a vender una vivienda, ¿cuáles de estas considerarías usar?'],
+  ['q5', 'Primera opción', '¿Cuál sería tu primera opción?'],
+  ['q7', 'Equity de marca', 'Pensando en {marca}, ¿qué tan de acuerdo estás con cada frase? (1 = totalmente en desacuerdo, 5 = totalmente de acuerdo)'],
+  ['q8', 'Abierta sobre TuHabi', '¿Qué es lo primero que piensas cuando escuchas "TuHabi"?'],
+];
+const TOP_ABIERTAS = 7;
+const pct0 = (n, base) => base ? Math.round(100 * n / base) : 0;
+const colorMarca = id => id === 'tuhabi' ? C.azul : id === 'fake' ? C.gris : id === 'ninguna' ? C.rojo : C.verde;
+const labelMarca = b => b.id === 'fake' ? `${esc(b.label)} <em>(marca ficticia)</em>`
+  : b.id === 'ninguna' ? 'Ninguna' : esc(b.label);
+
+function preguntaPulso(k, r) {
+  const q = (r.preguntas || {})[k];
+  if (!q) return '<div class="cap">Sin datos de esta pregunta en la ola.</div>';
+  const barras = (lista, base) => lista.map(b => BARRA(labelMarca(b), pct0(b.n, base), colorMarca(b.id),
+    null, `${pct0(b.n, base)}%`)).join('');
+  const grupos = (lista, base, conEjemplo) => lista.slice(0, TOP_ABIERTAS).map(g =>
+    BARRA(esc(g.grupo), pct0(g.n, base), g.grupo === 'TuHabi' ? C.azul : C.cian,
+      conEjemplo && g.ejemplo ? `«${esc(g.ejemplo)}»` : null, `${g.n}`)).join('');
+  const resto = lista => lista.length > TOP_ABIERTAS ? ` Se muestran los ${TOP_ABIERTAS} grupos más grandes de ${lista.length}.` : '';
+  switch (k) {
+    case 'q1': return `<div class="cap">Base: ${q.total} respuestas. Agrupadas por marca: las variantes
+        mal escritas de una misma marca se juntan (ej. "Inmuebles 24", "I24").${resto(q.grupos)}</div>
+      ${grupos(q.grupos, q.total)}`;
+    case 'q2': return `<div class="cap">Menciones de marca, agrupadas igual que Q1: una respuesta puede nombrar
+        varias. Sobre las ${q.muestra} respuestas más recientes que publica Pulso;
+        ${q.ninguna} de ${q.total} marcaron "No conozco otras".${resto(q.grupos)}</div>
+      ${grupos(q.grupos, q.muestra)}`;
+    // La ficticia casi nunca aparece: quien la marca queda excluido por calidad antes de agregar.
+    case 'q3': return `<div class="cap">Base: ${q.total} respuestas. Opción múltiple: los porcentajes suman más de 100%.
+        ${q.barras.some(b => b.id === 'fake') ? 'La marca ficticia es un control de calidad, no un competidor.' : ''}</div>${barras(q.barras, q.total)}`;
+    case 'q4': return `<div class="cap">Base: ${q.total} personas que reconocieron alguna marca real en Q3.
+        Solo se ofrecen las que marcaron ahí.</div>${barras(q.barras, q.total)}`;
+    case 'q5': return `<div class="cap">Base: ${q.total} personas que respondieron Q5 (se omite si en Q4 eligieron
+        una sola marca o ninguna).</div>${barras(q.barras, q.total)}`;
+    case 'q7': {
+      const frases = (q.find(m => m.items.length) || { items: [] }).items;
+      const filas = q.slice().sort((a, b) => (b.marca === 'tuhabi') - (a.marca === 'tuhabi') || b.n - a.n);
+      return `<div class="cap">Cada persona evalúa TuHabi (si la conoce) y dos marcas conocidas al azar.
+          <em>Evaluaron</em> = cuántos calificaron; <em>no la conocen bien</em> = marcaron "No la conozco lo suficiente".</div>
+        <div class="pulso-q7-wrap"><table class="pulso-q7"><thead><tr><th>Marca</th>
+          ${frases.map(f => `<th>${esc(f.text)}</th>`).join('')}<th>Evaluaron</th><th>No la conocen bien</th></tr></thead>
+        <tbody>${filas.map(m => `<tr class="${m.marca === 'tuhabi' ? 'focal' : ''}"><td>${esc(m.label)}</td>
+          ${frases.map(f => { const it = m.items.find(i => i.id === f.id);
+            return `<td>${it && it.avg != null ? it.avg.toFixed(1) : '—'}</td>`; }).join('')}
+          <td>${m.n}</td><td>${m.ns}</td></tr>`).join('')}</tbody></table></div>`;
+    }
+    case 'q8': return `<div class="cap">Solo a quien marcó TuHabi en Q3. Agrupadas por tema con palabras clave;
+        bajo cada tema, la respuesta más corta del grupo como ejemplo. Sobre las ${q.muestra} respuestas más
+        recientes de ${q.total}.${resto(q.grupos)}</div>${grupos(q.grupos, q.muestra, true)}`;
+  }
+  return '';
+}
+
+function drawEncuestador(host, serieTodas) {
+  const aud = PUBLICOS[PUBLICO];
+  // Filas de antes de separar públicos no traen `audiencia`: eran solo de dueños.
+  const serie = serieTodas.filter(r => (r.audiencia || 'owner') === aud);
+  const tabs = chips('Público', Object.keys(PUBLICOS), PUBLICO, 'publico');
   if (!serie.length) {
-    host.innerHTML = `<div class="empty-metric"><span class="icon">—</span>
-      <strong>Sin olas publicadas</strong><p>Pulso respondió, pero todavía no hay ninguna ola con respuestas.</p></div>`;
+    host.innerHTML = tabs + `<div class="empty-metric"><span class="icon">—</span>
+      <strong>Sin olas publicadas para ${PUBLICO.toLowerCase()}</strong><p>Pulso respondió, pero todavía no hay ninguna ola con respuestas de este público.</p></div>`;
     return;
   }
   const r = serie[serie.length - 1];
@@ -737,8 +818,19 @@ function drawEncuestador(host, serie) {
   const comp = (r.competencia || []).slice().sort((a, b) => b.asistida_pct - a.asistida_pct);
   const esp = r.espontanea || [];
   const attr = r.atributos || [];
+  const excl = r.excluidas ? ` · ${r.excluidas} excluidas por control de calidad (${r.excluidas_pct}%)` : '';
 
-  host.innerHTML = `<div class="charts-grid">
+  const porPregunta = PULSO_Q.map(([k, nombre, texto]) => `<div class="fila"${k === 'q7' ? ' style="grid-column:1 / -1"' : ''}>
+      <div class="fila-h"><span class="n">${k.toUpperCase()}</span><h4>${nombre}</h4>
+        <span class="q">${esc(texto)}</span></div>
+      <div class="panel">${preguntaPulso(k, r)}</div></div>`).join('');
+
+  host.innerHTML = `${tabs}
+  <p class="hint" style="margin:8px 0 0">${PUBLICO} · ola ${r.wave}${otras} · ${r.respuestas} encuestas completas${excl}.</p>
+  <div class="pulso-bloque">Resultados pregunta por pregunta</div>
+  <div class="charts-grid">${porPregunta}</div>
+  <div class="pulso-bloque">Agrupaciones</div>
+  <div class="charts-grid">
     <div class="panel">
       <h3>¿Nos conocen? El embudo de TuHabi</h3>
       <div class="cap">Ola ${r.wave}${otras} · ${r.respuestas} encuestas completas. Cada escalón se calcula sobre
@@ -753,21 +845,21 @@ function drawEncuestador(host, serie) {
       <h3>Notoriedad asistida, contra la categoría</h3>
       <div class="cap">Quién dice conocer cada marca, aunque sea de nombre. La marca inventada de control no aparece acá: su cifra está en el panel del embudo, como piso de ruido.</div>
       ${BARRA('TuHabi', r.asistida_pct, C.azul)}
-      ${comp.map(c => BARRA(c.marca, c.asistida_pct, C.gris)).join('')}
+      ${comp.map(c => BARRA(esc(c.marca), c.asistida_pct, C.gris)).join('')}
       ${BARRA('No reconoció ninguna', r.ninguna_pct || 0, C.rojo,
         'No es una marca: es quien no marcó ninguna de la lista. Se saca del ranking para que no se lea como un competidor.')}
     </div>
     <div class="panel">
       <h3>Recordación espontánea</h3>
-      <div class="cap">La primera marca que se les viene a la mente, sin lista. Se transcribe tal cual:
-        Pulso agrupa por ortografía y no codifica marcas, así que una variante mal escrita aparece como su propio grupo.</div>
-      ${esp.length ? `<ol class="pulso-lista">${esp.map(e => `<li><span>${e.texto}</span><b>${e.n}</b></li>`).join('')}</ol>`
+      <div class="cap">La primera marca que se les viene a la mente, sin lista. Agrupada igual que Q1:
+        las variantes mal escritas de una misma marca se juntan.</div>
+      ${esp.length ? `<ol class="pulso-lista">${esp.map(e => `<li><span>${esc(e.texto)}</span><b>${e.n}</b></li>`).join('')}</ol>`
         : '<div class="cap">Sin respuestas abiertas en esta ola.</div>'}
     </div>
     <div class="panel">
       <h3>¿Con qué atributo nos relacionan?</h3>
       <div class="cap">Promedio de acuerdo con cada frase sobre TuHabi, de 1 a 5. Base: ${r.atributos_n} personas que dijeron conocerla lo suficiente.</div>
-      ${attr.length ? attr.map(a => BARRA(a.text || a.id, Math.round(((a.avg || 0) / 5) * 100), C.cian,
+      ${attr.length ? attr.map(a => BARRA(esc(a.text || a.id), Math.round(((a.avg || 0) / 5) * 100), C.cian,
           null, a.avg == null ? '—' : a.avg.toFixed(1))).join('')
         : '<div class="cap">Nadie dijo conocer la marca lo suficiente para calificarla en esta ola.</div>'}
     </div>
@@ -914,7 +1006,7 @@ function render() {
      'Lo que la gente dice cuando se le pregunta dónde nos conoció, al momento de registrarse. Es declarado, no medido: sirve para leer tendencia, nunca para atribuir cierres.',
      drawExitPoll],
     ['encuestador', 'Agente encuestador de marca — Pulso Inmobiliario',
-     'Encuesta por WhatsApp y por un agente de voz a dueños que publican vivienda en propiedades.com. Responde dos de las tres preguntas de este indicador: <strong>¿nos conocen?</strong> y <strong>¿con qué atributo nos relacionan?</strong>, y agrega el embudo de consideración. La tercera —<strong>¿nos ven como comprador directo, como inmobiliaria o como varias cosas?</strong>— todavía no está en el cuestionario. Es el único indicador de este tablero que le pregunta a gente que <em>no</em> ha interactuado con nosotros: todos los demás miden sobre audiencia ya alcanzada por la pauta o ya registrada.',
+     'Encuesta por WhatsApp y por un agente de voz a dueños que publican vivienda en propiedades.com y a brokers independientes; el selector de <strong>Público</strong> muestra cada uno por separado. Primero va cada pregunta en el orden de la encuesta y después las agrupaciones. Responde dos de las tres preguntas de este indicador: <strong>¿nos conocen?</strong> y <strong>¿con qué atributo nos relacionan?</strong>, y agrega el embudo de consideración. La tercera —<strong>¿nos ven como comprador directo, como inmobiliaria o como varias cosas?</strong>— todavía no está en el cuestionario. Es el único indicador de este tablero que le pregunta a gente que <em>no</em> ha interactuado con nosotros: todos los demás miden sobre audiencia ya alcanzada por la pauta o ya registrada.',
      drawEncuestador],
     ['traffic', 'Tráfico por plaza',
      'Usuarios únicos que llegan al sitio, por plaza. Si la marca funciona, el tráfico sube sin que suba la inversión.',
@@ -959,7 +1051,7 @@ window.rerender = render;
 // La vista queda en la URL: así se puede mandar "el tablero de Colombia" por Slack en vez de
 // "abre el tablero y dale click a CO".
 function syncURL() {
-  const q = new URLSearchParams({ pais: PAIS, plaza: PLAZA, meses: MESES, bloque: BLOQUE, leads: LEADS_SEL });
+  const q = new URLSearchParams({ pais: PAIS, plaza: PLAZA, meses: MESES, bloque: BLOQUE, leads: LEADS_SEL, publico: PUBLICO });
   history.replaceState(null, '', `?${q}`);
 }
 function readURL() {
@@ -969,6 +1061,7 @@ function readURL() {
   if (VENTANAS.includes(q.get('meses'))) MESES = q.get('meses');
   if (BLOQUES.includes(q.get('bloque'))) BLOQUE = q.get('bloque');
   if (q.get('leads') in LEADS_OPC) LEADS_SEL = q.get('leads');
+  if (q.get('publico') in PUBLICOS) PUBLICO = q.get('publico');
 }
 
 document.addEventListener('click', e => {
@@ -977,6 +1070,7 @@ document.addEventListener('click', e => {
   else if (b.dataset.pick === 'meses') MESES = b.dataset.val;
   else if (b.dataset.pick === 'bloque') BLOQUE = b.dataset.val;
   else if (b.dataset.pick === 'leads') LEADS_SEL = b.dataset.val;
+  else if (b.dataset.pick === 'publico') PUBLICO = b.dataset.val;
   else PLAZA = b.dataset.val;
   syncURL();
   render();

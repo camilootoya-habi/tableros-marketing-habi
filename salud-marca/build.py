@@ -28,9 +28,10 @@ def collect_encuestador():
 
     Una llamada HTTP sin credenciales: ese endpoint solo devuelve conteos, así
     que el tablero no necesita (ni debe tener) acceso a la base de la encuesta.
+    Una fila por público (dueños y brokers): el tablero elige cuál mostrar.
     Hoy hay una sola ola; `series()` ya devuelve lista para que las siguientes
     se acumulen sin tocar esto."""
-    return PULSO.series([PULSO.fetch()])
+    return PULSO.series([PULSO.fetch(audiencia=a) for a in PULSO.AUDIENCIAS])
 
 
 def _refresco_reciente(last_refresh, now):
