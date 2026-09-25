@@ -562,6 +562,8 @@
   .pv-irow.h > span{display:flex;align-items:center;gap:6px}
   .pv-irow.h > span.r{justify-content:flex-end}
   .pv-irow.sin{background:var(--bad-wash)}
+  .pv-irow.tot{background:var(--bg);border-top:1px solid var(--border);border-bottom:0}
+  .pv-irow.tot .nm b,.pv-irow.tot .num{font-weight:700}
   .pv-irow .r{text-align:right}
   .pv-chip{height:24px;padding:0 8px;border-radius:9999px;background:var(--barbg);color:var(--text);font-size:12px;font-weight:600;
     display:inline-flex;align-items:center}
@@ -1268,11 +1270,9 @@ function _loopVals(){
 function renderResumenLoop(){
   const el=document.getElementById('pvResumen'); if(!el) return;
   const {cur:c,prev:p}=_loopVals(), pl=_PREV_LBL[rangoFunnel];
-  const tasa=(o)=>(o&&o.lei)?(o.inte||0)/o.lei:null;
   const kp=[
     {l:'Envíos',tk:'env',v:fmt(c.env),d:p&&_dl(c.env,p.env),pl,s:c.lei==null?'Leídos aún no disponibles':fmt(c.lei)+' leídos ('+_pc(c.lei,c.env)+')'},
-    {l:'Tasa de interés',tk:'k_tasa',v:tasa(c)==null?'—':_pc(c.inte,c.lei),d:p&&_dl(tasa(c),tasa(p),true),pl,
-     s:c.inte==null?'Interesados aún no disponibles':fmt(c.inte)+' interesados de '+fmt(c.lei)+' leídos'},
+    {l:'Re-asignados',tk:'f_re',v:fmt(c.rea),d:p&&_dl(c.rea,p.rea),pl,s:_pc(c.rea,c.bb)+' de los enviados a backbone'},
     {l:'Citas agendadas',tk:'f_cita',v:fmt(c.citas),d:p&&_dl(c.citas,p.citas),pl,s:_pc(c.citas,c.rea)+' de los re-asignados'},
     {l:'Cierres',tk:'f_cie',v:fmt(c.cie),d:p&&_dl(c.cie,p.cie),pl,s:fmt(c.mm)+' compra directa · '+fmt(c.inmo)+' captación · '+_pc(c.cie,c.citas)+' de las citas'},
   ];
@@ -1545,11 +1545,21 @@ function renderInventario(){
       <span class="num">${fmt(a.enviados_hoy)}</span>
       <span class="num${rep<0?' neg':(rep>0?' pos':'')}">${repTxt}</span>
       <div class="pv-run"><span class="${rn[0]}">${rn[1]}</span></div></div>`; }).join('');
+  // Fila acumulada: el pool entero, con el runway total de arriba (no la suma de los niveles).
+  const reps=ts.map(t=>v.tiers[t].repuesto_hoy).filter(r=>r!=null);
+  const totR=reps.length?reps.reduce((a,b)=>a+(+b||0),0):null;
+  const totRTxt=totR==null?'—':(totR>0?'+'+fmt(totR):totR<0?'−'+fmt(-totR):'0');
+  const totalFila=`<div class="pv-irow tot">
+      <div class="nm"><span class="pv-chip">Total</span><div><b>Pool completo</b><span class="nt">P1 a P4</span></div></div>
+      <div class="st"><div class="pv-track" style="visibility:hidden"></div><b>${fmt(totS)}</b></div>
+      <span class="num">${fmt(totE)}</span>
+      <span class="num${totR<0?' neg':(totR>0?' pos':'')}">${totRTxt}</span>
+      <div class="pv-run"><span class="${runTxt[0]}">${runTxt[1].replace(/^runway /,'')}</span></div></div>`;
   el.innerHTML=head(`<span style="font-size:14px;font-weight:500;color:var(--text);font-variant-numeric:tabular-nums">Stock total ${fmt(totS)} · ${fmt(totE)} enviados hoy <span class="pv-run" style="display:inline-block;margin-left:8px;vertical-align:middle" title="Stock total ÷ envíos promedio por día (7 días)"><span class="${runTxt[0]}">${runTxt[1]}</span></span></span>`)+`
     <div class="pv-scroll" style="padding-bottom:12px"><div class="pv-inv">
       <div class="pv-irow h"><span>Nivel</span><span>Stock elegible${II('stock')}</span><span class="r">Enviados hoy</span>
         <span class="r">Repuestos hoy${II('repuestos')}</span><span class="r">Runway${II('runway')}</span></div>
-      ${filas}</div></div>`;
+      ${filas}${totalFila}</div></div>`;
 }
 
 // --- Mejor hora de envío: mapa de calor 07–21 h ---
