@@ -14,6 +14,42 @@ el siguiente horario. El workflow tiene `concurrency`, así que dos horarios atr
 corren a la vez. Una corrida manual (`workflow_dispatch`) no mira el marcador: si se lanza con
 `enviar` después de que ya salió, manda otro mensaje.
 
+## Reloj externo
+
+GitHub **no garantiza** los cron: en horas de carga los atrasa o los descarta. El 25-sep no
+corrió ninguno de los cuatro horarios, y ese día tampoco corrieron otros workflows diarios del
+repo. Lo que falla es solo el disparo: un workflow lanzado por API (`workflow_dispatch`) nunca se
+descarta. Por eso el disparo principal lo hace un **reloj externo gratuito** que llama a la API
+de GitHub; los cuatro cron quedan de respaldo.
+
+**La llamada** (una por horario: 9:07 y 9:31 CDMX):
+
+```
+POST https://api.github.com/repos/camilootoya-habi/tableros-marketing-habi/actions/workflows/tv-diario.yml/dispatches
+Authorization: Bearer <token>
+Accept: application/vnd.github+json
+X-GitHub-Api-Version: 2022-11-28
+
+{"ref": "main", "inputs": {"enviar": "true", "solo_si_falta": "true"}}
+```
+
+Responde **204** sin cuerpo si GitHub aceptó el disparo. `solo_si_falta` es lo que evita el
+mensaje doble: si un cron de GitHub o el disparo anterior ya lo envió, esta corrida termina
+sin hacer nada.
+
+**El token:** fine-grained, creado por el **dueño del repo** (un repo personal solo admite
+tokens de su dueño), con acceso **solo a `tableros-marketing-habi`** y permiso **Actions: Read
+and write**, nada más. Con eso, quien lo obtenga solo puede lanzar o cancelar workflows de este
+repo: no lee código privado ni hace push. Vence como máximo al año; hay que renovarlo.
+
+**Probar la llamada** (lanza el reporte de verdad; con `solo_si_falta` no duplica):
+
+```bash
+curl -i -X POST -H "Authorization: Bearer $TOKEN" -H "Accept: application/vnd.github+json" \
+  https://api.github.com/repos/camilootoya-habi/tableros-marketing-habi/actions/workflows/tv-diario.yml/dispatches \
+  -d '{"ref":"main","inputs":{"enviar":"true","solo_si_falta":"true"}}'
+```
+
 ## Por qué el incremental va a 7 días y no a 24 horas
 
 Es la decisión de diseño que más importa entender antes de tocar nada.
