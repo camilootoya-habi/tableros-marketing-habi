@@ -764,8 +764,7 @@
   <div id="sheet-inbox" class="sheet" hidden>
     <div class="sheet-head"><h2>Inbox · conversaciones del agente SDR</h2></div>
     <p class="note" style="max-width:80ch">Conversaciones reales de WhatsApp entre los sellers y el agente SDR, en vivo desde
-      <code>agente-sdr-ten.vercel.app</code>. Este tablero es un sitio <b>público</b>, así que el token de acceso
-      <b>no vive en el código</b>: se pide una vez y queda guardado solo en este navegador.</p>
+      <code>agente-sdr-ten.vercel.app</code>. Se abre sin token; el token solo se pide para enviar tandas.</p>
     <div id="inboxSub"></div>
     <div id="inboxGate"></div>
     <div id="inboxFrame"></div>
@@ -1048,22 +1047,11 @@ function renderVentanas(){
   gate.innerHTML='<p class="note"><a href="'+url+'" target="_blank" rel="noopener">Abrir en pestaña nueva ↗</a></p>';
   frame.innerHTML='<iframe src="'+url+'" title="Tablero de Ventanas" style="width:100%;height:78vh;border:1px solid var(--border);border-radius:12px;background:#fff"></iframe>';
 }
+// El inbox se abre SIN token (25-sep, agent/webhook.py de marketing-loop-sellers): el token
+// queda solo para lo que actúa, como el envío de tandas.
 function renderInbox(){
   const gate=document.getElementById('inboxGate'), frame=document.getElementById('inboxFrame');
   if(!gate||!frame) return;
-  let tok=''; try{ tok=localStorage.getItem('ml-inbox-token')||''; }catch(e){}
-  if(!tok){
-    frame.innerHTML='';
-    gate.innerHTML=`<section class="card-sec" style="max-width:620px">
-      <h3 class="sm">Pega el token del inbox</h3>
-      <p class="note">Es el <code>INBOX_TOKEN</code> del agente SDR. Queda guardado solo en este navegador; no se manda a ningún lado ni queda en el repositorio.</p>
-      <form style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px" onsubmit="return saveInboxToken(event)">
-        <input id="inboxTok" type="text" class="sel" style="flex:1;min-width:240px" placeholder="token"
-               autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" data-1p-ignore data-lpignore="true">
-        <button class="winbtn active" type="submit">Abrir inbox</button>
-      </form></section>`;
-    return;
-  }
   // El inbox hereda los selectores del tablero: si estás mirando Ventanas en CO, las
   // conversaciones que se abren son las de esa campaña y ese país, no todas.
   const filtro=(canalSel==='ventanas'?'&campaign=ventanas':(canalSel==='web'?'&campaign=reactivacion':''))
@@ -1075,19 +1063,15 @@ function renderInbox(){
   if(sb) sb.innerHTML = canalSel!=='ventanas' ? '' :
     '<div class="seg" style="margin:12px 0">'+SUBF.map(([k,lab])=>
       `<button type="button" class="winbtn sm${k===subflujoInbox?' active':''}" onclick="setSubflujoInbox('${k}')">${lab}</button>`).join('')+'</div>';
-  const url=INBOX_BASE+'?token='+encodeURIComponent(tok)+filtro;
+  const url=INBOX_BASE+'?'+filtro.slice(1);
   const fc=document.getElementById('inboxFiltro');
   if(fc){ fc.textContent=_PAIS_LBL[country]+' · '+_CANAL_LBL[canalSel];
     // Ventanas solo existe en CO: con MX el inbox saldría vacío y parecería roto.
     if(canalSel==='ventanas' && country!=='CO') fc.textContent += ' — ventanas solo opera en Colombia';
   }
-  gate.innerHTML=`<p class="note"><a href="${url}" target="_blank" rel="noopener">Abrir en pestaña nueva ↗</a> · <a href="#" onclick="clearInboxToken();return false">Olvidar el token de este navegador</a></p>`;
+  gate.innerHTML=`<p class="note"><a href="${url}" target="_blank" rel="noopener">Abrir en pestaña nueva ↗</a></p>`;
   frame.innerHTML=`<iframe src="${url}" title="Inbox del agente SDR" style="width:100%;height:78vh;border:1px solid rgba(128,128,128,.35);border-radius:10px;background:#fff"></iframe>`;
 }
-function saveInboxToken(ev){ if(ev) ev.preventDefault();
-  const i=document.getElementById('inboxTok'); const v=(i&&i.value||'').trim(); if(!v) return false;
-  try{ localStorage.setItem('ml-inbox-token',v); }catch(e){} renderInbox(); return false; }
-function clearInboxToken(){ try{ localStorage.removeItem('ml-inbox-token'); }catch(e){} renderInbox(); }
 
 function renderExplorer(){
   const d=(AUDIT||{})[expC], el=document.getElementById('expBody');
