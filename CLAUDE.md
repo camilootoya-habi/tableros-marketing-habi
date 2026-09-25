@@ -113,5 +113,6 @@ python3 -m pytest scripts/tests/ -q # tests del generador y del runner
 
 ## Más detalle
 
+- **Entrega de Salud de marca, reporte de TV y Pulso (25-sep-2026): `docs/ENTREGA.md`** — qué hay, qué se actualiza solo, tareas recurrentes y pendientes.
 - Flujo de líder paso a paso: `CONTRIBUTING.md`
 - Diseño y plan completos: `docs/superpowers/specs/2026-05-26-hub-multilider-design.md` y `docs/superpowers/plans/2026-05-26-hub-multilider.md`
