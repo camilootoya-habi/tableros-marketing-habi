@@ -95,6 +95,13 @@
   .badge-ok { background: rgba(52,211,153,.16); color: var(--ok); }
   .badge-prop { background: rgba(251,191,36,.16); color: var(--warn); }
   .ref-num { font-size: 12px; color: var(--text-muted); }
+  .anti { margin-top: 18px; padding: 12px 14px; border-left: 3px solid var(--warn); background: var(--card-2); border-radius: 0 6px 6px 0; }
+  .anti .lbl:first-child { color: var(--warn); }
+  .anti p { font-size: 12.5px; }
+  .anti ul { font-size: 12.5px; }
+  details { margin-top: 8px; }
+  details summary { cursor: pointer; font-size: 12px; color: var(--accent); }
+  details summary:hover { text-decoration: underline; }
   .ref-num strong { color: var(--text-title); }
 
   .callout {
@@ -131,7 +138,8 @@
     query y la regla de medición. Todo corre en BigQuery, proyecto <code>sellers-main-prod</code>.
     CO y MX son esquemas distintos (CO en español, MX en inglés): no basta con cambiar el dataset.
   </p>
-  <p class="meta-line">Documento en construcción · se agrega una fila por iteración · actualizado 2026-09-24 · sin conexión a BigQuery</p>
+  <p class="lead">Cada fila trae su <strong>antifunnel</strong>: los que llegaron a la etapa anterior y no pasaron a esta, abiertos por su <strong>estado actual MM | INMO</strong> (concatenado, id y nombre). Así se ve en qué producto quedó cada lead y dónde hay oportunidad.</p>
+  <p class="meta-line">Documento en construcción · se agrega una fila por iteración · actualizado 2026-09-25 · sin conexión a BigQuery</p>
 
   <table class="defs">
     <colgroup><col class="c-def"><col class="c-pais"><col class="c-pais"></colgroup>
@@ -180,6 +188,25 @@ WHERE p.fuente_id IN (3, 7, 20, 35, 39, 47)</code></pre>
             <li>Filtrar siempre por <strong>id</strong> (<code>fuente_id</code>), no por nombre: los nombres cambian entre países (<code>lead_forms</code> vs <code>Lead Forms</code>, <code>comercial</code> vs <code>Comercial</code>).</li>
             <li>Quedan fuera, entre otras: <code>1</code> Ventana (5.638 en ago-26) y <code>28</code> ventana-scraping (8.355). Son comparables internos, no leads: juntas son el ~40% de lo que se crea en la tabla.</li>
           </ul>
+
+          <div class="anti">
+            <span class="lbl">Antifunnel</span>
+            <p>Registros que se crean en la tabla pero <strong>no vienen de las 6 fuentes</strong>, por fuente (incluye fuente nula). Es lo que queda fuera de todo el funnel.</p>
+            <div class="ref-num">ago-26: <strong>8.355</strong> 28 ventana-scraping · <strong>5.638</strong> 1 Ventana</div>
+            <details><summary>Ver query</summary><pre><code>SELECT
+  p.fuente_id,
+  f.fuente,
+  COUNT(DISTINCT n.id) AS registros_excluidos
+FROM `sellers-main-prod.co_rds_staging.habi_db_tabla_negocio_inmueble` n
+JOIN `sellers-main-prod.co_rds_staging.habi_db_tabla_inmueble_v2` p
+  ON p.id = n.inmueble_id
+LEFT JOIN `sellers-main-prod.co_rds_staging.habi_db_tabla_fuente` f
+  ON f.id = p.fuente_id
+WHERE DATE(n.fecha_creacion) BETWEEN '2026-08-01' AND '2026-08-31'   -- cohorte
+  AND (p.fuente_id IS NULL OR p.fuente_id NOT IN (3, 7, 20, 35, 39, 47))
+GROUP BY p.fuente_id, f.fuente
+ORDER BY registros_excluidos DESC</code></pre></details>
+          </div>
         </td>
 
         <td data-pais="México">
@@ -215,6 +242,25 @@ WHERE p.source_id IN (3, 7, 35, 39, 46, 47)</code></pre>
             <li>CRM (20) existe en el catálogo MX pero no es fuente de marketing en México. Propiedades (46) solo cuenta en MX.</li>
             <li>Queda fuera principalmente <code>28</code> ventana-scraping (3.178 en ago-26, ~16% de lo que se crea).</li>
           </ul>
+
+          <div class="anti">
+            <span class="lbl">Antifunnel</span>
+            <p>Deals que se crean en la tabla pero <strong>no vienen de las 6 fuentes</strong>, por fuente (incluye fuente nula).</p>
+            <div class="ref-num">ago-26: <strong>3.178</strong> 28 ventana-scraping. 1 Ventana y 4 Web Scraping dejaron de generar registros desde jul-26.</div>
+            <details><summary>Ver query</summary><pre><code>SELECT
+  p.source_id,
+  s.label,
+  COUNT(DISTINCT d.id) AS registros_excluidos
+FROM `sellers-main-prod.mx_rds_staging.habi_db_property_deal` d
+JOIN `sellers-main-prod.mx_rds_staging.habi_db_property` p
+  ON p.id = d.property_id
+LEFT JOIN `sellers-main-prod.mx_rds_staging.habi_db_source` s
+  ON s.id = p.source_id
+WHERE DATE(d.date_create) BETWEEN '2026-08-01' AND '2026-08-31'      -- cohorte
+  AND (p.source_id IS NULL OR p.source_id NOT IN (3, 7, 35, 39, 46, 47))
+GROUP BY p.source_id, s.label
+ORDER BY registros_excluidos DESC</code></pre></details>
+          </div>
         </td>
       </tr>
 
@@ -251,6 +297,10 @@ GROUP BY mes</code></pre>
 
           <span class="lbl">Referencia</span>
           <div class="ref-num">jun <strong>17.090</strong> · jul <strong>20.288</strong> · ago <strong>21.224</strong> (2026, corrido el 24-sep)</div>
+          <div class="anti">
+            <span class="lbl">Antifunnel</span>
+            <p>No aplica: es el tope del funnel. Lo que no entra está en el antifunnel de la fila 1.</p>
+          </div>
         </td>
 
         <td data-pais="México">
@@ -279,6 +329,464 @@ GROUP BY mes</code></pre>
 
           <span class="lbl">Referencia</span>
           <div class="ref-num">jun <strong>14.132</strong> · jul <strong>16.408</strong> · ago <strong>16.297</strong> (2026, corrido el 24-sep)</div>
+          <div class="anti">
+            <span class="lbl">Antifunnel</span>
+            <p>No aplica: es el tope del funnel. Lo que no entra está en el antifunnel de la fila 1.</p>
+          </div>
+        </td>
+      </tr>
+
+      <!-- ───────────── COMPLETOS ───────────── -->
+      <tr id="completos">
+        <td class="def">
+          <div class="def-name">3 · Completos</div>
+          <div class="def-q">De los registros (fila 2), cuántos tienen las 5 variables que el backbone exige para evaluar un lead: área, baños, habitaciones, garajes y antigüedad. No depende del producto (MM o INMO) ni del estado del lead.</div>
+          <span class="badge badge-prop">Propuesta</span>
+        </td>
+
+        <td data-pais="Colombia">
+          <span class="lbl">Tabla</span>
+          Las 5 variables viven en el inmueble: <code>co_rds_staging.habi_db_tabla_inmueble_v2</code>
+          (<code>area</code>, <code>banos</code>, <code>num_habitaciones</code>, <code>garajes</code>, <code>anos_antiguedad</code>).
+
+          <span class="lbl">Query</span>
+<pre><code>SELECT
+  DATE_TRUNC(DATE(n.fecha_creacion), MONTH) AS mes,
+  COUNT(DISTINCT n.id) AS registros,
+  COUNT(DISTINCT IF(
+      p.area IS NOT NULL
+      AND p.banos IS NOT NULL
+      AND p.num_habitaciones IS NOT NULL
+      AND p.garajes IS NOT NULL
+      AND p.anos_antiguedad IS NOT NULL,
+    n.id, NULL)) AS completos
+FROM `sellers-main-prod.co_rds_staging.habi_db_tabla_negocio_inmueble` n
+JOIN `sellers-main-prod.co_rds_staging.habi_db_tabla_inmueble_v2` p
+  ON p.id = n.inmueble_id
+WHERE p.fuente_id IN (3, 7, 20, 35, 39, 47)   -- 6 fuentes de marketing
+GROUP BY mes</code></pre>
+
+          <span class="lbl">Cómo se mide</span>
+          <ul>
+            <li>Completo = las 5 variables <strong>no nulas</strong>. Es la regla del backbone (<code>global_completeness_service_co.dmn</code>): un 0 cuenta como dato presente.</li>
+            <li>Se leen los valores <strong>actuales</strong> del inmueble. Si el call center o Gabi completan un dato después, el lead pasa a completo, y las cohortes viejas suben con el tiempo.</li>
+            <li>El 100% de los calificados (20, 63) es completo: la regla es consistente con el backbone.</li>
+          </ul>
+
+          <span class="lbl">Referencia</span>
+          <div class="ref-num">jun <strong>15.886</strong> (93%) · jul <strong>18.429</strong> (91%) · ago <strong>19.257</strong> (91%) (2026, corrido el 25-sep)</div>
+
+          <div class="anti">
+            <span class="lbl">Antifunnel</span>
+            <p>Registros que <strong>no son completos</strong>, por su estado actual MM | INMO. Se agrupan según si algún producto todavía puede avanzar:</p>
+            <ul>
+              <li><strong>Oportunidad</strong>: al menos un producto no lo ha descartado (sigue en 7 incompleto o en proceso). Completarlo le sirve a ese producto.</li>
+              <li><strong>Descartado en ambos</strong>: los dos productos ya lo sacaron. Completarlo no cambia nada.</li>
+            </ul>
+            <table class="small">
+              <thead><tr><th>ago-26</th><th>Leads</th></tr></thead>
+              <tbody>
+                <tr><td>Oportunidad: MM e INMO</td><td>95</td></tr>
+                <tr><td>Oportunidad: solo MM</td><td>286</td></tr>
+                <tr><td>Oportunidad: solo INMO</td><td>375</td></tr>
+                <tr><td><strong>Total oportunidad</strong></td><td><strong>756</strong></td></tr>
+                <tr><td>Descartado en ambos</td><td>1.211</td></tr>
+              </tbody>
+            </table>
+            <p>Ejemplos: <code>7 incompleto | 10 fuera_de_la_zona</code> (285) solo le sirve a MM; <code>38 descartado_por_inmueble | 7 incompleto</code> (187) solo le sirve a INMO.</p>
+            <p class="ref-num">Descarte = 1 duplicado · 4, 5, 6, 8, 9, 11, 12, 57, 59 call center · 10, 15, 16, 33, 34, 38, 51, 55, 56, 64, 70, 71 reglas del inmueble · 36, 61, 73 sin precio · 72 fuente.</p>
+            <details><summary>Ver query</summary><pre><code>WITH
+-- catálogo de estados (mismos ids para MM e INMO)
+cat AS (
+  SELECT id, estado FROM `sellers-main-prod.co_rds_staging.habi_db_tabla_estados`
+),
+-- registros no completos con su estado actual MM e INMO
+no_completos AS (
+  SELECT n.id, n.last_estado_id AS mm, n.last_state_id_real_estate AS inmo
+  FROM `sellers-main-prod.co_rds_staging.habi_db_tabla_negocio_inmueble` n
+  JOIN `sellers-main-prod.co_rds_staging.habi_db_tabla_inmueble_v2` p
+    ON p.id = n.inmueble_id
+  WHERE p.fuente_id IN (3, 7, 20, 35, 39, 47)
+    AND DATE(n.fecha_creacion) BETWEEN '2026-08-01' AND '2026-08-31'   -- cohorte
+    AND NOT (p.area IS NOT NULL AND p.banos IS NOT NULL AND p.num_habitaciones IS NOT NULL
+             AND p.garajes IS NOT NULL AND p.anos_antiguedad IS NOT NULL)
+),
+-- ¿el producto ya lo descartó? (duplicado, call center, regla del inmueble o sin precio)
+clasif AS (
+  SELECT
+    id, mm, inmo,
+    IFNULL(mm, -1)   IN (1,4,5,6,8,9,10,11,12,15,16,33,34,36,38,51,55,56,57,59,61,64,70,71,72,73) AS mm_descartado,
+    IFNULL(inmo, -1) IN (1,4,5,6,8,9,10,11,12,15,16,33,34,36,38,51,55,56,57,59,61,64,70,71,72,73) AS inmo_descartado
+  FROM no_completos
+)
+SELECT
+  CONCAT(IFNULL(CAST(c.mm AS STRING), '-'), ' ', IFNULL(cm.estado, ''), ' | ',
+         IFNULL(CAST(c.inmo AS STRING), '-'), ' ', IFNULL(ci.estado, '')) AS estado_mm_inmo,
+  CASE
+    WHEN NOT c.mm_descartado AND NOT c.inmo_descartado THEN 'oportunidad: MM e INMO'
+    WHEN NOT c.mm_descartado THEN 'oportunidad: solo MM'
+    WHEN NOT c.inmo_descartado THEN 'oportunidad: solo INMO'
+    ELSE 'descartado en ambos'
+  END AS grupo,
+  COUNT(DISTINCT c.id) AS leads
+FROM clasif c
+LEFT JOIN cat cm ON cm.id = c.mm
+LEFT JOIN cat ci ON ci.id = c.inmo
+GROUP BY estado_mm_inmo, grupo
+ORDER BY leads DESC</code></pre></details>
+          </div>
+        </td>
+
+        <td data-pais="México">
+          <span class="lbl">Tabla</span>
+          Las 5 variables viven en la propiedad: <code>mx_rds_staging.habi_db_property</code>
+          (<code>area</code>, <code>bath</code>, <code>room_num</code>, <code>garage</code>, <code>years_old</code>).
+
+          <span class="lbl">Query</span>
+<pre><code>SELECT
+  DATE_TRUNC(DATE(d.date_create), MONTH) AS mes,
+  COUNT(DISTINCT d.id) AS registros,
+  COUNT(DISTINCT IF(
+      p.area IS NOT NULL
+      AND p.bath IS NOT NULL
+      AND p.room_num IS NOT NULL
+      AND p.garage IS NOT NULL
+      AND p.years_old IS NOT NULL,
+    d.id, NULL)) AS completos
+FROM `sellers-main-prod.mx_rds_staging.habi_db_property_deal` d
+JOIN `sellers-main-prod.mx_rds_staging.habi_db_property` p
+  ON p.id = d.property_id
+WHERE p.source_id IN (3, 7, 35, 39, 46, 47)   -- 6 fuentes de marketing
+GROUP BY mes</code></pre>
+
+          <span class="lbl">Cómo se mide</span>
+          <ul>
+            <li>Misma regla que CO: las 5 variables no nulas, con valores actuales.</li>
+            <li>No tenemos el DMN de completitud de MX, pero <strong>se comprobó con datos que usa las mismas 5 variables</strong> (cohortes jun–ago 2026): 0 de 12.162 calificados tienen alguna vacía; solo 22 de 7.818 leads en 7/39 tienen las 5; y a los que están en 7/39 les falta a veces una sola de ellas (área, garajes, antigüedad, baños o habitaciones). Piso, ascensor, medio baño y precio pedido no se exigen.</li>
+            <li>El 100% de los calificados (20, 63) es completo.</li>
+          </ul>
+
+          <span class="lbl">Referencia</span>
+          <div class="ref-num">jun <strong>10.416</strong> (74%) · jul <strong>12.024</strong> (73%) · ago <strong>10.862</strong> (67%) (2026, corrido el 25-sep)</div>
+
+          <div class="anti">
+            <span class="lbl">Antifunnel</span>
+            <p>Deals que <strong>no son completos</strong>, por su estado actual MM | INMO, con los mismos grupos que CO.</p>
+            <table class="small">
+              <thead><tr><th>ago-26</th><th>Leads</th></tr></thead>
+              <tbody>
+                <tr><td>Oportunidad: MM e INMO</td><td>428</td></tr>
+                <tr><td>Oportunidad: solo MM</td><td>2.557</td></tr>
+                <tr><td>Oportunidad: solo INMO</td><td>545</td></tr>
+                <tr><td><strong>Total oportunidad</strong></td><td><strong>3.530</strong></td></tr>
+                <tr><td>Descartado en ambos</td><td>1.905</td></tr>
+              </tbody>
+            </table>
+            <p>El caso principal es <code>7 incompleto | 61 sin_zona_mediana</code> (2.519): INMO lo marca sin zona mediana antes de tener los datos, así que completarlo solo le sirve a MM. En MX el <code>39 web_incompleto</code> sigue vivo y cuenta como oportunidad.</p>
+            <details><summary>Ver query</summary><pre><code>WITH
+-- catálogo de estados (mismos ids que CO, columna en inglés)
+cat AS (
+  SELECT id, state AS estado FROM `sellers-main-prod.mx_rds_staging.habi_db_state`
+),
+-- deals no completos con su estado actual MM e INMO
+no_completos AS (
+  SELECT d.id, d.last_state_id AS mm, d.last_state_id_real_estate AS inmo
+  FROM `sellers-main-prod.mx_rds_staging.habi_db_property_deal` d
+  JOIN `sellers-main-prod.mx_rds_staging.habi_db_property` p
+    ON p.id = d.property_id
+  WHERE p.source_id IN (3, 7, 35, 39, 46, 47)
+    AND DATE(d.date_create) BETWEEN '2026-08-01' AND '2026-08-31'      -- cohorte
+    AND NOT (p.area IS NOT NULL AND p.bath IS NOT NULL AND p.room_num IS NOT NULL
+             AND p.garage IS NOT NULL AND p.years_old IS NOT NULL)
+),
+-- ¿el producto ya lo descartó? (duplicado, call center, regla del inmueble o sin precio)
+clasif AS (
+  SELECT
+    id, mm, inmo,
+    IFNULL(mm, -1)   IN (1,4,5,6,8,9,10,11,12,15,16,33,34,36,38,51,55,56,57,59,61,64,70,71,72,73) AS mm_descartado,
+    IFNULL(inmo, -1) IN (1,4,5,6,8,9,10,11,12,15,16,33,34,36,38,51,55,56,57,59,61,64,70,71,72,73) AS inmo_descartado
+  FROM no_completos
+)
+SELECT
+  CONCAT(IFNULL(CAST(c.mm AS STRING), '-'), ' ', IFNULL(cm.estado, ''), ' | ',
+         IFNULL(CAST(c.inmo AS STRING), '-'), ' ', IFNULL(ci.estado, '')) AS estado_mm_inmo,
+  CASE
+    WHEN NOT c.mm_descartado AND NOT c.inmo_descartado THEN 'oportunidad: MM e INMO'
+    WHEN NOT c.mm_descartado THEN 'oportunidad: solo MM'
+    WHEN NOT c.inmo_descartado THEN 'oportunidad: solo INMO'
+    ELSE 'descartado en ambos'
+  END AS grupo,
+  COUNT(DISTINCT c.id) AS leads
+FROM clasif c
+LEFT JOIN cat cm ON cm.id = c.mm
+LEFT JOIN cat ci ON ci.id = c.inmo
+GROUP BY estado_mm_inmo, grupo
+ORDER BY leads DESC</code></pre></details>
+          </div>
+        </td>
+      </tr>
+
+      <!-- ───────────── EVER CALIFICADOS ───────────── -->
+      <tr id="ever-calificados">
+        <td class="def">
+          <div class="def-name">4 · Ever calificados</div>
+          <div class="def-q">De los registros (fila 2), cuántos pasaron <strong>alguna vez</strong> por un estado de calificado del backbone, sin importar dónde estén hoy. Se mide por producto: MM, INMO y calificado en cualquiera de los dos.</div>
+          <span class="badge badge-prop">Propuesta</span>
+        </td>
+
+        <td data-pais="Colombia">
+          <span class="lbl">Tablas</span>
+          <ul>
+            <li><strong>MM</strong>: <code>co_rds_staging.habi_db_tabla_historico_estado_v2</code> → <code>negocio_id</code>, <code>estado_id IN (20, 63)</code>, <code>fecha_actualizacion</code>.</li>
+            <li><strong>INMO</strong>: <code>co_rds_staging.habi_db_history_state_real_estate</code> → <code>deal_id</code>, <code>state_id = 20</code>, <code>date_create</code>.</li>
+          </ul>
+
+          <span class="lbl">Query</span>
+<pre><code>WITH
+-- registros de las 6 fuentes (fila 2)
+registros AS (
+  SELECT n.id, DATE_TRUNC(DATE(n.fecha_creacion), MONTH) AS mes
+  FROM `sellers-main-prod.co_rds_staging.habi_db_tabla_negocio_inmueble` n
+  JOIN `sellers-main-prod.co_rds_staging.habi_db_tabla_inmueble_v2` p
+    ON p.id = n.inmueble_id
+  WHERE p.fuente_id IN (3, 7, 20, 35, 39, 47)
+    AND DATE(n.fecha_creacion) >= '2026-06-01'   -- inicio de la cohorte
+),
+-- primera calificación MM por negocio
+cal_mm AS (
+  SELECT negocio_id AS id, MIN(fecha_actualizacion) AS fecha_cal_mm
+  FROM `sellers-main-prod.co_rds_staging.habi_db_tabla_historico_estado_v2`
+  WHERE estado_id IN (20, 63)
+    AND fecha_actualizacion >= '2026-06-01'      -- mismo corte
+  GROUP BY id
+),
+-- primera calificación INMO por negocio
+cal_inmo AS (
+  SELECT deal_id AS id, MIN(date_create) AS fecha_cal_inmo
+  FROM `sellers-main-prod.co_rds_staging.habi_db_history_state_real_estate`
+  WHERE state_id = 20
+    AND date_create >= '2026-06-01'
+  GROUP BY id
+)
+SELECT
+  r.mes,
+  COUNT(DISTINCT r.id) AS registros,
+  COUNT(DISTINCT IF(m.id IS NOT NULL, r.id, NULL)) AS ever_cal_mm,
+  COUNT(DISTINCT IF(i.id IS NOT NULL, r.id, NULL)) AS ever_cal_inmo,
+  COUNT(DISTINCT IF(m.id IS NOT NULL OR i.id IS NOT NULL, r.id, NULL))
+    AS ever_cal_cualquiera
+FROM registros r
+LEFT JOIN cal_mm m ON m.id = r.id
+LEFT JOIN cal_inmo i ON i.id = r.id
+GROUP BY r.mes</code></pre>
+
+          <span class="lbl">Cómo se mide</span>
+          <ul>
+            <li>Calificado <strong>MM = 20 o 63</strong>; calificado <strong>INMO = solo 20</strong>. El 36 (sin comparables) y el 73 (sin precio automático) <strong>no</strong> son calificado.</li>
+            <li>Por <strong>cohorte de registro</strong> (<code>fecha_creacion</code>), igual que las filas 2 y 3. La fecha de calificación (<code>MIN</code>) queda disponible para medir tiempos o volumen semanal.</li>
+            <li><strong>MM e INMO no se suman</strong>: un lead puede calificar en los dos. "Cualquiera" es la unión.</li>
+            <li>Cuentan aunque después hayan cambiado de estado (descartados, duplicados): calificaron.</li>
+            <li>⚠ El historial INMO de CO arranca el <strong>2026-03-12</strong>: las cohortes anteriores subcuentan el ever INMO.</li>
+          </ul>
+
+          <span class="lbl">Referencia</span>
+          <table class="small">
+            <thead><tr><th>Cohorte</th><th>MM</th><th>INMO</th><th>Cualquiera</th></tr></thead>
+            <tbody>
+              <tr><td>jun-26</td><td>4.531 (26,5%)</td><td>5.541 (32,4%)</td><td>5.970 (34,9%)</td></tr>
+              <tr><td>jul-26</td><td>5.377 (26,5%)</td><td>6.524 (32,2%)</td><td>7.112 (35,1%)</td></tr>
+              <tr><td>ago-26</td><td>5.623 (26,5%)</td><td>6.978 (32,9%)</td><td>7.631 (36,0%)</td></tr>
+            </tbody>
+          </table>
+          <div class="ref-num">% sobre registros · corrido el 25-sep</div>
+
+          <span class="lbl">Validación con <code>product_qualified</code></span>
+          <p>El negocio guarda para qué producto calificó (<code>ibuyer</code>, <code>real_estate</code>, <code>ibuyer_and_real_estate</code>). Cohortes jun–ago:</p>
+          <ul>
+            <li>Marcados para MM que pasaron por 20/63: <strong>15.215 de 15.217 (99,99%)</strong>.</li>
+            <li>Marcados para INMO que pasaron por 20: <strong>18.796 de 18.944 (99,2%)</strong>. Las 148 diferencias quedaron en 73.</li>
+            <li>El 36 y el 73 casi nunca aparecen como calificado: 0 marcados para MM entre 2.163 leads con 36; 148 marcados para INMO entre 3.018 con 73.</li>
+          </ul>
+
+          <div class="anti">
+            <span class="lbl">Antifunnel</span>
+            <p><strong>Completos que nunca calificaron</strong> en ningún producto, por su estado actual MM | INMO. Como el 100% de los calificados es completo, es exactamente completos − ever calificados (cualquiera).</p>
+            <table class="small">
+              <thead><tr><th>ago-26 · MM | INMO</th><th>Leads</th></tr></thead>
+              <tbody>
+                <tr><td><code>65 habimetro_sin_gestion | 65</code></td><td>2.294 (19,7%)</td></tr>
+                <tr><td><code>38 descartado_por_inmueble | 10 fuera_de_la_zona</code></td><td>1.414 (12,2%)</td></tr>
+                <tr><td><code>10 fuera_de_la_zona | 10</code></td><td>1.240 (10,7%)</td></tr>
+                <tr><td><code>1 duplicado | 1</code></td><td>945 (8,1%)</td></tr>
+                <tr><td><code>3 revisar_direccion | 10 fuera_de_la_zona</code></td><td>885 (7,6%)</td></tr>
+                <tr><td><strong>Total</strong></td><td><strong>11.626</strong></td></tr>
+              </tbody>
+            </table>
+            <p>Los 2.294 en <code>65 habimetro_sin_gestion</code> tienen los 5 datos y el backbone nunca los evaluó: es la bolsa más grande para revisar.</p>
+            <p>Por producto, el antifunnel se abre solo con el estado de esa línea: MM = completos que nunca pasaron por 20/63 (13.634 en ago-26); INMO = completos que nunca pasaron por 20 (12.279).</p>
+            <details><summary>Ver query</summary><pre><code>WITH
+cat AS (
+  SELECT id, estado FROM `sellers-main-prod.co_rds_staging.habi_db_tabla_estados`
+),
+-- completos de la cohorte con su estado actual MM e INMO
+completos AS (
+  SELECT n.id, n.last_estado_id AS mm, n.last_state_id_real_estate AS inmo
+  FROM `sellers-main-prod.co_rds_staging.habi_db_tabla_negocio_inmueble` n
+  JOIN `sellers-main-prod.co_rds_staging.habi_db_tabla_inmueble_v2` p
+    ON p.id = n.inmueble_id
+  WHERE p.fuente_id IN (3, 7, 20, 35, 39, 47)
+    AND DATE(n.fecha_creacion) BETWEEN '2026-08-01' AND '2026-08-31'   -- cohorte
+    AND p.area IS NOT NULL AND p.banos IS NOT NULL AND p.num_habitaciones IS NOT NULL
+    AND p.garajes IS NOT NULL AND p.anos_antiguedad IS NOT NULL
+),
+-- negocios que alguna vez calificaron en MM o en INMO
+calificados AS (
+  SELECT negocio_id AS id
+  FROM `sellers-main-prod.co_rds_staging.habi_db_tabla_historico_estado_v2`
+  WHERE estado_id IN (20, 63) AND fecha_actualizacion &gt;= '2026-08-01'
+  UNION DISTINCT
+  SELECT deal_id
+  FROM `sellers-main-prod.co_rds_staging.habi_db_history_state_real_estate`
+  WHERE state_id = 20 AND date_create &gt;= '2026-08-01'
+)
+SELECT
+  CONCAT(IFNULL(CAST(c.mm AS STRING), '-'), ' ', IFNULL(cm.estado, ''), ' | ',
+         IFNULL(CAST(c.inmo AS STRING), '-'), ' ', IFNULL(ci.estado, '')) AS estado_mm_inmo,
+  COUNT(DISTINCT c.id) AS leads
+FROM completos c
+LEFT JOIN calificados q ON q.id = c.id
+LEFT JOIN cat cm ON cm.id = c.mm
+LEFT JOIN cat ci ON ci.id = c.inmo
+WHERE q.id IS NULL                      -- nunca calificó en ningún producto
+GROUP BY estado_mm_inmo
+ORDER BY leads DESC</code></pre></details>
+          </div>
+        </td>
+
+        <td data-pais="México">
+          <span class="lbl">Tablas</span>
+          <ul>
+            <li><strong>MM</strong>: <code>mx_rds_staging.habi_db_history_state</code> → <code>deal_id</code>, <code>state_id IN (20, 63)</code>, <code>date_create</code>.</li>
+            <li><strong>INMO</strong>: <code>mx_rds_staging.habi_db_history_state_real_estate</code> → <code>deal_id</code>, <code>state_id = 20</code>, <code>date_create</code>.</li>
+          </ul>
+
+          <span class="lbl">Query</span>
+<pre><code>WITH
+-- registros de las 6 fuentes (fila 2)
+registros AS (
+  SELECT d.id, DATE_TRUNC(DATE(d.date_create), MONTH) AS mes
+  FROM `sellers-main-prod.mx_rds_staging.habi_db_property_deal` d
+  JOIN `sellers-main-prod.mx_rds_staging.habi_db_property` p
+    ON p.id = d.property_id
+  WHERE p.source_id IN (3, 7, 35, 39, 46, 47)
+    AND DATE(d.date_create) >= '2026-06-01'      -- inicio de la cohorte
+),
+-- primera calificación MM por deal
+cal_mm AS (
+  SELECT deal_id AS id, MIN(date_create) AS fecha_cal_mm
+  FROM `sellers-main-prod.mx_rds_staging.habi_db_history_state`
+  WHERE state_id IN (20, 63)
+    AND date_create >= '2026-06-01'              -- mismo corte
+  GROUP BY id
+),
+-- primera calificación INMO por deal
+cal_inmo AS (
+  SELECT deal_id AS id, MIN(date_create) AS fecha_cal_inmo
+  FROM `sellers-main-prod.mx_rds_staging.habi_db_history_state_real_estate`
+  WHERE state_id = 20
+    AND date_create >= '2026-06-01'
+  GROUP BY id
+)
+SELECT
+  r.mes,
+  COUNT(DISTINCT r.id) AS registros,
+  COUNT(DISTINCT IF(m.id IS NOT NULL, r.id, NULL)) AS ever_cal_mm,
+  COUNT(DISTINCT IF(i.id IS NOT NULL, r.id, NULL)) AS ever_cal_inmo,
+  COUNT(DISTINCT IF(m.id IS NOT NULL OR i.id IS NOT NULL, r.id, NULL))
+    AS ever_cal_cualquiera
+FROM registros r
+LEFT JOIN cal_mm m ON m.id = r.id
+LEFT JOIN cal_inmo i ON i.id = r.id
+GROUP BY r.mes</code></pre>
+
+          <span class="lbl">Cómo se mide</span>
+          <ul>
+            <li>Mismas reglas que CO: MM = 20 o 63, INMO = solo 20, por cohorte de registro, unión para "cualquiera".</li>
+            <li>El historial INMO de MX arranca el <strong>2025-04-01</strong>.</li>
+            <li>⚠ En MX no usar <code>product_qualified</code> como fuente del ever calificado: <strong>855</strong> deals pasaron por 20/63 en MM y hoy tienen <code>product_qualified = real_estate</code> (586 siguen en 20/63). Parece que el campo se sobrescribe con el ruteo posterior; el historial sí los cuenta.</li>
+          </ul>
+
+          <span class="lbl">Referencia</span>
+          <table class="small">
+            <thead><tr><th>Cohorte</th><th>MM</th><th>INMO</th><th>Cualquiera</th></tr></thead>
+            <tbody>
+              <tr><td>jun-26</td><td>4.220 (29,9%)</td><td>6.067 (42,9%)</td><td>6.757 (47,8%)</td></tr>
+              <tr><td>jul-26</td><td>4.369 (26,6%)</td><td>6.525 (39,8%)</td><td>7.340 (44,7%)</td></tr>
+              <tr><td>ago-26</td><td>4.368 (26,8%)</td><td>6.193 (38,0%)</td><td>6.925 (42,5%)</td></tr>
+            </tbody>
+          </table>
+          <div class="ref-num">% sobre registros · corrido el 25-sep</div>
+
+          <span class="lbl">Validación con <code>product_qualified</code></span>
+          <ul>
+            <li>Marcados para MM que pasaron por 20/63: <strong>11.824 de 11.972 (98,8%)</strong>. Las 148 diferencias solo llegaron a 36.</li>
+            <li>Marcados para INMO que pasaron por 20: <strong>18.491 de 18.491 (100%)</strong>.</li>
+            <li>El 73 nunca aparece como calificado INMO (0 de 5.968); el 36, casi nunca como MM (148 de 1.484).</li>
+          </ul>
+
+          <div class="anti">
+            <span class="lbl">Antifunnel</span>
+            <p><strong>Completos que nunca calificaron</strong> en ningún producto, por su estado actual MM | INMO.</p>
+            <table class="small">
+              <thead><tr><th>ago-26 · MM | INMO</th><th>Leads</th></tr></thead>
+              <tbody>
+                <tr><td><code>3 revisar_direccion | 61 sin_zona_mediana</code></td><td>850 (21,6%)</td></tr>
+                <tr><td><code>65 habimetro_sin_gestion | 73 sin_precio_automatico</code></td><td>565 (14,4%)</td></tr>
+                <tr><td><code>10 fuera_de_la_zona | 10</code></td><td>513 (13,0%)</td></tr>
+                <tr><td><code>10 fuera_de_la_zona | 61 sin_zona_mediana</code></td><td>422 (10,7%)</td></tr>
+                <tr><td><code>10 fuera_de_la_zona | 73 sin_precio_automatico</code></td><td>339 (8,6%)</td></tr>
+                <tr><td><strong>Total</strong></td><td><strong>3.937</strong></td></tr>
+              </tbody>
+            </table>
+            <p>Los 850 en <code>3 revisar_direccion</code> (MM) están completos y atorados en revisión de dirección: oportunidad directa para MM.</p>
+            <p>Por producto: MM = 6.494 completos que nunca pasaron por 20/63; INMO = 4.669 que nunca pasaron por 20.</p>
+            <details><summary>Ver query</summary><pre><code>WITH
+cat AS (
+  SELECT id, state AS estado FROM `sellers-main-prod.mx_rds_staging.habi_db_state`
+),
+-- completos de la cohorte con su estado actual MM e INMO
+completos AS (
+  SELECT d.id, d.last_state_id AS mm, d.last_state_id_real_estate AS inmo
+  FROM `sellers-main-prod.mx_rds_staging.habi_db_property_deal` d
+  JOIN `sellers-main-prod.mx_rds_staging.habi_db_property` p
+    ON p.id = d.property_id
+  WHERE p.source_id IN (3, 7, 35, 39, 46, 47)
+    AND DATE(d.date_create) BETWEEN '2026-08-01' AND '2026-08-31'      -- cohorte
+    AND p.area IS NOT NULL AND p.bath IS NOT NULL AND p.room_num IS NOT NULL
+    AND p.garage IS NOT NULL AND p.years_old IS NOT NULL
+),
+-- deals que alguna vez calificaron en MM o en INMO
+calificados AS (
+  SELECT deal_id AS id
+  FROM `sellers-main-prod.mx_rds_staging.habi_db_history_state`
+  WHERE state_id IN (20, 63) AND date_create &gt;= '2026-08-01'
+  UNION DISTINCT
+  SELECT deal_id
+  FROM `sellers-main-prod.mx_rds_staging.habi_db_history_state_real_estate`
+  WHERE state_id = 20 AND date_create &gt;= '2026-08-01'
+)
+SELECT
+  CONCAT(IFNULL(CAST(c.mm AS STRING), '-'), ' ', IFNULL(cm.estado, ''), ' | ',
+         IFNULL(CAST(c.inmo AS STRING), '-'), ' ', IFNULL(ci.estado, '')) AS estado_mm_inmo,
+  COUNT(DISTINCT c.id) AS leads
+FROM completos c
+LEFT JOIN calificados q ON q.id = c.id
+LEFT JOIN cat cm ON cm.id = c.mm
+LEFT JOIN cat ci ON ci.id = c.inmo
+WHERE q.id IS NULL                      -- nunca calificó en ningún producto
+GROUP BY estado_mm_inmo
+ORDER BY leads DESC</code></pre></details>
+          </div>
         </td>
       </tr>
 
@@ -297,7 +805,7 @@ GROUP BY mes</code></pre>
   <p>Para cruzar con tablas de funnel o HubSpot, que viven a nivel <code>nid</code>, se usa <code>nid</code> como llave de join. El conteo de registros se hace por <code>id</code>.</p>
 
   <div class="callout">
-    <strong>Próximas filas:</strong> completos, calificados MM, calificados INMO, asignados. Cada una se
+    <strong>Próximas filas:</strong> calificado actual (MM / INMO), asignados. Cada una se
     agrega con la misma estructura (tabla · query · cómo se mide) y queda como <em>propuesta</em> hasta
     que se valide con el equipo.
   </div>
