@@ -1530,6 +1530,12 @@ function renderInventario(){
   const ts=['P1','P2','P3','P4'].filter(t=>v.tiers[t]);
   const mx=Math.max(1,...ts.map(t=>+v.tiers[t].stock||0));
   const totS=ts.reduce((a,t)=>a+(+v.tiers[t].stock||0),0), totE=ts.reduce((a,t)=>a+(+v.tiers[t].enviados_hoy||0),0);
+  // Runway acumulado: mismo criterio que el de cada nivel (build_data._inventario), sobre el pool
+  // entero: stock total ÷ promedio de envíos TOTALES/día de los últimos 7 días con envíos.
+  const envDia={}; ts.forEach(t=>(v.tiers[t].serie||[]).forEach(x=>{ envDia[x.fecha]=(envDia[x.fecha]||0)+(+x.enviados||0); }));
+  const env7=Object.keys(envDia).sort().slice(-7).map(f=>envDia[f]).filter(n=>n>0);
+  const consT=env7.length?env7.reduce((a,b)=>a+b,0)/env7.length:0, runT=consT?Math.round(totS/consT):null;
+  const runTxt=totS===0?['bad','sin stock']:runT==null?['na','runway —']:[runT<30?'mid':'ok','runway '+fmt(runT)+' días'];
   const filas=ts.map(t=>{ const a=v.tiers[t], st=+a.stock||0, rep=a.repuesto_hoy, run=a.runway_dias;
     const rn = st===0?['bad','Sin stock']:run==null?['na','—']:run<30?['mid',run+' días']:['ok',run+' días'];
     const repTxt = rep==null?'—':(rep>0?'+'+fmt(rep):rep<0?'−'+fmt(-rep):'0');
@@ -1539,7 +1545,7 @@ function renderInventario(){
       <span class="num">${fmt(a.enviados_hoy)}</span>
       <span class="num${rep<0?' neg':(rep>0?' pos':'')}">${repTxt}</span>
       <div class="pv-run"><span class="${rn[0]}">${rn[1]}</span></div></div>`; }).join('');
-  el.innerHTML=head(`<span style="font-size:14px;font-weight:500;color:var(--text);font-variant-numeric:tabular-nums">Stock total ${fmt(totS)} · ${fmt(totE)} enviados hoy</span>`)+`
+  el.innerHTML=head(`<span style="font-size:14px;font-weight:500;color:var(--text);font-variant-numeric:tabular-nums">Stock total ${fmt(totS)} · ${fmt(totE)} enviados hoy <span class="pv-run" style="display:inline-block;margin-left:8px;vertical-align:middle" title="Stock total ÷ envíos promedio por día (7 días)"><span class="${runTxt[0]}">${runTxt[1]}</span></span></span>`)+`
     <div class="pv-scroll" style="padding-bottom:12px"><div class="pv-inv">
       <div class="pv-irow h"><span>Nivel</span><span>Stock elegible${II('stock')}</span><span class="r">Enviados hoy</span>
         <span class="r">Repuestos hoy${II('repuestos')}</span><span class="r">Runway${II('runway')}</span></div>
