@@ -8,7 +8,12 @@ name: Reporte diario TV → Google Chat
 # Workflow APARTE del de update-data.yml a propósito: comparten credenciales de BigQuery pero
 # nada más, y un fallo de este no debe tocar la actualización del hub.
 
-# CUATRO horarios (hora CDMX): 9:07, 9:31, 10:17 y 11:23. GitHub no garantiza los cron: en
+# RELOJ EXTERNO: el disparo principal NO es este cron sino un servicio externo que llama a la
+# API de GitHub (`workflow_dispatch` con `solo_si_falta=true`), porque GitHub descarta cron en
+# horas de carga: el 25-sep no corrió ninguno de los cuatro. GitHub nunca descarta un
+# `workflow_dispatch`. Ver salud-marca/tv/README.md, "Reloj externo".
+#
+# CUATRO horarios (hora CDMX): 9:07, 9:31, 10:17 y 11:23, como respaldo. GitHub no garantiza los cron: en
 # horas de carga los atrasa o directamente los salta, sobre todo los que caen en el minuto 0.
 # El 25-sep el de las 15:00 UTC no corrió. Con cuatro intentos, uno sale. Los tres de respaldo
 # NO duplican el mensaje: `--solo-si-falta` termina sin hacer nada si ese día ya se envió
@@ -28,6 +33,10 @@ on:
         description: 'Postear a Google Chat (false = solo calcular y ver el log)'
         type: boolean
         default: true
+      solo_si_falta:
+        description: 'No hacer nada si el reporte de ese día ya salió (lo usa el reloj externo)'
+        type: boolean
+        default: false
 
 # Nunca dos a la vez: si GitHub atrasa varios horarios y los dispara juntos, corren en fila y el
 # segundo ya ve el marcador que dejó el primero. `cancel-in-progress: false` para no matar un
@@ -86,7 +95,7 @@ jobs:
           python3 salud-marca/tv/reporte_diario.py \
             ${{ inputs.fecha && format('--fecha {0}', inputs.fecha) || '' }} \
             ${{ (github.event_name == 'schedule' || inputs.enviar) && '--enviar' || '' }} \
-            ${{ github.event_name == 'schedule' && '--solo-si-falta' || '' }}
+            ${{ (github.event_name == 'schedule' || inputs.solo_si_falta) && '--solo-si-falta' || '' }}
 
       - name: Commitear el panel
         run: |
