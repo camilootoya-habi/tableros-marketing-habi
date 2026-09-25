@@ -271,6 +271,13 @@ def main():
     # serie diaria completa de la campaña y sale más barato una consulta que dos.
     desde = min(PANEL.DESDE, hasta - datetime.timedelta(days=VENTANA_DIAS))
     serie = consultar_trafico(desde, hasta)
+    # Si GA4 todavía no publicó el día, NO se envía ni se marca: el siguiente horario reintenta.
+    # Sin este corte, el 25-sep (export del 24 atrasado hasta pasado el mediodía) la tarjeta
+    # habría dicho "0 visitas" y el panel habría pintado un día en cero.
+    if not minutos_de_dia(serie, hasta):
+        print(f"GA4 todavía no publica el {hasta.isoformat()} (falta events_{hasta:%Y%m%d}): "
+              "no se envía ni se actualiza el panel; el siguiente horario lo reintenta.")
+        return 0
     r = calcular(serie, perfil, horas_sd, spots, inversion, hasta)
 
     inc = r["incremental"]
