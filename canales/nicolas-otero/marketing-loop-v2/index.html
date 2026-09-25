@@ -369,8 +369,6 @@
   .tplsend .sub{margin-bottom:12px}
   .sendrow{display:flex;gap:8px;flex-wrap:wrap}
   .sendrow input{flex:1;min-width:180px;font-variant-numeric:tabular-nums}
-  #tplSendMsg:empty{display:none}
-  #tplSendMsg{margin-top:10px}
 
   .knobwrap{display:flex;gap:20px;align-items:center;flex-wrap:wrap;margin-top:8px}
   .knob{width:180px;height:180px;cursor:grab;touch-action:none;outline:none}
@@ -619,7 +617,7 @@
     <button class="navit" data-nav="dash"   onclick="irVista('dash')"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="flex:none"><path d="M3 3v18h18M18 17V9M13 17V5M8 17v-3"></path></svg><span>Panel</span></button>
     <button class="navit" data-nav="inbox"  onclick="irVista('inbox')"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="flex:none"><path d="M22 12h-6l-2 3h-4l-2-3H2M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"></path></svg><span>Inbox</span></button>
     <button class="navit" data-nav="envio" onclick="irVista('envio')"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="flex:none"><path d="M22 2 11 13M22 2l-7 20-4-9-9-4z"></path></svg><span>Envío</span></button>
-    <button class="navit" data-nav="plantillas" onclick="irVista('plantillas')"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="flex:none"><path d="M3 3h18v7H3zM14 14h7v7h-7zM3 14h7v7H3z"></path></svg><span>Plantillas</span></button>
+    <button class="navit" data-nav="voz" onclick="irVista('voz')"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="flex:none"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.91.34 1.85.57 2.81.7A2 2 0 0 1 22 16.92z"></path></svg><span>Voz</span></button>
     <button class="navit" data-nav="agente" onclick="irVista('agente')"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="flex:none"><path d="M12 2v4M8 6h8a3 3 0 0 1 3 3v8a3 3 0 0 1-3 3H8a3 3 0 0 1-3-3V9a3 3 0 0 1 3-3zM9 12h.01M15 12h.01"></path></svg><span>Agente IA</span></button>
     <button class="navit" data-nav="docs"   onclick="irVista('docs')"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="flex:none"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></svg><span>Documentación</span></button>
     <div class="grp">Datos</div>
@@ -650,7 +648,7 @@
       <button type="button" class="winbtn" data-ruta="directa" onclick="setVentRuta('directa')">Direct</button>
       <button type="button" class="winbtn" data-ruta="normal" onclick="setVentRuta('normal')">Normal</button>
     </div>
-    <span class="tl" style="font-weight:400;margin-left:auto">Los filtros aplican a panel, inbox, plantillas y agente IA</span>
+    <span class="tl" style="font-weight:400;margin-left:auto">Los filtros aplican a panel, inbox y agente IA</span>
   </div>
 
   <!-- ===== HOJA 1/2: TABLERO ===== -->
@@ -727,20 +725,11 @@
     <div id="envioMsg" class="note"></div>
   </div>
 
-  <!-- ===== HOJA: PLANTILLAS ===== -->
-  <div id="sheet-plantillas" class="sheet" hidden>
-    <div class="pagehead"><div><h1>Plantillas</h1>
-      <div class="who"><span id="plantLabel"></span></div></div></div>
-    <div class="grid2">
-      <div>
-        <div id="plantLista"></div>
-        <section class="card-sec"><div class="tabletitle">Experimento A/B</div>
-          <span class="sub" id="abSub"></span>
-          <div id="plantAB"></div>
-        </section>
-      </div>
-      <section class="card-sec" id="plantDetalle"></section>
-    </div>
+  <!-- ===== HOJA: VOZ (Abigail · marketing-loop-voz) ===== -->
+  <div id="sheet-voz" class="sheet" hidden>
+    <div class="pv-head"><div><div class="pv-crumb" id="vozCrumb">Colombia · Voz</div>
+      <h1 class="pv-h1">Voz</h1></div></div>
+    <div id="vozBody" class="pv-stack"></div>
   </div>
 
   <!-- ===== HOJA: AGENTE IA ===== -->
@@ -874,7 +863,7 @@ const _PAIS_LBL={MX:'México',CO:'Colombia'};
 function irVista(v){ vista=v; go(v, paisSel); }
 function irPais(c){ paisSel=c; go(vista, c); }
 function go(sheet, c){
-  const map={dash:'sheet-dash', exp:'sheet-exp', tablas:'sheet-tablas', docs:'sheet-docs', inbox:'sheet-inbox', ventanas:'sheet-ventanas', plantillas:'sheet-plantillas', agente:'sheet-agente', envio:'sheet-envio'};
+  const map={dash:'sheet-dash', exp:'sheet-exp', tablas:'sheet-tablas', docs:'sheet-docs', inbox:'sheet-inbox', ventanas:'sheet-ventanas', voz:'sheet-voz', agente:'sheet-agente', envio:'sheet-envio'};
   const id=map[sheet]||'sheet-dash';
   vista=sheet; if(c) paisSel=c;
   country = paisSel;   // una sola fuente de verdad para todas las vistas
@@ -889,7 +878,7 @@ function go(sheet, c){
   else if(sheet==='docs'){ setDocs(paisSel); }
   else if(sheet==='inbox'){ renderInbox(); }
   else if(sheet==='ventanas'){ renderVentanas(); }
-  else if(sheet==='plantillas'){ renderPlantillas(); }
+  else if(sheet==='voz'){ renderVoz(); }
   else if(sheet==='envio'){ cargarEnvio(); }
   else if(sheet==='agente'){ renderAgenteScreen(); }
   // La barra lateral marca la VISTA y el segmentado marca el PAÍS: son ejes distintos, a
@@ -1175,6 +1164,15 @@ const MET_HELP={
   h_ent:'Entregados ÷ enviados en esa hora.',
   h_ape:'Leídos ÷ entregados en esa hora.',
   h_res:'Entregados cuyo teléfono respondió ÷ entregados en esa hora.',
+  vz_ll:'Personas distintas a las que Abigail llamó en el rango: la llamada salió del marcador (call_log, ni ENCOLADA ni FALLO). Cada persona va al experimento de su primera llamada: primer contacto (compra_wa, llamada en vez de plantilla) o rescate a 24 h (no respondió el WhatsApp, llamada en vez de Dapta).',
+  vz_co:'Personas con al menos una llamada CONTESTADA en el rango (call_log.status).',
+  vz_tc:'Personas que contestaron ÷ personas llamadas en el rango. El cambio contra el periodo anterior va en puntos porcentuales (pp).',
+  vz_cf:'Llamadas con desenlace CONFIRMADO: la persona dio los datos del inmueble. El desenlace lo clasifica el análisis de ElevenLabs al colgar.',
+  vz_wa:'Llamadas con desenlace PIDE_WA: la persona prefirió seguir por WhatsApp; el agente retoma por el chat.',
+  vz_ba:'Personas llamadas que pidieron no ser contactadas: desenlace OPT_OUT en la llamada o CLOSE_OPT_OUT del agente por WhatsApp.',
+  vz_op:'Intentos de llamada del rango, no personas: los reintentos (otra banda horaria, buzón) suman. Duración media sobre las contestadas. Costo = créditos de ElevenLabs + LLM (call_log.cost_usd).',
+  vz_de:'Desenlace de cada llamada del rango según el análisis post-llamada de ElevenLabs (call_log.desenlace). Sin desenlace = el webhook todavía no lo mandó.',
+  vz_ab:'Los dos experimentos de voz, como en el tablero /voz del motor. Contactados: A = leads compra_wa con plantilla enviada (brazo wa) o con llamada (voz); B = no respondieron a 24 h enviados a Dapta o llamados. Leads = llegaron al backbone. Si los intervalos de Wilson se solapan, no hay ganador todavía.',
   f_cie:'Dos líneas sumadas: compra directa (Cierre - Comprado, por closedate) + captación de la red de aliados (contrato/mandato firmado). No son el mismo evento.'};
 const I=k=>MET_HELP[k]?`<span class="info" tabindex="0" data-tip="${MET_HELP[k].replace(/"/g,'&quot;')}">i</span>`:'';
 const IH=I;   // alias: renderVentanasPanel tiene un `I` local (intake) que tapa el helper
@@ -1699,7 +1697,7 @@ function pedirToken(contenedorId, alGuardar){
   // con password el gestor de contraseñas del sistema se monta encima del campo y estorba.
   el.innerHTML=`<section class="card-sec" style="max-width:620px">
       <div class="tabletitle">Pega el token</div>
-      <span class="sub">Es el <code>INBOX_TOKEN</code> del agente. Se guarda solo en este navegador y sirve para inbox, plantillas y envío.</span>
+      <span class="sub">Es el <code>INBOX_TOKEN</code> del agente. Se guarda solo en este navegador y sirve para inbox y envío.</span>
       <form class="sendrow" onsubmit="return guardarToken(event)">
         <input id="gateTok" class="sel" type="text" placeholder="token" autocomplete="off"
                autocapitalize="off" autocorrect="off" spellcheck="false" data-1p-ignore data-lpignore="true">
@@ -2065,94 +2063,131 @@ async function dispararEnvio(pais){
 }
 
 const API_BASE='https://agente-sdr-ten.vercel.app';
-// El envío sale del backend del agente, que es quien tiene las llaves de Infobip. El tablero
-// solo pasa el token que el usuario ya guardó para el inbox: acá nunca hay secretos.
-async function enviarPrueba(tpl){
-  const msg=document.getElementById('tplSendMsg'), inp=document.getElementById('tplTel');
-  if(!msg||!inp) return;
-  let tok=''; try{ tok=localStorage.getItem('ml-inbox-token')||''; }catch(e){}
-  if(!tok){ pedirToken('tplSendMsg', ()=>{ renderPlantillas(); }); return; }
-  const to=(inp.value||'').replace(/\D/g,'');
-  if(to.length<10){ msg.textContent='Escribe el número completo con indicativo (ej. 573001234567).'; return; }
-  msg.textContent='Enviando…';
-  try{
-    const r=await fetch(API_BASE+'/api/plantillas/prueba?token='+encodeURIComponent(tok),{
-      method:'POST', headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({country:country, template:tpl, to:to})});
-    const d=await r.json();
-    if(r.ok && d.ok){
-      msg.innerHTML='✅ Enviada a <b>'+escx(d.to)+'</b> · id <code>'+escx(String(d.message_id||'—'))+'</code>'
-        +' · quedan '+d.restantes_esta_hora+' pruebas esta hora.';
-    } else {
-      msg.innerHTML='⚠ No salió: '+escx(String(d.error||d.detalle||d.detail||('HTTP '+r.status)));
-    }
-  }catch(e){ msg.textContent='No se pudo hablar con el backend del agente: '+String(e).slice(0,120); }
-}
-
-let tplSel=0;
-function selTpl(i){ tplSel=i; renderPlantillas(); }
-function _canalTpl(n){ if(n.startsWith('ventanas')) return 'Ventanas'; if(n.startsWith('brokermatch')) return 'Brokermatch'; if(n.startsWith('hs_')) return 'HubSpot'; return 'Web'; }
-function renderPlantillas(){
-  const lb=document.getElementById('plantLabel');
-  const lista=document.getElementById('plantLista'), det=document.getElementById('plantDetalle');
-  if(!lista||!det) return;
-  let tpls=((D.plantillas||{})[country]||[]);
-  if(canalSel!=='agregado'){
-    const q = canalSel==='ventanas' ? 'Ventanas' : 'Web';
-    const f = tpls.filter(x=>_canalTpl(x.nombre)===q);
-    if(f.length) tpls=f;
+// ===== VOZ (Abigail · marketing-loop-voz) =====
+// El mismo seguimiento que Ventanas, pero SOLO con las personas a las que Abigail llamó (la
+// llamada salió del marcador). Corte por experimento de su primera llamada: primer contacto
+// (compra_wa: llamada en vez de plantilla) o rescate a 24 h (llamada en vez de Dapta).
+let vozRango='7', vozOrigen='total', vozGran='dia', vozTabla=false;
+const _VOZ_ORIG_LBL={total:'Total voz', primer_contacto:'Primer contacto', rescate_24h:'Rescate 24 h'};
+function setVozRango(r){ vozRango=r; renderVoz(); }
+function setVozOrigen(o){ vozOrigen=o; if(_mult.vozMult) _mult.vozMult.hi=null; renderVoz(); }
+function setVozGran(g){ vozGran=g; if(_mult.vozMult) _mult.vozMult.hi=null; renderVoz(); }
+function toggleVozTabla(){ vozTabla=!vozTabla; renderVoz(); }
+// Intervalo de Wilson al 95 % (mismo cálculo que voz/report.py): se porta bien con pocos casos.
+function _wilson(x,n,z=1.96){ if(!n) return [0,0,0]; const p=x/n, d=1+z*z/n, c=(p+z*z/(2*n))/d, m=z*Math.sqrt(p*(1-p)/n+z*z/(4*n*n))/d; return [p,Math.max(0,c-m),Math.min(1,c+m)]; }
+const _pp=v=>_n1(v*100)+'%';
+function _vozMultCfg(){
+  const S=((D.voz||{}).serie||[]), hoy=_hoyPais(), sem=vozGran==='semana';
+  const val=(s,k)=>+(((s[vozOrigen]||{})[k])||0);
+  const MET=[['llamadas','Llamadas hechas','vz_ll'],['contestaron','Contestaron','vz_co'],['deal_creado','Deals creados','ve5'],['confirmados','Confirmaron datos','vz_cf'],['bajas','Se dieron de baja','vz_ba']];
+  // Recorta los días previos a la primera llamada (el piloto arrancó el 14-sep).
+  const i0=S.findIndex(s=>MET.some(([k])=>val(s,k)>0)); const SS=i0<0?[]:S.slice(Math.max(0,i0-1));
+  let B, vals;
+  if(!sem){
+    B=SS.map(s=>({b:s.fecha,label:_bkLabel(s.fecha,'dia',true),xl:_bkLabel(s.fecha,'dia',false),cur:s.fecha===hoy,weekend:[0,6].includes(_wd(s.fecha))}));
+    vals=k=>SS.map(s=>val(s,k));
+  } else {
+    const acc={}; SS.forEach(s=>{ const b=_bkDe(s.fecha,'semana'); const a=acc[b]||(acc[b]={}); MET.forEach(([k])=>a[k]=(a[k]||0)+val(s,k)); });
+    const bks=Object.keys(acc).sort(), curW=_bkDe(hoy,'semana');
+    B=bks.map(b=>({b,label:_bkLabel(b,'semana',true),xl:_bkLabel(b,'semana',false),cur:b===curW}));
+    vals=k=>bks.map(b=>acc[b][k]||0);
   }
-  if(lb) lb.textContent=`${tpls.length} plantillas · experimentos A/B · ${_CANAL_LBL[canalSel]}`;
-  if(!tpls.length){ lista.innerHTML='<p class="note">Sin plantillas con envíos en '+country+'.</p>'; det.innerHTML=''; return; }
-  if(tplSel>=tpls.length) tplSel=0;
-  const p100=(n,d)=> d>0 ? pct(n/d*100) : '·';
-  lista.innerHTML=tpls.map((x,i)=>`<section class="card-sec tplcard${i===tplSel?' sel':''}" onclick="selTpl(${i})">
-      <div class="tplhead">
-        <code>${escx(x.nombre)}</code>
-        <span class="chip2 ${x.en_uso?'ok':''}">${x.en_uso?'En uso':'Disponible'}</span>
-        <span class="chip2">${_canalTpl(x.nombre)}</span>
-        <span class="tplpais">${country}</span>
-      </div>
-      <p class="tplbody">${escx((x.body||'(sin copy en la línea)').slice(0,180))}</p>
-      <div class="tplmet">${fmt(x.enviados)} envíos · ${p100(x.clics,x.entregados)} clics a botón · ${p100(x.bajas,x.entregados)} bajas</div>
-    </section>`).join('');
-  const x=tpls[tplSel];
-  const vars=[...new Set((x.body||'').match(/\{\{\d+\}\}/g)||[])];
-  det.innerHTML=`<div class="cardhead"><div><div class="tabletitle">Vista previa</div>
-      <span class="sub">${escx(x.nombre)} · ${escx(x.estado)}${x.categoria?' · '+escx(x.categoria):''}</span></div></div>
-    <div class="tplprev">${escx(x.body||'(esta plantilla ya no está en la línea; solo queda su histórico de envíos)')}</div>
-    <div class="tplvars">${vars.length?('Variables: '+vars.map(v=>`<code>${escx(v)}</code>`).join(' ')):'Sin variables'}
-      · ${(x.body||'').length} caracteres${x.botones?' · '+x.botones+' botones':''}</div>
-    <div class="tplsend">
-      <div class="tabletitle" style="font-size:15px">Enviar prueba</div>
-      <span class="sub">manda esta plantilla a un número para ver cómo llega · no toca el pool ni quema el lead</span>
-      <div class="sendrow">
-        <input id="tplTel" class="sel" inputmode="numeric" placeholder="57 300 000 0000" autocomplete="off">
-        <button class="winbtn active" type="button" onclick="enviarPrueba('${escx(x.nombre)}')">Enviar prueba</button>
-      </div>
-      <div id="tplSendMsg" class="note"></div>
-    </div>
-    <div class="tplwarn">
-      <b>Crear plantilla y declarar ganadora todavía no.</b>
-      Someter copy a Meta es irreversible y un rechazo penaliza la calidad de la línea que comparten
-      reactivación y ventanas, así que falta definir quién aprueba el copy antes de someterlo.
-      Y declarar ganadora no sirve de nada mientras la plantilla vigente viva en <code>countries/</code>:
-      es código, o sea un commit y un deploy. Ese es el cambio que desbloquea el botón.
-    </div>`;
-  // Experimento A/B, con lo que realmente hay configurado
-  const ab=document.getElementById('plantAB'), abs=document.getElementById('abSub');
-  const v=((D.ab_veredicto||{})[country]||{});
-  const rows=((D.ab_templates||{})[country]||[]);
-  if(abs) abs.textContent = v.disponible ? `${v.decidido?'cerrado':'en curso'} · ${v.dias||0} días` : 'sin experimento activo';
-  if(ab) ab.innerHTML = !v.disponible ? '<p class="note">No hay experimento de plantillas corriendo en '+country+'.</p>'
-    : `<div class="abver">${v.decidido?'DECIDIDO':'EN CURSO'} — gana <b>${escx(v.ganador||'')}</b>
-         · P(mejor) <b>${pct((v.prob||0)*100)}</b> · pérdida esperada ${v.loss_pp}pp</div>
-       ${rows.length?`<div class="tbl-wrap ftab" style="margin-top:14px"><table><thead><tr>
-         ${Object.keys(rows[0]).map((c,i)=>`<th${i?' style="text-align:right"':''}>${escx(c)}</th>`).join('')}</tr></thead>
-         <tbody>${rows.map(r=>`<tr>${Object.keys(rows[0]).map((c,i)=>`<td${i?' style="text-align:right"':''}>${escx(r[c]===null?'·':r[c])}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`:''}
-       <p class="note">El reparto del experimento vive en <code>config.py</code> / <code>countries/</code>, o sea en código:
-       declarar ganadora es un commit y un deploy, no un botón. Para que fuera un botón habría que mover esa
-       configuración a la base.</p>`;
+  const ser=MET.map(([k,lab,tk])=>({lab,tk,vals:vals(k)}));
+  return {buckets:B, series:ser.slice(0,3), extra:ser.slice(3), ma:sem?0:7, w:sem?1:7, maxX:sem?6:10,
+    unitLbl:sem?'última semana completa':'por día (últimos 7 días)', deltaLbl:sem?'vs. semana anterior':'vs. 7 días previos',
+    refLbl:'en la última semana', totLbl:'desde la primera llamada',
+    trendLbl:sem?'Total semanal (sin la semana en curso)':'Promedio móvil de 7 días', barLbl:sem?'Valor semanal':'Valor diario',
+    curLbl:B.some(b=>b.cur)?(sem?'Semana en curso':'Día en curso'):'', weLbl:sem?'':'Fin de semana', colFecha:sem?'Semana':'Día', tabla:vozTabla};
+}
+function _vozExperimento(tit, sub, filas, ctrl){
+  if(!filas||!filas.length) return `<div class="pv-card pad"><div><h2 class="pv-h2">${tit}</h2><div class="pv-sub">${sub}</div></div><div class="pv-empty">Sin datos todavía.</div></div>`;
+  const ic=filas.map(f=>({...f, w:_wilson(f.leads,f.contactados)})).sort((a,b)=>a.brazo==='voz'?-1:1);
+  const lbl={voz:'Llamada (Abigail)',wa:'Plantilla de WhatsApp',dapta:'Dapta'};
+  let ver;
+  if(ic.length<2) ver='Falta el otro brazo para poder comparar.';
+  else { const [a,b]=[...ic].sort((x,y)=>y.w[0]-x.w[0]);
+    if(a.w[1]>b.w[2]) ver=`<b style="color:var(--ok)">Gana ${lbl[a.brazo]||a.brazo}</b>: su intervalo no se solapa con el de ${lbl[b.brazo]||b.brazo}.`;
+    else { const falta=Math.max(0,600-Math.min(a.contactados,b.contactados));
+      ver=`<b>Sin ganador todavía</b>: los intervalos se solapan.${falta?' Faltan unos '+fmt(falta)+' casos en el brazo más chico.':''}`; } }
+  const mx=Math.max(...ic.map(f=>f.w[2]),0.01);
+  return `<div class="pv-card pad"><div><h2 class="pv-h2">${tit}</h2><div class="pv-sub">${sub}</div></div>
+    <div class="pv-tbl" style="max-height:none"><table><thead><tr><th>Brazo</th><th>Contactados</th><th>Leads</th><th>Tasa</th><th style="text-align:left;min-width:220px">Intervalo 95 %</th></tr></thead><tbody>
+    ${ic.map(f=>`<tr><td>${lbl[f.brazo]||f.brazo}${f.brazo===ctrl?' <span class="chip2">control</span>':''}</td><td>${fmt(f.contactados)}</td><td>${fmt(f.leads)}</td><td><b>${_pp(f.w[0])}</b></td>
+      <td style="text-align:left"><div style="position:relative;height:10px;background:var(--barbg);border-radius:9999px">
+        <div style="position:absolute;left:${(f.w[1]/mx*100).toFixed(1)}%;width:${Math.max(1,(f.w[2]-f.w[1])/mx*100).toFixed(1)}%;top:0;bottom:0;border-radius:9999px;background:${f.brazo==='voz'?'var(--accent)':'var(--bar-mute)'}"></div></div>
+        <span style="font-size:12px;color:var(--text-muted)">${_pp(f.w[1])} – ${_pp(f.w[2])}</span></td></tr>`).join('')}</tbody></table></div>
+    <div class="pv-detail"><span>${ver}</span></div></div>`;
+}
+function renderVoz(){
+  const el=document.getElementById('vozBody'); if(!el||!D) return;
+  if(_mult.vozMult){ (_mult.vozMult.charts||[]).forEach(c=>c.destroy()); _mult.vozMult.charts=[]; }
+  const cr=document.getElementById('vozCrumb'); if(cr) cr.textContent=_PAIS_LBL[paisSel]+' · Voz · '+_VOZ_ORIG_LBL[vozOrigen];
+  const V=D.voz||{};
+  if(country!=='CO'){ el.innerHTML=`<section class="pv-card"><div class="pv-empty"><b style="color:var(--text-title)">Voz opera solo en Colombia.</b><br>Cambia el país a Colombia para ver el seguimiento de las llamadas.</div></section>`; return; }
+  if(!V.origenes){ el.innerHTML=`<section class="pv-card"><div class="pv-empty">Todavía no hay datos de voz en este build. Se generan con el cron del tablero, cada hora.</div></section>`; return; }
+  const R=((V.origenes||{})[vozOrigen]||{})[vozRango]||{}, P=R.prev||null, pl=_PREV_VENT[vozRango];
+  const g=(o,k)=>o?(+o[k]||0):null;
+  const tc=o=>o&&+o.llamadas?(+o.contestaron||0)/(+o.llamadas):null;
+  const kp=[
+    {l:'Personas llamadas',tk:'vz_ll',v:fmt(g(R,'llamadas')),d:P&&_dl(g(R,'llamadas'),g(P,'llamadas')),pl,s:fmt(g(R,'recibidos'))+' recibidas por el webhook en el periodo'},
+    {l:'Tasa de contestación',tk:'vz_tc',v:_pc(g(R,'contestaron'),g(R,'llamadas')),d:P&&_dl(tc(R),tc(P),true),pl,s:fmt(g(R,'contestaron'))+' de '+fmt(g(R,'llamadas'))+' llamadas contestaron'},
+    {l:'Deals creados',tk:'ve5',v:fmt(g(R,'deal_creado')),d:P&&_dl(g(R,'deal_creado'),g(P,'deal_creado')),pl,s:_pc(g(R,'deal_creado'),g(R,'llamadas'))+' de las personas llamadas'},
+    {l:'Cierres',tk:'ve7',v:fmt(g(R,'cierres')),d:P&&_dl(g(R,'cierres'),g(P,'cierres')),pl,s:fmt(g(R,'cierres_mm'))+' compra directa · '+fmt(g(R,'cierres_inmo'))+' captación · '+_pc(g(R,'cierres'),g(R,'citas'))+' de las visitas'},
+  ];
+  const pasos=[
+    {name:'Llamadas hechas',tk:'vz_ll',desc:'Personas a las que Abigail llamó (salió del marcador)',v:g(R,'llamadas')},
+    {name:'Contestaron',tk:'vz_co',desc:'Personas con al menos una llamada contestada',v:g(R,'contestaron')},
+    {name:'Confirmaron datos',tk:'vz_cf',desc:'Desenlace CONFIRMADO: dieron los datos en la llamada',v:g(R,'confirmados'),sub:true},
+    {name:'Pidieron WhatsApp',tk:'vz_wa',desc:'Desenlace PIDE_WA: siguen por el chat',v:g(R,'pide_wa'),sub:true},
+    {name:'Deal creado',tk:'ve5',desc:fmt(+R.deal_fallo||0)+' fallaron en la bitácora',v:g(R,'deal_creado')},
+    {name:'Visitas agendadas',tk:'ve8',desc:'Personas con visita a la casa en agenda',v:g(R,'citas')},
+    {name:'Cierres',tk:'ve7',desc:fmt(+R.cierres_mm||0)+' compra directa · '+fmt(+R.cierres_inmo||0)+' captación aliados',v:g(R,'cierres')},
+  ];
+  const ll=g(R,'llamadas')||0;
+  const O=((V.operacion||{})[vozRango]||{}), DS=(((V.desenlaces||{})[vozRango]||{})[vozOrigen]||{});
+  const orgs=vozOrigen==='total'?['primer_contacto','rescate_24h','total']:[vozOrigen];
+  const mmss=s=>{ s=Math.round(s||0); return Math.floor(s/60)+':'+String(s%60).padStart(2,'0'); };
+  const opFila=o=>{ const x=O[o]||{}; const dm=x.contestadas?x.dur_total/x.contestadas:0;
+    return `<tr${o==='total'?' class="tot"':''}><td>${o==='total'?'Total':_VOZ_ORIG_LBL[o]}</td><td>${fmt(x.llamadas||0)}</td><td>${fmt(x.contestadas||0)} <span style="color:var(--text-muted)">(${_pc(x.contestadas||0,x.llamadas)})</span></td>
+      <td>${fmt(x.no_contesta||0)}</td><td>${fmt(x.buzon||0)}</td><td>${fmt(x.fallo||0)}</td><td>${fmt(x.confirmados||0)}</td><td>${fmt(x.pide_wa||0)}</td><td>${fmt(x.no_interes||0)}</td>
+      <td>${x.contestadas?mmss(dm):'—'}</td><td>US$ ${(+x.costo_usd||0).toFixed(2).replace('.',',')}</td></tr>`; };
+  const DSL={CONFIRMADO:'Confirmó datos',PIDE_WA:'Pidió WhatsApp',CALLBACK:'Pidió que lo llamen luego',OPT_OUT:'No quiere que lo contacten',NO_INTERES:'No le interesa',
+    NO_PROPIETARIO:'No es el dueño',YA_VENDIO:'Ya vendió',SIN_DATOS:'Contestó sin dar datos',NO_CONTACTO:'Sin contacto (no contestó / colgó)','(sin desenlace)':'Sin desenlace todavía'};
+  const dsTot=Object.values(DS).reduce((a,b)=>a+b,0), dsMx=Math.max(1,...Object.values(DS));
+  const desHtml=Object.entries(DS).sort((a,b)=>b[1]-a[1]).map(([k,n])=>`<div class="pv-frow" style="grid-template-columns:minmax(200px,1.3fr) minmax(160px,2fr) 90px 90px">
+      <div><div class="pv-fname">${DSL[k]||k}</div><div class="pv-fdesc">${escx(k)}</div></div>
+      <div class="pv-track"><div style="width:${(n/dsMx*100).toFixed(1)}%"></div></div>
+      <span class="pv-fval">${fmt(n)}</span><span class="pv-fcum">${_pc(n,dsTot)}</span></div>`).join('');
+  const E=V.experimentos||{};
+  el.innerHTML=`<section><div class="pv-sechead"><div><h2 class="pv-h2">Resumen del periodo</h2>
+      <div class="pv-sub">${_RANGO_VENT[vozRango]} · ${_VOZ_ORIG_LBL[vozOrigen]} · de la llamada al deal</div></div>
+      <div class="pv-ctrls">${_seg([['total','Total'],['primer_contacto','Primer contacto'],['rescate_24h','Rescate 24 h']],vozOrigen,'setVozOrigen')}
+        ${_seg([['hoy','Hoy'],['7','7 días'],['30','30 días']],vozRango,'setVozRango')}</div></div>
+    <div class="pv-kpis">${kp.map(_kpiHtml).join('')}</div></section>
+  <section class="pv-card"><div class="pv-cardhead"><div><h2 class="pv-h2">Embudo de voz</h2>
+      <div class="pv-sub">Solo personas llamadas por Abigail. Cada etapa se mide por cuándo pasó el evento, no por cuándo se hizo la llamada.</div></div></div>
+    ${_embudoFilas(pasos,'llamadas')}
+    <div class="pv-side"><span class="t">Fuera del embudo</span>
+      <div class="pv-sidebox"><div><b>Se dieron de baja${II('vz_ba')}</b><span>${_pc(+R.bajas||0,ll)} de las personas llamadas</span></div><span class="n">${fmt(+R.bajas||0)}</span></div>
+      <div class="pv-sidebox"><div><b>Siguieron por WhatsApp${II('ve4')}</b><span>${_pc(+R.atendidos||0,ll)} escribieron al agente</span></div><span class="n">${fmt(+R.atendidos||0)}</span></div>
+      <div class="pv-sidebox"><div><b>Enviados a Dapta${II('vs5')}</b><span>${_pc(+R.dapta||0,ll)} de las personas llamadas</span></div><span class="n">${fmt(+R.dapta||0)}</span></div></div></section>
+  <section class="pv-card pad"><div class="pv-cardhead"><div><h2 class="pv-h2">Actividad por día</h2>
+      <div class="pv-sub">${_VOZ_ORIG_LBL[vozOrigen]} · día calendario de Bogotá · pasa el mouse para ver cada ${vozGran==='semana'?'semana':'día'}</div></div>
+      <div class="pv-ctrls">${_seg([['dia','Diario'],['semana','Semanal']],vozGran,'setVozGran')}
+        <button type="button" class="pv-btn" onclick="toggleVozTabla()">${vozTabla?'Ver gráfica':'Ver tabla'}</button></div></div>
+    <div id="vozMult"></div></section>
+  <section class="pv-card pad"><div class="pv-cardhead"><div><h2 class="pv-h2">Operación de las llamadas${II('vz_op')}</h2>
+      <div class="pv-sub">${_RANGO_VENT[vozRango]} · cuenta LLAMADAS (intentos), no personas: un reintento suma otra</div></div></div>
+    <div class="pv-tbl" style="max-height:none"><table><thead><tr><th>Experimento</th><th>Llamadas</th><th>Contestadas</th><th>No contesta</th><th>Buzón</th><th>Fallo</th>
+      <th>Confirmaron</th><th>Pidieron WA</th><th>Sin interés</th><th>Duración media</th><th>Costo</th></tr></thead><tbody>${orgs.map(opFila).join('')}</tbody></table></div></section>
+  <section class="pv-card"><div class="pv-cardhead"><div><h2 class="pv-h2">Desenlace de las llamadas${II('vz_de')}</h2>
+      <div class="pv-sub">${_RANGO_VENT[vozRango]} · ${_VOZ_ORIG_LBL[vozOrigen]} · lo que clasificó el análisis de ElevenLabs al colgar</div></div></div>
+    <div class="pv-scroll" style="padding-bottom:12px"><div style="min-width:620px">${desHtml||'<div class="pv-empty">Sin llamadas en el periodo.</div>'}</div></div></section>
+  <div class="pv-sechead" style="margin:8px 0 -8px"><div><h2 class="pv-h2">Experimentos A/B${II('vz_ab')}</h2>
+    <div class="pv-sub">Desde el arranque (${escx(E.arranque||'')}) · leads creados en backbone por cada 100 contactados · Wilson al 95 %</div></div></div>
+  ${_vozExperimento('A · Primer contacto','Lead compra_wa: plantilla de WhatsApp vs llamada',E.primer_contacto,'wa')}
+  ${_vozExperimento('B · Rescate a 24 h','No respondió el WhatsApp: Dapta vs llamada',E.rescate_24h,'dapta')}`;
+  renderMultiples('vozMult', _vozMultCfg());
 }
 
 function renderAgenteScreen(){
@@ -2666,6 +2701,7 @@ function renderCosechaTabla(elId, srcKey, vacio){
 function applyTheme(t){const dark=t==='dark';document.body.classList.toggle('dark',dark);
   const _tb=document.getElementById('themeBtn').querySelector('span');
   if(_tb) _tb.textContent=dark?'Claro':'Oscuro';
+  if(window.Chart && D && vista==='voz'){ renderVoz(); }
   if(window.Chart && D && document.getElementById('panelLoop')){ if(canalSel==='ventanas') drawSerieVentanas(); else { renderPorHoraChart(); renderSerie(); renderCierresCaptaciones(); } }}
 document.getElementById('themeBtn').onclick=()=>{const n=document.body.classList.contains('dark')?'light':'dark';try{localStorage.setItem('ml-theme',n);}catch(e){}applyTheme(n);};
 applyTheme((()=>{try{return localStorage.getItem('ml-theme')||'light';}catch(e){return 'light';}})());

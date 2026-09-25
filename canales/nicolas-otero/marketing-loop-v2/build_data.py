@@ -892,6 +892,171 @@ def ventanas_metricas():
     return {"rangos": rutas["total"], "rutas": rutas, "pais": "CO"}
 
 
+# ===== VOZ (Abigail, brazo de llamadas de Ventanas) =====
+# Mismo embudo que Ventanas, pero SOLO con las personas a las que Abigail llamó de verdad
+# (salió del marcador: ni ENCOLADA ni FALLO). El corte es por el EXPERIMENTO de su primera
+# llamada (call_log.origen): 'primer_contacto' (compra_wa: llamada en vez de plantilla) o
+# 'rescate_24h' (no respondió el WhatsApp en 24 h: llamada en vez de Dapta). Las filas sin
+# origen son pruebas del 14-sep, antes del arranque: solo cuentan en el total.
+VOZ_ORIGENES = ("total", "primer_contacto", "rescate_24h")
+# Arranque de los dos experimentos (voz/report.py ARRANQUE en marketing-loop-sellers): antes
+# no había aleatorización, así que la comparación A/B nunca mira más atrás.
+VOZ_ARRANQUE = "2026-09-17 10:00"
+_VOZ_CTE = ("vz AS (SELECT DISTINCT ON (phone) phone, coalesce(origen,'sin_origen') AS o "
+            "  FROM call_log WHERE campaign='ventanas' AND country='CO' "
+            "   AND status NOT IN ('ENCOLADA','FALLO') ORDER BY phone, attempted_at)")
+_DESENLACE = lambda d: ("SELECT phone, attempted_at AS ts FROM call_log "
+                        f"WHERE campaign='ventanas' AND country='CO' AND desenlace='{d}'")
+_VOZ_MET = {
+    "recibidos":    _VENT_MET["recibidos"],
+    "llamadas":     _LLAMADAS,
+    "contestaron":  _CONTESTADAS,
+    "confirmados":  _DESENLACE("CONFIRMADO"),
+    "pide_wa":      _DESENLACE("PIDE_WA"),
+    "respondieron": _RESP_UNION,
+    "atendidos":    _VENT_MET["atendidos"],
+    "deal_creado":  _VENT_MET["deal_creado"],
+    "deal_fallo":   _VENT_MET["deal_fallo"],
+    "completaron":  _VENT_MET["completaron"],
+    # Baja = pidió no ser contactado, por la llamada (OPT_OUT) o por WhatsApp al agente.
+    "bajas":        f"{_DESENLACE('OPT_OUT')} UNION ALL {_VENT_MET['bajas']}",
+    "dapta":        _VENT_MET["dapta"],
+}
+
+def _voz_por_origen(c, fuente, cond_ts):
+    """{origen: personas distintas} de `fuente` entre las llamadas por Abigail; 'total' = todas."""
+    rows = list(c.execute(
+        f"WITH {_VOZ_CTE}, base AS (SELECT DISTINCT f.phone FROM ({fuente}) f WHERE {cond_ts}) "
+        f"SELECT vz.o, count(*) FROM base b JOIN vz ON vz.phone=b.phone GROUP BY 1"))
+    out = {o: 0 for o in VOZ_ORIGENES}
+    for o, n in rows:
+        if o in out: out[o] = int(n)
+        out["total"] += int(n)
+    return out
+
+def voz_metricas():
+    """Seguimiento de VOZ para el tablero: embudo por rango (hoy / 7 / 30) con su periodo
+    anterior, serie diaria de 30 días, operación de las llamadas y los dos experimentos A/B.
+    Todo por origen (total / primer_contacto / rescate_24h). Solo CO. Con la base caída
+    devuelve {} y la vista lo dice."""
+    from zoneinfo import ZoneInfo
+    dias_r = {"hoy": 0, "7": 7, "30": 30}
+    tz = VENT_TZ
+    def _cond(d, col="f.ts"):
+        if d == 0: return f"({col} AT TIME ZONE '{tz}')::date = (now() AT TIME ZONE '{tz}')::date"
+        return f"{col} > now() - interval '{int(d)} days'"
+    def _cond_prev(d, col="f.ts"):
+        if d == 0: return f"({col} AT TIME ZONE '{tz}')::date = (now() AT TIME ZONE '{tz}')::date - 1"
+        return f"{col} <= now() - interval '{int(d)} days' AND {col} > now() - interval '{2*int(d)} days'"
+    try:
+        with _SNC() as c:
+            # --- embudo por rango ---
+            origenes = {o: {} for o in VOZ_ORIGENES}
+            for k, d in dias_r.items():
+                por = {m: _voz_por_origen(c, f, _cond(d)) for m, f in _VOZ_MET.items()}
+                porp = {m: _voz_por_origen(c, f, _cond_prev(d)) for m, f in _VOZ_MET.items()}
+                for o in VOZ_ORIGENES:
+                    origenes[o][k] = {m: por[m][o] for m in _VOZ_MET}
+                    origenes[o][k]["prev"] = {m: porp[m][o] for m in _VOZ_MET}
+            # --- operación de las llamadas (filas, no personas) por rango ---
+            op_sql = (f"SELECT coalesce(origen,'sin_origen') AS o, count(*), "
+                      f" count(*) FILTER (WHERE status='CONTESTADA'), count(*) FILTER (WHERE status='NO_CONTESTA'), "
+                      f" count(*) FILTER (WHERE status='BUZON'), count(*) FILTER (WHERE status='FALLO'), "
+                      f" count(*) FILTER (WHERE desenlace='CONFIRMADO'), count(*) FILTER (WHERE desenlace='PIDE_WA'), "
+                      f" count(*) FILTER (WHERE desenlace IN ('OPT_OUT','NO_INTERES')), "
+                      f" coalesce(sum(duration_secs) FILTER (WHERE status='CONTESTADA'),0), "
+                      f" coalesce(sum(cost_usd),0) "
+                      f"FROM call_log f WHERE campaign='ventanas' AND country='CO' AND {{c}} GROUP BY 1")
+            cols = ("llamadas", "contestadas", "no_contesta", "buzon", "fallo", "confirmados",
+                    "pide_wa", "no_interes", "dur_total", "costo_usd")
+            operacion = {}
+            for k, d in dias_r.items():
+                acc = {o: {x: 0 for x in cols} for o in VOZ_ORIGENES}
+                for r in c.execute(op_sql.format(c=_cond(d, "f.attempted_at"))):
+                    for dst in {r[0], "total"} & set(acc):   # sin_origen: solo al total
+                        for x, v in zip(cols, r[1:]): acc[dst][x] += float(v) if x == "costo_usd" else int(v)
+                for o in acc: acc[o]["costo_usd"] = round(acc[o]["costo_usd"], 2)
+                operacion[k] = acc
+            desen = {k: {o: {} for o in VOZ_ORIGENES} for k in dias_r}
+            for k, d in dias_r.items():
+                for o, de, n in c.execute(
+                        f"SELECT coalesce(origen,'sin_origen'), coalesce(desenlace,'(sin desenlace)'), count(*) "
+                        f"FROM call_log f WHERE campaign='ventanas' AND country='CO' AND {_cond(d, 'f.attempted_at')} GROUP BY 1,2"):
+                    for dst in ({o} & set(VOZ_ORIGENES)) | {"total"}:
+                        desen[k][dst][de] = desen[k][dst].get(de, 0) + int(n)
+            # --- serie diaria (30 días, calendario de Bogotá) ---
+            hoy = datetime.datetime.now(ZoneInfo(tz)).date()
+            fechas = [(hoy - datetime.timedelta(days=j)).isoformat() for j in range(29, -1, -1)]
+            ser_met = ("llamadas", "contestaron", "deal_creado", "confirmados", "bajas")
+            ser = {f: {o: {m: 0 for m in ser_met} for o in VOZ_ORIGENES} for f in fechas}
+            for m in ser_met:
+                for f, o, n in c.execute(
+                        f"WITH {_VOZ_CTE}, base AS (SELECT DISTINCT f.phone, (f.ts AT TIME ZONE '{tz}')::date::text AS d "
+                        f"  FROM ({_VOZ_MET[m]}) f WHERE f.ts > now() - interval '30 days') "
+                        f"SELECT b.d, vz.o, count(*) FROM base b JOIN vz ON vz.phone=b.phone GROUP BY 1,2"):
+                    if f not in ser: continue
+                    ser[f]["total"][m] += int(n)
+                    if o in ser[f]: ser[f][o][m] += int(n)
+            serie = [{"fecha": f, **ser[f]} for f in fechas]
+            # --- experimentos A/B (voz/report.py SQL_A y SQL_B), desde el arranque ---
+            prm = {"cc": "CO", "desde": VOZ_ARRANQUE}
+            exp_a = [{"brazo": b, "contactados": int(n), "leads": int(l)} for b, n, l in c.execute("""
+                WITH contactados AS (
+                  SELECT DISTINCT phone, 'wa' AS brazo FROM ventanas_hs_inbound
+                   WHERE country=%(cc)s AND flujo='compra_wa' AND action='SENT' AND coalesce(brazo,'wa')='wa'
+                     AND (received_at AT TIME ZONE 'America/Bogota') >= %(desde)s
+                  UNION ALL
+                  SELECT DISTINCT phone, 'voz' FROM call_log
+                   WHERE country=%(cc)s AND campaign='ventanas' AND origen='primer_contacto'
+                     AND (attempted_at AT TIME ZONE 'America/Bogota') >= %(desde)s)
+                SELECT c.brazo, count(*), count(*) FILTER (WHERE EXISTS (
+                  SELECT 1 FROM ventanas_backbone_intento b WHERE b.phone=c.phone AND b.country=%(cc)s AND b.resultado='BACKBONE'))
+                FROM contactados c GROUP BY 1""", prm)]
+            exp_b = [{"brazo": b, "contactados": int(n), "leads": int(l)} for b, n, l in c.execute("""
+                WITH rescatados AS (
+                  SELECT DISTINCT phone, 'dapta' AS brazo FROM ventanas_dapta_handoff
+                   WHERE country=%(cc)s AND motivo='SIN_RESPUESTA_24H' AND (sent_at AT TIME ZONE 'America/Bogota') >= %(desde)s
+                  UNION ALL
+                  SELECT DISTINCT phone, 'voz' FROM call_log
+                   WHERE country=%(cc)s AND campaign='ventanas' AND origen='rescate_24h'
+                     AND (attempted_at AT TIME ZONE 'America/Bogota') >= %(desde)s)
+                SELECT r.brazo, count(*), count(*) FILTER (WHERE EXISTS (
+                  SELECT 1 FROM ventanas_backbone_intento b WHERE b.phone=r.phone AND b.country=%(cc)s AND b.resultado='BACKBONE'))
+                FROM rescatados r GROUP BY 1""", prm)]
+            deal_origen = {str(dl): o for dl, o in c.execute(
+                f"WITH {_VOZ_CTE} SELECT b.new_deal_id, vz.o FROM ventanas_backbone_intento b "
+                f"JOIN vz ON vz.phone=b.phone WHERE b.resultado='BACKBONE' AND b.country='CO' "
+                f"AND b.new_deal_id IS NOT NULL")}
+    except Exception as e:  # noqa: BLE001 — sin base, la vista de voz lo dice; el resto del tablero sigue
+        print(f"WARN voz_metricas: {str(e)[:200]}")
+        return {}
+    # --- citas y cierres (BigQuery) de los deals de personas llamadas ---
+    # REGLA DE ORO 4: dos líneas de negocio que no son el mismo evento; se devuelven por separado.
+    vacio = {"cierres": 0, "cierres_mm": 0, "cierres_inmo": 0, "citas": 0}
+    for o in VOZ_ORIGENES:
+        for k in dias_r:
+            origenes[o][k].update(vacio); origenes[o][k]["prev"].update(vacio)
+    for f in q_cached("query_ventanas_cierres.sql"):
+        o = deal_origen.get(str(f.get("deal_id")))
+        if not o: continue
+        for campo, met in (("f_mm", "cierres_mm"), ("f_inmo", "cierres_inmo"), ("f_cita", "citas")):
+            v = f.get(campo)
+            if not v: continue
+            dd = (hoy - datetime.date.fromisoformat(str(v)[:10])).days
+            if dd < 0: continue
+            for k, n in dias_r.items():
+                if (dd == 0) if n == 0 else (dd < n): dst = "cur"
+                elif (dd == 1) if n == 0 else (n <= dd < 2 * n): dst = "prev"
+                else: continue
+                for oo in ({o} & set(VOZ_ORIGENES)) | {"total"}:
+                    t = origenes[oo][k] if dst == "cur" else origenes[oo][k]["prev"]
+                    t[met] += 1
+                    if met != "citas": t["cierres"] += 1
+    return {"origenes": origenes, "operacion": operacion, "desenlaces": desen, "serie": serie,
+            "experimentos": {"arranque": VOZ_ARRANQUE, "primer_contacto": exp_a, "rescate_24h": exp_b},
+            "pais": "CO"}
+
+
 def agente_acciones(pais, dias=30):
     """Desenlace de los turnos del agente (últimos `dias`): qué hizo con cada conversación.
     Alimenta la pantalla Agente IA del panel. SHADOW y NOT_IN_SAMPLE se muestran aparte
@@ -962,6 +1127,7 @@ data={
   # OJO: acá NO va `ejecuciones` (nombre, nid, teléfono). data.json es público y se
   # descarga sin auth; esos datos los sirve /api/ventanas/ejecuciones detrás del token.
   "ventanas": {**ventanas_metricas(), "serie": ventanas_serie()},
+  "voz": voz_metricas(),
   "plantillas": {"MX": mx["plantillas"], "CO": co["plantillas"]},
   "cosecha_canal": {"MX": mx["cosecha_canal"], "CO": co["cosecha_canal"]},
   "creados_dia": {"MX": mx["creados_dia"], "CO": co["creados_dia"]},
