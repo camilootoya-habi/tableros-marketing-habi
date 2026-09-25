@@ -33,6 +33,14 @@ X-GitHub-Api-Version: 2022-11-28
 {"ref": "main", "inputs": {"enviar": "true", "solo_si_falta": "true"}}
 ```
 
+**Si GA4 todavía no publicó el día** (falta la tabla `events_AAAAMMDD` del día a reportar), la
+corrida no envía ni marca, y el siguiente horario reintenta. El 25-sep el export del 24 seguía
+sin llegar a las 11:50 CDMX, así que conviene que haya horarios de reintento en la tarde.
+
+**Token actual (TEMPORAL):** clásico, de `notero-88`, scope `public_repo`, sin vencimiento.
+Cambiarlo por uno fine-grained creado por Camilo (solo este repo, *Actions: Read and write*) y
+revocar el clásico.
+
 Responde **204** sin cuerpo si GitHub aceptó el disparo. `solo_si_falta` es lo que evita el
 mensaje doble: si un cron de GitHub o el disparo anterior ya lo envió, esta corrida termina
 sin hacer nada.
