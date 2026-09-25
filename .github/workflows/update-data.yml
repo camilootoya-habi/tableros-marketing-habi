@@ -630,5 +630,16 @@ jobs:
             echo "No changes to commit"
           else
             git commit -m "Auto-update data.json $(date -u +%Y-%m-%d)"
-            git push
+            # Reintento con rebase: otros workflows (pauta, marketing loop, TV, desempeño…)
+            # commitean a main mientras este corre ~10 min, y un `git push` simple fallaba con
+            # "rejected (fetch first)" — al 25-sep, las últimas 5 corridas perdieron todo lo
+            # calculado así. En un conflicto gana ESTE commit (-X theirs en un rebase = el
+            # commit que se reaplica): son archivos que este job acaba de regenerar.
+            for i in 1 2 3 4 5; do
+              if git push; then echo "push OK (intento $i)"; exit 0; fi
+              git fetch origin main
+              git rebase -X theirs origin/main || { git rebase --abort; echo "rebase falló"; exit 1; }
+              sleep $((i * 5))
+            done
+            echo "push falló tras 5 intentos"; exit 1
           fi
