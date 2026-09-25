@@ -411,6 +411,204 @@
   .alerta.ok{background:var(--ok-wash);border-color:var(--ok);color:var(--ok)}
   .alerta b{color:inherit}
   .alerta .muted{color:inherit;opacity:.78;font-weight:400}
+
+  /* ==========================================================================
+     Panel · rediseño 25-sep (Claude Design · "Rediseño del tablero de ventanas").
+     Mismo lenguaje en el loop (Agregado / Web) y en Ventanas: resumen con 4 KPIs contra el
+     periodo anterior, embudo en filas con la mayor fuga resaltada y series en múltiplos
+     chicos. Todo sobre los tokens del tema: el oscuro sale solo.
+     ========================================================================== */
+  :root{--warn-wash:#FEFCE8;--warn-line:#FDE68A;--warn-ink:#A16207;--row-soft:#F5F5F5;
+    --bar-mute:#D4D4D4;--bar-hi:#737373;--bar-cur:#E5E5E5;--col-hi:#FAF5FF;--col-we:#FAFAFA}
+  body.dark{--warn-wash:#2A2413;--warn-line:#4D4119;--warn-ink:#FBBF24;--row-soft:#221D29;
+    --bar-mute:#453D50;--bar-hi:#9A92A5;--bar-cur:#2E2836;--col-hi:#241C2E;--col-we:#18151C}
+  .pv-head{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:16px;margin-bottom:24px}
+  .pv-crumb{font-size:13px;font-weight:500;color:var(--text-muted)}
+  .pv-h1{font-family:var(--font-title);font-weight:700;font-size:32px;letter-spacing:-0.64px;color:var(--text-title);margin:8px 0 0;line-height:1.15}
+  .pv-date{display:inline-flex;align-items:center;gap:8px;min-height:32px;padding:4px 12px;border-radius:9999px;
+    background:var(--warn-wash);border:1px solid var(--warn-line);color:var(--warn-ink);font-size:13px;font-weight:500}
+  .pv-date b{font-weight:600}
+  .pv-stack{display:flex;flex-direction:column;gap:24px}
+  .pv-sechead{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px;margin-bottom:16px}
+  .pv-h2{font-family:var(--font-title);font-weight:600;font-size:20px;letter-spacing:-0.2px;color:var(--text-title);margin:0;
+    display:flex;align-items:center;gap:8px}
+  .pv-sub{font-size:14px;color:var(--text-muted);margin-top:2px;text-wrap:pretty}
+  .pv-ctrls{display:flex;gap:12px;flex-wrap:wrap;align-items:center}
+  .pv-btn{height:40px;padding:0 16px;border:1px solid var(--border-strong);border-radius:8px;background:var(--card);
+    color:var(--text-title);font:inherit;font-size:14px;font-weight:500;cursor:pointer}
+  .pv-btn:hover{background:var(--card-hover)}
+  /* icono "i": misma mecánica de tooltip que .info, con la forma del diseño */
+  .ii{display:inline-flex;color:var(--text-muted);opacity:.7;cursor:help;position:relative;outline:none;vertical-align:-2px;border-radius:9999px}
+  .ii:hover,.ii:focus{opacity:1;color:var(--accent)}
+  .ii::after{content:attr(data-tip);position:absolute;left:50%;top:calc(100% + 8px);transform:translateX(-50%);
+    width:max-content;max-width:300px;white-space:normal;background:var(--text-title);color:var(--card);font-size:12.5px;
+    font-weight:400;line-height:1.5;padding:10px 12px;border-radius:8px;box-shadow:var(--shadow-pop);opacity:0;visibility:hidden;
+    pointer-events:none;transition:opacity .12s;z-index:60;text-align:left;letter-spacing:0;text-transform:none;font-family:var(--font)}
+  .ii::after{display:none}
+  .ii:hover::after,.ii:focus::after{display:block;opacity:1;visibility:visible}
+  /* KPIs del resumen */
+  .pv-kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px}
+  .pv-kpi{background:var(--card);border:1px solid var(--border);border-radius:12px;box-shadow:var(--shadow);padding:20px 24px;
+    display:flex;flex-direction:column;gap:8px;min-width:0}
+  .pv-kpi .l{display:flex;align-items:center;gap:6px;font-size:14px;font-weight:500;color:var(--text)}
+  .pv-kpi .v{font-family:var(--font-title);font-weight:700;font-size:36px;letter-spacing:-0.9px;line-height:1.1;
+    color:var(--text-title);font-variant-numeric:tabular-nums}
+  .pv-kpi .s{font-size:13px;color:var(--text-muted)}
+  .pv-d{display:flex;align-items:center;gap:6px;font-size:13px;font-weight:600;font-variant-numeric:tabular-nums;flex-wrap:wrap}
+  .pv-d .pl{font-weight:400;color:var(--text-muted)}
+  .pv-d.up{color:var(--ok)} .pv-d.down{color:var(--bad)} .pv-d.flat{color:var(--text-muted)}
+  .pv-d.down svg{transform:rotate(180deg)} .pv-d.flat svg{transform:rotate(90deg)}
+  /* Tarjetas */
+  .pv-card{background:var(--card);border:1px solid var(--border);border-radius:12px;box-shadow:var(--shadow);overflow:hidden}
+  .pv-card > .pv-cardhead{padding:24px 24px 16px}
+  .pv-card.pad{padding:24px;display:flex;flex-direction:column;gap:20px;overflow:visible}
+  .pv-card.pad > .pv-cardhead{padding:0}
+  .pv-cardhead{display:flex;flex-wrap:wrap;justify-content:space-between;gap:12px;align-items:flex-start}
+  .pv-scroll{overflow-x:auto}
+  /* Embudo en filas */
+  .pv-fun{min-width:820px}
+  .pv-frow{display:grid;grid-template-columns:40px minmax(200px,1.3fr) minmax(200px,2fr) 110px 130px 120px;gap:16px;
+    align-items:center;padding:14px 24px;border-bottom:1px solid var(--row-soft)}
+  .pv-frow.h{padding:10px 24px;border-top:1px solid var(--border);border-bottom:1px solid var(--border);background:var(--bg);
+    font-size:12px;font-weight:500;color:var(--text-muted)}
+  .pv-frow.worst{background:var(--warn-wash)}
+  .pv-frow.sub{padding-top:8px;padding-bottom:10px}
+  .pv-frow.sub .pv-fn{background:transparent;color:var(--text-muted);font-size:14px}
+  .pv-frow.sub .pv-fname{font-weight:500;font-size:13px;color:var(--text)}
+  .pv-frow.sub .pv-track{height:6px}
+  .pv-frow.sub .pv-track > div{background:var(--accent-line)}
+  .pv-frow.sub .pv-fval{font-size:14px;font-weight:500}
+  .pv-frow.sub .pv-fstep b{font-weight:500}
+  .pv-frow .r{text-align:right}
+  .pv-fn{width:24px;height:24px;border-radius:9999px;background:var(--barbg);color:var(--text);font-size:12px;font-weight:600;
+    display:flex;align-items:center;justify-content:center}
+  .pv-fname{display:flex;align-items:center;gap:6px;font-size:14px;font-weight:600;color:var(--text-title)}
+  .pv-fdesc{font-size:13px;color:var(--text-muted);margin-top:2px}
+  .pv-track{height:10px;border-radius:9999px;background:var(--barbg);overflow:hidden}
+  .pv-track > div{height:100%;border-radius:9999px;background:var(--accent);min-width:3px}
+  .pv-fval{text-align:right;font-size:16px;font-weight:600;color:var(--text-title);font-variant-numeric:tabular-nums}
+  .pv-fstep{display:flex;flex-direction:column;align-items:flex-end;gap:2px;font-variant-numeric:tabular-nums}
+  .pv-fstep b{font-size:14px;font-weight:600;color:var(--text-title)}
+  .pv-frow.worst .pv-fstep b{color:var(--warn-ink)}
+  .pv-fstep span{font-size:12px;color:var(--text-muted)}
+  .pv-fcum{text-align:right;font-size:14px;font-weight:500;color:var(--text);font-variant-numeric:tabular-nums}
+  .pv-side{padding:16px 24px 24px;display:flex;flex-wrap:wrap;gap:16px;align-items:stretch}
+  .pv-side > .t{font-size:13px;font-weight:500;color:var(--text-muted);width:100%}
+  .pv-sidebox{flex:1 1 240px;display:flex;align-items:center;justify-content:space-between;gap:16px;padding:14px 16px;
+    border:1px solid var(--border);border-radius:8px}
+  .pv-sidebox b{display:block;font-size:14px;font-weight:600;color:var(--text-title)}
+  .pv-sidebox span{font-size:13px;color:var(--text-muted)}
+  .pv-sidebox .n{font-family:var(--font-title);font-weight:700;font-size:24px;letter-spacing:-0.3px;color:var(--text-title);
+    font-variant-numeric:tabular-nums}
+  /* Totales de la serie */
+  .pv-tot{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:1px;background:var(--border);
+    border:1px solid var(--border);border-radius:8px;overflow:hidden}
+  .pv-tot > div{background:var(--card);padding:14px 16px;display:flex;flex-direction:column;gap:4px;min-width:0}
+  .pv-tot .l{display:flex;align-items:center;gap:6px;font-size:13px;font-weight:500;color:var(--text)}
+  .pv-tot .v{font-family:var(--font-title);font-weight:700;font-size:22px;letter-spacing:-0.3px;color:var(--text-title);
+    font-variant-numeric:tabular-nums}
+  .pv-tot .s{font-size:12px;color:var(--text-muted)}
+  /* Múltiplos chicos */
+  .pv-mrow{display:grid;grid-template-columns:220px minmax(0,1fr);gap:24px;align-items:center;padding:16px 0;border-top:1px solid var(--row-soft)}
+  .pv-mstat{display:flex;flex-direction:column;gap:4px;min-width:0}
+  .pv-mstat .l{display:flex;align-items:center;gap:6px;font-size:14px;font-weight:600;color:var(--text-title)}
+  .pv-mstat .a{display:flex;align-items:baseline;gap:6px;flex-wrap:wrap}
+  .pv-mstat .a b{font-family:var(--font-title);font-weight:700;font-size:28px;letter-spacing:-0.4px;color:var(--text-title);
+    font-variant-numeric:tabular-nums}
+  .pv-mstat .a span{font-size:12px;color:var(--text-muted)}
+  .pv-mstat .d{font-size:13px;font-weight:600;font-variant-numeric:tabular-nums}
+  .pv-mstat .d.up{color:var(--ok)} .pv-mstat .d.down{color:var(--bad)} .pv-mstat .d.flat{color:var(--text-muted)}
+  .pv-mstat .s{font-size:12px;color:var(--text-muted)}
+  .pv-mrow > *,.pv-mfoot > *{min-width:0}
+  .pv-mch{position:relative;height:120px;min-width:0;border-bottom:1px solid var(--border)}
+  .pv-mch .mx{position:absolute;top:-4px;right:0;font-size:11px;color:var(--text-muted);background:var(--card);padding-left:4px;z-index:1}
+  .pv-mfoot{display:grid;grid-template-columns:220px minmax(0,1fr);gap:24px;padding-top:6px}
+  .pv-leg{display:flex;flex-direction:column;gap:6px;font-size:12px;color:var(--text-muted)}
+  .pv-leg span{display:flex;align-items:center;gap:8px}
+  .pv-leg i{display:inline-block;width:10px;height:10px;border-radius:2px}
+  .pv-leg i.ln{width:16px;height:3px;background:var(--accent)}
+  .pv-xl{display:flex;min-width:0;align-self:start}
+  .pv-xl span{flex:1;min-width:0;text-align:center;font-size:11px;color:var(--text-muted);white-space:nowrap}
+  .pv-detail{display:flex;flex-wrap:wrap;align-items:center;gap:8px 24px;padding:14px 16px;border-radius:8px;background:var(--bg);
+    border:1px solid var(--row-soft);font-size:13px;color:var(--text)}
+  .pv-detail > b:first-child{font-size:14px;font-weight:600;color:var(--text-title);min-width:120px}
+  .pv-detail span b{font-weight:600;color:var(--text-title);font-variant-numeric:tabular-nums;margin-left:6px}
+  .pv-tbl{overflow:auto;max-height:420px;border:1px solid var(--border);border-radius:8px}
+  .pv-tbl table{width:100%;border-collapse:collapse;font-size:13px;font-variant-numeric:tabular-nums}
+  .pv-tbl th{position:sticky;top:0;background:var(--bg);color:var(--text-muted);font-weight:500;text-align:right;padding:10px 14px;
+    border-bottom:1px solid var(--border);white-space:nowrap}
+  .pv-tbl td{padding:10px 14px;border-bottom:1px solid var(--row-soft);text-align:right;color:var(--text)}
+  .pv-tbl th:first-child,.pv-tbl td:first-child{text-align:left}
+  .pv-tbl td:first-child{font-weight:500;color:var(--text-title)}
+  .pv-tbl tr.tot td{font-weight:600;color:var(--text-title);border-bottom:0}
+  /* Cierres y captaciones */
+  .pv-cc{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:32px;align-items:end}
+  .pv-cc .ch{height:230px}
+  .pv-cc table{width:100%;border-collapse:collapse;font-size:14px;font-variant-numeric:tabular-nums}
+  .pv-cc th{color:var(--text-muted);font-size:13px;font-weight:500;text-align:right;padding:8px 0;border-bottom:1px solid var(--border)}
+  .pv-cc td{text-align:right;padding:10px 0;border-bottom:1px solid var(--row-soft);color:var(--text-title)}
+  .pv-cc th:first-child,.pv-cc td:first-child{text-align:left}
+  .pv-cc td:first-child{color:var(--text)}
+  .pv-cc tr.tot td{font-weight:600;border-bottom:0;color:var(--text-title)}
+  .pv-legh{display:flex;gap:16px;font-size:13px;color:var(--text)}
+  .pv-legh span{display:flex;align-items:center;gap:8px}
+  .pv-legh i{width:12px;height:12px;border-radius:3px;display:inline-block}
+  /* Inventario */
+  .pv-inv{min-width:760px}
+  .pv-irow{display:grid;grid-template-columns:minmax(220px,1.4fr) minmax(200px,1.6fr) 120px 140px 130px;gap:16px;align-items:center;
+    padding:14px 24px;border-bottom:1px solid var(--row-soft)}
+  .pv-irow.h{padding:10px 24px;border-top:1px solid var(--border);border-bottom:1px solid var(--border);background:var(--bg);
+    font-size:12px;font-weight:500;color:var(--text-muted)}
+  .pv-irow.h > span{display:flex;align-items:center;gap:6px}
+  .pv-irow.h > span.r{justify-content:flex-end}
+  .pv-irow.sin{background:var(--bad-wash)}
+  .pv-irow .r{text-align:right}
+  .pv-chip{height:24px;padding:0 8px;border-radius:9999px;background:var(--barbg);color:var(--text);font-size:12px;font-weight:600;
+    display:inline-flex;align-items:center}
+  .pv-irow .nm{display:flex;align-items:center;gap:12px}
+  .pv-irow .nm b{display:block;font-size:14px;font-weight:600;color:var(--text-title)}
+  .pv-irow .nm span.nt{display:block;font-size:12px;color:var(--text-muted)}
+  /* `hidden` tiene que ganarle a los display:flex/grid de estas piezas */
+  #tipoSeg[hidden],#tipoLbl[hidden],.pv-stack[hidden],.pv-date[hidden]{display:none!important}
+  .pv-irow .st{display:flex;align-items:center;gap:12px}
+  .pv-irow .st .pv-track{flex:1;height:8px}
+  .pv-irow .st b{width:64px;text-align:right;font-size:14px;font-weight:600;color:var(--text-title);font-variant-numeric:tabular-nums}
+  .pv-irow .num{text-align:right;font-size:14px;font-weight:500;color:var(--text-title);font-variant-numeric:tabular-nums}
+  .pv-irow .num.neg{color:var(--bad);font-weight:600}
+  .pv-irow .num.pos{font-weight:600}
+  .pv-run{display:flex;justify-content:flex-end}
+  .pv-run span{height:24px;padding:0 10px;border-radius:9999px;font-size:12px;font-weight:600;display:inline-flex;align-items:center;
+    font-variant-numeric:tabular-nums}
+  .pv-run .ok{background:var(--ok-wash);color:var(--ok)} .pv-run .mid{background:var(--warn-wash);color:var(--warn-ink)}
+  .pv-run .bad{background:var(--bad-wash);color:var(--bad)} .pv-run .na{background:var(--barbg);color:var(--text-muted)}
+  /* Mejor hora: mapa de calor */
+  .pv-best{display:flex;flex-wrap:wrap;gap:8px}
+  .pv-best > div{display:flex;flex-direction:column;gap:2px;padding:10px 14px;border:1px solid var(--border);border-radius:8px}
+  .pv-best span{font-size:12px;font-weight:500;color:var(--text-muted)}
+  .pv-best b{font-size:14px;font-weight:600;color:var(--text-title);font-variant-numeric:tabular-nums}
+  .pv-heat{min-width:860px;display:flex;flex-direction:column;gap:4px}
+  .pv-hrow{display:grid;grid-template-columns:140px repeat(15,minmax(44px,1fr));gap:4px}
+  .pv-hrow > .l{display:flex;align-items:center;gap:6px;font-size:13px;font-weight:500;color:var(--text)}
+  .pv-hrow > .x{text-align:center;font-size:11px;font-weight:500;color:var(--text-muted)}
+  .pv-hc{height:40px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:500;
+    font-variant-numeric:tabular-nums;border:2px solid transparent}
+  .pv-hc.best{border-color:var(--text-title);font-weight:700}
+  .pv-hleg{display:flex;flex-wrap:wrap;align-items:center;gap:8px 16px;font-size:12px;color:var(--text-muted)}
+  .pv-hleg span{display:flex;align-items:center;gap:6px}
+  .pv-hleg i{width:14px;height:10px;border-radius:2px;display:inline-block}
+  /* Errores de entrega colapsado */
+  details.pv-card > summary{list-style:none;cursor:pointer;padding:20px 24px;display:flex;align-items:center;justify-content:space-between;gap:12px}
+  details.pv-card > summary::-webkit-details-marker{display:none}
+  details.pv-card > summary .chev{transition:transform .15s;color:var(--text-muted)}
+  details.pv-card[open] > summary .chev{transform:rotate(180deg)}
+  details.pv-card > .body{padding:0 24px 24px}
+  .pv-empty{padding:32px 24px;text-align:center;color:var(--text-muted);font-size:14px}
+  @media(max-width:720px){
+    .pv-mrow,.pv-mfoot{grid-template-columns:minmax(0,1fr);gap:12px}
+    .pv-mfoot .pv-leg{order:2}
+    .pv-h1{font-size:26px}
+    .pv-kpi .v{font-size:30px}
+  }
 </style>
 </head>
 <body>
@@ -444,7 +642,13 @@
       <button type="button" class="winbtn" data-canal="web" onclick="irCanal('web')">Web</button>
       <button type="button" class="winbtn" data-canal="ventanas" onclick="irCanal('ventanas')">Ventanas</button>
     </div>
-    <span class="tl" style="font-weight:400">Aplica a todo: panel, inbox, plantillas y agente IA</span>
+    <span class="tl" id="tipoLbl" style="margin-left:8px;display:inline-flex;align-items:center;gap:6px" hidden>Tipo<span class="ii" tabindex="0" data-tip="Direct entró por el flujo compra_wa (primer contacto por WhatsApp). Normal es el resto: no contesta y tibio. La ruta se asigna por el primer POST del teléfono."><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><path d="M12 16v-4"></path><path d="M12 8h.01"></path></svg></span></span>
+    <div class="seg" id="tipoSeg" hidden>
+      <button type="button" class="winbtn active" data-ruta="total" onclick="setVentRuta('total')">Total</button>
+      <button type="button" class="winbtn" data-ruta="directa" onclick="setVentRuta('directa')">Direct</button>
+      <button type="button" class="winbtn" data-ruta="normal" onclick="setVentRuta('normal')">Normal</button>
+    </div>
+    <span class="tl" style="font-weight:400;margin-left:auto">Los filtros aplican a panel, inbox, plantillas y agente IA</span>
   </div>
 
   <!-- ===== HOJA 1/2: TABLERO ===== -->
@@ -455,16 +659,12 @@
     <input type="radio" name="pais" value="CO">
   </div>
 
-  <div class="pagehead">
+  <div class="pv-head">
     <div>
-      <h1 id="dashTitulo">Marketing loop general</h1>
-      <div class="who"><span id="paisLabel">Colombia · Web + Ventanas (agregado)</span> <span class="muted" id="upd"></span></div>
+      <div class="pv-crumb" id="pvCrumb">Colombia · Agregado</div>
+      <h1 class="pv-h1" id="dashTitulo">Marketing loop general</h1>
     </div>
-    <div class="seg" id="granSeg">
-      <button type="button" class="winbtn" data-gran="dia" onclick="setGran('dia')">Diario</button>
-      <button type="button" class="winbtn" data-gran="semana" onclick="setGran('semana')">Semanal</button>
-      <button type="button" class="winbtn" data-gran="mes" onclick="setGran('mes')">Mensual</button>
-    </div>
+    <div class="pv-date" id="upd" hidden></div>
   </div>
 
   <dialog id="helpCard" class="help-dialog">
@@ -472,52 +672,28 @@
     <button class="close-btn" onclick="document.getElementById('helpCard').close()">Cerrar</button>
   </dialog>
 
-  <div id="panelLoop">
-  <section class="card-sec" id="embudoCard"></section>
-
-  <section class="card-sec" id="serieCard">
-    <div class="cardhead">
-      <div><div class="tabletitle" id="serieTitle">Serie del loop</div>
-      <span class="sub" id="serieSub"></span></div>
-      <div class="seg" id="serieSeg">
-        <button type="button" class="winbtn sm active" data-st="loop" onclick="setSerieTab('loop')">Serie del loop</button>
-        <button type="button" class="winbtn sm" data-st="agente" onclick="setSerieTab('agente')">Agente IA</button>
-      </div>
-    </div>
-    <div id="serieKpis"></div>
-    <div class="leg" id="serieLeg"></div>
-    <div class="ch tall"><canvas id="c_serie"></canvas></div>
-    <div class="tbltoggle"><button type="button" class="linkbtn" id="serieTblBtn" onclick="toggleSerieTabla()">Ver tabla</button></div>
-    <div class="tbl-wrap ftab" id="serieTab" hidden></div>
-  </section>
-    </section>
-
-  <section class="card-sec">
-    <div class="tabletitle">Errores de entrega <button type="button" class="help-btn" onclick="openHelp('err')" aria-label="Explicación">?</button></div>
-    <span class="sub" id="errSub">no entregados por período, desglosados por tipo de error</span>
-    <div class="tbl-wrap ftab" id="errores"></div>
-  </section>
-
-  <section class="card-sec">
-    <div class="tabletitle">Inventario del pool · niveles de prioridad</div>
-    <span class="sub">stock y consumo diario por nivel P1-P4</span>
-    <div class="tbl-wrap ftab" id="inventario"></div>
-  </section>
-
-  <section class="card-sec">
-    <div class="tabletitle">Mejor hora de envío</div>
-    <span class="sub" id="horaSub">read rate y respond rate por hora del día · plantilla ganadora v2</span>
-    <div style="position:relative;height:300px"><canvas id="c_porhora"></canvas></div>
-    <p class="note" id="porhoraNote"></p>
-  </section>
-  </div><!-- /panelLoop: las tres cards de arriba son del loop y se ocultan con Ventanas (8-sep) -->
-
+  <!-- Loop (Agregado / Web): resumen, embudo, serie, cierres, pool, mejor hora y errores -->
+  <div id="panelLoop" class="pv-stack">
+    <section id="pvResumen"></section>
+    <section class="pv-card" id="embudoCard"></section>
+    <section class="pv-card pad" id="serieCard"></section>
+    <section class="pv-card pad" id="ccCard"></section>
+    <section class="pv-card" id="invCard"></section>
+    <section class="pv-card pad" id="horaCard"></section>
+    <details class="pv-card" id="errCard" ontoggle="if(this.open) renderErrores()">
+      <summary>
+        <div><h2 class="pv-h2">Errores de entrega</h2>
+          <div class="pv-sub">No entregados por periodo, desglosados por tipo de error · sigue la temporalidad de la serie</div></div>
+        <svg class="chev" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"></path></svg>
+      </summary>
+      <div class="body"><div class="tbl-wrap ftab" id="errores"></div></div>
+    </details>
   </div>
 
   <!-- Ventanas no comparte semántica con el loop: su embudo empieza en un lead de HubSpot,
        no en un envío, y no tiene pool ni plantilla ganadora. Por eso es otra vista, no un
        filtro sobre la misma. -->
-  <div id="panelVentanas" hidden></div>
+  <div id="panelVentanas" class="pv-stack" hidden></div>
 
   </div><!-- /sheet-dash -->
 
@@ -612,6 +788,7 @@
 </div>
 
 <script>
+let CC=null;
 let D=null, country='MX', cicloTipo='dia', ventFunnel=14, porhoraChart=null, cohorteChart=null, AUDIT=null, expC='CO', tbC='CO', docC='MX';
 const CIP={MX:'mexico',CO:'colombia'};
 const fmt=v=>(v==null?'—':Number(v).toLocaleString('es-CO'));
@@ -678,9 +855,11 @@ function stateHelp(lab){
 async function load(){
   try{ D=await (await fetch('data.json?t='+Date.now())).json(); }
   catch(e){ document.getElementById('stats').innerHTML='<p class="muted">Error cargando data.json</p>'; return; }
-  document.getElementById('upd').innerHTML = D.updated
-    ? `<span style="display:inline-block;margin-top:6px;padding:3px 10px;border-radius:999px;background:var(--card);border:1px solid var(--border);font-size:12px;color:var(--text-muted)">🕓 Datos descargados vía query: <b style="color:var(--text)">${fmtUpdated(D.updated)}</b></span>`
-    : '';
+  const up=document.getElementById('upd');
+  if(up){ up.hidden=!D.updated; up.innerHTML=D.updated?'<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg><span>Datos al '+fmtUpdated(D.updated).replace(/ · (.*)$/,' · <b>$1</b>')+'</span>':''; }
+  // Cierres y captaciones por mes: los publica el cron diario del tablero original. Se leen de
+  // ahí para no duplicar la query; si no está, la tarjeta lo dice.
+  try{ CC=await (await fetch('../../../marketing-loop/cierres.json?t='+Date.now())).json(); }catch(e){ CC=null; }
   try{ AUDIT=await (await fetch('audit.json?t='+Date.now())).json(); }catch(e){ AUDIT=null; }
   document.querySelectorAll('input[name=pais]').forEach(r=>r.onchange=()=>selectCountry(r.value));
   
@@ -701,8 +880,7 @@ function go(sheet, c){
   if(sheet==='dash'){
     const r=document.querySelector('input[name=pais][value='+paisSel+']'); if(r) r.checked=true;
     selectCountry(paisSel);
-    const pl=document.getElementById('paisLabel');
-    if(pl) pl.textContent=_PAIS_LBL[paisSel]+' · '+_CANAL_LBL[canalSel];
+    _pvHead();
   }
   else if(sheet==='exp'){ setExp(paisSel); }
   else if(sheet==='tablas'){ setTablas(paisSel); }
@@ -717,6 +895,8 @@ function go(sheet, c){
   document.querySelectorAll('.navit[data-nav]').forEach(b=>b.classList.toggle('active', b.dataset.nav===sheet));
   document.querySelectorAll('#paisSeg [data-pais]').forEach(b=>b.classList.toggle('active', b.dataset.pais===paisSel));
   document.querySelectorAll('#canalSeg [data-canal]').forEach(b=>b.classList.toggle('active', b.dataset.canal===canalSel));
+  ['tipoLbl','tipoSeg'].forEach(i=>{ const e=document.getElementById(i); if(e) e.hidden = canalSel!=='ventanas'; });
+  document.querySelectorAll('#tipoSeg [data-ruta]').forEach(b=>b.classList.toggle('active', b.dataset.ruta===ventRutaSel));
   window.scrollTo(0,0);
 }
 function setExp(c){ expC=c; const t=document.getElementById('expTitle'); if(t) t.textContent='Explorador de la base · '+c; renderExplorer(); }
@@ -940,77 +1120,6 @@ function renderExplorer(){
   el.innerHTML=parts.join('');
 }
 
-// ===== PANEL (diseño Habi Loop) =====
-let canalSel='agregado', rangoFunnel='30';
-const _CANAL_LBL={agregado:'Web + Ventanas (agregado)', web:'Web', ventanas:'Ventanas'};
-const _RANGO_LBL={hoy:'Hoy','7':'Últimos 7 días','30':'Últimos 30 días','90':'Últimos 90 días'};
-const _RANGO_BQ={hoy:'0','7':'7','30':'30','90':'90'};
-function irCanal(c){ canalSel=c; go(vista, paisSel); }
-function setRango(r){ rangoFunnel=r; renderEmbudo(); }
-function setGran(g){ cicloTipo=g; document.querySelectorAll('#granSeg [data-gran]').forEach(b=>b.classList.toggle('active', b.dataset.gran===g));
-  renderSerie(); renderAgentePanel(); renderErrores(); }
-
-// Embudo del loop: entrega → creado → re-asignado → cita → cierre, con la conversión de cada
-// salto. Respeta el canal (Web / Ventanas con voz / Agregado = suma); cada etapa por su fecha.
-function renderEmbudo(){
-  const el=document.getElementById('embudoCard'); if(!el) return;
-  const P=((D.panel||{})[country]||{});
-  const R=(P[canalSel]||{})[rangoFunnel]||{};
-  // Citas y cierres por canal: web = deals con UTM reinteresados (panel_bq); ventanas = sus
-  // deals por primer_agente (panel.ventanas, sin UTM); agregado = la suma de los dos.
-  const bq=((D.panel_bq||{})[country]||{})[_RANGO_BQ[rangoFunnel]]||{};
-  const V=(P.ventanas||{})[rangoFunnel]||{};
-  const RP=R.prev||{}, bqP=bq.prev||{}, VP=V.prev||{};
-  const cie=o=>(+o.cierres_mm||0)+(+o.cierres_inmo||0);
-  const web={citas:+bq.citas||0, cierres:cie(bq), citasP:+bqP.citas||0, cierresP:cie(bqP)};
-  const ven={citas:+V.citas||0, cierres:cie(V), citasP:+VP.citas||0, cierresP:cie(VP)};
-  const cc=k=>canalSel==='web'?web[k]:(canalSel==='ventanas'?ven[k]:web[k]+ven[k]);
-  const sp=(k)=>{ if(canalSel!=='agregado') return '';
-    const w=(k in web)?web[k]:((P.web||{})[rangoFunnel]||{})[k]||0, v=(k in ven)?ven[k]:V[k]||0;
-    return 'Web '+fmt(w)+' · Ventanas '+fmt(v); };
-  // prev = periodo contiguo del mismo largo justo antes (hoy → ayer). Solo se pinta si el
-  // data.json ya lo trae; un build viejo simplemente no muestra la línea.
-  const hayPrev = !!(R.prev || bq.prev);
-  const pasos=[
-    {lab:'Envíos entregados'+I('f_ent'), val:+R.entregados||0, prev:+RP.entregados||0, color:'var(--accent)', split:sp('entregados')},
-    {lab:'Creados'+I('f_cre'), val:+R.creados||0, prev:+RP.creados||0, color:'#60A5FA', split:sp('creados')},
-    {lab:'Re-asignados'+I('f_re'), val:+R.reasignados||0, prev:+RP.reasignados||0, color:'#A855F7', split:sp('reasignados')},
-    {lab:'Citas agendadas'+I('f_cita'), val:cc('citas'), prev:cc('citasP'), color:'#2DD4BF', split:sp('citas')},
-    {lab:'Cierres'+I('f_cie'), val:cc('cierres'), prev:cc('cierresP'), color:'var(--ok)', split:sp('cierres')},
-  ];
-  const prevLbl = rangoFunnel==='hoy' ? 'ayer' : 'periodo anterior';
-  const prevHtml=(s)=>{
-    if(!hayPrev) return '';
-    let d='';
-    if(s.prev>0){ const p=(s.val-s.prev)/s.prev*100; const cls=p>0?'up':(p<0?'down':'');
-      d=` <span class="${cls}">${p>0?'+':''}${Math.round(p)}%</span>`; }
-    return `<div class="fprev">${prevLbl} <b>${fmt(s.prev)}</b>${d}</div>`; };
-  const base=pasos[0].val||1;
-  const tabs=['hoy','7','30','90'].map(r=>`<button type="button" class="winbtn sm${r===rangoFunnel?' active':''}" onclick="setRango('${r}')">${r==='hoy'?'Hoy':r+' d'}</button>`).join('');
-  const cuerpo=pasos.map((s,i)=>{
-    const ancho=Math.max(2,Math.round(s.val/base*100));
-    const sig=pasos[i+1];
-    const conv=sig ? (s.val>0 ? pct(sig.val/s.val*100) : '·') : null;
-    return `<div class="fstep">
-      <div class="fbody">
-        <div class="flab">${s.lab}</div>
-        <div class="fval">${fmt(s.val)}</div>
-        ${prevHtml(s)}
-        <div class="fbar"><div style="width:${ancho}%;background:${s.color}"></div></div>
-        ${s.split?`<div class="fsplit">${s.split}</div>`:''}
-      </div>
-      ${conv!==null?`<div class="fconv">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"></path></svg>
-        <span class="fpill">${conv}</span></div>`:''}
-    </div>`;}).join('');
-  el.innerHTML=`<div class="cardhead">
-      <div><div class="tabletitle">Embudo del loop</div>
-      <span class="sub">de entrega a cierre · ${_RANGO_LBL[rangoFunnel]} · ${_CANAL_LBL[canalSel]}</span></div>
-      <div class="seg">${tabs}</div>
-    </div>
-    <div class="funnel">${cuerpo}</div>`;
-}
-
 const _DIAS=['dom','lun','mar','mié','jue','vie','sáb'];
 function _dia(b){ if(!/^\d{4}-\d{2}-\d{2}$/.test(b)) return b;
   const d=new Date(b+'T12:00:00'); return _DIAS[d.getDay()]+' '+d.getDate(); }
@@ -1048,28 +1157,250 @@ const MET_HELP={
   ve6:'Entrevistas con completed_at en ventanas_intake: la captura terminó, con o sin deal.',
   ve7:'Cierres de los deals que creó Ventanas, en el rango. Son DOS líneas de negocio que NO son el mismo evento: compra directa (Habi compró el inmueble, por oportunidad_del_negocio «Cierre - Comprado» y fechado por closedate) e inmobiliaria (el dueño firmó el mandato de venta con la red de aliados, fechado por fecha_captacion_inmobiliaria: es una captación, no una venta). Se suman, y debajo se muestra la composición. Fuente: HubSpot en BigQuery; los deals se identifican por el agente marketing_loop_ventanas del backbone.',
   vs5:'Teléfonos enviados a Dapta ese día o en el rango (ventanas_dapta_handoff): SIN_RESPUESTA_24H es la salida normal de quien no contestó; PIDE_LLAMADA es intención positiva.',
+  f_env:'Mensajes de reactivación enviados en el rango (aceptados por Infobip), por fecha de envío. Fuente: send_log. Web = el loop; Ventanas incluye voz; Agregado = la suma, sin brokermatch.',
+  f_lei:'Envíos del rango con marca de lectura (SEEN) de WhatsApp vía el mart de Infobip. Va por fecha de ENVÍO: el mart no dice cuándo se leyó. WhatsApp no reporta la lectura en todos los casos y el día en curso llega con rezago.',
+  f_inte:'Personas cuyo PRIMER interés cae en el rango: botón «Estoy interesado» (mart inbound) unido con el estado reinteresado de Neon, que cubre el rezago del mart. Cada persona cuenta una vez y va al canal de su último envío del loop.',
+  f_sdr:'De los interesados del rango, los que conversaron con el agente SDR en vivo (agent_thread, sin SHADOW ni fuera de muestra). Es un subconjunto: la mayoría llega al backbone por el botón, sin pasar por el agente, por eso no es un paso del embudo.',
+  k_tasa:'Interesados ÷ leídos del rango. El cambio contra el periodo anterior va en puntos porcentuales (pp).',
+  k_tresp:'Respondieron ÷ plantillas enviadas (WhatsApp o llamada). El cambio contra el periodo anterior va en puntos porcentuales (pp).',
+  cc:'Leads con UTM reinteresados del loop, por mes. Captación = el dueño firmó mandato con la red de aliados (no es una venta): CO etapa Captaciones del funnel INMO, MX valor Firma. Cierre = Habi compró (Cierre - Comprado del funnel MM). Un cierre madura en meses: los primeros meses se leen bajos por diseño. Fuente: marketing-loop/cierres.json (cron diario).',
+  niv:'P1 = comité + 2025 (segmento ganador) · P2 = recientes 2025+ · P3 = comité viejo · P4 = resto.',
+  stock:'Leads elegibles del nivel después de aplicar todas las exclusiones del pool.',
+  repuestos:'Δ stock + enviados de hoy. La reposición diaria son leads que cruzan los 180 días del SLA. Negativo = el nivel se está vaciando más rápido de lo que se repone.',
+  runway:'Stock ÷ consumo promedio de 7 días del nivel: cuántos días alcanza al ritmo actual.',
+  hora:'Solo la plantilla ganadora v2. Excluye mensajes de sesión. Hora local del país (Bogotá UTC-5, CDMX UTC-6), verificada contra Neon. Horas con muestra chica (<30 enviados o <20 entregados) no muestran tasa.',
+  h_vol:'Porcentaje del total enviado que salió en cada hora.',
+  h_ent:'Entregados ÷ enviados en esa hora.',
+  h_ape:'Leídos ÷ entregados en esa hora.',
+  h_res:'Entregados cuyo teléfono respondió ÷ entregados en esa hora.',
   f_cie:'Dos líneas sumadas: compra directa (Cierre - Comprado, por closedate) + captación de la red de aliados (contrato/mandato firmado). No son el mismo evento.'};
 const I=k=>MET_HELP[k]?`<span class="info" tabindex="0" data-tip="${MET_HELP[k].replace(/"/g,'&quot;')}">i</span>`:'';
 const IH=I;   // alias: renderVentanasPanel tiene un `I` local (intake) que tapa el helper
-let serieTabSel='loop', serieChart=null, serieTablaVisible=false;
-// re-asignados = acento · creados = azul · interesados = teal · leídos/apertura = ámbar · volumen (línea) = neutro.
-const _SERIE_COL=()=>document.body.classList.contains('dark')
-  ? {re:'#9F67F5', cre:'#60A5FA', inte:'#0D9488', lei:'#D97706', env:'#D6D0DD', at:'#D6D0DD'}
-  : {re:'#7E22CE', cre:'#2563EB', inte:'#0D9488', lei:'#D97706', env:'#525252', at:'#525252'};
-// Etiqueta con el valor encima de las barras marcadas con _labels (re-asignados: son pocos
-// frente al volumen de la línea y sin la cifra no se leen).
 const _barLabels={id:'barLabels',afterDatasetsDraw(ch,_a,o){const {ctx}=ch;
   ch.data.datasets.forEach((ds,i)=>{ if(!ds._labels) return; const m=ch.getDatasetMeta(i); if(m.hidden) return;
     ctx.save(); ctx.font='600 11px system-ui,-apple-system,sans-serif'; ctx.fillStyle=o.color||'#404040';
     ctx.textAlign='center'; ctx.textBaseline='bottom';
     m.data.forEach((b,j)=>{ const v=ds.data[j]; if(v>0) ctx.fillText(fmt(v), b.x, b.y-3); }); ctx.restore(); });}};
+
+// ===== PANEL · rediseño 25-sep =====
+// Un solo lenguaje para el loop (Agregado / Web) y para Ventanas: resumen con 4 KPIs contra el
+// periodo anterior, embudo en filas (la mayor fuga en amarillo) y series en múltiplos chicos.
+// Cada etapa se cuenta por CUÁNDO pasó (actividad del periodo), no por cohorte de envío.
+let canalSel='agregado', rangoFunnel='30';
+const _CANAL_LBL={agregado:'Web + Ventanas (agregado)', web:'Web', ventanas:'Ventanas'};
+const _CANAL_CORTO={agregado:'Agregado', web:'Web', ventanas:'Ventanas'};
+const _RANGO_LBL={hoy:'Hoy','7':'Últimos 7 días','30':'Últimos 30 días','90':'Últimos 90 días'};
+const _RANGO_BQ={hoy:'0','7':'7','30':'30','90':'90'};
+const _PREV_LBL={hoy:'vs. ayer','7':'vs. 7 días previos','30':'vs. 30 días previos','90':'vs. 90 días previos'};
+function irCanal(c){ canalSel=c; go(vista, paisSel); }
+function setRango(r){ rangoFunnel=r; renderResumenLoop(); renderEmbudo(); }
+function setGran(g){ cicloTipo=g; serieHi=null; renderSerie(); if(document.getElementById('errCard')?.open) renderErrores(); }
+
+// --- formato (coma decimal, como el diseño) ---
+const _n1=v=>Number(v).toFixed(1).replace('.',',');
+const _pc=(a,b)=>(a==null||!b)?'—':((a/b)*100).toFixed(a/b<0.1&&a/b>0?2:1).replace('.',',')+'%';
+const _ARW='<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12 7-7 7 7"></path><path d="M12 19V5"></path></svg>';
+const _II='<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><path d="M12 16v-4"></path><path d="M12 8h.01"></path></svg>';
+// Icono "i" con la explicación de la métrica (MET_HELP) o un texto directo.
+const II=k=>{ const t=MET_HELP[k]||k; return t?`<span class="ii" tabindex="0" data-tip="${String(t).replace(/"/g,'&quot;')}">${_II}</span>`:''; };
+// Cambio contra el periodo anterior. isRate: la métrica es una tasa y el cambio va en puntos.
+function _dl(cur,old,isRate){
+  if(cur==null||old==null) return null;
+  const d=isRate?(cur-old)*100:(old?(cur-old)/old*100:(cur?100:0));
+  const flat=Math.abs(d)<0.05;
+  return {txt:(flat?'0':(d>0?'+':'−')+_n1(Math.abs(d)))+(isRate?' pp':'%'), cls:flat?'flat':(d>0?'up':'down')};
+}
+const _kpiHtml=k=>`<div class="pv-kpi"><span class="l">${k.l}${II(k.tk)}</span>
+  <span class="v">${k.v}</span>
+  ${k.d?`<span class="pv-d ${k.d.cls}">${_ARW}${k.d.txt}<span class="pl">${k.pl}</span></span>`:'<span class="pv-d flat"><span class="pl">sin periodo anterior</span></span>'}
+  <span class="s">${k.s}</span></div>`;
+const _seg=(opts,cur,fn)=>`<div class="seg">${opts.map(([v,l])=>`<button type="button" class="winbtn${v===cur?' active':''}" onclick="${fn}('${v}')">${l}</button>`).join('')}</div>`;
+const _num=v=>(v==null?null:+v||0);
+
+// Embudo en filas. `pasos` = [{name,desc,tk,v,sub}] (v null = dato que todavía no llega).
+// La fila de la mayor fuga absoluta se resalta. Una fila `sub` es un subconjunto de la etapa
+// de arriba, no un paso del embudo: se compara contra ella y la siguiente etapa la salta.
+// Si una etapa supera a la anterior (cada una va por su propia fecha) se muestra tal cual, con
+// "+N personas", en vez de esconderlo.
+function _embudoFilas(pasos, baseLbl){
+  const base=pasos[0].v||0;
+  let ant=null, worst=-1, wl=0, n=0;
+  const info=pasos.map((p,i)=>{
+    const ref=ant; if(!p.sub) ant=i;
+    if(ref!=null && !p.sub && p.v!=null && pasos[ref].v!=null){ const l=pasos[ref].v-p.v; if(l>wl){ wl=l; worst=i; } }
+    return {ref, num:p.sub?'':String(++n)};
+  });
+  const filas=pasos.map((p,i)=>{
+    const v=p.v, r=info[i].ref, a=r!=null?pasos[r].v:null;
+    const paso = r==null ? '<b>—</b><span>Punto de partida</span>'
+      : (v==null||a==null) ? '<b>—</b><span>&nbsp;</span>'
+      : p.sub ? `<b>${_pc(v,a)}</b><span>de ${pasos[r].name.toLowerCase()}</span>`
+      : `<b>${_pc(v,a)}</b><span>${v<=a?'−'+fmt(a-v):'+'+fmt(v-a)} personas</span>`;
+    const ancho=(base&&v!=null)?Math.min(100,v/base*100):0;
+    return `<div class="pv-frow${i===worst?' worst':''}${p.sub?' sub':''}">
+      <span class="pv-fn">${p.sub?'↳':info[i].num}</span>
+      <div style="min-width:0"><div class="pv-fname">${p.name}${II(p.tk)}</div><div class="pv-fdesc">${p.desc}</div></div>
+      <div class="pv-track"><div style="width:${ancho.toFixed(2)}%"></div></div>
+      <span class="pv-fval">${v==null?'—':fmt(v)}</span>
+      <div class="pv-fstep">${paso}</div>
+      <span class="pv-fcum">${i===0?'100%':(v==null?'—':_pc(v,base))}</span></div>`;}).join('');
+  return `<div class="pv-scroll"><div class="pv-fun">
+    <div class="pv-frow h"><span></span><span>Etapa</span><span>Volumen relativo</span><span class="r">Personas</span><span class="r">Vs. etapa anterior</span><span class="r">Vs. ${baseLbl}</span></div>
+    ${filas}</div></div>`;
+}
+
+// --- datos del loop para el rango y canal elegidos ---
+// Citas y cierres por canal: web = deals con UTM reinteresados (panel_bq); ventanas = sus deals
+// por primer_agente (panel.ventanas, sin UTM); agregado = la suma de los dos.
+function _loopVals(){
+  const P=((D.panel||{})[country]||{});
+  const R=(P[canalSel]||{})[rangoFunnel]||{}, RP=R.prev||null;
+  const bq=((D.panel_bq||{})[country]||{})[_RANGO_BQ[rangoFunnel]]||{}, bqP=bq.prev||{};
+  const V=(P.ventanas||{})[rangoFunnel]||{}, VP=V.prev||{};
+  const dd=(q,v,k)=>canalSel==='web'?(+q[k]||0):canalSel==='ventanas'?(+v[k]||0):(+q[k]||0)+(+v[k]||0);
+  const mk=(r,q,v)=>({env:_num(r.enviados), ent:_num(r.entregados), lei:_num(r.leidos), inte:_num(r.interesados),
+    sdr:_num(r.agente_sdr), bb:_num(r.creados), rea:_num(r.reasignados),
+    citas:dd(q,v,'citas'), mm:dd(q,v,'cierres_mm'), inmo:dd(q,v,'cierres_inmo')});
+  const cur=mk(R,bq,V); cur.cie=cur.mm+cur.inmo;
+  let prev=null; if(RP){ prev=mk(RP,bqP,VP); prev.cie=prev.mm+prev.inmo; }
+  return {cur,prev};
+}
+function renderResumenLoop(){
+  const el=document.getElementById('pvResumen'); if(!el) return;
+  const {cur:c,prev:p}=_loopVals(), pl=_PREV_LBL[rangoFunnel];
+  const tasa=(o)=>(o&&o.lei)?(o.inte||0)/o.lei:null;
+  const kp=[
+    {l:'Envíos',tk:'env',v:fmt(c.env),d:p&&_dl(c.env,p.env),pl,s:c.lei==null?'Leídos aún no disponibles':fmt(c.lei)+' leídos ('+_pc(c.lei,c.env)+')'},
+    {l:'Tasa de interés',tk:'k_tasa',v:tasa(c)==null?'—':_pc(c.inte,c.lei),d:p&&_dl(tasa(c),tasa(p),true),pl,
+     s:c.inte==null?'Interesados aún no disponibles':fmt(c.inte)+' interesados de '+fmt(c.lei)+' leídos'},
+    {l:'Citas agendadas',tk:'f_cita',v:fmt(c.citas),d:p&&_dl(c.citas,p.citas),pl,s:_pc(c.citas,c.rea)+' de los re-asignados'},
+    {l:'Cierres',tk:'f_cie',v:fmt(c.cie),d:p&&_dl(c.cie,p.cie),pl,s:fmt(c.mm)+' compra directa · '+fmt(c.inmo)+' captación · '+_pc(c.cie,c.citas)+' de las citas'},
+  ];
+  el.innerHTML=`<div class="pv-sechead"><div><h2 class="pv-h2">Resumen del periodo</h2>
+      <div class="pv-sub">${_RANGO_LBL[rangoFunnel]} · ${_CANAL_CORTO[canalSel]} · de envío a cierre</div></div>
+      ${_seg([['hoy','Hoy'],['7','7 días'],['30','30 días'],['90','90 días']],rangoFunnel,'setRango')}</div>
+    <div class="pv-kpis">${kp.map(_kpiHtml).join('')}</div>`;
+}
+function renderEmbudo(){
+  const el=document.getElementById('embudoCard'); if(!el) return;
+  const {cur:c}=_loopVals();
+  const pasos=[
+    {name:'Envíos',tk:'f_env',desc:'Mensajes de reactivación enviados',v:c.env},
+    {name:'Leídos',tk:'f_lei',desc:'Mensajes que la persona abrió',v:c.lei},
+    {name:'Interesados',tk:'f_inte',desc:'Respondieron mostrando interés',v:c.inte},
+    {name:'Con agente SDR',tk:'f_sdr',desc:'Interesados que conversaron con el agente SDR',v:c.sdr,sub:true},
+    {name:'Enviados a backbone',tk:'f_cre',desc:'Leads que pasaron al backbone',v:c.bb},
+    {name:'Re-asignados',tk:'f_re',desc:'Asignados a un asesor',v:c.rea},
+    {name:'Cita agendada',tk:'f_cita',desc:'Cita en agenda con el asesor',v:c.citas},
+    {name:'Cierres',tk:'f_cie',desc:fmt(c.mm)+' compra directa · '+fmt(c.inmo)+' captación aliados',v:c.cie},
+  ];
+  const tit={agregado:'Embudo agregado',web:'Embudo de web',ventanas:'Embudo de ventanas'}[canalSel];
+  el.innerHTML=`<div class="pv-cardhead"><div><h2 class="pv-h2">${tit}</h2>
+      <div class="pv-sub">Cuenta actividad del periodo: cada etapa se mide por cuándo pasó el evento, no por cuándo se le escribió a la persona.</div></div></div>
+    ${_embudoFilas(pasos,'envíos')}`;
+}
+
+// ===== Múltiplos chicos (serie del loop, agente IA y actividad de ventanas) =====
+// Cada panel = barras del valor por periodo + línea de tendencia, en Chart.js. Pasar el mouse
+// por cualquiera marca la misma columna en todos y actualiza la franja de detalle.
+const _mult={};   // id → {cfg, charts, hi}
+const _cssv=n=>getComputedStyle(document.body).getPropertyValue(n).trim();
+const _colBg={id:'colBg',beforeDatasetsDraw(ch,_a,o){
+  const {ctx,chartArea:a}=ch, n=ch.data.labels.length; if(!n||!a) return; const w=(a.right-a.left)/n;
+  for(let i=0;i<n;i++){ const f=i===o.hi?o.hiFill:((o.we||[])[i]?o.weFill:null); if(!f) continue;
+    ctx.save(); ctx.fillStyle=f; ctx.fillRect(a.left+i*w, a.top-6, w, a.bottom-a.top+6); ctx.restore(); }}};
+function _tendencia(vals, cfg){
+  const lc=cfg.buckets.length-1, curEnCurso=cfg.buckets[lc]&&cfg.buckets[lc].cur;
+  return vals.map((_,i)=>{
+    if(curEnCurso && i===lc) return null;               // el periodo en curso no entra a la tendencia
+    if(vals[i]==null) return null;
+    if(!cfg.ma) return vals[i];
+    const a=vals.slice(Math.max(0,i-cfg.ma+1),i+1).filter(x=>x!=null); return a.length?a.reduce((p,x)=>p+x,0)/a.length:null; });
+}
+// Promedio de los últimos `w` periodos completos contra los `w` anteriores.
+function _ventana(vals, cfg){
+  const n=vals.length, fin=(cfg.buckets[n-1]&&cfg.buckets[n-1].cur)?n-1:n, w=cfg.w;
+  const s=(f,t)=>vals.slice(Math.max(0,f),Math.max(0,t)).reduce((p,x)=>p+(x||0),0);
+  return {last:s(fin-w,fin), prev:s(fin-2*w,fin-w), hay:fin-2*w>=0};
+}
+function renderMultiples(id, cfg){
+  const box=document.getElementById(id); if(!box) return;
+  const M=_mult[id]||(_mult[id]={});
+  (M.charts||[]).forEach(c=>c.destroy()); M.charts=[]; M.cfg=cfg;
+  const n=cfg.buckets.length;
+  if(!n){ box.innerHTML='<div class="pv-empty">Sin datos para este periodo.</div>'; return; }
+  if(M.hi==null||M.hi>=n) M.hi=(cfg.buckets[n-1].cur&&n>1)?n-2:n-1;
+  if(cfg.tabla){
+    const cols=cfg.series.concat(cfg.extra||[]);
+    box.innerHTML=`<div class="pv-tbl"><table><thead><tr><th>${cfg.colFecha||'Fecha'}</th>${cols.map(s=>`<th>${s.lab}</th>`).join('')}</tr></thead>
+      <tbody>${cfg.buckets.map((b,i)=>`<tr><td>${b.label}${b.cur?' (en curso)':''}</td>${cols.map(s=>`<td>${s.vals[i]==null?'—':fmt(s.vals[i])}</td>`).join('')}</tr>`).reverse().join('')}</tbody></table></div>`;
+    return;
+  }
+  const rows=cfg.series.map((s,j)=>{
+    const W=_ventana(s.vals,cfg), ch=W.prev?(W.last-W.prev)/W.prev:null;
+    const ref=j?cfg.series[j-1]:null, Wr=ref?_ventana(ref.vals,cfg):null;
+    const d=ch==null?'':`<span class="d ${Math.abs(ch)<0.005?'flat':(ch>0?'up':'down')}">${ch>=0?'+':'−'}${Math.abs(ch*100).toFixed(0)}% ${cfg.deltaLbl}</span>`;
+    const sub=ref?`${_pc(W.last,Wr.last)} de ${ref.lab.toLowerCase()} ${cfg.refLbl}`:`${fmt(s.vals.reduce((p,x)=>p+(x||0),0))} ${cfg.totLbl}`;
+    const mx=Math.max(0,...s.vals.map(x=>x||0));
+    return `<div class="pv-mrow"><div class="pv-mstat"><span class="l">${s.lab}${II(s.tk)}</span>
+        <span class="a"><b>${fmt(Math.round(W.last/cfg.w))}</b><span>${cfg.unitLbl}</span></span>${d}<span class="s">${sub}</span></div>
+      <div class="pv-mch"><canvas id="${id}_c${j}"></canvas><span class="mx">máx. ${fmt(mx)}</span></div></div>`;}).join('');
+  const paso=Math.max(1,Math.ceil(n/(cfg.maxX||10)));
+  box.innerHTML=`<div>${rows}
+    <div class="pv-mfoot"><div class="pv-leg"><span><i class="ln"></i>${cfg.trendLbl}</span><span><i style="background:var(--bar-mute)"></i>${cfg.barLbl}</span>
+      ${cfg.curLbl?`<span><i style="background:var(--bar-cur)"></i>${cfg.curLbl}</span>`:''}
+      ${cfg.weLbl?`<span><i style="background:var(--col-we);border:1px solid var(--border)"></i>${cfg.weLbl}</span>`:''}</div>
+      <div class="pv-xl">${cfg.buckets.map((b,i)=>`<span>${(i%paso===0)?b.xl:''}</span>`).join('')}</div></div></div>
+    <div class="pv-detail" id="${id}_det" style="margin-top:20px"></div>`;
+  if(!window.Chart) return;
+  const acc=_cssv('--accent'), mute=_cssv('--bar-mute'), hiC=_cssv('--bar-hi'), curC=_cssv('--bar-cur');
+  const we=cfg.buckets.map(b=>!!b.weekend);
+  cfg.series.forEach((s,j)=>{
+    const el=document.getElementById(id+'_c'+j); if(!el) return;
+    const top=Math.max(1,...s.vals.map(x=>x||0))*1.08;
+    const chart=new Chart(el,{type:'bar',plugins:[_colBg],
+      data:{labels:cfg.buckets.map(b=>b.label), datasets:[
+        {type:'line', data:_tendencia(s.vals,cfg), borderColor:acc, borderWidth:2.5, pointRadius:0, pointHoverRadius:0,
+         tension:.3, spanGaps:false, order:0},
+        {type:'bar', data:s.vals, order:1, borderRadius:2, categoryPercentage:1, barPercentage:.6,
+         backgroundColor:c=>{ const i=c.dataIndex; return cfg.buckets[i]&&cfg.buckets[i].cur?curC:(i===M.hi?hiC:mute); }}]},
+      options:{responsive:true, maintainAspectRatio:false, animation:false, events:['mousemove','click','touchstart'],
+        layout:{padding:{top:6}},
+        plugins:{legend:{display:false}, tooltip:{enabled:false}, colBg:{hi:M.hi, we, hiFill:_cssv('--col-hi'), weFill:_cssv('--col-we')}},
+        scales:{x:{display:false, offset:true}, y:{display:false, beginAtZero:true, max:top}},
+        onHover:(e,_els,chh)=>{ const a=chh.chartArea; if(!a||e.x<a.left||e.x>a.right) return;
+          const i=Math.min(n-1,Math.max(0,Math.floor((e.x-a.left)/((a.right-a.left)/n))));
+          if(i!==M.hi){ M.hi=i; _multHi(id); } }}});
+    M.charts.push(chart);
+  });
+  _multHi(id);
+}
+function _multHi(id){
+  const M=_mult[id]; if(!M||!M.cfg) return; const cfg=M.cfg, i=M.hi, b=cfg.buckets[i]; if(!b) return;
+  M.charts.forEach(c=>{ c.options.plugins.colBg.hi=i; c.update('none'); });
+  const det=document.getElementById(id+'_det');
+  if(det) det.innerHTML=`<b>${b.label}${b.cur?' (en curso)':''}</b>`+cfg.series.map((s,j)=>{
+    const v=s.vals[i], ref=j?cfg.series[j-1].vals[i]:null;
+    return `<span>${s.lab}<b>${v==null?'—':fmt(v)}${(j&&cfg.detPct!==false&&v!=null&&ref)?' ('+_pc(v,ref)+')':''}</b></span>`;}).join('');
+}
+
+// --- Serie del loop / Agente IA ---
+let serieTabSel='loop', serieTablaVisible=false, serieHi=null;
 const _GRAN_LBL={dia:'Diario',semana:'Semanal',mes:'Mensual'};
-function setSerieTab(t){ serieTabSel=t;
-  document.querySelectorAll('#serieSeg [data-st]').forEach(b=>b.classList.toggle('active', b.dataset.st===t));
-  renderSerie(); }
+const _MES=['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+function setSerieTab(t){ serieTabSel=t; renderSerie(); }
 function toggleSerieTabla(){ serieTablaVisible=!serieTablaVisible; renderSerie(); }
+function _hoyPais(){ try{ return new Date().toLocaleDateString('en-CA',{timeZone:country==='CO'?'America/Bogota':'America/Mexico_City'}); }catch(e){ return ymd(new Date()); } }
+const _wd=b=>new Date(b+'T12:00:00').getDay();
+function _bkLabel(b,tipo,largo){
+  const d=new Date(b+'T12:00:00');
+  if(tipo==='mes') return _MES[d.getMonth()]+(largo?' '+d.getFullYear():'');
+  if(tipo==='semana') return (largo?'Semana del ':'Sem. ')+d.getDate()+' '+_MES[d.getMonth()];
+  return _DIAS[d.getDay()]+' '+d.getDate()+(largo?' '+_MES[d.getMonth()]:'');
+}
+function _bkDe(f,tipo){ return periodBucket(new Date(f+'T12:00:00'),tipo); }
 // Re-asignados por bucket: reasignados_dia viene por DÍA; para semana/mes se suman los días
-// que caen entre este bucket y el siguiente (antes solo casaba el día exacto del bucket).
+// que caen entre este bucket y el siguiente.
 function _reasigPorBucket(buckets, rec){
   const out={}; const keys=Object.keys(rec).sort();
   buckets.forEach((b,i)=>{ const nx=buckets[i+1]||'9999-12-31';
@@ -1084,82 +1415,264 @@ function _diaPorCanal(src){
   return o;
 }
 // Envío masivo de arranque (plantilla vieja): su volumen aplasta la escala de la gráfica.
-// Solo se ocultan Envíos y Leídos de ese periodo EN LA GRÁFICA; la tabla y los KPIs siguen reales.
+// Solo se ocultan Envíos y Leídos de ese periodo EN LA GRÁFICA; la tabla y los totales siguen reales.
 const _ARRANQUE={CO:{semana:'2026-06-22', mes:'2026-06-01'}};
-function _kpis(items){ return `<div class="akpis">${items.map(([l,v,k])=>`<div><div class="flab">${l}${I(k)}</div><div class="fval">${v}</div></div>`).join('')}</div>`; }
-function _serieDatos(){
+function _serieCfg(){
+  const hoy=_hoyPais(), tipo=cicloTipo, diario=tipo==='dia';
+  const curB=_bkDe(hoy,tipo);
   if(serieTabSel==='loop'){
-    // Cada canal con SUS envíos (Web / Ventanas con voz / Agregado = suma, sin brokermatch).
     const cs=((D.cosecha_canal||{})[country]||{})[canalSel] || ((D.cosecha||{})[country]||{});
-    const raw=(cs[cicloTipo]||[]).slice(-14), bks=raw.map(r=>r.bucket);
-    const cre=_reasigPorBucket(bks, _diaPorCanal(D.creados_dia));
-    const rea=_reasigPorBucket(bks, _diaPorCanal(D.reasignados_dia));
-    const arr=(_ARRANQUE[country]||{})[cicloTipo];
-    const rows=raw.map(r=>({lab:_dia(r.bucket), env:+r.enviados||0, ent:+r.entregados||0, lei:+r.leidos||0, inte:+r.interesados||0, cre:cre[r.bucket]||0, re:rea[r.bucket]||0, arranque:r.bucket===arr}));
-    const rArr=rows.find(r=>r.arranque);
-    const t=rows.reduce((a,r)=>({env:a.env+r.env,ent:a.ent+r.ent,lei:a.lei+r.lei,inte:a.inte+r.inte,cre:a.cre+r.cre,re:a.re+r.re}),{env:0,ent:0,lei:0,inte:0,cre:0,re:0});
-    const td=v=>`<td style="text-align:right">${fmt(v)}</td>`;
-    return {titulo:'Serie del loop', sub:'Envíos, entregas y conversión · '+_GRAN_LBL[cicloTipo]+' · '+_CANAL_LBL[canalSel]
-        +(rArr?' · '+rArr.lab+': envío de arranque ('+fmt(rArr.env)+' envíos, '+fmt(rArr.lei)+' leídos) fuera de la gráfica para que se lea la escala; sí está en la tabla y los totales':''),
-      ocultar:['env','lei'],
-      kpis:[['Envíos',fmt(t.env),'env'],['Entregados',fmt(t.ent),'ent'],['Leídos',fmt(t.lei),'lei'],['Interesados',fmt(t.inte),'inte'],['Creados',fmt(t.cre),'cre'],['Re-asignados',fmt(t.re),'re'],['% interesados',t.ent>0?pct(t.inte/t.ent*100):'·','pinte'],['% pasa asignación',t.cre>0?pct(t.re/t.cre*100):'·','ppasa']],
-      series:[{k:'env',lab:'Envíos',line:true},{k:'lei',lab:'Leídos (apertura)',eje:'y2'},{k:'cre',lab:'Creados',labels:true},{k:'re',lab:'Re-asignados',labels:true}], extra:[['Entregados','ent'],['Interesados','inte']], rows,
-      tabla:`<table><thead><tr><th>Día</th><th style="text-align:right">Envíos</th><th style="text-align:right">Entregados</th><th style="text-align:right">Leídos</th>
-        <th style="text-align:right">Interesados</th><th style="text-align:right">Creados</th><th style="text-align:right">Re-asignados</th><th style="text-align:right">% pasa</th></tr></thead><tbody>
-        ${rows.map(r=>`<tr><td>${r.lab}</td>${td(r.env)}${td(r.ent)}${td(r.lei)}
-        <td style="text-align:right"><b>${fmt(r.inte)}</b></td>${td(r.cre)}<td style="text-align:right;color:var(--accent);font-weight:600">${fmt(r.re)}</td>
-        <td style="text-align:right">${r.cre>0?pct(r.re/r.cre*100):'·'}</td></tr>`).join('')}</tbody></table>`};
+    let raw=(cs[tipo]||[]).slice();
+    const rea=_reasigPorBucket(raw.map(r=>r.bucket), _diaPorCanal(D.reasignados_dia));
+    // El loop solo envía en días hábiles: en diario se muestran los últimos 14 hábiles.
+    if(diario) raw=raw.filter(r=>{ const w=_wd(r.bucket); return w>0&&w<6; });
+    raw=raw.slice(diario?-14:(tipo==='semana'?-14:-12));
+    const arr=(_ARRANQUE[country]||{})[tipo];
+    const B=raw.map(r=>({b:r.bucket,label:_bkLabel(r.bucket,tipo,true),xl:_bkLabel(r.bucket,tipo,false),cur:r.bucket===curB}));
+    const col=k=>raw.map(r=>+r[k]||0);
+    const env=col('enviados'), ent=col('entregados'), lei=col('leidos'), inte=col('interesados'), re=raw.map(r=>rea[r.bucket]||0);
+    const oculta=v=>v.map((x,i)=>raw[i].bucket===arr?null:x);
+    const T={env:env.reduce((a,b)=>a+b,0),ent:ent.reduce((a,b)=>a+b,0),lei:lei.reduce((a,b)=>a+b,0),inte:inte.reduce((a,b)=>a+b,0),re:re.reduce((a,b)=>a+b,0)};
+    const ini=B[0]?B[0].b:'', fin=B.length?B[B.length-1].b:'';
+    return {titulo:'Serie del loop',
+      sub:'Solo reactivación · '+_CANAL_CORTO[canalSel]+' · '+(diario?'días hábiles':(tipo==='semana'?'por semana':'por mes'))
+        +(ini?' del '+_bkLabel(ini,'dia',true).replace(/^\S+ /,'')+' al '+_bkLabel(fin,'dia',true).replace(/^\S+ /,''):'')+' · pasa el mouse para ver cada '+(diario?'día':(tipo==='semana'?'semana':'mes')),
+      tot:[['Envíos',fmt(T.env),'Solo reactivación','env'],['Entregados',fmt(T.ent),_pc(T.ent,T.env)+' de envíos','ent'],
+        ['Leídos',fmt(T.lei),_pc(T.lei,T.ent)+' de entregados','lei'],['Interesados',fmt(T.inte),_pc(T.inte,T.lei)+' de leídos','inte'],
+        ['Re-asignados',fmt(T.re),_pc(T.re,T.ent)+' de entregados','re'],['% interesados',_pc(T.inte,T.ent),'Interesados ÷ entregados','pinte']],
+      mult:{buckets:B, series:[{lab:'Envíos',tk:'env',vals:oculta(env)},{lab:'Leídos',tk:'lei',vals:oculta(lei)},{lab:'Re-asignados',tk:'re',vals:re}],
+        extra:[{lab:'Entregados',vals:ent},{lab:'Interesados',vals:inte}],
+        ma:diario?5:0, w:diario?5:1, maxX:diario?7:8,
+        unitLbl:diario?'por día hábil (últimos 5)':(tipo==='semana'?'última semana completa':'último mes completo'),
+        deltaLbl:diario?'vs. 5 días hábiles previos':(tipo==='semana'?'vs. semana anterior':'vs. mes anterior'),
+        refLbl:diario?'en los últimos 5 días':(tipo==='semana'?'en la última semana':'en el último mes'),
+        totLbl:'en el periodo',
+        trendLbl:diario?'Promedio móvil de 5 días hábiles':(tipo==='semana'?'Total semanal (sin la semana en curso)':'Total mensual (sin el mes en curso)'),
+        barLbl:diario?'Valor diario':(tipo==='semana'?'Valor semanal':'Valor mensual'),
+        curLbl:B.some(b=>b.cur)?(diario?'Día en curso':(tipo==='semana'?'Semana en curso':'Mes en curso')):'', colFecha:diario?'Día':(tipo==='semana'?'Semana':'Mes')}};
   }
+  // Agente IA: conversa también en fin de semana, así que va por día calendario.
   const serie=((D.agente_ia||{})[country]||[]);
-  const tot=serie.reduce((a,r)=>({at:a.at+(+r.conversaciones||0), inte:a.inte+(+r.interesados||0), re:a.re+(+r.reasignados||0)}),{at:0,inte:0,re:0});
-  const rows=serie.slice(-14).map(r=>({lab:_dia(r.fecha), at:+r.conversaciones||0, inte:+r.interesados||0, re:+r.reasignados||0}));
-  return {titulo:'Solo agente IA', sub:'Respuestas de texto libre · '+_GRAN_LBL[cicloTipo]+' · todas las campañas',
-    kpis:[['Atendidos',fmt(tot.at),'at'],['Interesados',fmt(tot.inte),'ainte'],['Re-asignados',fmt(tot.re),'are'],['% conversión',tot.at>0?pct(tot.re/tot.at*100):'·','pconv']],
-    series:[{k:'at',lab:'Atendidos',line:true},{k:'inte',lab:'Interesados'},{k:'re',lab:'Re-asignados',labels:true}], extra:[], rows,
-    tabla:`<table><thead><tr><th>Día</th><th style="text-align:right">Atendidos</th><th style="text-align:right">Interesados</th>
-      <th style="text-align:right">Re-asignados</th><th style="text-align:right">% conv.</th></tr></thead><tbody>
-      ${rows.map(r=>`<tr><td>${r.lab}</td><td style="text-align:right">${fmt(r.at)}</td><td style="text-align:right">${fmt(r.inte)}</td>
-      <td style="text-align:right;color:var(--accent);font-weight:600">${fmt(r.re)}</td><td style="text-align:right">${r.at>0?pct(r.re/r.at*100):'·'}</td></tr>`).join('')}</tbody></table>`};
+  const acc={}; serie.forEach(r=>{ const b=_bkDe(r.fecha,tipo); const a=acc[b]||(acc[b]={at:0,inte:0,re:0});
+    a.at+=+r.conversaciones||0; a.inte+=+r.interesados||0; a.re+=+r.reasignados||0; });
+  const bks=Object.keys(acc).sort().slice(diario?-28:(tipo==='semana'?-14:-12));
+  const B=bks.map(b=>({b,label:_bkLabel(b,tipo,true),xl:_bkLabel(b,tipo,false),cur:b===curB,weekend:diario&&[0,6].includes(_wd(b))}));
+  const v=k=>bks.map(b=>acc[b][k]);
+  const T=bks.reduce((a,b)=>({at:a.at+acc[b].at,inte:a.inte+acc[b].inte,re:a.re+acc[b].re}),{at:0,inte:0,re:0});
+  return {titulo:'Solo agente IA', sub:'Respuestas de texto libre · todas las campañas · '+(diario?'día calendario':(tipo==='semana'?'por semana':'por mes'))+' · pasa el mouse para ver cada periodo',
+    tot:[['Atendidos',fmt(T.at),'Conversaciones del agente en vivo','at'],['Interesados',fmt(T.inte),_pc(T.inte,T.at)+' de atendidos','ainte'],
+      ['Re-asignados',fmt(T.re),_pc(T.re,T.inte)+' de interesados','are'],['% conversión',_pc(T.re,T.at),'Re-asignados ÷ atendidos','pconv']],
+    mult:{buckets:B, series:[{lab:'Atendidos',tk:'at',vals:v('at')},{lab:'Interesados',tk:'ainte',vals:v('inte')},{lab:'Re-asignados',tk:'are',vals:v('re')}],
+      ma:diario?7:0, w:diario?7:1, maxX:diario?10:8,
+      unitLbl:diario?'por día (últimos 7 días)':(tipo==='semana'?'última semana completa':'último mes completo'),
+      deltaLbl:diario?'vs. 7 días previos':(tipo==='semana'?'vs. semana anterior':'vs. mes anterior'),
+      refLbl:diario?'en los últimos 7 días':(tipo==='semana'?'en la última semana':'en el último mes'), totLbl:'en el periodo',
+      trendLbl:diario?'Promedio móvil de 7 días':(tipo==='semana'?'Total semanal (sin la semana en curso)':'Total mensual (sin el mes en curso)'),
+      barLbl:diario?'Valor diario':(tipo==='semana'?'Valor semanal':'Valor mensual'),
+      curLbl:B.some(b=>b.cur)?'Periodo en curso':'', weLbl:diario?'Fin de semana':'', colFecha:diario?'Día':(tipo==='semana'?'Semana':'Mes')}};
 }
-// Valor para la gráfica: null (hueco) en el periodo de arranque para las series que lo aplastan.
-function _valGraf(d,r,k){ return (r.arranque && (d.ocultar||[]).includes(k)) ? null : r[k]; }
 function renderSerie(){
-  const card=document.getElementById('serieCard'); if(!card) return;
-  const d=_serieDatos(), col=_SERIE_COL(), dark=document.body.classList.contains('dark');
-  document.getElementById('serieTitle').textContent=d.titulo;
-  document.getElementById('serieSub').textContent=d.sub;
-  document.getElementById('serieKpis').innerHTML=_kpis(d.kpis);
-  document.getElementById('serieLeg').innerHTML=d.series.map(x=>`<span><i class="${x.line?'ln':''}" style="background:${col[x.k]}"></i>${x.lab}</span>`).join('');
-  const tab=document.getElementById('serieTab'), btn=document.getElementById('serieTblBtn');
-  tab.hidden=!serieTablaVisible; tab.innerHTML=serieTablaVisible?d.tabla:''; btn.textContent=serieTablaVisible?'Ocultar tabla':'Ver tabla';
-  if(serieChart){ serieChart.destroy(); serieChart=null; }
-  const el=document.getElementById('c_serie'); if(!el||!window.Chart) return;
-  if(!d.rows.length){ return; }
-  const tick=dark?'#9A92A5':'#737373', grid=dark?'#2E2836':'#EEEEEE';
-  serieChart=new Chart(el,{type:'bar',
-    plugins:[_barLabels],
-    data:{labels:d.rows.map(r=>r.lab), datasets:d.series.map(x=>x.line
-      ? {type:'line', label:x.lab, data:d.rows.map(r=>_valGraf(d,r,x.k)), borderColor:col[x.k], backgroundColor:col[x.k],
-         borderWidth:2, tension:.3, pointRadius:3, pointHoverRadius:5, order:0, yAxisID:'y2'}
-      : {label:x.lab, data:d.rows.map(r=>_valGraf(d,r,x.k)), backgroundColor:col[x.k], borderRadius:4, borderSkipped:'bottom',
-         maxBarThickness:28, order:1, _labels:!!x.labels, yAxisID:x.eje||'y'})},
-    options:{responsive:true, maintainAspectRatio:false, interaction:{mode:'index', intersect:false},
-      datasets:{bar:{categoryPercentage:.7, barPercentage:.85}},
-      plugins:{legend:{display:false}, barLabels:{color:dark?'#D6D0DD':'#404040'}, tooltip:{callbacks:{
-        label:c=>' '+c.dataset.label+': '+fmt(c.parsed.y),
-        afterBody:items=>{ const r=d.rows[items[0].dataIndex];
-          const fuera=r.arranque?d.series.filter(x=>(d.ocultar||[]).includes(x.k)).map(x=>x.lab+': '+fmt(r[x.k])+' (fuera de la gráfica)'):[];
-          return fuera.concat(d.extra.map(([l,k])=>l+': '+fmt(r[k]))); }}}},
-      scales:{x:{ticks:{color:tick, maxRotation:0, autoSkip:true, maxTicksLimit:14}, grid:{display:false}, border:{display:false}},
-        y:{beginAtZero:true, position:'left', ticks:{color:tick, precision:0, maxTicksLimit:6}, grid:{color:grid}, border:{display:false},
-           title:{display:true, text:d.series.filter(x=>!x.line && !x.eje).map(x=>x.lab).join(' · '), color:tick, font:{size:11}}},
-        // Volumen (Envíos y Leídos) va en el eje derecho, pedido así: el izquierdo queda solo
-        // para Creados y Re-asignados, que son pocos y sin eso no se leen. Los ejes NO son comparables entre sí; el título de cada uno lo dice.
-        y2:{beginAtZero:true, position:'right', ticks:{color:col[d.series.find(x=>x.line).k], precision:0, maxTicksLimit:6},
-           grid:{drawOnChartArea:false}, border:{display:false},
-           title:{display:true, text:d.series.filter(x=>x.line || x.eje==='y2').map(x=>x.lab).join(' · '), color:col[d.series.find(x=>x.line).k], font:{size:11}}}}}});
+  const el=document.getElementById('serieCard'); if(!el||!D) return;
+  const c=_serieCfg();
+  el.innerHTML=`<div class="pv-cardhead"><div><h2 class="pv-h2">${c.titulo}</h2><div class="pv-sub">${c.sub}</div></div>
+      <div class="pv-ctrls">${_seg([['loop','Serie del loop'],['agente','Agente IA']],serieTabSel,'setSerieTab')}
+        ${_seg([['dia','Diario'],['semana','Semanal'],['mes','Mensual']],cicloTipo,'setGran')}
+        <button type="button" class="pv-btn" onclick="toggleSerieTabla()">${serieTablaVisible?'Ver gráfica':'Ver tabla'}</button></div></div>
+    <div class="pv-tot">${c.tot.map(([l,v,s,k])=>`<div><span class="l">${l}${II(k)}</span><span class="v">${v}</span><span class="s">${s}</span></div>`).join('')}</div>
+    <div id="serieMult"></div>`;
+  if(_mult.serieMult && _mult.serieMult.tipo!==serieTabSel+cicloTipo+canalSel+country) _mult.serieMult.hi=null;
+  renderMultiples('serieMult', {...c.mult, tabla:serieTablaVisible});
+  _mult.serieMult.tipo=serieTabSel+cicloTipo+canalSel+country;
 }
 function renderAgentePanel(){ /* absorbido por renderSerie (pestaña "Agente IA") */ }
+
+// --- Cierres y captaciones por mes (leads con UTM del loop) ---
+// Sale de marketing-loop/cierres.json (cron diario del tablero original, misma cohorte): el v2
+// no duplica esa query, la lee. Captación = mandato firmado con la red de aliados, NO es venta.
+let ccChart=null;
+function renderCierresCaptaciones(){
+  const el=document.getElementById('ccCard'); if(!el) return;
+  if(ccChart){ ccChart.destroy(); ccChart=null; }
+  const head=(sub)=>`<div class="pv-cardhead"><div><h2 class="pv-h2">Cierres y captaciones por mes${II('cc')}</h2><div class="pv-sub">${sub}</div></div>
+      <div class="pv-legh"><span><i style="background:var(--bar-mute)"></i>Captaciones</span><span><i style="background:var(--accent)"></i>Cierres</span></div></div>`;
+  const rows=(CC&&Array.isArray(CC.rows))?CC.rows.filter(r=>r.pais===country).sort((a,b)=>a.mes<b.mes?-1:1):[];
+  if(!rows.length){ el.innerHTML=head('Leads con UTM del loop')+'<div class="pv-empty">'+(CC?'Aún no hay cierres ni captaciones de esta cohorte en '+_PAIS_LBL[country]+'.':'No se pudo leer cierres.json.')+'</div>'; return; }
+  const hoyMes=_hoyPais().slice(0,7);
+  const horas=CC.updated?(Date.now()-Date.parse(CC.updated.replace(/Z$/,':00Z')))/36e5:null;
+  const viejo=(horas!=null&&horas>48)?` · <b style="color:var(--warn-ink)">dato de hace ${Math.round(horas/24)} días</b>`:'';
+  const nm=m=>_MES[+m.slice(5,7)-1], parcial=m=>m===hoyMes;
+  const cap=rows.map(r=>+r.captaciones||0), cie=rows.map(r=>+r.cierres||0);
+  el.innerHTML=head('Leads con UTM del loop'+(rows.some(r=>parcial(r.mes))?' · '+new Date(hoyMes+'-15T12:00:00').toLocaleDateString('es-CO',{month:'long'})+' va parcial':'')+viejo)+`
+    <div class="pv-cc"><div class="ch"><canvas id="c_cc_mes"></canvas></div>
+      <table><thead><tr><th>Mes</th><th>Captaciones</th><th>Cierres</th></tr></thead><tbody>
+      ${rows.map((r,i)=>`<tr><td>${nm(r.mes)} ${r.mes.slice(0,4)}${parcial(r.mes)?' (parcial)':''}</td><td>${fmt(cap[i])}</td><td>${fmt(cie[i])}</td></tr>`).join('')}
+      <tr class="tot"><td>Total</td><td>${fmt(cap.reduce((a,b)=>a+b,0))}</td><td>${fmt(cie.reduce((a,b)=>a+b,0))}</td></tr></tbody></table></div>`;
+  const cv=document.getElementById('c_cc_mes'); if(!cv||!window.Chart) return;
+  const acc=_cssv('--accent'), mute=_cssv('--bar-mute'), curC=_cssv('--bar-cur'), accL=_cssv('--accent-line'), tick=_cssv('--text-muted'), txt=_cssv('--text');
+  ccChart=new Chart(cv,{type:'bar',plugins:[_barLabels],
+    data:{labels:rows.map(r=>nm(r.mes)+(parcial(r.mes)?' *':'')), datasets:[
+      {label:'Captaciones',data:cap,backgroundColor:rows.map(r=>parcial(r.mes)?curC:mute),borderRadius:{topLeft:4,topRight:4},_labels:true,maxBarThickness:48},
+      {label:'Cierres',data:cie,backgroundColor:rows.map(r=>parcial(r.mes)?accL:acc),borderRadius:{topLeft:4,topRight:4},_labels:true,maxBarThickness:48}]},
+    options:{responsive:true,maintainAspectRatio:false,layout:{padding:{top:18}},
+      datasets:{bar:{categoryPercentage:.7,barPercentage:.9}},
+      plugins:{legend:{display:false},barLabels:{color:txt},tooltip:{callbacks:{label:c=>' '+c.dataset.label+': '+fmt(c.parsed.y)}}},
+      scales:{x:{ticks:{color:tick},grid:{display:false},border:{color:_cssv('--border')}},y:{display:false,beginAtZero:true}}}});
+}
+
+// --- Inventario del pool ---
+function renderInventario(){
+  const el=document.getElementById('invCard'); if(!el) return;
+  const v=(D.inventario||{})[country];
+  const head=(der)=>`<div class="pv-cardhead" style="align-items:flex-end"><div><h2 class="pv-h2">Inventario del pool${II('niv')}</h2>
+      <div class="pv-sub">Stock y consumo de hoy por nivel de prioridad</div></div>${der||''}</div>`;
+  if(!v||!v.disponible){ el.innerHTML=head()+'<div class="pv-empty">Sin snapshots de inventario aún para '+_PAIS_LBL[country]+' (se generan con el ciclo diario).</div>'; return; }
+  const DEF={P1:['Comité + 2025','Segmento ganador'],P2:['Recientes 2025+',''],P3:['Comité viejo',''],P4:['Resto','']};
+  const ts=['P1','P2','P3','P4'].filter(t=>v.tiers[t]);
+  const mx=Math.max(1,...ts.map(t=>+v.tiers[t].stock||0));
+  const totS=ts.reduce((a,t)=>a+(+v.tiers[t].stock||0),0), totE=ts.reduce((a,t)=>a+(+v.tiers[t].enviados_hoy||0),0);
+  const filas=ts.map(t=>{ const a=v.tiers[t], st=+a.stock||0, rep=a.repuesto_hoy, run=a.runway_dias;
+    const rn = st===0?['bad','Sin stock']:run==null?['na','—']:run<30?['mid',run+' días']:['ok',run+' días'];
+    const repTxt = rep==null?'—':(rep>0?'+'+fmt(rep):rep<0?'−'+fmt(-rep):'0');
+    return `<div class="pv-irow${st===0?' sin':''}">
+      <div class="nm"><span class="pv-chip">${t}</span><div><b>${DEF[t][0]}</b>${DEF[t][1]?`<span class="nt">${DEF[t][1]}</span>`:''}</div></div>
+      <div class="st"><div class="pv-track"><div style="width:${(st/mx*100).toFixed(1)}%${st?'':';min-width:0'}"></div></div><b>${fmt(st)}</b></div>
+      <span class="num">${fmt(a.enviados_hoy)}</span>
+      <span class="num${rep<0?' neg':(rep>0?' pos':'')}">${repTxt}</span>
+      <div class="pv-run"><span class="${rn[0]}">${rn[1]}</span></div></div>`; }).join('');
+  el.innerHTML=head(`<span style="font-size:14px;font-weight:500;color:var(--text);font-variant-numeric:tabular-nums">Stock total ${fmt(totS)} · ${fmt(totE)} enviados hoy</span>`)+`
+    <div class="pv-scroll" style="padding-bottom:12px"><div class="pv-inv">
+      <div class="pv-irow h"><span>Nivel</span><span>Stock elegible${II('stock')}</span><span class="r">Enviados hoy</span>
+        <span class="r">Repuestos hoy${II('repuestos')}</span><span class="r">Runway${II('runway')}</span></div>
+      ${filas}</div></div>`;
+}
+
+// --- Mejor hora de envío: mapa de calor 07–21 h ---
+// MIN: horas con muestra chica no muestran tasa (1 leído = "100%" distorsiona la mejor hora).
+const _HORAS=[7,8,9,10,11,12,13,14,15,16,17,18,19,20,21];
+function _ramp(dark,gris){
+  if(gris) return dark?['#1C1820','#221D29','#2E2836','#453D50','#6B6275','#9A92A5','#D6D0DD']:['#FAFAFA','#F5F5F5','#E5E5E5','#D4D4D4','#A3A3A3','#737373','#404040'];
+  return dark?['#221D29','#2A2135','#352742','#4A3160','#6B3FA0','#9F67F5','#C084FC']:['#FAF5FF','#F3E8FF','#E9D5FF','#D8B4FE','#C084FC','#A855F7','#7E22CE'];
+}
+function renderPorHoraChart(){
+  const el=document.getElementById('horaCard'); if(!el||!D) return;
+  const ph=(D.por_hora||{})[country]||{}, serie=ph.serie||[];
+  const tz=country==='CO'?'hora Bogotá':'hora CDMX';
+  const head=(der)=>`<div class="pv-cardhead"><div><h2 class="pv-h2">Mejor hora de envío${II('hora')}</h2>
+      <div class="pv-sub">Plantilla ganadora v2 · ${tz} · el color más intenso marca la mejor hora de cada fila</div></div>${der||''}</div>`;
+  if(!serie.length){ el.innerHTML=head()+'<div class="pv-empty">Aún sin datos — '+(ph.nota||'pendiente')+'.</div>'; return; }
+  const by={}; serie.forEach(r=>by[+r.hora]=r);
+  const MIN_ENV=30, MIN_ENT=20, dark=document.body.classList.contains('dark');
+  const env=h=>+((by[h]||{}).enviados)||0, ent=h=>+((by[h]||{}).entregados)||0;
+  const totIn=_HORAS.reduce((a,h)=>a+env(h),0), totAll=serie.reduce((a,r)=>a+(+r.enviados||0),0), fuera=totAll-totIn;
+  const filas=[
+    {l:'% del volumen',tk:'h_vol',gris:true,f:v=>Math.round(v)+'%',v:_HORAS.map(h=>totAll?env(h)/totAll*100:null)},
+    {l:'Entrega',tk:'h_ent',f:v=>Math.round(v)+'%',v:_HORAS.map(h=>(env(h)>=MIN_ENV&&(by[h]||{}).entregados!=null)?ent(h)/env(h)*100:null)},
+    {l:'Apertura',tk:'h_ape',f:v=>_n1(v)+'%',v:_HORAS.map(h=>(ent(h)>=MIN_ENT&&(by[h]||{}).read_rate!=null)?by[h].read_rate*100:null)},
+    {l:'Respuesta',tk:'h_res',f:v=>_n1(v)+'%',v:_HORAS.map(h=>(ent(h)>=MIN_ENT&&(by[h]||{}).respond_rate!=null)?by[h].respond_rate*100:null)},
+  ];
+  const hh=h=>String(h).padStart(2,'0')+':00';
+  filas.forEach(r=>{ const ok=r.v.filter(x=>x!=null); r.mn=Math.min(...ok); r.mx=Math.max(...ok); r.bi=ok.length?r.v.indexOf(r.mx):-1; });
+  const celdas=r=>{ const R=_ramp(dark,r.gris); return r.v.map((v,i)=>{
+      if(v==null) return `<span class="pv-hc" style="background:var(--barbg);color:var(--text-muted)" title="Muestra chica: no se calcula tasa">—</span>`;
+      const k=Math.round((r.mx>r.mn?(v-r.mn)/(r.mx-r.mn):0)*6);
+      return `<span class="pv-hc${i===r.bi?' best':''}" style="background:${R[k]};color:${k>=5?'#FFFFFF':(dark?'#F7F5F9':'#171717')}">${r.f(v)}</span>`; }).join(''); };
+  const best=filas.slice(1).filter(r=>r.bi>=0).map(r=>`<div><span>Mejor ${r.l.toLowerCase()}</span><b>${hh(_HORAS[r.bi])} · ${r.f(r.mx)}</b></div>`).reverse().join('');
+  const R=_ramp(dark,false);
+  el.innerHTML=head(`<div class="pv-best">${best}</div>`)+`
+    <div class="pv-scroll" style="padding-bottom:12px"><div class="pv-heat">
+      <div class="pv-hrow"><span></span>${_HORAS.map(h=>`<span class="x">${hh(h)}</span>`).join('')}</div>
+      ${filas.map(r=>`<div class="pv-hrow"><span class="l">${r.l}${II(r.tk)}</span>${celdas(r)}</div>`).join('')}
+    </div></div>
+    <div class="pv-hleg"><span>Menor<span style="display:flex;gap:2px">${[0,2,4,6].map(k=>`<i style="background:${R[k]}"></i>`).join('')}</span>Mayor</span>
+      <span><i style="border:2px solid var(--text-title)"></i>Mejor hora de la fila</span>
+      <span>${fuera>0?fmt(fuera)+' envíos fuera de 07:00–21:00 no se muestran':'Sin envíos fuera de 07:00–21:00'}</span>
+      <span>— = muestra chica (&lt;${MIN_ENV} enviados o &lt;${MIN_ENT} entregados)</span></div>`;
+}
+
+// ===== VENTANAS =====
+// Solo Colombia (así lo dice su propia sesión): con México se dice y no se inventan cifras.
+let rangoVent='7', ventRutaSel='total', ventGran='dia', ventSerieTabla=false;
+const _RANGO_VENT={hoy:'Hoy','7':'Últimos 7 días','30':'Últimos 30 días'};
+const _PREV_VENT={hoy:'vs. ayer','7':'vs. 7 días previos','30':'vs. 30 días previos'};
+const _VRUTA_LBL={total:'Total ventanas', directa:'Ventanas direct', normal:'Ventanas normal'};
+function setRangoVent(r){ rangoVent=r; renderVentanasPanel(); }
+function setVentRuta(r){ ventRutaSel=r; renderVentanasPanel(); _pvHead(); document.querySelectorAll('#tipoSeg [data-ruta]').forEach(b=>b.classList.toggle('active', b.dataset.ruta===r)); }
+function setVentGran(g){ ventGran=g; if(_mult.ventMult) _mult.ventMult.hi=null; renderVentanasPanel(); }
+function toggleVentSerieTabla(){ ventSerieTabla=!ventSerieTabla; renderVentanasPanel(); }
+const _vsv=(s,k)=>+(((s[ventRutaSel]||s)[k])||0);
+// Recorta los días vacíos del arranque (el programa empezó el 19-ago): sin dato no hay nada que leer.
+const _VS=[['recibidos','Recibidos','vs1'],['respondieron','Respondieron','vs2'],['completaron','Completaron registro','vs3'],['bajas','Se dieron de baja','vs4'],['dapta','Enviados a Dapta','vs5']];
+function _serieVent(){ const S=((D.ventanas||{}).serie||[]); const i=S.findIndex(s=>_VS.some(([k])=>_vsv(s,k)>0)); return i<0?S:S.slice(Math.max(0,i-1)); }
+function _ventMultCfg(){
+  const S=_serieVent().slice(-30), hoy=_hoyPais(), sem=ventGran==='semana';
+  let B, vals;
+  if(!sem){
+    B=S.map(s=>({b:s.fecha,label:_bkLabel(s.fecha,'dia',true),xl:_bkLabel(s.fecha,'dia',false),cur:s.fecha===hoy,weekend:[0,6].includes(_wd(s.fecha))}));
+    vals=k=>S.map(s=>_vsv(s,k));
+  } else {
+    const acc={}; S.forEach(s=>{ const b=_bkDe(s.fecha,'semana'); const a=acc[b]||(acc[b]={}); _VS.forEach(([k])=>a[k]=(a[k]||0)+_vsv(s,k)); });
+    const bks=Object.keys(acc).sort(), curW=_bkDe(hoy,'semana');
+    B=bks.map(b=>({b,label:_bkLabel(b,'semana',true),xl:_bkLabel(b,'semana',false),cur:b===curW}));
+    vals=k=>bks.map(b=>acc[b][k]||0);
+  }
+  const ser=_VS.map(([k,lab,tk])=>({lab,tk,vals:vals(k)}));
+  return {buckets:B, series:ser.slice(0,3), extra:ser.slice(3), ma:sem?0:7, w:sem?1:7, maxX:sem?6:10,
+    unitLbl:sem?'última semana completa':'por día (últimos 7 días)', deltaLbl:sem?'vs. semana anterior':'vs. 7 días previos',
+    refLbl:sem?'en la última semana':'en la última semana', totLbl:'en '+S.length+' días',
+    trendLbl:sem?'Total semanal (sin la semana en curso)':'Promedio móvil de 7 días', barLbl:sem?'Valor semanal':'Valor diario',
+    curLbl:B.some(b=>b.cur)?(sem?'Semana en curso':'Día en curso'):'', weLbl:sem?'':'Fin de semana', colFecha:sem?'Semana':'Día', tabla:ventSerieTabla};
+}
+function renderVentanasPanel(){
+  const el=document.getElementById('panelVentanas'); if(!el) return;
+  if(_mult.ventMult){ (_mult.ventMult.charts||[]).forEach(c=>c.destroy()); _mult.ventMult.charts=[]; }
+  const V=D.ventanas||{};
+  if(country!=='CO'){ el.innerHTML=`<section class="pv-card"><div class="pv-empty"><b style="color:var(--text-title)">Ventanas opera solo en Colombia.</b><br>Cambia el país a Colombia para ver su tablero.</div></section>`; return; }
+  const R=(((V.rutas||{})[ventRutaSel])||V.rangos||{})[rangoVent]||{}, P=R.prev||null, pl=_PREV_VENT[rangoVent];
+  const g=(o,k)=>o?(+o[k]||0):null;
+  const tr=(o)=>o&&+o.enviadas?(+o.respondieron||0)/(+o.enviadas):null;
+  const kp=[
+    {l:'Personas recibidas',tk:'ve1',v:fmt(g(R,'recibidos')),d:P&&_dl(g(R,'recibidos'),g(P,'recibidos')),pl,s:fmt(g(R,'enviadas'))+' con plantilla enviada ('+_pc(g(R,'enviadas'),g(R,'recibidos'))+')'},
+    {l:'Tasa de respuesta',tk:'k_tresp',v:_pc(g(R,'respondieron'),g(R,'enviadas')),d:P&&_dl(tr(R),tr(P),true),pl,s:fmt(g(R,'respondieron'))+' de '+fmt(g(R,'enviadas'))+' enviadas respondieron'},
+    {l:'Deals creados',tk:'ve5',v:fmt(g(R,'deal_creado')),d:P&&_dl(g(R,'deal_creado'),g(P,'deal_creado')),pl,s:_pc(g(R,'deal_creado'),g(R,'recibidos'))+' de las personas recibidas'},
+    {l:'Cierres',tk:'ve7',v:fmt(g(R,'cierres')),d:P&&_dl(g(R,'cierres'),g(P,'cierres')),pl,s:fmt(g(R,'cierres_mm'))+' compra directa · '+fmt(g(R,'cierres_inmo'))+' captación · '+_pc(g(R,'cierres'),g(R,'citas'))+' de las visitas'},
+  ];
+  const wa=+R.enviadas_wa||0, ll=+R.llamadas||0;
+  const pasos=[
+    {name:'Personas recibidas',tk:'ve1',desc:'Teléfonos distintos enviados por el webhook',v:g(R,'recibidos')},
+    {name:'Plantillas enviadas',tk:'ve2',desc:(wa||ll)?fmt(wa)+' por WhatsApp · '+fmt(ll)+' por llamada':'Personas con mensaje aceptado por Infobip',v:g(R,'enviadas')},
+    {name:'Respondieron',tk:'ve3',desc:(+R.contestaron?fmt(+R.contestaron)+' contestaron llamada · resto botón o texto':'Clic en botón o texto libre'),v:g(R,'respondieron')},
+    {name:'Atendidos por el agente',tk:'ve4',desc:'Personas (no turnos) que llegaron al agente IA',v:g(R,'atendidos')},
+    {name:'Deal creado',tk:'ve5',desc:fmt(+R.deal_fallo||0)+' fallaron en la bitácora',v:g(R,'deal_creado')},
+    {name:'Visitas agendadas',tk:'ve8',desc:'Personas con visita a la casa en agenda',v:g(R,'citas')},
+    {name:'Cierres',tk:'ve7',desc:fmt(+R.cierres_mm||0)+' compra directa · '+fmt(+R.cierres_inmo||0)+' captación aliados',v:g(R,'cierres')},
+  ];
+  const rec=g(R,'recibidos')||0;
+  el.innerHTML=`<section><div class="pv-sechead"><div><h2 class="pv-h2">Resumen del periodo</h2>
+      <div class="pv-sub">${_RANGO_VENT[rangoVent]} · ${_VRUTA_LBL[ventRutaSel]} · de lead de HubSpot a deal</div></div>
+      ${_seg([['hoy','Hoy'],['7','7 días'],['30','30 días']],rangoVent,'setRangoVent')}</div>
+    <div class="pv-kpis">${kp.map(_kpiHtml).join('')}</div></section>
+  <section class="pv-card"><div class="pv-cardhead"><div><h2 class="pv-h2">Embudo de ventanas</h2>
+      <div class="pv-sub">Cuenta actividad del periodo: cada etapa se mide por cuándo pasó el evento, no por cuándo se le escribió a la persona.</div></div></div>
+    ${_embudoFilas(pasos,'recibidas')}
+    <div class="pv-side"><span class="t">Fuera del embudo</span>
+      <div class="pv-sidebox"><div><b>Se dieron de baja${II('vs4')}</b><span>${_pc(+R.bajas||0,rec)} de las personas recibidas</span></div><span class="n">${fmt(+R.bajas||0)}</span></div>
+      <div class="pv-sidebox"><div><b>Enviados a Dapta${II('vs5')}</b><span>${_pc(+R.dapta||0,rec)} de las personas recibidas</span></div><span class="n">${fmt(+R.dapta||0)}</span></div></div></section>
+  <section class="pv-card pad"><div class="pv-cardhead"><div><h2 class="pv-h2">Actividad por día</h2>
+      <div class="pv-sub">Tendencia de los últimos 30 días · ${_VRUTA_LBL[ventRutaSel]} · día calendario de Bogotá · pasa el mouse para ver cada ${ventGran==='semana'?'semana':'día'}</div></div>
+      <div class="pv-ctrls">${_seg([['dia','Diario'],['semana','Semanal']],ventGran,'setVentGran')}
+        <button type="button" class="pv-btn" onclick="toggleVentSerieTabla()">${ventSerieTabla?'Ver gráfica':'Ver tabla'}</button></div></div>
+    <div id="ventMult"></div></section>`;
+  renderMultiples('ventMult', _ventMultCfg());
+}
+function drawSerieVentanas(){ if(canalSel==='ventanas' && vista==='dash' && D) renderVentanasPanel(); }
+
+// Encabezado de la página: migas (país · canal · tipo), título y frescura del dato.
+function _pvHead(){
+  const cr=document.getElementById('pvCrumb'), h1=document.getElementById('dashTitulo');
+  const esVent=canalSel==='ventanas';
+  if(cr) cr.textContent=_PAIS_LBL[paisSel]+' · '+_CANAL_CORTO[canalSel]+(esVent?' · '+_VRUTA_LBL[ventRutaSel]:'');
+  if(h1) h1.textContent=esVent?'Tablero de ventanas':'Marketing loop general';
+}
 
 // Puerta del token, reutilizable. Antes cada pantalla que lo necesitaba mandaba al Inbox a
 // buscarlo: una indirección tonta, porque el token es el mismo para todas.
@@ -1423,131 +1936,6 @@ function renderEjecuciones(){
     ⏳ gris no es error: es una etapa que todavía no ocurrió.</p>
   </section>`;
 }
-// Ventanas · la única gráfica del panel: usuarios por día. Línea = recibidos por el webhook
-// (eje derecho, ticks del color de la línea: los dos ejes NO son comparables); barras = una
-// apilada con respondieron + completaron el registro y otra aparte con bajas (eje izquierdo).
-let ventSerieChart=null, ventSerieTabla=false;
-// [clave, etiqueta, ayuda, tipo]  tipo: 'line' | 'a' (barra apilada) | 'b' (barra aparte)
-const _VS=[['recibidos','Usuarios recibidos (webhook)','vs1','line'],['respondieron','Respondieron','vs2','a'],
-           ['completaron','Completaron el registro','vs3','a'],['bajas','Se dieron de baja','vs4','b'],
-           ['dapta','Enviados a Dapta','vs5','c']];
-const _VS_COL=()=>document.body.classList.contains('dark')
-  ? {recibidos:'#D6D0DD', respondieron:'#0D9488', completaron:'#9F67F5', bajas:'#D97706', dapta:'#3B82F6'}
-  : {recibidos:'#525252', respondieron:'#0D9488', completaron:'#7E22CE', bajas:'#D97706', dapta:'#2563EB'};
-// Valor de una métrica en el día, para la ruta seleccionada (total/directa/normal).
-const _vsv=(s,k)=>+(((s[ventRutaSel]||s)[k])||0);
-function toggleVentSerieTabla(){ ventSerieTabla=!ventSerieTabla; renderVentanasPanel(); }
-// Recorta los días vacíos del arranque (el programa empezó el 19-ago): sin dato no hay nada que leer.
-function _serieVent(){ const S=((D.ventanas||{}).serie||[]); const i=S.findIndex(s=>_VS.some(([k])=>_vsv(s,k)>0)); return i<0?S:S.slice(Math.max(0,i-1)); }
-function renderSerieVentanas(){
-  const S=_serieVent();
-  if(!S.length) return '';
-  const col=_VS_COL();
-  const leg=_VS.map(([k,lab,h,t])=>`<span><i class="${t==='line'?'ln':''}" style="background:${col[k]}"></i>${lab}${I(h)}</span>`).join('');
-  const tabla=!ventSerieTabla?'':`<div class="tbl-wrap ftab" style="margin-top:10px"><table><thead><tr><th>Día</th>${_VS.map(([k,lab])=>`<th style="text-align:right">${lab}</th>`).join('')}</tr></thead>
-    <tbody>${[...S].reverse().map(s=>`<tr><td>${_dia(s.fecha)}</td>${_VS.map(([k])=>`<td style="text-align:right">${fmt(_vsv(s,k))}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`;
-  return `<section class="card-sec">
-    <div class="tabletitle">Usuarios por día</div>
-    <span class="sub">recibidos por el webhook, respondieron, completaron el registro, bajas y enviados a Dapta · ${_VRUTA_LBL[ventRutaSel]} · últimos ${S.length} días · día calendario de Bogotá</span>
-    <div class="leg" style="margin-top:10px">${leg}</div>
-    <div class="ch tall"><canvas id="c_vent_serie"></canvas></div>
-    <div class="tbltoggle"><button type="button" class="linkbtn" onclick="toggleVentSerieTabla()">${ventSerieTabla?'Ocultar tabla':'Ver tabla'}</button></div>
-    ${tabla}</section>`;
-}
-function drawSerieVentanas(){
-  const el=document.getElementById('c_vent_serie');
-  if(ventSerieChart){ ventSerieChart.destroy(); ventSerieChart=null; }
-  if(!el||!window.Chart) return;
-  const S=_serieVent(), col=_VS_COL(), dark=document.body.classList.contains('dark');
-  const tick=dark?'#9A92A5':'#737373', grid=dark?'#2E2836':'#EEEEEE', lineCol=col.recibidos;
-  ventSerieChart=new Chart(el,{type:'bar',
-    data:{labels:S.map(s=>_dia(s.fecha)), datasets:_VS.map(([k,lab,h,t])=>t==='line'
-      ? {type:'line', label:lab, data:S.map(s=>_vsv(s,k)), borderColor:col[k], backgroundColor:col[k],
-         borderWidth:2, tension:.3, pointRadius:3, pointHoverRadius:5, order:0, yAxisID:'y2'}
-      : {label:lab, data:S.map(s=>_vsv(s,k)), backgroundColor:col[k], stack:t, borderRadius:3, maxBarThickness:22, order:1, yAxisID:'y'})},
-    options:{responsive:true, maintainAspectRatio:false, interaction:{mode:'index', intersect:false},
-      datasets:{bar:{categoryPercentage:.7, barPercentage:.9}},
-      plugins:{legend:{display:false}, tooltip:{callbacks:{label:c=>' '+c.dataset.label+': '+fmt(c.parsed.y)}}},
-      scales:{x:{stacked:true, ticks:{color:tick, maxRotation:0, autoSkip:true, maxTicksLimit:15}, grid:{display:false}, border:{display:false}},
-        y:{stacked:true, beginAtZero:true, position:'left', ticks:{color:tick, precision:0, maxTicksLimit:6}, grid:{color:grid}, border:{display:false},
-           title:{display:true, text:'Respondieron + Completaron · Bajas · Dapta', color:tick, font:{size:11}}},
-        y2:{beginAtZero:true, position:'right', ticks:{color:lineCol, precision:0, maxTicksLimit:6}, grid:{drawOnChartArea:false}, border:{display:false},
-           title:{display:true, text:'Usuarios recibidos', color:lineCol, font:{size:11}}}}}});
-}
-
-let rangoVent='7';
-const _RANGO_VENT={hoy:'Hoy','7':'Últimos 7 días','30':'Últimos 30 días'};
-function setRangoVent(r){ rangoVent=r; renderVentanasPanel(); }
-// Ventanas es SOLO CO (así lo dice su propia sesión): un panel por país acá no agrega nada
-// y puede mezclar líneas, así que con MX seleccionado se dice y no se inventan cifras.
-let ventRutaSel='total';
-const _VRUTA_LBL={total:'Total ventanas', directa:'Ventanas direct', normal:'Ventanas normal'};
-function setVentRuta(r){ ventRutaSel=r; renderVentanasPanel(); }
-// Panel de Ventanas (8-sep): SOLO el embudo y la gráfica "Usuarios por día", ambos con el corte
-// Total / Direct (flujo compra_wa) / Normal. Ventanas opera solo en Colombia: en México el panel
-// va en blanco. Las demás cards (desenlace, entrevista, conversaciones, supresión, alertas,
-// ejecuciones) siguen calculadas o definidas, pero no se pintan aquí.
-function renderVentanasPanel(){
-  const el=document.getElementById('panelVentanas'); if(!el) return;
-  const V=D.ventanas||{};
-  if(country!=='CO'){ el.innerHTML=''; if(ventSerieChart){ ventSerieChart.destroy(); ventSerieChart=null; } return; }
-  const R=(((V.rutas||{})[ventRutaSel])||V.rangos||{})[rangoVent]||{};
-  const tabs=['hoy','7','30'].map(r=>`<button type="button" class="winbtn sm${r===rangoVent?' active':''}" onclick="setRangoVent('${r}')">${r==='hoy'?'Hoy':r+' d'}</button>`).join('');
-  const rutaSeg=`<div class="seg" style="margin-bottom:20px">${Object.keys(_VRUTA_LBL).map(r=>`<button type="button" class="winbtn${r===ventRutaSel?' active':''}" onclick="setVentRuta('${r}')">${_VRUTA_LBL[r]}</button>`).join('')}</div>`;
-  // Ventanas = WhatsApp + voz: contactar y responder suman los dos canales (personas distintas).
-  const pasos=[
-    {lab:'Plantillas enviadas'+IH('ve2'), k:'enviadas', color:'#A855F7',
-     pie:`${fmt(+R.enviadas_wa||0)} por WhatsApp · ${fmt(+R.llamadas||0)} por llamada`},
-    {lab:'Respondieron'+IH('ve3'), k:'respondieron', color:'#2DD4BF',
-     pie:`${fmt(+R.contestaron||0)} contestaron llamada · resto botón o texto`},
-    {lab:'Deals creados'+IH('ve5'), k:'deal_creado', color:'#F59E0B', pie:(+R.deal_fallo||0)+' fallaron · bitácora del backbone'},
-    {lab:'Visita agendada'+IH('ve8'), k:'citas', color:'#0EA5E9', pie:'fecha_de_visita en HubSpot'},
-    {lab:'Cierres'+IH('ve7'), k:'cierres', color:'var(--ok)',
-     pie:`${fmt(+R.cierres_mm||0)} compra directa · ${fmt(+R.cierres_inmo||0)} inmobiliaria`},
-  ];
-  const base=+R[pasos[0].k]||1, RP=R.prev||{};
-  const prevLbl=rangoVent==='hoy'?'ayer':'los '+rangoVent+' días anteriores';
-  // Cambio de la conversión de cada salto vs el periodo anterior del mismo largo, en puntos
-  // porcentuales. Con menos de 30 personas en la etapa de partida del periodo anterior no se
-  // compara: una conversión sobre una base mínima (p. ej. antes de que arrancara Ventanas) da
-  // saltos enormes que no significan nada.
-  const delta=(k0,k1)=>{
-    const a=+R[k0]||0, ap=+RP[k0]||0; if(!a || !R.prev) return '';
-    if(ap<30) return `<span class="fdelta" title="El periodo anterior (${prevLbl}) tiene ${fmt(ap)} en esta etapa: muy poco para comparar">sin base previa</span>`;
-    const d=((+R[k1]||0)/a - (+RP[k1]||0)/ap)*100, cls=d>0.05?'up':(d<-0.05?'down':'');
-    const txt=cls?`${cls==='up'?'▲':'▼'} ${Math.abs(d).toFixed(1)} pp`:'= igual';
-    return `<span class="fdelta ${cls}" title="Conversión ${pct((+RP[k1]||0)/ap*100)} en ${prevLbl}">${txt}</span>`; };
-  const emb=pasos.map((s,i)=>{
-    const v=+R[s.k]||0, sig=pasos[i+1];
-    const conv=sig ? ((v>0)?pct((+R[sig.k]||0)/v*100):'·') : null;
-    const dl=sig ? delta(s.k, sig.k) : '';
-    return `<div class="fstep"><div class="fbody">
-        <div class="flab">${s.lab}</div>
-        <div class="fval">${fmt(v)}</div>
-        <div class="fbar"><div style="width:${Math.max(2,Math.round(v/base*100))}%;background:${s.color}"></div></div>
-        <div class="fsplit">${s.pie}</div></div>
-      ${conv!==null?`<div class="fconv">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"></path></svg>
-        <span class="fpill">${conv}</span>${dl}</div>`:''}</div>`;}).join('');
-  el.innerHTML=rutaSeg+`
-  <section class="card-sec">
-    <div class="cardhead"><div>
-      <div class="tabletitle">Embudo de Ventanas</div>
-      <span class="sub">de contacto (WhatsApp o llamada) a cierre · ${_RANGO_VENT[rangoVent]} · ${_VRUTA_LBL[ventRutaSel]} · Colombia</span></div>
-      <div class="seg">${tabs}</div></div>
-    <div class="funnel">${emb}</div>
-    <div class="akpis" style="margin:16px 0 0;max-width:900px">
-      <div><div class="flab">Personas recibidas${IH('ve1')}</div><div class="fval">${fmt(R.recibidos||0)}</div></div>
-      <div><div class="flab">Atendidos por el agente${IH('ve4')}</div><div class="fval">${fmt(R.atendidos||0)}</div></div>
-      <div><div class="flab">Se dieron de baja${IH('vs4')}</div><div class="fval">${fmt(R.bajas||0)}</div></div>
-      <div><div class="flab">Enviados a Dapta${IH('vs5')}</div><div class="fval">${fmt(R.dapta||0)}</div></div>
-    </div>
-  </section>
-
-  ${renderSerieVentanas()}`;
-  drawSerieVentanas();
-}
-
 // ===== ENVÍO: perilla por país =====
 // La perilla es un arco de 270° (de 7:30 a 4:30 del reloj). El salto de 25 no es estético:
 // afinar de a 1 con el mouse invita a errores de un dígito, y acá un dígito de más son
@@ -1773,20 +2161,15 @@ function renderAgenteScreen(){
 
 function selectCountry(c){ country=c;
   // Canal Ventanas cambia de VISTA, no de filtro: su embudo empieza en un lead de HubSpot y
-  // no tiene pool, plantilla ganadora ni serie del loop. Mostrar esas tarjetas vacías sería
-  // peor que no mostrarlas.
+  // no tiene pool, plantilla ganadora ni serie del loop.
   const esVent = canalSel==='ventanas';
   const pl=document.getElementById('panelLoop'), pv=document.getElementById('panelVentanas');
   if(pl) pl.hidden = esVent;
   if(pv) pv.hidden = !esVent;
-  const h1=document.getElementById('dashTitulo'), gs=document.getElementById('granSeg');
-  if(h1) h1.textContent = esVent ? 'Ventanas' : 'Marketing loop general';
-  // La temporalidad es del loop (cosecha, errores). La vista de ventanas tiene su propio
-  // selector de rango, así que mostrar los dos confunde sobre cuál manda.
-  if(gs) gs.hidden = esVent;
+  _pvHead();
   if(esVent){ renderVentanasPanel(); return; }
-  renderEmbudo(); renderSerie(); renderAgentePanel(); renderErrores(); renderInventario(); renderPorHoraChart();
-  document.querySelectorAll('#granSeg [data-gran]').forEach(b=>b.classList.toggle('active', b.dataset.gran===cicloTipo)); }
+  renderResumenLoop(); renderEmbudo(); renderSerie(); renderCierresCaptaciones(); renderInventario(); renderPorHoraChart();
+  const ec=document.getElementById('errCard'); if(ec && ec.open) renderErrores(); }
 // Celdas "valor + %" con heatmap por fila (verde=conversión alta, rojo=baja), copiado del tablero de referencia.
 function heatCells(values, denoms){
   const pcts=values.map((v,i)=> denoms[i]>0 ? v/denoms[i]*100 : null);   // período sin base → null (celda vacía)
@@ -2215,69 +2598,11 @@ function renderPoolAB(){
       · pérdida esperada <b>${v.loss_pp.toFixed(2)} pp</b> · <span class="muted">${v.razon} · desde ${v.since}</span></div>
   </div>`;
 }
-function renderInventario(){
-  const el=document.getElementById('inventario'); if(!el) return;
-  const v=(D.inventario||{})[country];
-  if(!v||!v.disponible){ el.innerHTML='<p class="note" style="padding:8px 13px">Sin snapshots de inventario aún para '+country+' (se generan con el ciclo diario).</p>'; return; }
-  const DEF={P1:'Comité + 2025 (segmento ganador)',P2:'Recientes 2025+',P3:'Comité viejo',P4:'Resto'};
-  const rows=['P1','P2','P3','P4'].filter(t=>v.tiers[t]).map(t=>{
-    const a=v.tiers[t];
-    const rep=a.repuesto_hoy==null?'—':fmt(a.repuesto_hoy);
-    const run=a.runway_dias==null?'—':(a.runway_dias+' días');
-    return `<tr class="row-stage"><td><b>${t}</b> · ${DEF[t]}</td>
-      <td style="text-align:right"><b>${fmt(a.stock)}</b></td>
-      <td style="text-align:right">${fmt(a.enviados_hoy)}</td>
-      <td style="text-align:right">${rep}</td>
-      <td style="text-align:right">${run}</td></tr>`;}).join('');
-  el.innerHTML=`<table><thead><tr><th>Nivel</th><th style="text-align:right">Stock elegible</th>
-    <th style="text-align:right">Enviados hoy</th><th style="text-align:right">Repuestos hoy</th>
-    <th style="text-align:right">Runway</th></tr></thead><tbody>${rows}</tbody></table>
-    <p class="note" style="padding:8px 13px">${v.nota} Runway = stock / consumo promedio 7d del nivel. La reposición diaria son leads que cruzan los 180 días del SLA.</p>`;
-}
 function renderABFuente(){
   const arr=(D.ab_fuentes||{})[country];
   _abRender('ab_fuente', arr, 'Fuente', t=>escx(t.fuente_lead),
     'Sin datos por fuente para '+country+' (aún no disponible).',
     'Misma comparación que el A/B pero por FUENTE del lead original (enlace envío→fuente por nid contra TIG). Excluye fallidos 7008. Read rate no disponible por esta vía (SEEN).');
-}
-
-function renderPorHoraChart(){
-  const el=document.getElementById('c_porhora'); if(!el||!window.Chart||!D) return;
-  const ph=(D.por_hora||{})[country]||{};
-  const serie=ph.serie||[];
-  const note=document.getElementById('porhoraNote');
-  if(!serie.length){ if(porhoraChart){porhoraChart.destroy();porhoraChart=null;} el.getContext('2d').clearRect(0,0,el.width,el.height);
-    if(note) note.textContent='Aún sin datos — '+(ph.nota||'pendiente')+'.'; return; }
-  const light=document.body.classList.contains('light');
-  const labels=serie.map(r=>String(r.hora).padStart(2,'0')+':00');
-  // MIN_N: horas con muestra chica no dibujan tasa (1 mensaje leido = "100%" y distorsiona la lectura
-  // de mejor hora). El volumen si se dibuja siempre, para ver DONDE falta muestra.
-  const MIN_ENV=30, MIN_ENT=20;
-  const dr=serie.map(r=>(+r.enviados>=MIN_ENV && r.entregados!=null)?+((+r.entregados/+r.enviados)*100).toFixed(1):null);
-  const rd=serie.map(r=>(+r.entregados>=MIN_ENT && r.read_rate!=null)?+(r.read_rate*100).toFixed(1):null);
-  const rp=serie.map(r=>(+r.entregados>=MIN_ENT && r.respond_rate!=null)?+(r.respond_rate*100).toFixed(1):null);
-  const ent=serie.map(r=>+r.entregados); const vol=serie.map(r=>+r.enviados);
-  if(porhoraChart) porhoraChart.destroy();
-  porhoraChart=new Chart(el,{data:{labels,datasets:[
-    {type:'bar',label:'Volumen enviado',data:vol,yAxisID:'y2',order:3,borderWidth:0,barPercentage:.94,categoryPercentage:.98,
-      backgroundColor:light?'rgba(148,163,184,.30)':'rgba(148,163,184,.16)'},
-    {type:'line',label:'Delivery rate',data:dr,yAxisID:'y',order:1,borderColor:'#f59e0b',backgroundColor:'#f59e0b',tension:.3,pointRadius:3,borderWidth:2,spanGaps:true},
-    {type:'line',label:'Open rate (leídos)',data:rd,yAxisID:'y',order:1,borderColor:'#818cf8',backgroundColor:'#818cf8',tension:.3,pointRadius:3,borderWidth:2,spanGaps:true},
-    {type:'line',label:'Response rate',data:rp,yAxisID:'y1',order:1,borderColor:'#34d399',backgroundColor:'#34d399',tension:.3,pointRadius:3,borderWidth:2,spanGaps:true},
-  ]},options:{responsive:true,maintainAspectRatio:false,interaction:{mode:'index',intersect:false},
-    plugins:{legend:{display:true,labels:{color:light?'#334155':'#e2e8f0',boxWidth:12,font:{size:11}}},
-      tooltip:{callbacks:{label:c=>{const i=c.dataIndex,ax=c.dataset.yAxisID,lb=c.dataset.label;
-        if(ax==='y2') return `Volumen enviado: ${fmt(vol[i])}`;
-        if(lb==='Delivery rate') return `Delivery: ${dr[i]==null?'— (muestra chica)':dr[i].toFixed(1)+'%'} (${fmt(ent[i])}/${fmt(vol[i])})`;
-        if(lb&&lb.startsWith('Open')) return `Open: ${rd[i]==null?'— (muestra chica)':rd[i].toFixed(1)+'%'} (n entregados ${fmt(ent[i])})`;
-        return `Response: ${rp[i]==null?'— (muestra chica)':rp[i].toFixed(1)+'%'} (n entregados ${fmt(ent[i])})`;}}}},
-    scales:{x:{ticks:{color:light?'#64748b':'#94a3b8'},grid:{display:false}},
-      y:{position:'left',beginAtZero:true,title:{display:true,text:'Read rate %',color:'#818cf8'},
-        ticks:{color:light?'#64748b':'#94a3b8',callback:v=>v+'%'},grid:{color:light?'#e2e8f0':'#22304a'}},
-      y1:{position:'right',beginAtZero:true,title:{display:true,text:'Respond rate %',color:'#34d399'},
-        ticks:{color:light?'#64748b':'#94a3b8',callback:v=>v+'%'},grid:{display:false}},
-      y2:{display:false,beginAtZero:true}}}});
-  if(note) note.textContent=ph.nota||'';
 }
 
 function renderCohorteOrigen(){ renderCosechaTabla('cohorteTab','cosecha','Sin datos de cosecha para '+country+' (aún no disponible).'); }
@@ -2325,7 +2650,7 @@ function renderCosechaTabla(elId, srcKey, vacio){
 function applyTheme(t){const dark=t==='dark';document.body.classList.toggle('dark',dark);
   const _tb=document.getElementById('themeBtn').querySelector('span');
   if(_tb) _tb.textContent=dark?'Claro':'Oscuro';
-  if(window.Chart && D){ renderPorHoraChart(); renderSerie(); drawSerieVentanas(); }}
+  if(window.Chart && D && document.getElementById('panelLoop')){ if(canalSel==='ventanas') drawSerieVentanas(); else { renderPorHoraChart(); renderSerie(); renderCierresCaptaciones(); } }}
 document.getElementById('themeBtn').onclick=()=>{const n=document.body.classList.contains('dark')?'light':'dark';try{localStorage.setItem('ml-theme',n);}catch(e){}applyTheme(n);};
 applyTheme((()=>{try{return localStorage.getItem('ml-theme')||'light';}catch(e){return 'light';}})());
 // Auto-refresco: el tablero se reconstruye cada 10 min (cron del repo), así que re-pedir

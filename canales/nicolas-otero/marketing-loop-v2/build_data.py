@@ -332,7 +332,9 @@ def build_country(pais):
     hoy_iso = hoy.isoformat()
     sl7 = [r for r in sl if win_start <= (r.get("attempted_at") or "")[:10] <= hoy_iso]  # 7d incl hoy (delivery ya es tiempo real vía /logs)
     rec = N.recreation_rows(country=pais); cst = N.contact_status_rows(country=pais)
-    mbm = M.mart_by_msgid(30, country=pais)
+    # 180 días (no 30): el embudo del panel compara 90 d contra los 90 anteriores y necesita el
+    # `seen` de esos envíos. La query ya recorre la tabla completa (325 MB con 30 o con 180).
+    mbm = M.mart_by_msgid(180, country=pais)
     # complemento tiempo real (Infobip /logs) SOLO para la ventana reciente; los viejos ya no viven en /logs y el mart los cubre
     ibm = I.delivery_by_msgid([r.get("message_id") for r in sl7 if r.get("message_id")], pais=pais)
     # Infobip (tiempo real) pisa el mart en delivery/error de los recientes; PERO conserva el `seen`
@@ -355,7 +357,8 @@ def build_country(pais):
     # quedaban en 0 para lo reciente. Neon (contact_status) ya consolida las respuestas del
     # Sheet del bot (tiempo real) + mart + /logs — misma fuente que opera el motor. Se UNE
     # (no pisa): cuando el mart cargue, coincide. El read/seen NO tiene fuente RT (solo mart).
-    _neon_resp = N._rows("SELECT phone, state FROM contact_status WHERE country=%s AND responded_at IS NOT NULL", (pais,))
+    _neon_resp = N._rows("SELECT phone, state, (responded_at AT TIME ZONE %s)::date::text AS f "
+                         "FROM contact_status WHERE country=%s AND responded_at IS NOT NULL", (N.TZ[pais], pais))
     inbound_phones    |= {r["phone"] for r in _neon_resp}
     interesado_phones |= {r["phone"] for r in _neon_resp if r["state"] == "reinteresado"}
     yavendio_phones   |= {r["phone"] for r in _neon_resp if r["state"] in ("ya_vendio", "baja")}
@@ -456,8 +459,8 @@ def build_country(pais):
         if L["ini"] <= f <= L["fin"]: return "cur"
         if L["prev_ini"] <= f <= L["prev_fin"]: return "prev"
         return None
-    _vacio = lambda: {"entregados": 0, "enviados": 0, "creados": 0, "reasignados": 0,
-                      "citas": 0, "cierres_mm": 0, "cierres_inmo": 0}
+    _vacio = lambda: {"entregados": 0, "enviados": 0, "leidos": 0, "interesados": 0, "agente_sdr": 0,
+                      "creados": 0, "reasignados": 0, "citas": 0, "cierres_mm": 0, "cierres_inmo": 0}
     panel = {c: {k: {**_vacio(), "prev": _vacio()} for k in _rangos}
              for c in ("agregado", "web", "ventanas")}
     def _dst(c, k, b):
@@ -478,6 +481,17 @@ def build_country(pais):
         m = mbm.get(r.get("message_id") or "")
         _sumar(cn, f, "enviados")
         if m and m.get("status") == "delivered": _sumar(cn, f, "entregados")
+        # Leídos por fecha de ENVÍO: el mart marca `seen` pero no trae cuándo se leyó.
+        if m and m.get("seen"): _sumar(cn, f, "leidos")
+    # Interesados por la fecha de su PRIMER interés (botón del mart ∪ reinteresado de Neon), en
+    # el canal de su último envío del loop. «Con agente SDR» = de esos, los que conversaron con
+    # el agente en vivo (mismo agente_phones de la cosecha del agente: sin SHADOW ni muestra).
+    _canal_tel = agg.canal_por_telefono(sl_cosecha)
+    for ph, f in agg.primer_interes(parsed_wide, _neon_resp).items():
+        cn = _canal_tel.get(ph)
+        if not cn: continue
+        _sumar(cn, f, "interesados")
+        if ph in agente_phones: _sumar(cn, f, "agente_sdr")
     for canal in ("web", "ventanas"):
         for f, n in creados_dia[canal].items(): _sumar(canal, f, "creados", n)
         for f, n in reasignados_dia[canal].items(): _sumar(canal, f, "reasignados", n)
