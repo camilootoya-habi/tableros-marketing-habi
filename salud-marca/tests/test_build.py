@@ -1,4 +1,4 @@
-import sys, pathlib
+import json, sys, pathlib
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1]))
 import contract
 import build
@@ -312,3 +312,17 @@ def test_colombia_sigue_sin_encuestador_y_dice_por_que(monkeypatch):
     co = build.collect(now="2026-09-15T21:00:00Z")["metrics"]["encuestador"]["CO"]
     assert co["status"] == "not_available"
     assert co["reason"]
+
+
+# ── El build no borra lo que escribe otro job ─────────────────────────────────
+
+def test_el_build_conserva_el_panel_de_tv(tmp_path):
+    ruta = tmp_path / "data.json"
+    ruta.write_text(json.dumps({"metrics": {"tv": {"MX": {"status": "ok"}}, "traffic": {}}}))
+    nuevo = {"metrics": {"traffic": {"MX": {"status": "ok"}}}}
+    assert build.conservar_ajenos(nuevo, ruta)["metrics"]["tv"] == {"MX": {"status": "ok"}}
+
+
+def test_sin_data_json_previo_el_build_sigue(tmp_path):
+    nuevo = {"metrics": {"traffic": {}}}
+    assert build.conservar_ajenos(nuevo, tmp_path / "no-existe.json") == nuevo

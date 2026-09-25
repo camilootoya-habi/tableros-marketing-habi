@@ -42,7 +42,8 @@ on:
 # segundo ya ve el marcador que dejó el primero. `cancel-in-progress: false` para no matar un
 # envío a la mitad.
 concurrency:
-  group: tv-diario
+  # Compartido con salud-marca.yml: los dos escriben salud-marca/data.json.
+  group: salud-marca-data
   cancel-in-progress: false
 
 jobs:
