@@ -1,0 +1,7 @@
+{
+  "title": "Referencias - Definiciones del funnel",
+  "description": "Documento, no tablero: no está conectado a BigQuery. Cómo se cuantifica cada paso del funnel de sellers (registros, completos, calificados…) en Colombia y México: tabla, query y regla de medición. Se construye por iteraciones.",
+  "country": "CO & MX",
+  "section": "reference",
+  "order": 11
+}

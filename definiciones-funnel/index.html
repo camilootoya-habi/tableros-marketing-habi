@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📐</text></svg>">
+<title>Referencias - Definiciones del funnel</title>
+<style>
+  :root {
+    --bg: #0f172a;
+    --card: #1e293b;
+    --card-2: #273449;
+    --border: #334155;
+    --text-title: #f8fafc;
+    --text: #e2e8f0;
+    --text-muted: #94a3b8;
+    --text-muted-2: #64748b;
+    --accent: #818cf8;
+    --code-bg: #0a1020;
+    --ok: #34d399;
+    --warn: #fbbf24;
+  }
+  body.light {
+    --bg: #f5f7fa;
+    --card: #ffffff;
+    --card-2: #eef2ff;
+    --border: #e2e8f0;
+    --text-title: #0f172a;
+    --text: #334155;
+    --text-muted: #64748b;
+    --text-muted-2: #94a3b8;
+    --accent: #6366f1;
+    --code-bg: #f1f5f9;
+    --ok: #059669;
+    --warn: #b45309;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    background: var(--bg); color: var(--text); min-height: 100vh;
+    transition: background .2s, color .2s; line-height: 1.55;
+  }
+  .wrap { max-width: 1400px; margin: 0 auto; padding: 32px 40px 64px; position: relative; }
+  .back { display: inline-block; color: var(--text-muted); text-decoration: none; font-size: 12.5px; margin-bottom: 18px; }
+  .back:hover { color: var(--accent); }
+  .theme-btn {
+    position: absolute; top: 28px; right: 40px; background: var(--card-2);
+    border: 1px solid var(--border); color: var(--text-muted); border-radius: 6px;
+    padding: 3px 9px; font-size: 13px; cursor: pointer;
+  }
+  .theme-btn:hover { color: var(--accent); }
+  h1 { font-size: 26px; color: var(--text-title); font-weight: 600; margin-bottom: 6px; }
+  h1 .accent { color: var(--accent); }
+  h2 { font-size: 17px; color: var(--text-title); font-weight: 600; margin: 36px 0 10px; }
+  .lead { color: var(--text-muted); font-size: 14px; max-width: 900px; margin-bottom: 8px; }
+  .meta-line { font-size: 11.5px; color: var(--text-muted-2); margin-bottom: 24px; }
+  p { margin: 8px 0; }
+  code, pre { font-family: 'SF Mono', Monaco, Consolas, 'Courier New', monospace; }
+  code {
+    background: var(--code-bg); border: 1px solid var(--border); border-radius: 4px;
+    padding: 1px 5px; color: var(--text); font-size: 11.5px; word-break: break-word;
+  }
+  pre {
+    background: var(--code-bg); border: 1px solid var(--border); border-radius: 6px;
+    padding: 12px 14px; overflow-x: auto; font-size: 11.5px; line-height: 1.5;
+    color: var(--text); margin: 8px 0;
+  }
+  pre code { background: transparent; border: 0; padding: 0; }
+  ul { padding-left: 20px; margin: 6px 0; }
+  li { margin: 3px 0; }
+
+  table.defs { width: 100%; border-collapse: collapse; table-layout: fixed; font-size: 13px; }
+  table.defs col.c-def { width: 20%; }
+  table.defs col.c-pais { width: 40%; }
+  table.defs th, table.defs td {
+    text-align: left; padding: 14px 16px; border: 1px solid var(--border); vertical-align: top;
+  }
+  table.defs th {
+    background: var(--card); color: var(--text-muted); font-weight: 600; font-size: 11.5px;
+    text-transform: uppercase; letter-spacing: .03em;
+  }
+  table.defs td { background: var(--card); }
+  table.defs td.def { background: var(--card-2); }
+  .def-name { font-size: 16px; font-weight: 600; color: var(--text-title); margin-bottom: 6px; }
+  .def-q { color: var(--text-muted); font-size: 12.5px; }
+  .lbl {
+    display: block; font-size: 10.5px; font-weight: 600; letter-spacing: .05em;
+    text-transform: uppercase; color: var(--text-muted-2); margin: 12px 0 4px;
+  }
+  .lbl:first-child { margin-top: 0; }
+  .badge {
+    display: inline-block; padding: 1px 7px; border-radius: 4px; font-size: 10.5px;
+    font-weight: 600; letter-spacing: .03em; text-transform: uppercase; margin-top: 8px;
+  }
+  .badge-ok { background: rgba(52,211,153,.16); color: var(--ok); }
+  .badge-prop { background: rgba(251,191,36,.16); color: var(--warn); }
+  .ref-num { font-size: 12px; color: var(--text-muted); }
+  .ref-num strong { color: var(--text-title); }
+
+  .callout {
+    margin: 14px 0; padding: 12px 16px; border-radius: 6px;
+    background: var(--card); border-left: 3px solid var(--accent); font-size: 13px; max-width: 900px;
+  }
+  .callout strong { color: var(--text-title); }
+  table.small { border-collapse: collapse; font-size: 13px; margin: 8px 0; }
+  table.small th, table.small td { padding: 7px 12px; border-bottom: 1px solid var(--border); text-align: left; }
+  table.small th { color: var(--text-muted); font-size: 11.5px; text-transform: uppercase; letter-spacing: .03em; }
+
+  @media (max-width: 880px) {
+    .wrap { padding: 24px 16px 48px; }
+    .theme-btn { right: 16px; top: 20px; }
+    table.defs, table.defs thead, table.defs tbody, table.defs tr, table.defs th, table.defs td { display: block; width: 100%; }
+    table.defs thead { display: none; }
+    table.defs td { border-top: 0; }
+    table.defs tr { margin-bottom: 18px; border-top: 1px solid var(--border); }
+    table.defs td[data-pais]::before {
+      content: attr(data-pais); display: block; font-size: 11.5px; font-weight: 600;
+      color: var(--accent); text-transform: uppercase; letter-spacing: .03em; margin-bottom: 8px;
+    }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <a class="back" href="../">← Volver al Hub</a>
+  <button class="theme-btn" id="themeToggle" onclick="toggleTheme()" aria-label="Tema">🌙</button>
+
+  <h1>Definiciones del <span class="accent">funnel</span></h1>
+  <p class="lead">
+    Cómo se cuantifica cada paso del funnel de sellers en Colombia y México: la tabla fuente, la
+    query y la regla de medición. Todo corre en BigQuery, proyecto <code>sellers-main-prod</code>.
+    CO y MX son esquemas distintos (CO en español, MX en inglés): no basta con cambiar el dataset.
+  </p>
+  <p class="meta-line">Documento en construcción · se agrega una fila por iteración · actualizado 2026-09-24 · sin conexión a BigQuery</p>
+
+  <table class="defs">
+    <colgroup><col class="c-def"><col class="c-pais"><col class="c-pais"></colgroup>
+    <thead>
+      <tr><th>Definición</th><th>Colombia</th><th>México</th></tr>
+    </thead>
+    <tbody>
+
+      <!-- ───────────── FUENTES ───────────── -->
+      <tr id="fuentes">
+        <td class="def">
+          <div class="def-name">1 · Fuentes de marketing</div>
+          <div class="def-q">De qué tabla sale la fuente de un registro y cuáles son las 6 fuentes que cuentan en cada país. Todas las filas siguientes filtran a estas 6.</div>
+          <span class="badge badge-prop">Propuesta</span>
+        </td>
+
+        <td data-pais="Colombia">
+          <span class="lbl">Tabla</span>
+          La fuente vive en el <strong>inmueble</strong>, no en el negocio:
+          <code>co_rds_staging.habi_db_tabla_inmueble_v2.fuente_id</code>, con el nombre en el catálogo
+          <code>habi_db_tabla_fuente</code> (columna <code>fuente</code>).
+
+          <span class="lbl">Join</span>
+<pre><code>FROM `sellers-main-prod.co_rds_staging.habi_db_tabla_negocio_inmueble` n
+JOIN `sellers-main-prod.co_rds_staging.habi_db_tabla_inmueble_v2` p
+  ON p.id = n.inmueble_id
+JOIN `sellers-main-prod.co_rds_staging.habi_db_tabla_fuente` f
+  ON f.id = p.fuente_id
+WHERE p.fuente_id IN (3, 7, 20, 35, 39, 47)</code></pre>
+
+          <span class="lbl">Las 6 fuentes</span>
+          <table class="small">
+            <thead><tr><th>id</th><th>Fuente</th><th>Nombre en catálogo</th><th>Ago-26</th></tr></thead>
+            <tbody>
+              <tr><td>3</td><td>WEB</td><td><code>WEB</code></td><td>9.686</td></tr>
+              <tr><td>7</td><td>Estudio Inmueble</td><td><code>Estudio Inmueble</code></td><td>9.398</td></tr>
+              <tr><td>47</td><td>Lead Forms</td><td><code>lead_forms</code></td><td>1.627</td></tr>
+              <tr><td>20</td><td>CRM</td><td><code>CRM</code></td><td>254</td></tr>
+              <tr><td>39</td><td>Broker</td><td><code>Broker</code></td><td>125</td></tr>
+              <tr><td>35</td><td>Comercial</td><td><code>comercial</code></td><td>134</td></tr>
+            </tbody>
+          </table>
+
+          <span class="lbl">Cómo se mide</span>
+          <ul>
+            <li>Filtrar siempre por <strong>id</strong> (<code>fuente_id</code>), no por nombre: los nombres cambian entre países (<code>lead_forms</code> vs <code>Lead Forms</code>, <code>comercial</code> vs <code>Comercial</code>).</li>
+            <li>Quedan fuera, entre otras: <code>1</code> Ventana (5.638 en ago-26) y <code>28</code> ventana-scraping (8.355). Son comparables internos, no leads: juntas son el ~40% de lo que se crea en la tabla.</li>
+          </ul>
+        </td>
+
+        <td data-pais="México">
+          <span class="lbl">Tabla</span>
+          La fuente vive en la <strong>propiedad</strong>, no en el deal:
+          <code>mx_rds_staging.habi_db_property.source_id</code>, con el nombre en el catálogo
+          <code>habi_db_source</code> (columnas <code>name</code> y <code>label</code>).
+
+          <span class="lbl">Join</span>
+<pre><code>FROM `sellers-main-prod.mx_rds_staging.habi_db_property_deal` d
+JOIN `sellers-main-prod.mx_rds_staging.habi_db_property` p
+  ON p.id = d.property_id          -- NO d.id = p.id
+JOIN `sellers-main-prod.mx_rds_staging.habi_db_source` s
+  ON s.id = p.source_id
+WHERE p.source_id IN (3, 7, 35, 39, 46, 47)</code></pre>
+
+          <span class="lbl">Las 6 fuentes</span>
+          <table class="small">
+            <thead><tr><th>id</th><th>Fuente</th><th>Label en catálogo</th><th>Ago-26</th></tr></thead>
+            <tbody>
+              <tr><td>3</td><td>WEB</td><td><code>WEB</code></td><td>7.321</td></tr>
+              <tr><td>7</td><td>Estudio Inmueble</td><td><code>Estudio Inmueble</code></td><td>1.414</td></tr>
+              <tr><td>47</td><td>Lead Forms</td><td><code>Lead Forms</code></td><td>5.748</td></tr>
+              <tr><td>46</td><td>Propiedades</td><td><code>Propiedades</code></td><td>1.611</td></tr>
+              <tr><td>39</td><td>Broker</td><td><code>Broker</code></td><td>193</td></tr>
+              <tr><td>35</td><td>Comercial</td><td><code>Comercial</code></td><td>10</td></tr>
+            </tbody>
+          </table>
+
+          <span class="lbl">Cómo se mide</span>
+          <ul>
+            <li>Filtrar siempre por <strong>id</strong> (<code>source_id</code>).</li>
+            <li>CRM (20) existe en el catálogo MX pero no es fuente de marketing en México. Propiedades (46) solo cuenta en MX.</li>
+            <li>Queda fuera principalmente <code>28</code> ventana-scraping (3.178 en ago-26, ~16% de lo que se crea).</li>
+          </ul>
+        </td>
+      </tr>
+
+      <!-- ───────────── REGISTROS ───────────── -->
+      <tr id="registros">
+        <td class="def">
+          <div class="def-name">2 · Registros</div>
+          <div class="def-q">Cuántos negocios (lead × inmueble) de las 6 fuentes de marketing se crearon en el backbone en el periodo, sin importar su estado posterior.</div>
+          <span class="badge badge-prop">Propuesta</span>
+        </td>
+
+        <td data-pais="Colombia">
+          <span class="lbl">Tabla</span>
+          <code>co_rds_staging.habi_db_tabla_negocio_inmueble</code>, unida a
+          <code>habi_db_tabla_inmueble_v2</code> para filtrar la fuente (fila 1).
+
+          <span class="lbl">Query</span>
+<pre><code>SELECT
+  DATE_TRUNC(DATE(n.fecha_creacion), MONTH) AS mes,
+  COUNT(DISTINCT n.id) AS registros
+FROM `sellers-main-prod.co_rds_staging.habi_db_tabla_negocio_inmueble` n
+JOIN `sellers-main-prod.co_rds_staging.habi_db_tabla_inmueble_v2` p
+  ON p.id = n.inmueble_id
+WHERE p.fuente_id IN (3, 7, 20, 35, 39, 47)   -- 6 fuentes de marketing
+GROUP BY mes</code></pre>
+
+          <span class="lbl">Cómo se mide</span>
+          <ul>
+            <li>Unidad: <code>id</code> del negocio (llave primaria: una fila = un registro).</li>
+            <li>Fecha: <code>fecha_creacion</code> (DATETIME).</li>
+            <li>Solo las 6 fuentes de la fila 1.</li>
+            <li>Incluye duplicados (<code>last_estado_id = 1</code>, ~9% en ago-26): un registro cuenta aunque después se marque duplicado.</li>
+          </ul>
+
+          <span class="lbl">Referencia</span>
+          <div class="ref-num">jun <strong>17.090</strong> · jul <strong>20.288</strong> · ago <strong>21.224</strong> (2026, corrido el 24-sep)</div>
+        </td>
+
+        <td data-pais="México">
+          <span class="lbl">Tabla</span>
+          <code>mx_rds_staging.habi_db_property_deal</code>, unida a
+          <code>habi_db_property</code> para filtrar la fuente (fila 1).
+
+          <span class="lbl">Query</span>
+<pre><code>SELECT
+  DATE_TRUNC(DATE(d.date_create), MONTH) AS mes,
+  COUNT(DISTINCT d.id) AS registros
+FROM `sellers-main-prod.mx_rds_staging.habi_db_property_deal` d
+JOIN `sellers-main-prod.mx_rds_staging.habi_db_property` p
+  ON p.id = d.property_id
+WHERE p.source_id IN (3, 7, 35, 39, 46, 47)   -- 6 fuentes de marketing
+GROUP BY mes</code></pre>
+
+          <span class="lbl">Cómo se mide</span>
+          <ul>
+            <li>Unidad: <code>id</code> del deal (llave primaria: una fila = un registro).</li>
+            <li>Fecha: <code>date_create</code> (DATETIME).</li>
+            <li>Solo las 6 fuentes de la fila 1.</li>
+            <li>Incluye duplicados (<code>last_state_id = 1</code>, ~4% en ago-26).</li>
+            <li><code>date_reactivate</code> existe pero no se usa hoy (0 reactivaciones en ago-26): las reactivaciones no suman registros.</li>
+          </ul>
+
+          <span class="lbl">Referencia</span>
+          <div class="ref-num">jun <strong>14.132</strong> · jul <strong>16.408</strong> · ago <strong>16.297</strong> (2026, corrido el 24-sep)</div>
+        </td>
+      </tr>
+
+    </tbody>
+  </table>
+
+  <h2>Por qué <code>id</code> y no <code>nid</code></h2>
+  <p>En ago-2026 (todas las fuentes, antes del filtro) el conteo por <code>id</code> es igual al total de filas en los dos países. <code>nid</code> es casi igual, pero algunos negocios no lo tienen y se perderían:</p>
+  <table class="small">
+    <thead><tr><th>País</th><th>Filas</th><th>id únicos</th><th>nid únicos</th><th>nid nulo</th></tr></thead>
+    <tbody>
+      <tr><td>CO</td><td>35.217</td><td>35.217</td><td>35.168</td><td>49</td></tr>
+      <tr><td>MX</td><td>19.475</td><td>19.475</td><td>19.450</td><td>25</td></tr>
+    </tbody>
+  </table>
+  <p>Para cruzar con tablas de funnel o HubSpot, que viven a nivel <code>nid</code>, se usa <code>nid</code> como llave de join. El conteo de registros se hace por <code>id</code>.</p>
+
+  <div class="callout">
+    <strong>Próximas filas:</strong> completos, calificados MM, calificados INMO, asignados. Cada una se
+    agrega con la misma estructura (tabla · query · cómo se mide) y queda como <em>propuesta</em> hasta
+    que se valide con el equipo.
+  </div>
+</div>
+
+<script>
+  function toggleTheme() {
+    const isLight = document.body.classList.toggle('light');
+    try { localStorage.setItem('tablero-theme', isLight ? 'light' : 'dark'); } catch (e) {}
+    document.getElementById('themeToggle').textContent = isLight ? '☀️' : '🌙';
+  }
+  (function(){
+    let saved = null;
+    try { saved = localStorage.getItem('tablero-theme'); } catch (e) {}
+    if (saved !== 'dark') document.body.classList.add('light');
+    document.getElementById('themeToggle').textContent = document.body.classList.contains('light') ? '☀️' : '🌙';
+  })();
+</script>
+</body>
+</html>
