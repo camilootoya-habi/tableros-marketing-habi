@@ -161,3 +161,26 @@ def test_canal_creado_por_lead_ref_o_por_nid_nuevo():
     assert canal_creado({"old_nid": "111", "new_nid": None}, refs, nids) == "ventanas"
     assert canal_creado({"old_nid": 222, "new_nid": 999}, refs, nids) == "ventanas"
     assert canal_creado({"old_nid": "333", "new_nid": "444"}, refs, nids) == "web"
+
+
+# --- embudo del panel: interés por fecha de evento y canal por teléfono ---
+from agg import primer_interes, canal_por_telefono
+
+def test_primer_interes_une_mart_y_neon_y_toma_la_fecha_mas_temprana():
+    parsed = [("1", {"action": "INTERESADO"}, "2026-09-10"),
+              ("1", {"action": "INTERESADO"}, "2026-09-08"),
+              ("2", {"action": "YAVENDIO"}, "2026-09-09")]
+    neon = [{"phone": "1", "state": "reinteresado", "f": "2026-09-12"},
+            {"phone": "3", "state": "reinteresado", "f": "2026-09-11"},
+            {"phone": "4", "state": "baja", "f": "2026-09-11"}]
+    assert primer_interes(parsed, neon) == {"1": "2026-09-08", "3": "2026-09-11"}
+
+def test_primer_interes_ignora_filas_sin_fecha():
+    assert primer_interes([("1", {"action": "INTERESADO"}, "")], [{"phone": "2", "state": "reinteresado", "f": None}]) == {}
+
+def test_canal_por_telefono_gana_el_ultimo_envio_y_excluye_brokermatch():
+    sl = [{"phone": "1", "attempted_at": "2026-09-01T10:00", "campaign": "reactivacion"},
+          {"phone": "1", "attempted_at": "2026-09-05T10:00", "campaign": "ventanas"},
+          {"phone": "2", "attempted_at": "2026-09-03T10:00", "campaign": "brokermatch"},
+          {"phone": "3", "attempted_at": "2026-09-03T10:00", "campaign": None}]
+    assert canal_por_telefono(sl) == {"1": "ventanas", "3": "web"}

@@ -275,3 +275,32 @@ def canal_creado(rec_row, ventanas_refs, ventanas_nids):
     if str(rec_row.get("old_nid")) in ventanas_refs or str(rec_row.get("new_nid")) in ventanas_nids:
         return "ventanas"
     return "web"
+
+def primer_interes(parsed, neon_rows):
+    """{teléfono: fecha ISO} del PRIMER interés de cada persona, para contar Interesados en el
+    embudo por cuándo pasó (no por cuándo se le escribió). Une las dos fuentes que ya usa la
+    cosecha: el botón INTERESADO del mart (`parsed` = [(phone, parse_resp(...), 'YYYY-MM-DD')])
+    y el estado reinteresado de Neon (`neon_rows` con phone, state y f = fecha local de
+    responded_at), que cubre el lag del mart. Cada persona cuenta una sola vez, en su fecha más
+    temprana."""
+    out = {}
+    def _pon(ph, f):
+        if ph and f and (ph not in out or f < out[ph]): out[ph] = f
+    for ph, pr, ts in parsed:
+        if pr.get("action") == "INTERESADO": _pon(ph, (ts or "")[:10])
+    for r in neon_rows:
+        if r.get("state") == "reinteresado": _pon(r.get("phone"), str(r.get("f") or "")[:10])
+    return out
+
+def canal_por_telefono(sendlog):
+    """{teléfono: canal} según el ÚLTIMO envío del loop a ese teléfono (agg.canal_envio). Así el
+    interés se atribuye al canal que lo provocó; los teléfonos que solo recibieron brokermatch
+    no aparecen y por lo tanto no entran al embudo."""
+    out, cuando = {}, {}
+    for r in sendlog:
+        ph, f = r.get("phone"), (r.get("attempted_at") or "")
+        cn = canal_envio(r.get("campaign"))
+        if not ph or not cn: continue
+        if ph not in cuando or f >= cuando[ph]:
+            cuando[ph], out[ph] = f, cn
+    return out
