@@ -8,9 +8,17 @@ name: Reporte diario TV → Google Chat
 # Workflow APARTE del de update-data.yml a propósito: comparten credenciales de BigQuery pero
 # nada más, y un fallo de este no debe tocar la actualización del hub.
 
+# CUATRO horarios (hora CDMX): 9:07, 9:31, 10:17 y 11:23. GitHub no garantiza los cron: en
+# horas de carga los atrasa o directamente los salta, sobre todo los que caen en el minuto 0.
+# El 25-sep el de las 15:00 UTC no corrió. Con cuatro intentos, uno sale. Los tres de respaldo
+# NO duplican el mensaje: `--solo-si-falta` termina sin hacer nada si ese día ya se envió
+# (ver `ultimo_envio.json`). Si un envío falla, no se marca y el siguiente horario reintenta.
 on:
   schedule:
-    - cron: '0 15 * * *'
+    - cron: '7 15 * * *'    # 09:07 CDMX
+    - cron: '31 15 * * *'   # 09:31 CDMX
+    - cron: '17 16 * * *'   # 10:17 CDMX
+    - cron: '23 17 * * *'   # 11:23 CDMX
   workflow_dispatch:
     inputs:
       fecha:
@@ -21,6 +29,13 @@ on:
         type: boolean
         default: true
 
+# Nunca dos a la vez: si GitHub atrasa varios horarios y los dispara juntos, corren en fila y el
+# segundo ya ve el marcador que dejó el primero. `cancel-in-progress: false` para no matar un
+# envío a la mitad.
+concurrency:
+  group: tv-diario
+  cancel-in-progress: false
+
 jobs:
   reporte:
     runs-on: ubuntu-latest
@@ -28,7 +43,11 @@ jobs:
       contents: write   # para commitear el panel de TV en salud-marca/data.json
 
     steps:
+      # `ref` explícito: sin él, checkout baja el commit del momento en que se DISPARÓ la
+      # ejecución, y una que esperó en la fila no vería el `ultimo_envio.json` de la anterior.
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref_name }}
 
       - uses: actions/setup-python@v5
         with:
@@ -66,16 +85,17 @@ jobs:
         run: |
           python3 salud-marca/tv/reporte_diario.py \
             ${{ inputs.fecha && format('--fecha {0}', inputs.fecha) || '' }} \
-            ${{ (github.event_name == 'schedule' || inputs.enviar) && '--enviar' || '' }}
+            ${{ (github.event_name == 'schedule' || inputs.enviar) && '--enviar' || '' }} \
+            ${{ github.event_name == 'schedule' && '--solo-si-falta' || '' }}
 
       - name: Commitear el panel
         run: |
-          # Solo data.json: el resto del repo no lo toca este job. Si no cambió nada —porque
-          # GA4 no trajo datos nuevos— no se commitea, para no llenar el historial de commits
-          # vacíos diarios.
+          # Solo data.json y el marcador de envío: el resto del repo no lo toca este job. Si no
+          # cambió nada —porque GA4 no trajo datos nuevos, o porque este horario era de
+          # respaldo y el reporte ya había salido— no se commitea.
           git config user.name  'github-actions[bot]'
           git config user.email 'github-actions[bot]@users.noreply.github.com'
-          git add salud-marca/data.json
+          git add salud-marca/data.json salud-marca/tv/ultimo_envio.json 2>/dev/null || git add salud-marca/data.json
           git diff --cached --quiet && echo "sin cambios en el panel" && exit 0
           git commit -m "data(tv): panel de TV $(date -u +%Y-%m-%dT%H:%MZ)"
           git pull --rebase --autostash origin ${{ github.ref_name }}

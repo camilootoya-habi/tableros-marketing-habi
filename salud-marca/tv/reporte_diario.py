@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
 """Reporte diario del impacto de TV abierta en México → Google Chat.
 
-Corre en GitHub Actions a las 15:00 UTC (09:00 CDMX). La hora no es arbitraria: se midió que
-el export de GA4 del día D aterriza entre las 13:00 y 13:48 UTC del día D+1, así que las
-15:00 dejan 1-2 horas de colchón.
+Corre en GitHub Actions a las 9:07 CDMX (15:07 UTC), con tres horarios de respaldo (9:31,
+10:17 y 11:23) que no hacen nada si el reporte ya salió (`--solo-si-falta`). La hora no es
+arbitraria: se midió que el export de GA4 del día D aterriza entre las 13:00 y 13:48 UTC del
+día D+1, así que las 15:07 dejan más de una hora de colchón.
 
 QUÉ REPORTA Y POR QUÉ ASÍ:
 
@@ -47,6 +48,26 @@ VENTANA_DIAS = 7
 DIAS = ["lunes", "martes", "miércoles", "jueves", "viernes", "sábado", "domingo"]
 MESES = ["ene", "feb", "mar", "abr", "may", "jun",
          "jul", "ago", "sep", "oct", "nov", "dic"]
+
+
+# Marcador del último día que salió a Chat. Lo leen los horarios de respaldo del workflow
+# (`--solo-si-falta`) para no mandar dos veces el mismo reporte. Se escribe SOLO cuando el
+# webhook respondió bien: si falló, no hay marca y el siguiente horario lo reintenta.
+ULTIMO_ENVIO = os.path.join(HERE, "ultimo_envio.json")
+
+
+def ya_enviado(fecha, ruta=None):
+    try:
+        with open(ruta or ULTIMO_ENVIO, encoding="utf-8") as f:
+            return json.load(f).get("fecha") == fecha.isoformat()
+    except (OSError, ValueError):
+        return False
+
+
+def marcar_enviado(fecha, cuando, ruta=None):
+    with open(ruta or ULTIMO_ENVIO, "w", encoding="utf-8") as f:
+        json.dump({"fecha": fecha.isoformat(), "enviado": cuando}, f)
+        f.write("\n")
 
 
 def fecha_larga(d):
@@ -223,6 +244,8 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--enviar", action="store_true", help="postear a Google Chat")
     ap.add_argument("--fecha", help="día a reportar (YYYY-MM-DD). Por defecto, ayer en CDMX")
+    ap.add_argument("--solo-si-falta", action="store_true",
+                    help="no hacer nada si el reporte de esa fecha ya se envió (horarios de respaldo)")
     ap.add_argument("--sin-panel", action="store_true",
                     help="no actualizar el panel de TV en salud-marca/data.json")
     args = ap.parse_args()
@@ -231,6 +254,9 @@ def main():
                 - datetime.timedelta(hours=6)).date()
     hasta = datetime.date.fromisoformat(args.fecha) if args.fecha else \
         hoy_cdmx - datetime.timedelta(days=1)
+    if args.solo_si_falta and ya_enviado(hasta):
+        print(f"El reporte del {hasta.isoformat()} ya se envió: este horario es de respaldo y no hace nada.")
+        return 0
 
     perfil = BL.cargar()
     horas_sd = BL.cargar_horas()
@@ -286,6 +312,8 @@ def main():
     if args.enviar:
         ok, detalle = CHAT.enviar(payload)
         print(f"  Google Chat: {'enviado' if ok else 'FALLÓ'} ({detalle})")
+        if ok:
+            marcar_enviado(hasta, ahora())
         # No se devuelve error: el cálculo ya está hecho y publicado en el log. Que el
         # webhook falle no debe marcar el job en rojo y disparar alertas de CI.
     else:

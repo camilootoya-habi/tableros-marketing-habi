@@ -3,8 +3,16 @@
 Mide el tráfico incremental que genera la campaña de TV abierta en México (Televisa, sep-nov
 2026) y lo publica cada mañana en un espacio de Google Chat.
 
-Corre en **GitHub Actions** (`.github/workflows/tv-diario.yml`), a las **15:00 UTC = 09:00
-CDMX**. No depende de la máquina de nadie.
+Corre en **GitHub Actions** (`.github/workflows/tv-diario.yml`) con **cuatro horarios**:
+**9:07, 9:31, 10:17 y 11:23 CDMX**. No depende de la máquina de nadie.
+
+Son cuatro porque GitHub no garantiza los cron: los atrasa o los salta en horas de carga (el
+25-sep el de las 9:00 no corrió). Los tres de respaldo **no duplican el mensaje**: corren con
+`--solo-si-falta` y terminan sin hacer nada si `ultimo_envio.json` ya tiene esa fecha. El
+marcador se escribe solo si el webhook respondió bien, así que un envío fallido se reintenta en
+el siguiente horario. El workflow tiene `concurrency`, así que dos horarios atrasados nunca
+corren a la vez. Una corrida manual (`workflow_dispatch`) no mira el marcador: si se lanza con
+`enviar` después de que ya salió, manda otro mensaje.
 
 ## Por qué el incremental va a 7 días y no a 24 horas
 
