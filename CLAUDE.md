@@ -24,19 +24,17 @@ Live: https://camilootoya-habi.github.io/tableros-marketing-habi/
 - Si `~/habi/tableros-marketing-habi` tiene cambios sin commitear de otra sesión, no los toques:
   `git worktree add <ruta-temporal> -b <rama> origin/main` y trabaja ahí.
 
-## marketing-loop/ — frontera con el repo marketing-loop-sellers (31-ago)
+## marketing-loop/ — RETIRADO el 28-sep (ahora redirige al v2)
 
-- `marketing-loop/data.json` y `audit.json` los escribe SOLO el ciclo diario del LOOP
-  (`run_daily.sh` del repo marketing-loop-sellers, 9:30am) y el workflow de respaldo de
-  este repo. No se editan a mano ni desde otras sesiones.
-- `marketing-loop/index.html` consume la API del Vercel de marketing-loop-sellers
-  (`/api/ventanas/*`, `/api/envio*`, `/api/plantillas/prueba`, iframes `/inbox` y
-  `/ventanas`). Los campos que lee son un CONTRATO versionado en
-  `tests/test_tablero_contract.py` de AQUEL repo: si necesitas un campo nuevo, el cambio
-  va en los dos repos y se avisa en ambos commits.
+- El Marketing Loop vigente es `canales/nicolas-otero/marketing-loop-v2/` (se reconstruye
+  cada hora con `update-marketing-loop-v2.yml`). `marketing-loop/index.html` solo redirige
+  ahí, conservando `?query` y `#pestaña`; la tarjeta del original ya no sale en el hub.
+- En `marketing-loop/` quedan SOLO: `cierres.json` + `build_cierres.py` +
+  `query_cierres_captaciones.sql` (los genera `update-loop-cierres.yml` y el v2 los LEE),
+  `METRICAS.md` y `FIX-CIERRES-MX.md`. No revivas el resto: el v2 tiene su propia copia.
 - Antes de tocar números de cierres: `marketing-loop/METRICAS.md` (regla de oro 4).
-- Prompt de arranque para la sesión TABLERO: `docs/prompts-sesiones.md` del repo
-  marketing-loop-sellers.
+- El v2 consume la API del Vercel de marketing-loop-sellers (`/inbox`, `/api/envio*`,
+  `/api/ventanas/*`): si necesitas un campo nuevo, el cambio va en los dos repos.
 
 ## Estructura
 
