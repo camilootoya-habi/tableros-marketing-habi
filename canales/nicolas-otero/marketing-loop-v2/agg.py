@@ -256,13 +256,17 @@ def panel_bq_shape(rows):
         out[p][str(r["dias"])] = cur
     return out
 
-def canal_envio(campaign):
+def canal_envio(campaign, template=None):
     """Canal del panel para un envío de send_log según su `campaign`.
     'web' = el loop de reactivación (y las filas viejas sin campaign, que son todas del loop).
     'ventanas' = el programa de letreros, voz incluida (voz escribe campaign='ventanas') y la
     etiqueta vieja 'hubspot', que eran envíos de ventanas antes de renombrarla.
     None = no es del loop (brokermatch): no entra ni a Web ni a Agregado."""
     if campaign in ("ventanas", "hubspot"):
+        return "ventanas"
+    # Antes del 24-ago ventanas mandó algunas plantillas sin campaign (ventanas_tibio_co_v1):
+    # la plantilla lo delata aunque la columna esté vacía.
+    if campaign is None and (template or "").lower().startswith("ventanas"):
         return "ventanas"
     if campaign == "brokermatch":
         return None
@@ -299,8 +303,24 @@ def canal_por_telefono(sendlog):
     out, cuando = {}, {}
     for r in sendlog:
         ph, f = r.get("phone"), (r.get("attempted_at") or "")
-        cn = canal_envio(r.get("campaign"))
+        cn = canal_envio(r.get("campaign"), r.get("template"))
         if not ph or not cn: continue
         if ph not in cuando or f >= cuando[ph]:
             cuando[ph], out[ph] = f, cn
     return out
+
+
+def solo_loop(sendlog):
+    """Envíos del LOOP de reactivación (canal web): sin ventanas/voz ni brokermatch. La línea de
+    CO la comparten los tres programas; las secciones del loop (diario, errores, respuestas,
+    contactados, cohorte) se calculaban sobre todo y en CO sumaban ventanas (28-sep)."""
+    return [r for r in sendlog if canal_envio(r.get("campaign"), r.get("template")) == "web"]
+
+def inbound_del_loop(inbound_rows, canal_tel):
+    """Respuestas de teléfonos cuyo último envío fue del loop (canal_por_telefono). Quedan fuera
+    las de ventanas, brokermatch y quien escribe sin haber recibido nada del loop."""
+    return [i for i in inbound_rows if canal_tel.get(i.get("phone")) == "web"]
+
+def creados_del_loop(recreation_rows, ventanas_refs, ventanas_nids):
+    """Filas de `recreation` del loop: la tabla la comparten ventanas y voz (canal_creado)."""
+    return [r for r in recreation_rows if canal_creado(r, ventanas_refs, ventanas_nids) == "web"]

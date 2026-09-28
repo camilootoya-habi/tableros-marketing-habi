@@ -366,6 +366,12 @@ def build_country(pais):
     old_sl, old_mbm = M.old_repo_sends(pais)
     for mid, v in old_mbm.items(): mbm.setdefault(mid, v)   # completa delivery/seen de los viejos (no pisa los recientes/​/logs)
     sl_cosecha = old_sl + sl                                # Cosecha = histórico completo (viejo mart + nuevo Neon)
+    # SOLO EL LOOP (28-sep): la línea de CO la comparten reactivación, ventanas/voz y brokermatch.
+    # Las secciones del loop (embudo, errores, cosecha, contactados, cohorte, diario, agente) se
+    # calculan sobre estos; el panel por canal (Agregado/Web/Ventanas) sigue usando todo.
+    sl_loop = agg.solo_loop(sl)
+    sl7_loop = agg.solo_loop(sl7)
+    sl_cosecha_loop = agg.solo_loop(sl_cosecha)
     # respuestas atribuibles a envíos viejos: ventana amplia (180d) parseada
     parsed_wide=[(i["phone"], agg.parse_resp(i["respuesta_cliente"]), i["ts"]) for i in inb_resp]
     inbound_phones_wide={p for p,_,_ in parsed_wide if p}
@@ -379,7 +385,7 @@ def build_country(pais):
     # y (b) NO está en estado TERMINAL (baja/ya_vendio/respondio_otro = se dio de baja o respondió otra cosa).
     # Así excluye opt-outs post-interesado y los interesados del repo viejo que nunca enviamos. Fuente: mart inbound.
     recreated_nids={str(r["old_nid"]) for r in rec if r.get("old_nid")}
-    loop_nids={str(r["nid"]) for r in sl if r.get("nid")}                      # (a) leads del loop (en send_log)
+    loop_nids={str(r["nid"]) for r in sl_loop if r.get("nid")}                 # (a) leads del loop (en send_log)
     TERMINAL_NEG={"baja","ya_vendio","respondio_otro"}
     terminal_phones={r["phone"] for r in cst if r.get("state") in TERMINAL_NEG}  # (b) estados terminales negativos
     interesado_pairs=[(p, str(pr.get("nid"))) for p,pr,_ in parsed_wide if p and pr["action"]=="INTERESADO" and pr.get("nid")]
@@ -395,7 +401,7 @@ def build_country(pais):
         "SELECT DISTINCT phone FROM agent_thread WHERE country=%s AND role='assistant' "
         "AND action_taken IS NOT NULL AND action_taken NOT LIKE 'SHADOW%%' "
         "AND action_taken <> 'NOT_IN_SAMPLE'", (pais,))}
-    sl_agente = [r for r in sl_cosecha if r.get("phone") in agente_phones]
+    sl_agente = [r for r in sl_cosecha_loop if r.get("phone") in agente_phones]
     # USUARIOS CONTACTADOS DE VERDAD: teléfonos ÚNICOS con al menos un mensaje ENTREGADO.
     # No son "enviados": un mensaje que rebota (no entregable, bloqueado, freq cap) no contactó
     # a nadie, y contarlo infla la base de todo el funnel. Ventanas acumuladas por fecha de envío.
@@ -404,7 +410,7 @@ def build_country(pais):
               "wtd": (_hoy_l - datetime.timedelta(days=_hoy_l.weekday())).isoformat(),
               "ytd": _hoy_l.replace(month=1, day=1).isoformat()}
     _cont = {k: set() for k in _desde}
-    for r in sl_cosecha:
+    for r in sl_cosecha_loop:
         m = mbm.get(r.get("message_id") or "")
         if not (m and m.get("status") == "delivered"):
             continue
@@ -473,7 +479,7 @@ def build_country(pais):
                 _dst(c, k, b)[campo] += n
     sl_canal = {"web": [], "ventanas": []}
     for r in sl_cosecha:
-        cn = agg.canal_envio(r.get("campaign"))
+        cn = agg.canal_envio(r.get("campaign"), r.get("template"))
         if not cn: continue
         sl_canal[cn].append(r)
         f = (r.get("attempted_at") or "")[:10]
@@ -520,12 +526,15 @@ def build_country(pais):
     # → TIG → estado REAL del backbone + catálogo de nombres). Reemplaza la tabla `recreation` de Neon, que
     # nunca capturó new_deal_id/state_at_creation (dejaba ambas secciones vacías). Trae viejo + nuevo por UTM.
     recreados=[r for r in RECRE if r.get("pais")==pais]
+    # Respuestas y leads creados del loop (sin ventanas/voz/brokermatch), ver sl_loop arriba.
+    inb_resp_loop = agg.inbound_del_loop(inb_resp, _canal_tel)
+    rec_loop = agg.creados_del_loop(rec, vent_refs, vent_nids)
     return {
         "linea": linea_meta(pais),
-        "embudo": agg.embudo(sl7,mbm,inbound_phones,interesado_phones,recreated_oldnids,qualified_oldnids,dias),
-        "errores": {t: agg.errores_serie(sl_cosecha, mbm, t, n=40) for t in ("dia","semana","mes")},
-        "respuestas": {t: agg.respuestas_serie(inb_resp, t) for t in ("dia","semana","mes")},
-        "cosecha": {t: agg.cosecha_serie(sl_cosecha, mbm, inbound_phones_wide, interesado_phones_wide, interesado_nocreado_phones, t, n=40) for t in ("dia","semana","mes")},
+        "embudo": agg.embudo(sl7_loop,mbm,inbound_phones,interesado_phones,recreated_oldnids,qualified_oldnids,dias),
+        "errores": {t: agg.errores_serie(sl_cosecha_loop, mbm, t, n=40) for t in ("dia","semana","mes")},
+        "respuestas": {t: agg.respuestas_serie(inb_resp_loop, t) for t in ("dia","semana","mes")},
+        "cosecha": {t: agg.cosecha_serie(sl_cosecha_loop, mbm, inbound_phones_wide, interesado_phones_wide, interesado_nocreado_phones, t, n=40) for t in ("dia","semana","mes")},
         "pendientes_crear": pendientes_crear,
         "contactados": contactados,
         "plantillas": plantillas(pais, sl, mbm, interesado_phones, yavendio_phones),
@@ -544,8 +553,8 @@ def build_country(pais):
         "antifunnel": {t: agg.antifunnel_serie(recreados,t) for t in ("dia","semana","mes")},
         "contact_status": agg.contact_dist(cst),
         "por_hora": por_hora(pais, inbound_phones),
-        "cohorte_origen": agg.cohorte_origen_serie(sl, inbound_phones, interesado_phones),
-        "diario": agg.diario_serie(sl_cosecha, inb_resp, rec),
+        "cohorte_origen": agg.cohorte_origen_serie(sl_loop, inbound_phones, interesado_phones),
+        "diario": agg.diario_serie(sl_cosecha_loop, inb_resp_loop, rec_loop),
         "_debug": {"send_log":len(sl), "sl7":len(sl7), "recreation":len(rec), "contact_status":len(cst),
                    "mart_msgids":len(mbm), "infobip":len(ibm), "neon_delivery": len(nbm), "inbound":len(inb)},
     }

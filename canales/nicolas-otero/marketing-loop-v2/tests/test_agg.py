@@ -184,3 +184,35 @@ def test_canal_por_telefono_gana_el_ultimo_envio_y_excluye_brokermatch():
           {"phone": "2", "attempted_at": "2026-09-03T10:00", "campaign": "brokermatch"},
           {"phone": "3", "attempted_at": "2026-09-03T10:00", "campaign": None}]
     assert canal_por_telefono(sl) == {"1": "ventanas", "3": "web"}
+
+
+# --- Secciones del loop sin ventanas/voz/brokermatch (28-sep) ---------------------
+from agg import solo_loop, inbound_del_loop, creados_del_loop, canal_por_telefono
+
+
+def test_canal_envio_ventanas_viejo_sin_campaign_se_reconoce_por_plantilla():
+    assert canal_envio(None, "ventanas_tibio_co_v1") == "ventanas"
+    assert canal_envio(None, "reactivacion_sellers_co_v2_oferta_jul26") == "web"
+    assert canal_envio(None) == "web"
+
+
+def test_solo_loop_deja_afuera_ventanas_y_brokermatch():
+    sl = [{"campaign": "reactivacion"}, {"campaign": None, "template": "reactivacion_x"},
+          {"campaign": "ventanas"}, {"campaign": "hubspot"}, {"campaign": "brokermatch"},
+          {"campaign": None, "template": "ventanas_tibio_co_v1"}]
+    assert len(solo_loop(sl)) == 2
+
+
+def test_respuestas_del_loop_por_ultimo_envio_del_telefono():
+    sl = [{"phone": "1", "campaign": "reactivacion", "attempted_at": "2026-09-28 07:00"},
+          {"phone": "2", "campaign": "ventanas", "attempted_at": "2026-09-28 08:00"},
+          {"phone": "3", "campaign": "brokermatch", "attempted_at": "2026-09-28 08:00"}]
+    inb = [{"phone": p, "ts": "2026-09-28"} for p in ("1", "2", "3", "9")]
+    assert [i["phone"] for i in inbound_del_loop(inb, canal_por_telefono(sl))] == ["1"]
+
+
+def test_creados_del_loop_sin_ventanas_ni_voz():
+    rec = [{"old_nid": "111", "new_nid": "900"}, {"old_nid": "VE:3001", "new_nid": "901"},
+           {"old_nid": "222", "new_nid": "902"}]
+    out = creados_del_loop(rec, ventanas_refs={"VE:3001"}, ventanas_nids={"902"})
+    assert [r["old_nid"] for r in out] == ["111"]
