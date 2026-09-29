@@ -139,7 +139,7 @@
     CO y MX son esquemas distintos (CO en español, MX en inglés): no basta con cambiar el dataset.
   </p>
   <p class="lead">Cada fila trae su <strong>antifunnel</strong>: los que llegaron a la etapa anterior y no pasaron a esta, abiertos por su <strong>estado actual MM | INMO</strong> (concatenado, id y nombre). Así se ve en qué producto quedó cada lead y dónde hay oportunidad.</p>
-  <p class="meta-line">Documento en construcción · se agrega una fila por iteración · actualizado 2026-09-25 · sin conexión a BigQuery</p>
+  <p class="meta-line">Documento en construcción · se agrega una fila por iteración · actualizado 2026-09-28 · sin conexión a BigQuery</p>
 
   <table class="defs">
     <colgroup><col class="c-def"><col class="c-pais"><col class="c-pais"></colgroup>
@@ -790,6 +790,329 @@ ORDER BY leads DESC</code></pre></details>
         </td>
       </tr>
 
+      <!-- ───────────── CALIFICADOS ACTUALES ───────────── -->
+      <tr id="calificados-actuales">
+        <td class="def">
+          <div class="def-name">5 · Calificados actuales</div>
+          <div class="def-q">De los registros (fila 2), cuántos están <strong>hoy</strong> en un estado de calificado del backbone. Es una foto: los que después avanzaron, fueron descartados o marcados duplicados ya no cuentan. Mismos estados que la fila 4.</div>
+          <span class="badge badge-prop">Propuesta</span>
+        </td>
+
+        <td data-pais="Colombia">
+          <span class="lbl">Tabla</span>
+          Estado actual en <code>co_rds_staging.habi_db_tabla_negocio_inmueble</code>: <code>last_estado_id</code> (MM) y <code>last_state_id_real_estate</code> (INMO).
+
+          <span class="lbl">Query</span>
+<pre><code>WITH
+-- registros de las 6 fuentes con su estado actual MM e INMO
+registros AS (
+  SELECT n.id, DATE_TRUNC(DATE(n.fecha_creacion), MONTH) AS mes,
+         n.last_estado_id AS mm, n.last_state_id_real_estate AS inmo
+  FROM `sellers-main-prod.co_rds_staging.habi_db_tabla_negocio_inmueble` n
+  JOIN `sellers-main-prod.co_rds_staging.habi_db_tabla_inmueble_v2` p
+    ON p.id = n.inmueble_id
+  WHERE p.fuente_id IN (3, 7, 20, 35, 39, 47)
+    AND DATE(n.fecha_creacion) &gt;= '2026-06-01'   -- inicio de la cohorte
+),
+-- banderas de calificado actual (los duplicados no cuentan en INMO)
+flags AS (
+  SELECT id, mes,
+    IFNULL(mm, -1) IN (20, 63)                   AS cal_mm,
+    IFNULL(inmo, -1) = 20 AND IFNULL(mm, -1) != 1 AS cal_inmo
+  FROM registros
+)
+SELECT
+  mes,
+  COUNT(DISTINCT id) AS registros,
+  COUNT(DISTINCT IF(cal_mm, id, NULL))             AS cal_actual_mm,
+  COUNT(DISTINCT IF(cal_inmo, id, NULL))           AS cal_actual_inmo,
+  COUNT(DISTINCT IF(cal_mm OR cal_inmo, id, NULL)) AS cal_actual_cualquiera
+FROM flags
+GROUP BY mes</code></pre>
+
+          <span class="lbl">Cómo se mide</span>
+          <ul>
+            <li>Calificado actual <strong>MM</strong> = <code>last_estado_id IN (20, 63)</code>.</li>
+            <li>Calificado actual <strong>INMO</strong> = <code>last_state_id_real_estate = 20</code> <strong>y</strong> <code>last_estado_id != 1</code>. Al marcar duplicado, el backbone cambia el estado MM a 1 pero deja el INMO en 20; sin esta condición los duplicados seguirían contando en INMO.</li>
+            <li>MM e INMO no se suman; "cualquiera" es la unión.</li>
+            <li>Se mide con el estado, no con <code>product_qualified</code>. Cuando no coinciden es un error y va al bloque de errores de abajo.</li>
+          </ul>
+
+          <span class="lbl">Referencia</span>
+          <table class="small">
+            <thead><tr><th>Cohorte</th><th>MM</th><th>INMO</th><th>Cualquiera</th></tr></thead>
+            <tbody>
+              <tr><td>jun-26</td><td>4.307 (25,2%)</td><td>5.264 (30,8%)</td><td>5.668 (33,2%)</td></tr>
+              <tr><td>jul-26</td><td>5.133 (25,3%)</td><td>6.235 (30,7%)</td><td>6.791 (33,5%)</td></tr>
+              <tr><td>ago-26</td><td>5.372 (25,3%)</td><td>6.718 (31,7%)</td><td>7.350 (34,6%)</td></tr>
+            </tbody>
+          </table>
+          <div class="ref-num">% sobre registros · corrido el 28-sep</div>
+
+          <div class="anti">
+            <span class="lbl">Antifunnel</span>
+            <p><strong>Ever calificados (fila 4) que hoy ya no están calificados</strong>, por su estado actual MM | INMO. Son los que se perdieron después de calificar.</p>
+            <table class="small">
+              <thead><tr><th>ago-26 · MM | INMO</th><th>Leads</th></tr></thead>
+              <tbody>
+                <tr><td><code>1 duplicado | 20 no_gestionado</code></td><td>197</td></tr>
+                <tr><td><code>3 revisar_direccion | 10 fuera_de_la_zona</code></td><td>29</td></tr>
+                <tr><td><code>1 duplicado | 1 duplicado</code></td><td>19</td></tr>
+                <tr><td><strong>Total</strong></td><td><strong>282</strong></td></tr>
+              </tbody>
+            </table>
+            <p>El 70% son duplicados: calificaron y después se marcaron duplicados (el INMO sigue en 20).</p>
+            <details><summary>Ver query</summary><pre><code>WITH
+cat AS (
+  SELECT id, estado FROM `sellers-main-prod.co_rds_staging.habi_db_tabla_estados`
+),
+-- registros de la cohorte con su estado actual MM e INMO
+registros AS (
+  SELECT n.id, n.last_estado_id AS mm, n.last_state_id_real_estate AS inmo
+  FROM `sellers-main-prod.co_rds_staging.habi_db_tabla_negocio_inmueble` n
+  JOIN `sellers-main-prod.co_rds_staging.habi_db_tabla_inmueble_v2` p
+    ON p.id = n.inmueble_id
+  WHERE p.fuente_id IN (3, 7, 20, 35, 39, 47)
+    AND DATE(n.fecha_creacion) BETWEEN '2026-08-01' AND '2026-08-31'   -- cohorte
+),
+-- negocios que alguna vez calificaron en MM o en INMO (fila 4)
+ever AS (
+  SELECT negocio_id AS id
+  FROM `sellers-main-prod.co_rds_staging.habi_db_tabla_historico_estado_v2`
+  WHERE estado_id IN (20, 63) AND fecha_actualizacion &gt;= '2026-08-01'
+  UNION DISTINCT
+  SELECT deal_id
+  FROM `sellers-main-prod.co_rds_staging.habi_db_history_state_real_estate`
+  WHERE state_id = 20 AND date_create &gt;= '2026-08-01'
+)
+SELECT
+  CONCAT(IFNULL(CAST(r.mm AS STRING), '-'), ' ', IFNULL(cm.estado, ''), ' | ',
+         IFNULL(CAST(r.inmo AS STRING), '-'), ' ', IFNULL(ci.estado, '')) AS estado_mm_inmo,
+  COUNT(DISTINCT r.id) AS leads
+FROM registros r
+JOIN ever e ON e.id = r.id
+LEFT JOIN cat cm ON cm.id = r.mm
+LEFT JOIN cat ci ON ci.id = r.inmo
+WHERE NOT (IFNULL(r.mm, -1) IN (20, 63))                               -- hoy no es calificado MM
+  AND NOT (IFNULL(r.inmo, -1) = 20 AND IFNULL(r.mm, -1) != 1)          -- ni calificado INMO
+GROUP BY estado_mm_inmo
+ORDER BY leads DESC</code></pre></details>
+          </div>
+
+          <div class="anti">
+            <span class="lbl">Errores a monitorear</span>
+            <p>Casos en que el estado del backbone y <code>product_qualified</code> no se hablan, o en que un calificado queda mal marcado. Cohortes abr–sep 2026 (<code>product_qualified</code> existe en CO desde el 2026-03-12) · corrido el 28-sep.</p>
+            <table class="small">
+              <thead><tr><th>#</th><th>Error</th><th>Leads</th></tr></thead>
+              <tbody>
+                <tr><td>E1</td><td><strong>Buybox</strong>: calificado MM (20/63) que no es calificado INMO</td><td><strong>4.453</strong></td></tr>
+                <tr><td></td><td>· INMO en 73 sin precio automático</td><td>1.859</td></tr>
+                <tr><td></td><td>· INMO en 72 descartado por fuente <em>(confirmar si es regla de INMO)</em></td><td>1.567</td></tr>
+                <tr><td></td><td>· INMO en 33 precio elevado <em>(confirmar si es regla)</em></td><td>517</td></tr>
+                <tr><td></td><td>· INMO en 10 fuera de zona <em>(confirmar si es regla)</em></td><td>510</td></tr>
+                <tr><td>E2</td><td><code>product_qualified</code> cuenta el 36 como MM</td><td>0</td></tr>
+                <tr><td>E3</td><td><code>product_qualified</code> no cuenta el 63 como MM</td><td>0</td></tr>
+                <tr><td>E4</td><td>Duplicado (MM = 1) que sigue con <code>product_qualified</code> calificado</td><td><strong>1.800</strong></td></tr>
+                <tr><td></td><td>· duplicado con estado INMO todavía en 20</td><td>1.745</td></tr>
+                <tr><td>E5</td><td><code>product_qualified</code> dice INMO y el estado INMO no es 20 (casi todos en 73)</td><td><strong>1.095</strong></td></tr>
+                <tr><td>E6</td><td>Estado INMO en 20 y <code>product_qualified</code> no dice INMO (<code>transient</code>)</td><td>202</td></tr>
+                <tr><td>E7</td><td><code>product_qualified</code> dice MM y el estado MM no es calificado (sin contar 1 y 36)</td><td>1</td></tr>
+              </tbody>
+            </table>
+            <details><summary>Ver query</summary><pre><code>WITH
+-- registros de las 6 fuentes: estado MM, estado INMO y product_qualified
+base AS (
+  SELECT n.id, n.last_estado_id AS mm, n.last_state_id_real_estate AS inmo,
+         IFNULL(n.product_qualified, '') AS pq
+  FROM `sellers-main-prod.co_rds_staging.habi_db_tabla_negocio_inmueble` n
+  JOIN `sellers-main-prod.co_rds_staging.habi_db_tabla_inmueble_v2` p
+    ON p.id = n.inmueble_id
+  WHERE p.fuente_id IN (3, 7, 20, 35, 39, 47)
+    AND DATE(n.fecha_creacion) &gt;= '2026-04-01'   -- product_qualified existe desde mar-26
+),
+-- banderas por estado y por product_qualified
+f AS (
+  SELECT *,
+    IFNULL(mm, -1) IN (20, 63)                       AS est_mm,
+    IFNULL(inmo, -1) = 20                            AS est_inmo,
+    pq IN ('ibuyer', 'ibuyer_and_real_estate')       AS pq_mm,
+    pq IN ('real_estate', 'ibuyer_and_real_estate')  AS pq_inmo
+  FROM base
+)
+SELECT
+  COUNTIF(est_mm AND NOT est_inmo)                        AS e1_buybox_mm_sin_inmo,
+  COUNTIF(est_mm AND IFNULL(inmo, -1) = 73)               AS e1a_inmo_73,
+  COUNTIF(est_mm AND IFNULL(inmo, -1) = 72)               AS e1b_inmo_72,
+  COUNTIF(est_mm AND IFNULL(inmo, -1) = 33)               AS e1c_inmo_33,
+  COUNTIF(est_mm AND IFNULL(inmo, -1) = 10)               AS e1d_inmo_10,
+  COUNTIF(mm = 36 AND pq_mm)                              AS e2_36_como_mm,
+  COUNTIF(mm = 63 AND NOT pq_mm)                          AS e3_63_no_mm,
+  COUNTIF(mm = 1 AND (pq_mm OR pq_inmo))                  AS e4_duplicado_con_pq,
+  COUNTIF(mm = 1 AND est_inmo)                            AS e4b_duplicado_inmo_20,
+  COUNTIF(pq_inmo AND NOT est_inmo AND IFNULL(mm, -1) != 1) AS e5_pq_inmo_sin_estado,
+  COUNTIF(est_inmo AND NOT pq_inmo)                       AS e6_estado_inmo_sin_pq,
+  COUNTIF(pq_mm AND IFNULL(mm, -1) NOT IN (20, 63, 1, 36)) AS e7_pq_mm_sin_estado
+FROM f</code></pre></details>
+          </div>
+        </td>
+
+        <td data-pais="México">
+          <span class="lbl">Tabla</span>
+          Estado actual en <code>mx_rds_staging.habi_db_property_deal</code>: <code>last_state_id</code> (MM) y <code>last_state_id_real_estate</code> (INMO).
+
+          <span class="lbl">Query</span>
+<pre><code>WITH
+-- deals de las 6 fuentes con su estado actual MM e INMO
+registros AS (
+  SELECT d.id, DATE_TRUNC(DATE(d.date_create), MONTH) AS mes,
+         d.last_state_id AS mm, d.last_state_id_real_estate AS inmo
+  FROM `sellers-main-prod.mx_rds_staging.habi_db_property_deal` d
+  JOIN `sellers-main-prod.mx_rds_staging.habi_db_property` p
+    ON p.id = d.property_id
+  WHERE p.source_id IN (3, 7, 35, 39, 46, 47)
+    AND DATE(d.date_create) &gt;= '2026-06-01'      -- inicio de la cohorte
+),
+-- banderas de calificado actual (los duplicados no cuentan en INMO)
+flags AS (
+  SELECT id, mes,
+    IFNULL(mm, -1) IN (20, 63)                   AS cal_mm,
+    IFNULL(inmo, -1) = 20 AND IFNULL(mm, -1) != 1 AS cal_inmo
+  FROM registros
+)
+SELECT
+  mes,
+  COUNT(DISTINCT id) AS registros,
+  COUNT(DISTINCT IF(cal_mm, id, NULL))             AS cal_actual_mm,
+  COUNT(DISTINCT IF(cal_inmo, id, NULL))           AS cal_actual_inmo,
+  COUNT(DISTINCT IF(cal_mm OR cal_inmo, id, NULL)) AS cal_actual_cualquiera
+FROM flags
+GROUP BY mes</code></pre>
+
+          <span class="lbl">Cómo se mide</span>
+          <ul>
+            <li>Mismas reglas que CO: MM = <code>last_state_id IN (20, 63)</code>; INMO = <code>last_state_id_real_estate = 20</code> y <code>last_state_id != 1</code>.</li>
+            <li>⚠ En MX <code>product_qualified</code> trata el 63 y el 36 al revés que CO (errores E2 y E3). Mantenemos 20 y 63 como en la fila 4 y lo monitoreamos como error.</li>
+          </ul>
+
+          <span class="lbl">Referencia</span>
+          <table class="small">
+            <thead><tr><th>Cohorte</th><th>MM</th><th>INMO</th><th>Cualquiera</th></tr></thead>
+            <tbody>
+              <tr><td>jun-26</td><td>3.899 (27,6%)</td><td>5.738 (40,6%)</td><td>6.336 (44,8%)</td></tr>
+              <tr><td>jul-26</td><td>4.078 (24,9%)</td><td>6.297 (38,4%)</td><td>7.002 (42,7%)</td></tr>
+              <tr><td>ago-26</td><td>4.187 (25,7%)</td><td>6.004 (36,8%)</td><td>6.709 (41,2%)</td></tr>
+            </tbody>
+          </table>
+          <div class="ref-num">% sobre registros · corrido el 28-sep</div>
+
+          <div class="anti">
+            <span class="lbl">Antifunnel</span>
+            <p><strong>Ever calificados (fila 4) que hoy ya no están calificados</strong>, por su estado actual MM | INMO.</p>
+            <table class="small">
+              <thead><tr><th>ago-26 · MM | INMO</th><th>Leads</th></tr></thead>
+              <tbody>
+                <tr><td><code>1 duplicado | 20 no_gestionado</code></td><td>98</td></tr>
+                <tr><td><code>70 descartado_gravamen | 70</code></td><td>36</td></tr>
+                <tr><td><code>1 duplicado | 73 sin_precio_automatico</code></td><td>23</td></tr>
+                <tr><td><code>33 descartado_por_precio_elevado | 33</code></td><td>15</td></tr>
+                <tr><td><strong>Total</strong></td><td><strong>216</strong></td></tr>
+              </tbody>
+            </table>
+            <details><summary>Ver query</summary><pre><code>WITH
+cat AS (
+  SELECT id, state AS estado FROM `sellers-main-prod.mx_rds_staging.habi_db_state`
+),
+-- deals de la cohorte con su estado actual MM e INMO
+registros AS (
+  SELECT d.id, d.last_state_id AS mm, d.last_state_id_real_estate AS inmo
+  FROM `sellers-main-prod.mx_rds_staging.habi_db_property_deal` d
+  JOIN `sellers-main-prod.mx_rds_staging.habi_db_property` p
+    ON p.id = d.property_id
+  WHERE p.source_id IN (3, 7, 35, 39, 46, 47)
+    AND DATE(d.date_create) BETWEEN '2026-08-01' AND '2026-08-31'      -- cohorte
+),
+-- deals que alguna vez calificaron en MM o en INMO (fila 4)
+ever AS (
+  SELECT deal_id AS id
+  FROM `sellers-main-prod.mx_rds_staging.habi_db_history_state`
+  WHERE state_id IN (20, 63) AND date_create &gt;= '2026-08-01'
+  UNION DISTINCT
+  SELECT deal_id
+  FROM `sellers-main-prod.mx_rds_staging.habi_db_history_state_real_estate`
+  WHERE state_id = 20 AND date_create &gt;= '2026-08-01'
+)
+SELECT
+  CONCAT(IFNULL(CAST(r.mm AS STRING), '-'), ' ', IFNULL(cm.estado, ''), ' | ',
+         IFNULL(CAST(r.inmo AS STRING), '-'), ' ', IFNULL(ci.estado, '')) AS estado_mm_inmo,
+  COUNT(DISTINCT r.id) AS leads
+FROM registros r
+JOIN ever e ON e.id = r.id
+LEFT JOIN cat cm ON cm.id = r.mm
+LEFT JOIN cat ci ON ci.id = r.inmo
+WHERE NOT (IFNULL(r.mm, -1) IN (20, 63))                               -- hoy no es calificado MM
+  AND NOT (IFNULL(r.inmo, -1) = 20 AND IFNULL(r.mm, -1) != 1)          -- ni calificado INMO
+GROUP BY estado_mm_inmo
+ORDER BY leads DESC</code></pre></details>
+          </div>
+
+          <div class="anti">
+            <span class="lbl">Errores a monitorear</span>
+            <p>Mismos errores que CO. Cohortes abr–sep 2026 · corrido el 28-sep.</p>
+            <table class="small">
+              <thead><tr><th>#</th><th>Error</th><th>Leads</th></tr></thead>
+              <tbody>
+                <tr><td>E1</td><td><strong>Buybox</strong>: calificado MM (20/63) que no es calificado INMO</td><td><strong>3.947</strong></td></tr>
+                <tr><td></td><td>· INMO en 73 sin precio automático</td><td>2.742</td></tr>
+                <tr><td></td><td>· INMO en 72 descartado por fuente <em>(confirmar si es regla de INMO)</em></td><td>787</td></tr>
+                <tr><td></td><td>· INMO en 33 precio elevado <em>(confirmar si es regla)</em></td><td>323</td></tr>
+                <tr><td></td><td>· INMO en 10 fuera de zona <em>(confirmar si es regla)</em></td><td>85</td></tr>
+                <tr><td>E2</td><td><code>product_qualified</code> <strong>cuenta el 36 como MM</strong> y no debería</td><td><strong>179</strong></td></tr>
+                <tr><td>E3</td><td><code>product_qualified</code> <strong>no cuenta el 63 como MM</strong> y debería</td><td><strong>1.307</strong></td></tr>
+                <tr><td>E4</td><td>Duplicado (MM = 1) que sigue con <code>product_qualified</code> calificado</td><td><strong>1.495</strong></td></tr>
+                <tr><td></td><td>· duplicado con estado INMO todavía en 20</td><td>1.276</td></tr>
+                <tr><td>E5</td><td><code>product_qualified</code> dice INMO y el estado INMO no es 20</td><td>1</td></tr>
+                <tr><td>E6</td><td>Estado INMO en 20 y <code>product_qualified</code> no dice INMO</td><td>1</td></tr>
+                <tr><td>E7</td><td><code>product_qualified</code> dice MM y el estado MM no es calificado (68, 56, 4)</td><td>34</td></tr>
+              </tbody>
+            </table>
+            <details><summary>Ver query</summary><pre><code>WITH
+-- deals de las 6 fuentes: estado MM, estado INMO y product_qualified
+base AS (
+  SELECT d.id, d.last_state_id AS mm, d.last_state_id_real_estate AS inmo,
+         IFNULL(d.product_qualified, '') AS pq
+  FROM `sellers-main-prod.mx_rds_staging.habi_db_property_deal` d
+  JOIN `sellers-main-prod.mx_rds_staging.habi_db_property` p
+    ON p.id = d.property_id
+  WHERE p.source_id IN (3, 7, 35, 39, 46, 47)
+    AND DATE(d.date_create) &gt;= '2026-04-01'      -- mismo corte que CO
+),
+-- banderas por estado y por product_qualified
+f AS (
+  SELECT *,
+    IFNULL(mm, -1) IN (20, 63)                       AS est_mm,
+    IFNULL(inmo, -1) = 20                            AS est_inmo,
+    pq IN ('ibuyer', 'ibuyer_and_real_estate')       AS pq_mm,
+    pq IN ('real_estate', 'ibuyer_and_real_estate')  AS pq_inmo
+  FROM base
+)
+SELECT
+  COUNTIF(est_mm AND NOT est_inmo)                        AS e1_buybox_mm_sin_inmo,
+  COUNTIF(est_mm AND IFNULL(inmo, -1) = 73)               AS e1a_inmo_73,
+  COUNTIF(est_mm AND IFNULL(inmo, -1) = 72)               AS e1b_inmo_72,
+  COUNTIF(est_mm AND IFNULL(inmo, -1) = 33)               AS e1c_inmo_33,
+  COUNTIF(est_mm AND IFNULL(inmo, -1) = 10)               AS e1d_inmo_10,
+  COUNTIF(mm = 36 AND pq_mm)                              AS e2_36_como_mm,
+  COUNTIF(mm = 63 AND NOT pq_mm)                          AS e3_63_no_mm,
+  COUNTIF(mm = 1 AND (pq_mm OR pq_inmo))                  AS e4_duplicado_con_pq,
+  COUNTIF(mm = 1 AND est_inmo)                            AS e4b_duplicado_inmo_20,
+  COUNTIF(pq_inmo AND NOT est_inmo AND IFNULL(mm, -1) != 1) AS e5_pq_inmo_sin_estado,
+  COUNTIF(est_inmo AND NOT pq_inmo)                       AS e6_estado_inmo_sin_pq,
+  COUNTIF(pq_mm AND IFNULL(mm, -1) NOT IN (20, 63, 1, 36)) AS e7_pq_mm_sin_estado
+FROM f</code></pre></details>
+          </div>
+        </td>
+      </tr>
+
     </tbody>
   </table>
 
@@ -805,7 +1128,7 @@ ORDER BY leads DESC</code></pre></details>
   <p>Para cruzar con tablas de funnel o HubSpot, que viven a nivel <code>nid</code>, se usa <code>nid</code> como llave de join. El conteo de registros se hace por <code>id</code>.</p>
 
   <div class="callout">
-    <strong>Próximas filas:</strong> calificado actual (MM / INMO), asignados. Cada una se
+    <strong>Próximas filas:</strong> asignados. Cada una se
     agrega con la misma estructura (tabla · query · cómo se mide) y queda como <em>propuesta</em> hasta
     que se valide con el equipo.
   </div>
