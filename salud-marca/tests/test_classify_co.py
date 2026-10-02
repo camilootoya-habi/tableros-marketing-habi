@@ -34,11 +34,15 @@ def test_el_clasificador_reproduce_las_4_preguntas_de_ads_manager():
     mapeo, _ = CC.clasificar(filas)
     por_pregunta = {mapeo[r["experiment_id"]]: r for r in filas if r["experiment_id"] in mapeo}
     assert set(por_pregunta) == set(VERDAD_JUL_2026), "las 4 preguntas quedan mapeadas"
+    # ±0.2 pts y no al decimal: Meta sigue sumando respuestas tardías después del cierre. El
+    # refresco del 2-oct trajo 23 controles más en favorability (937→960) y su control pasó de
+    # 40.7 a 40.6. La tolerancia es mucho menor que la distancia entre preguntas, así que una
+    # etiqueta cruzada sigue fallando aquí.
     for q, (control, expuesto, lift) in VERDAD_JUL_2026.items():
         r = por_pregunta[q]
-        assert round(100 * r["control"], 1) == control, q
-        assert round(100 * r["exposed"], 1) == expuesto, q
-        assert round(100 * r["lift"], 1) == lift, q
+        assert abs(100 * r["control"] - control) <= 0.2, q
+        assert abs(100 * r["exposed"] - expuesto) <= 0.2, q
+        assert abs(100 * r["lift"] - lift) <= 0.2, q
 
 
 def test_toma_e_intent_no_se_separan_por_benchmark_sino_por_tasa():
