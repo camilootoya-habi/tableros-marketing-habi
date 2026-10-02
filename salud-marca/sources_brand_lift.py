@@ -33,6 +33,18 @@ def _token():
     return os.environ.get("META_SYSTEM_USER_TOKEN") or os.environ.get("META_PCOM_TOKEN") or ""
 
 
+def _tokens():
+    """[(nombre, token)] en orden de preferencia, sin vacíos ni repetidos. Desde el 25-sep
+    Meta responde "API access blocked." al system user en las dos cuentas, así que `fetch()`
+    prueba el siguiente token ante un rechazo que no sea transitorio."""
+    out = []
+    for name in ("META_SYSTEM_USER_TOKEN", "META_PCOM_TOKEN"):
+        tok = os.environ.get(name) or ""
+        if tok and tok not in (t for _, t in out):
+            out.append((name, tok))
+    return out
+
+
 # ── El mes de un estudio ───────────────────────────────────────────────────────
 # Los estudios recurrentes arrancan el día 29 del mes que cubren. Febrero no tiene 29, así que
 # el estudio "Feb-Mar" arranca el 1 de MARZO: leer el mes de `start_time` mandaba dos estudios
@@ -136,7 +148,7 @@ def merge_rows(cached, fresh):
 
 
 def _get(path, **params):
-    params["access_token"] = _token()
+    params.setdefault("access_token", _token())
     url = f"https://graph.facebook.com/{V}/{path.lstrip('/')}?{urlencode(params)}"
     try:
         with urlopen(url, timeout=120) as r:
@@ -154,14 +166,25 @@ def fetch(country):
     """Una llamada, un país, sin paginar. `limit=10` cubre el mes en curso y los anteriores.
     Devuelve `(ok, rows)`: `ok=False` ante cualquier error transitorio, con `rows=[]` — el
     llamador es quien decide cómo servir el caché existente cuando la API falla (nunca aquí:
-    este módulo no vacía nada, solo informa honestamente si la llamada funcionó)."""
-    ok, pl = _get(f"{ACCOUNTS[country]}/ad_studies", fields=FIELDS, limit=10)
-    if not ok:
+    este módulo no vacía nada, solo informa honestamente si la llamada funcionó).
+
+    Si un token es rechazado (bloqueado, sin permisos) se prueba el siguiente de `_tokens()`.
+    Un error transitorio (rate limit, timeout) NO pasa al siguiente: la cuota es por cuenta,
+    así que otro token gastaría la misma cuota que se acaba de agotar."""
+    tokens = _tokens() or [("sin_token", "")]
+    for name, tok in tokens:
+        ok, pl = _get(f"{ACCOUNTS[country]}/ad_studies", fields=FIELDS, limit=10,
+                      access_token=tok)
+        if ok:
+            print(f"brand_lift {country}: OK con {name}")
+            return True, parse_results(pl.get("data") or [], country)
         err = pl.get("error") or {}
-        print(f"WARN brand_lift {country}: {err.get('message')} "
-              f"(transient={err.get('is_transient')}) — se conserva el caché")
-        return False, []
-    return True, parse_results(pl.get("data") or [], country)
+        print(f"WARN brand_lift {country} [{name}]: {err.get('message')} "
+              f"(transient={err.get('is_transient')})")
+        if err.get("is_transient"):
+            break
+    print(f"WARN brand_lift {country}: sin refresco — se conserva el caché")
+    return False, []
 
 
 def series(rows):

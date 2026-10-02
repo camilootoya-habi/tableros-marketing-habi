@@ -60,6 +60,38 @@ def test_fetch_fallo_devuelve_ok_false_y_filas_vacias(monkeypatch):
     assert rows == []
 
 
+def test_fetch_token_bloqueado_prueba_el_siguiente(monkeypatch):
+    monkeypatch.setenv("META_SYSTEM_USER_TOKEN", "bloqueado")
+    monkeypatch.setenv("META_PCOM_TOKEN", "pcom")
+    usados = []
+
+    def fake_get(path, **params):
+        usados.append(params["access_token"])
+        if params["access_token"] == "bloqueado":
+            return False, {"error": {"message": "API access blocked."}}
+        return True, {"data": [STUDY]}
+
+    monkeypatch.setattr(BL, "_get", fake_get)
+    ok, rows = BL.fetch("MX")
+    assert ok is True and len(rows) == 1
+    assert usados == ["bloqueado", "pcom"]
+
+
+def test_fetch_error_transitorio_no_gasta_otro_token(monkeypatch):
+    monkeypatch.setenv("META_SYSTEM_USER_TOKEN", "a")
+    monkeypatch.setenv("META_PCOM_TOKEN", "b")
+    usados = []
+
+    def fake_get(path, **params):
+        usados.append(params["access_token"])
+        return False, {"error": {"message": "rate limited", "is_transient": True}}
+
+    monkeypatch.setattr(BL, "_get", fake_get)
+    ok, rows = BL.fetch("MX")
+    assert ok is False and rows == []
+    assert usados == ["a"]
+
+
 # --- merge_rows() — Task 5 defecto 2: el caché nunca debe encogerse y un estudio que
 # reaparece en la página se actualiza in place, no se duplica. ---
 
