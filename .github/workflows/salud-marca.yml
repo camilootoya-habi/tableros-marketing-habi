@@ -53,9 +53,11 @@ jobs:
 
       - name: Construir data.json
         env:
-          # build.py toma META_SYSTEM_USER_TOKEN y, si falta, META_PCOM_TOKEN. Si Meta rechaza el
-          # token, Brand Lift sale "stale" desde el caché y el resto se actualiza igual.
-          META_SYSTEM_USER_TOKEN: ${{ secrets.META_ACCESS_TOKEN }}
+          # Token del system user "AgenteCreativo" (5-oct-2026): Brand Lift + seguidores FB/IG.
+          # Reemplaza a META_ACCESS_TOKEN, que Meta bloquea desde el 25-sep. META_PCOM_TOKEN queda
+          # de respaldo (build.py lo prueba si el primero sale bloqueado). Si Meta rechaza los
+          # dos, Brand Lift y seguidores salen "stale" desde el caché y el resto se actualiza igual.
+          META_SYSTEM_USER_TOKEN: ${{ secrets.META_CREATIVO_TOKEN }}
           META_PCOM_TOKEN: ${{ secrets.META_PCOM_TOKEN }}
         run: cd salud-marca && python3 build.py
 
@@ -63,7 +65,9 @@ jobs:
         run: |
           git config user.name  'github-actions[bot]'
           git config user.email 'github-actions[bot]@users.noreply.github.com'
-          git add salud-marca/data.json salud-marca/brand_lift_cache.json
+          # questions.json: build.py mapea solo los estudios nuevos de Brand Lift (auto_map).
+          git add salud-marca/data.json salud-marca/brand_lift_cache.json \
+                  salud-marca/social_cache.json salud-marca/questions.json
           git diff --cached --quiet && echo "sin cambios" && exit 0
           git commit -m "data(salud-marca): refresh $(date -u +%Y-%m-%dT%H:%MZ)"
           for i in 1 2 3 4 5; do

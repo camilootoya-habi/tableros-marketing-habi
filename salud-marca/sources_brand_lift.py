@@ -101,8 +101,31 @@ def parse_results(studies, country):
                     "spend": r.get("spend"),
                     "benchmark_region": r.get("scoreMeanRegion"),
                     "benchmark_vertical": r.get("scoreMeanVertical"),
+                    # Desde el 5-oct: lo que la API ya traía y no se guardaba. Las filas
+                    # anteriores no los tienen hasta que se corra el backfill a mano.
+                    "incremental": r.get("breakthroughs.incremental"),
+                    "cost_per_incremental": r.get("costPerIncrementalBreakthrough"),
+                    "cpi_region": r.get("costPerIncrementalBreakthroughRegion"),
+                    "cpi_vertical": r.get("costPerIncrementalBreakthroughVertical"),
+                    "impressions": r.get("impressions"),
+                    "frequency": r.get("frequency"),
+                    "reached": r.get("population.reached"),
+                    "is_winner": r.get("isWinner.is_winner"),
+                    "top_ads": _top_ads(r),
                 })
     return rows
+
+
+def _top_ads(r):
+    """Los 5 anuncios con más gasto del estudio: [{id, share}], `share` como fracción del gasto.
+    Hoy sus IDs no se pueden leer con el token del tablero (viven en una cuenta que no tiene
+    asignada), así que solo se guardan; el nombre y la miniatura quedan pendientes."""
+    out = []
+    for i in range(1, 6):
+        ad = r.get(f"topNAdsId{i}")
+        if ad:
+            out.append({"id": str(ad), "share": r.get(f"topNAdsSpendPercentage{i}")})
+    return out
 
 
 def _row_key(r):
@@ -187,6 +210,38 @@ def fetch(country):
     return False, []
 
 
+def backfill(country, max_pages=10):
+    """Toda la historia de un país, paginando. SOLO A MANO, nunca desde el cron (ver docstring
+    del módulo): son hasta `max_pages` llamadas contra una cuenta de producción. Sirve para
+    llenar en las filas viejas los campos que se empezaron a guardar después.
+    Uso: python3 -c "import sources_brand_lift as BL; BL.backfill_to_cache()"."""
+    rows, after = [], None
+    for _ in range(max_pages):
+        params = {"fields": FIELDS, "limit": 25}
+        if after:
+            params["after"] = after
+        ok, pl = _get(f"{ACCOUNTS[country]}/ad_studies", **params)
+        if not ok:
+            raise RuntimeError(f"backfill {country}: {(pl.get('error') or {}).get('message')}")
+        rows += parse_results(pl.get("data") or [], country)
+        after = ((pl.get("paging") or {}).get("cursors") or {}).get("after")
+        if not (pl.get("paging") or {}).get("next"):
+            break
+    return rows
+
+
+def backfill_to_cache():
+    """Funde el backfill de los dos países sobre el caché. No toca `last_refresh`: no es un
+    refresco del cron. Como `merge_rows` reemplaza por (país, mes, pregunta, experiment_id),
+    la fila vieja queda sustituida por la versión completa."""
+    cached = load_cache()
+    for c in ACCOUNTS:
+        fresh = backfill(c)
+        print(f"backfill {c}: {len(fresh)} filas")
+        cached = merge_rows(cached, fresh)
+    save_cache(cached, load_last_refresh())
+
+
 def series(rows):
     """Una fila por (país, mes, pregunta). El más reciente gana si hay duplicados."""
     acc = {_row_key(r): r for r in rows}
@@ -204,6 +259,38 @@ def load_questions():
         return {}
     raw = json.loads(open(QUESTIONS, encoding="utf-8").read())
     return {k: v for k, v in raw.items() if not k.startswith("_")}
+
+
+def auto_map(rows, country, path=None):
+    """Mapea los estudios NUEVOS con el clasificador del país y los agrega a questions.json.
+
+    Antes era una tarea humana mensual (ver docs/ENTREGA.md §3) y cuando nadie la hacía la serie
+    se cortaba aunque la API ya hubiera traído el mes. "Nuevo" = ningún `experiment_id` del
+    estudio está mapeado todavía: así nunca se reescribe una etiqueta existente ni se reintenta
+    la cuarta pregunta de MX que se dejó sin nombre a propósito. Un estudio que el clasificador
+    no puede resolver queda sin mapear y se informa: igual que antes, no se adivina.
+    → ({experiment_id: pregunta} agregados, [(study_id, motivo)] saltados)"""
+    import classify_co
+    import classify_mx
+    path = path or QUESTIONS
+    actual = json.loads(open(path, encoding="utf-8").read()) if os.path.exists(path) else {}
+    conocidos = {k for k in actual if not k.startswith("_")}
+    por_estudio = {}
+    for r in rows:
+        if r.get("country") == country and r.get("study_id"):
+            por_estudio.setdefault(r["study_id"], []).append(r)
+    nuevos = [r for rs in por_estudio.values()
+              if not any(r["experiment_id"] in conocidos for r in rs) for r in rs]
+    if not nuevos:
+        return {}, []
+    clasificador = classify_co if country == "CO" else classify_mx
+    mapeo, saltados = clasificador.clasificar(nuevos)
+    if mapeo:
+        actual.update(mapeo)
+        with open(path, "w", encoding="utf-8") as f:
+            json.dump(actual, f, ensure_ascii=False, indent=2)
+            f.write("\n")
+    return mapeo, saltados
 
 
 def map_questions(rows, mapping=None):

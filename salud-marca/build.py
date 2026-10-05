@@ -11,6 +11,7 @@ import contract
 import sources_bq as BQ
 import sources_brand_lift as BL
 import sources_pulso as PULSO
+import sources_social as SOCIAL
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 
@@ -77,6 +78,14 @@ def _sin_identificar(country):
             f"a questions.json.")
 
 
+def _auto_map(rows, country, avisar=True):
+    nuevos, saltados = BL.auto_map(rows, country)
+    if nuevos:
+        print(f"  brand_lift {country}: {len(nuevos)} preguntas nuevas mapeadas en questions.json")
+    for sid, motivo in (saltados if avisar else []):
+        print(f"WARN brand_lift {country}: estudio {sid} sin mapear — {motivo}")
+
+
 def collect_brand_lift(country, now):
     """Caché + refresco incremental. El estado (ok/stale/error) depende de si `fetch()` tuvo
     éxito, no de si hubo una excepción: `fetch()` fallando y devolviendo el caché de siempre
@@ -90,6 +99,9 @@ def collect_brand_lift(country, now):
     - Fallo sin caché para ese país: no hay nada que servir → status="error"."""
     all_cache = BL.load_cache()
     country_cache = [r for r in all_cache if r["country"] == country]
+    # Se vuelve a correr sobre lo fusionado si hay refresco: el aviso de lo que no se pudo mapear
+    # sale una sola vez, en la segunda pasada (o aquí si se sirve desde el caché).
+    _auto_map(country_cache, country, avisar=False)
 
     def _desde_cache(status, last_updated):
         series = marca_parciales(BL.publishable(BL.nombrar_sin_identificar(BL.series(BL.map_questions(country_cache)))), now)
@@ -102,6 +114,7 @@ def collect_brand_lift(country, now):
     previo = BL.load_last_refresh().get(country)
     if _refresco_reciente(previo, now):
         print(f"  brand_lift {country}: ya se refrescó hoy ({previo}), se sirve el caché")
+        _auto_map(country_cache, country)
         return _desde_cache("ok", previo)
 
     ok, fresh = BL.fetch(country)
@@ -118,11 +131,42 @@ def collect_brand_lift(country, now):
     refresh_times[country] = now
     BL.save_cache(merged, refresh_times)
 
+    _auto_map(merged, country)
     rows = BL.map_questions([r for r in merged if r["country"] == country])
     series = marca_parciales(BL.publishable(BL.nombrar_sin_identificar(BL.series(rows))), now)
     if not series:
         return contract.metric("not_available", reason=_sin_identificar(country))
     return contract.metric("ok", source="api", series=series, last_updated=now)
+
+
+def collect_seguidores(now):
+    """Seguidores FB + IG por marca. Mismo criterio de estados que Brand Lift: un fallo con
+    caché se sirve `stale` con la fecha del último éxito real, nunca disfrazado de refresco."""
+    cache = SOCIAL.load_cache()
+    try:
+        ok, fresh, errores = SOCIAL.fetch(now[:10])
+    except Exception as e:
+        ok, fresh, errores = False, {}, {"_": f"{type(e).__name__}: {e}"}
+    for k, e in errores.items():
+        print(f"WARN seguidores {k}: {e}")
+    if ok:
+        cache = SOCIAL.merge(cache, fresh)
+        cache["last_refresh"] = now
+        SOCIAL.save_cache(cache["datos"], now)
+
+    out = {}
+    for clave in SOCIAL.MARCAS:
+        serie = SOCIAL.series(cache.get("datos", {}), clave)
+        fallo = (not ok) or clave in errores
+        if not serie:
+            out[clave] = contract.metric(
+                "error", reason=errores.get(clave) or errores.get("_") or "Sin datos de seguidores.")
+        elif fallo:
+            out[clave] = contract.metric("stale", source="cache", series=serie,
+                                         last_updated=cache.get("last_refresh"))
+        else:
+            out[clave] = contract.metric("ok", source="api", series=serie, last_updated=now)
+    return out
 
 
 def _try(fn, *a, source="bq"):
@@ -156,7 +200,15 @@ def collect(now):
     if encuestador_mx["status"] == "ok":
         encuestador_mx["last_updated"] = now
 
+    try:
+        seguidores = collect_seguidores(now)
+    except Exception as e:
+        print(f"WARN collect_seguidores: {e}")
+        seguidores = {c: contract.metric("error", reason=f"{type(e).__name__}: {e}")
+                      for c in SOCIAL.MARCAS}
+
     metrics = {
+        "seguidores": seguidores,
         "brand_lift": {c: _try_brand_lift(c, now) for c in ("MX", "CO")},
         "traffic": {"MX": traffic_mx,
                     "CO": contract.metric("not_available",

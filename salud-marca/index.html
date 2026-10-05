@@ -34,8 +34,45 @@
   html, body { max-width: 100%; }
   body { font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; background: var(--bg); color: var(--text); padding: 24px; transition: background .2s, color .2s; }
 
-  .back-link { display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; background: var(--card); border: 1px solid var(--border); border-radius: 6px; color: var(--text-muted-2); text-decoration: none; font-size: 13px; margin-bottom: 16px; transition: color .15s, border-color .15s; }
+  .back-link { display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; background: var(--card); border: 1px solid var(--border); border-radius: 6px; color: var(--text-muted-2); text-decoration: none; font-size: 13px; transition: color .15s, border-color .15s; }
   .back-link:hover { color: var(--accent); border-color: var(--accent); }
+
+  /* Header fijo con una hoja por marca. Mismo patrón que marketing-sellers: sangra hasta el
+     borde del viewport (el body tiene 24px de padding) para tapar lo que pasa por debajo. */
+  .tabs { position: sticky; top: 0; z-index: 30; display: flex; gap: 10px; align-items: center;
+    min-height: 61px; background: var(--bg); border-bottom: 1px solid var(--border);
+    padding: 12px 24px; margin: -24px -24px 20px; }
+  .tabnav { flex: 1; display: flex; justify-content: center; gap: 7px; flex-wrap: wrap; align-items: center; }
+  @media (max-width: 760px) { .tabs { flex-wrap: wrap; min-height: 0; } }
+  .tab { cursor: pointer; border: 1px solid var(--border); background: var(--card); color: var(--text-muted);
+    border-radius: 9px; padding: 8px 15px; font: inherit; font-size: 13.5px; font-weight: 600; white-space: nowrap;
+    transition: background .12s, color .12s, border-color .12s; }
+  .tab:hover { color: var(--text); border-color: var(--border-strong); }
+  .tab.active { background: var(--accent); color: var(--accent-on); border-color: var(--accent); }
+  .tab:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .tabs .tab, .tabs .back-link { height: 37px; display: inline-flex; align-items: center; }
+  .tab small { font-weight: 500; opacity: .75; margin-left: 5px; font-size: 11.5px; }
+
+  /* Brand Lift ampliado: ficha del estudio y tabla de eficiencia. */
+  .ficha { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin: 0 0 16px; }
+  .ficha > div { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 11px 13px; min-width: 0; }
+  .ficha .k { font-size: 10.5px; text-transform: uppercase; letter-spacing: .5px; color: var(--text-muted-3); font-weight: 700; }
+  .ficha .v { font-size: 19px; font-weight: 700; color: var(--text-title); margin-top: 3px; font-variant-numeric: tabular-nums; }
+  .ficha .d { font-size: 11px; color: var(--text-muted-3); margin-top: 2px; line-height: 1.4; }
+  .sig { font-size: 10.5px; font-weight: 700; border-radius: 4px; padding: 2px 7px; }
+  .sig.si { background: rgba(52, 211, 153, .16); color: #34d399; }
+  .sig.neg { background: rgba(248, 113, 113, .16); color: #f87171; }
+  .sig.no { background: var(--row-border); color: var(--text-muted-2); }
+  body.light .sig.si { color: #047857; } body.light .sig.neg { color: #b91c1c; }
+  .efi-wrap { overflow-x: auto; }
+  .efi { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+  .efi th, .efi td { padding: 7px 9px; border-bottom: 1px solid var(--row-border); text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .efi th { font-size: 11px; font-weight: 600; color: var(--text-muted-3); }
+  .efi th:first-child, .efi td:first-child { text-align: left; }
+  .efi td { color: var(--text-muted); }
+  .efi td .b { display: block; font-size: 10.5px; color: var(--text-muted-3); font-weight: 400; }
+  .efi td.mejor { color: #34d399; font-weight: 700; } .efi td.peor { color: #f87171; font-weight: 700; }
+  body.light .efi td.mejor { color: #047857; } body.light .efi td.peor { color: #b91c1c; }
 
   .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; flex-wrap: wrap; gap: 12px; }
   .header h1 { font-size: 22px; font-weight: 600; color: var(--text-title); }
@@ -167,10 +204,15 @@
 </script>
 </head>
 <body>
-<a href="../" class="back-link">← Volver al hub</a>
+<!-- Header fijo: Hub (izq) · una hoja por marca (centro). Reemplaza al filtro de país: cada marca
+     es su propio país (Tuhabi = México, Habi = Colombia) y Propiedades.com no tiene país propio. -->
+<nav class="tabs">
+  <a href="../" class="back-link">← Volver al hub</a>
+  <div class="tabnav" id="hojas"></div>
+</nav>
 
 <div class="header">
-  <h1>Salud de marca — <span id="paisTitulo">México</span></h1>
+  <h1>Salud de marca — <span id="paisTitulo">Tuhabi</span></h1>
   <span id="cobertura" class="cobertura"></span>
   <button class="theme-btn" id="themeToggle" onclick="toggleTheme()">🌙</button>
 </div>
@@ -256,7 +298,33 @@ const marcasSpot = {
     ctx.restore();
   },
 };
-if (window.Chart) Chart.register(bandasTV, marcasSpot);
+// Intervalo de confianza del lift como bigote vertical sobre cada barra. Sin él, un +2 pts que
+// Meta no distingue de cero se ve igual que un +2 pts real; con él, el lector ve si el intervalo
+// cruza el cero (no concluyente) sin tener que leer el tooltip.
+const bigotes = {
+  id: 'bigotes',
+  afterDatasetsDraw(chart) {
+    const o = (chart.options.plugins || {}).bigotes || {};
+    const lo = o.lo || [], hi = o.hi || [];
+    const x = chart.scales.x, y = chart.scales.y;
+    if (!lo.length || !x || !y) return;
+    const ctx = chart.ctx, tapa = Math.max(3, Math.min(7, x.width / lo.length / 5));
+    ctx.save();
+    ctx.strokeStyle = o.color; ctx.lineWidth = 1.4;
+    lo.forEach((a, i) => {
+      const b = hi[i];
+      if (a == null || b == null) return;
+      const px = x.getPixelForValue(i), ya = y.getPixelForValue(a), yb = y.getPixelForValue(b);
+      ctx.beginPath();
+      ctx.moveTo(px, ya); ctx.lineTo(px, yb);
+      ctx.moveTo(px - tapa, ya); ctx.lineTo(px + tapa, ya);
+      ctx.moveTo(px - tapa, yb); ctx.lineTo(px + tapa, yb);
+      ctx.stroke();
+    });
+    ctx.restore();
+  },
+};
+if (window.Chart) Chart.register(bandasTV, marcasSpot, bigotes);
 let _charts = [];
 function destroyCharts() { _charts.forEach(c => c.destroy()); _charts = []; }
 
@@ -284,7 +352,9 @@ function mkMulti(id, labels, datasets, o = {}) {
     x: { ticks: { color: tick, maxTicksLimit: 8 }, grid: { display: false } },
     // `o.max` fuerza el techo del eje. Se usa para que dos paneles hermanos compartan escala:
     // sin eso cada uno autoescala y dos series de niveles distintos se ven del mismo tamaño.
-    y: { beginAtZero: izq !== 'pts', stacked: false, max: o.max,
+    // `sMin`/`sMax`: lo que no es una serie pero debe caber (los bigotes del intervalo).
+    y: { beginAtZero: o.desdeCero ?? (izq !== 'pts'), stacked: false, max: o.max,
+         suggestedMin: o.sMin, suggestedMax: o.sMax,
          ticks: { color: tick, callback: FMT_EJE[izq] }, grid: { color: grid } },
   };
   if (usaDerecha) {
@@ -315,6 +385,7 @@ function mkMulti(id, labels, datasets, o = {}) {
       plugins: { legend: { display: false },
         bandasTV: { bandas: o.sinBandas ? [] : (CAMPANAS[PAIS] || []) },
         marcasSpot: o.spots || {},
+        bigotes: o.bigotes || {},
         tooltip: { callbacks: { label: ctx => {
         const y = ctx.parsed.y;
         if (y == null) return `${ctx.dataset.label}: sin dato`;
@@ -433,6 +504,15 @@ const recortar = (L, ventana) => {
 const legend = items => `<div class="legend">${items.map(([c, t]) =>
   `<span><i style="background:${c}"></i>${t}</span>`).join('')}</div>`;
 
+// Una hoja por marca, en el header fijo. La clave sigue siendo la de data.json (MX, CO) para no
+// reescribir cada indicador: Tuhabi es la marca de México y Habi la de Colombia. Propiedades.com
+// es una marca más (no un país) y por ahora solo tiene seguidores: no corre Brand Lift ni tiene
+// el resto de las fuentes.
+const HOJAS = {
+  MX: { nombre: 'Tuhabi', pais: 'México', slug: 'tuhabi' },
+  CO: { nombre: 'Habi', pais: 'Colombia', slug: 'habi' },
+  PCOM: { nombre: 'Propiedades.com', pais: 'México', slug: 'propiedades' },
+};
 let DATA = null, PAIS = 'MX', PLAZA = 'Todas', MESES = '24 meses';
 // Ancho del bloque del gráfico intradía, en minutos. 10 por defecto: un spot mueve
 // ~20-25 visitas en sus primeros 15 minutos, que en un bloque de 10 (~70 esperadas, ruido ±8)
@@ -617,6 +697,62 @@ const ordenar = qs => [...qs].sort((a, b) => {
   return (ia < 0 ? 99 : ia) - (ib < 0 ? 99 : ib) || a.localeCompare(b);
 });
 
+// Significancia de un lift, con el intervalo de 95% que entrega Meta (`ci_lower`/`ci_upper`, en
+// las mismas unidades que el lift). Si el intervalo cruza el cero, la pauta pudo no haber movido
+// nada: el número se publica, pero se rotula como no concluyente en vez de leerse como un efecto.
+const sigDe = r => (!r || r.ci_lower == null || r.ci_upper == null) ? null
+  : r.ci_lower > 0 ? 'si' : r.ci_upper < 0 ? 'neg' : 'no';
+const SIG_TXT = { si: 'Significativo ▲', neg: 'Significativo ▼', no: 'No concluyente' };
+const sigBadge = r => { const s = sigDe(r); return s ? `<span class="sig ${s}">${SIG_TXT[s]}</span>` : ''; };
+const fmtUSD = v => v == null ? '—' : 'US$' + (Math.abs(v) >= 100
+  ? Math.round(v).toLocaleString('es-MX') : v.toFixed(2));
+const fmtMil = v => v == null ? '—' : v >= 1e6 ? (v / 1e6).toFixed(1) + ' M'
+  : v >= 1e3 ? Math.round(v / 1e3).toLocaleString('es-MX') + ' mil' : Math.round(v).toLocaleString('es-MX');
+const pts = v => v == null ? '—' : `${v >= 0 ? '+' : ''}${(100 * v).toFixed(1)}`;
+
+// La ficha es del ESTUDIO, no de una pregunta: inversión, impresiones, alcance y frecuencia son
+// las mismas en las 3-4 preguntas del mes, así que se toman de cualquiera de sus filas.
+function fichaEstudio(serie, mes) {
+  const r = serie.find(x => x.month === mes);
+  if (!r || r.spend == null) return '';
+  const muestra = serie.filter(x => x.month === mes)
+    .reduce((a, x) => a + (x.responders_test || 0) + (x.responders_control || 0), 0);
+  return `<p class="hint" style="margin:0 0 8px">Ficha del último estudio: <strong>${mes}</strong>${r.parcial ? ' (en curso: las cifras todavía se mueven)' : ''}.</p>
+    <div class="ficha">
+      <div><div class="k">Inversión medida</div><div class="v">${fmtUSD(r.spend)}</div><div class="d">Lo que Meta gastó en las campañas del estudio, en USD</div></div>
+      <div><div class="k">Impresiones</div><div class="v">${fmtMil(r.impressions)}</div><div class="d">Veces que se mostraron los anuncios</div></div>
+      <div><div class="k">Alcance</div><div class="v">${fmtMil(r.reached)}</div><div class="d">Personas distintas que vieron al menos un anuncio</div></div>
+      <div><div class="k">Frecuencia</div><div class="v">${r.frequency == null ? '—' : r.frequency.toFixed(1) + '×'}</div><div class="d">Veces promedio que cada persona vio la pauta</div></div>
+      <div><div class="k">Encuestados</div><div class="v">${muestra.toLocaleString('es-MX')}</div><div class="d">Respuestas sumando todas las preguntas, expuestos + control</div></div>
+    </div>`;
+}
+
+// Eficiencia: cuánto cuesta cada persona que la pauta MOVIÓ en cada pregunta, contra el benchmark
+// de Meta para la región. Solo tiene sentido con lift positivo y significativo: con un lift no
+// concluyente el costo divide por un número que puede ser cero, y con uno negativo no hay nada
+// que comprar.
+function tablaEficiencia(serie, L, preguntas) {
+  const mesesCon = L.filter(m => serie.some(r => r.month === m && r.cost_per_incremental != null)).slice(-6);
+  if (!mesesCon.length) return '';
+  const celda = r => {
+    if (!r) return '<td>—</td>';
+    const s = sigDe(r);
+    if (s !== 'si' || !(r.incremental > 0)) return `<td>${s === 'neg' ? 'bajó' : 'no concluyente'}<span class="b">sin costo que medir</span></td>`;
+    const cls = r.cpi_region == null ? '' : r.cost_per_incremental <= r.cpi_region ? 'mejor' : 'peor';
+    return `<td class="${cls}">${fmtUSD(r.cost_per_incremental)}<span class="b">${fmtMil(r.incremental)} personas</span><span class="b">región ${fmtUSD(r.cpi_region)} · vertical ${fmtUSD(r.cpi_vertical)}</span></td>`;
+  };
+  return `<div class="panel" style="margin-top:18px"><h3>Eficiencia: costo por persona incremental</h3>
+    <div class="cap">Cuánto costó cada persona que la pauta movió en esa pregunta (inversión ÷ personas
+      incrementales). <strong>Verde</strong>: más barato que el benchmark de Meta para la región;
+      <strong>rojo</strong>: más caro. Debajo, cuántas personas movió y los dos benchmarks de Meta: el de
+      la región (todos los anunciantes de la zona) y el de la vertical (anunciantes de la misma
+      industria), que suele ser bastante más caro. Solo se calcula
+      donde el lift es significativo y positivo. Últimos ${mesesCon.length} estudios de la ventana.</div>
+    <div class="efi-wrap"><table class="efi"><thead><tr><th>Pregunta</th>${mesesCon.map(m => `<th>${m}</th>`).join('')}</tr></thead>
+    <tbody>${preguntas.filter(q => !q.startsWith('sin_identificar')).map(q => `<tr><td>${NOMBRE_PREGUNTA[q] || q}</td>${
+      mesesCon.map(m => celda(serie.find(r => r.month === m && r.question === q))).join('')}</tr>`).join('')}</tbody></table></div></div>`;
+}
+
 function drawBrandLift(host, serie) {
   const preguntas = ordenar(new Set(serie.map(r => r.question)));
   const TODOS = meses(serie);
@@ -653,15 +789,20 @@ function drawBrandLift(host, serie) {
     Meta no corrió Brand Lift esos meses; las barras faltan a propósito en vez de dibujarse en
     cero.</div>` : '';
 
-  host.innerHTML = avisoHuecos + preguntas.map((q, i) => {
+  const ultMes = [...L].reverse().find(m => serie.some(r => r.month === m));
+  host.innerHTML = fichaEstudio(serie, ultMes) + avisoHuecos + preguntas.map((q, i) => {
     const s = serie.filter(r => r.question === q);
     const ult = s[s.length - 1] || {};
     const lift = 100 * (ult.lift || 0);
     const pico = s.reduce((a, b) => (b.lift ?? -9) > (a.lift ?? -9) ? b : a, s[0] || {});
-    const resumen = `<strong>${ult.month || '—'}</strong>:
+    const conf = ult.confidence == null ? '' : ` · probabilidad de que el efecto sea positivo: ${Math.round(100 * ult.confidence)}%`;
+    const resumen = `${sigBadge(ult)} <strong>${ult.month || '—'}</strong>:
           ${(100 * (ult.exposed || 0)).toFixed(1)}% con exposición vs
           ${(100 * (ult.control || 0)).toFixed(1)}% sin exposición →
           <strong>${lift >= 0 ? '+' : ''}${lift.toFixed(1)} pts de lift</strong>
+          ${ult.ci_lower != null ? `(intervalo 95%: ${pts(ult.ci_lower)} a ${pts(ult.ci_upper)} pts${conf})` : ''}
+          ${ult.benchmark_region != null ? `· benchmark de la región ${pts(ult.benchmark_region)} pts` : ''}
+          ${ult.incremental > 0 && sigDe(ult) === 'si' ? `· <strong>${fmtMil(ult.incremental)} personas movidas</strong>` : ''}
           · máximo ${recortado ? 'del periodo ' : ''}${(100 * (pico.lift || 0)).toFixed(1)} pts
           en ${pico.month || '—'}${notaParcial}`;
 
@@ -681,11 +822,11 @@ function drawBrandLift(host, serie) {
           <div class="cap">Quienes sí vieron la pauta. Escala compartida con el panel anterior. La línea es el promedio de los últimos ${VENTANA_MEDIA} meses.</div>
           <div class="ch"><canvas id="bl-e-${i}"></canvas></div>${legend([[C.azul, 'Expuestos'], [C.cian, `Promedio ${VENTANA_MEDIA} meses`]])}</div>
         <div class="panel"><h3>Lift</h3>
-          <div class="cap">La diferencia neta entre los dos: lo que la pauta causó, en puntos.</div>
-          <div class="ch"><canvas id="bl-l-${i}"></canvas></div>${legend([[C.verde, 'La pauta subió el indicador'], [C.rojo, 'Lo bajó']])}</div>
+          <div class="cap">La diferencia neta entre los dos: lo que la pauta causó, en puntos. El bigote es el intervalo de 95%: si cruza el cero, el efecto no es concluyente.</div>
+          <div class="ch"><canvas id="bl-l-${i}"></canvas></div>${legend([[C.verde, 'Subió (significativo)'], [C.rojo, 'Bajó (significativo)'], [C.gris, 'No concluyente'], [C.ambar, 'Benchmark región']])}</div>
       </div>
     </div>`;
-  }).join('');
+  }).join('') + tablaEficiencia(serie, L, preguntas);
 
   preguntas.forEach((q, i) => {
     const s = serie.filter(r => r.question === q);
@@ -704,14 +845,28 @@ function drawBrandLift(host, serie) {
     // El signo del lift es la lectura entera del panel: verde = la pauta subió el indicador,
     // rojo = lo bajó. Un solo color obligaba a leer el eje para saber de qué lado está cada
     // barra. El mes en curso va translúcido igual que en los otros paneles.
-    const lifts = col('lift');
+    // El color ya no dice solo el signo sino si el efecto es real: verde/rojo cuando el intervalo
+    // de 95% no toca el cero, gris cuando sí. La línea ámbar es el benchmark de Meta para la región.
+    const lifts = col('lift'), lo = col('ci_lower'), hi = col('ci_upper'), bench = col('benchmark_region');
+    const fila = m => s.find(r => r.month === m);
+    const extremos = [...lo, ...hi, ...bench].filter(v => v != null);
     mkMulti(`bl-l-${i}`, L, [
-      { type: 'bar', label: 'Lift', data: lifts,
-        color: L.map((m, k) => {
-          const base = (lifts[k] ?? 0) < 0 ? C.rojo : C.verde;
+      { type: 'bar', label: 'Lift', orden: 1, data: lifts,
+        color: L.map(m => {
+          const sg = sigDe(fila(m));
+          const base = sg === 'si' ? C.verde : sg === 'neg' ? C.rojo : sg === 'no' ? C.gris : ((lifts[L.indexOf(m)] ?? 0) < 0 ? C.rojo : C.verde);
           return parciales.has(m) ? base + '55' : base;
         }) },
-    ], { fmt: 'pts' });
+      { type: 'line', label: 'Benchmark región', color: C.ambar, data: bench, dash: [4, 3], puntoRadio: 0, grosor: 1.5 },
+    ], { fmt: 'pts', sMin: Math.min(0, ...extremos), sMax: Math.max(0, ...extremos),
+         bigotes: { lo, hi, color: cssv('--text-muted-2') },
+         pieTooltip: k => {
+           const r = fila(L[k]);
+           if (!r || r.ci_lower == null) return [];
+           return [`Intervalo 95%: ${pts(r.ci_lower)} a ${pts(r.ci_upper)} pts`, SIG_TXT[sigDe(r)],
+                   r.confidence != null ? `Prob. de efecto positivo: ${Math.round(100 * r.confidence)}%` : '',
+                   r.incremental > 0 ? `Personas movidas: ${fmtMil(r.incremental)}` : ''].filter(Boolean);
+         } });
   });
 }
 
@@ -968,6 +1123,81 @@ function drawExitPoll(host, serie) {
   });
 }
 
+// ── Seguidores en redes ───────────────────────────────────────────────────────
+// Serie DIARIA (las demás son mensuales). Facebook trae total, altas y bajas desde jul-2024.
+// Instagram solo trae el total de hoy y los nuevos de los últimos 30 días: su total se arma con
+// una foto diaria desde el 5-oct-2026, y se dice así en vez de inventar la historia hacia atrás.
+const DIAS_VENTANA = { '12 meses': 365, '24 meses': 730, 'Todo': Infinity };
+const sumaCampo = (rows, k) => rows.reduce((a, r) => a + (r[k] || 0), 0);
+const ultimoCon = (rows, k) => [...rows].reverse().find(r => r[k] != null);
+const delta = (a, b) => a == null || b == null ? null : a - b;
+const conSigno = v => v == null ? '—' : (v >= 0 ? '+' : '') + Math.round(v).toLocaleString('es-MX');
+
+function drawSeguidores(host, serie) {
+  const n = DIAS_VENTANA[MESES] || 730;
+  const S = Number.isFinite(n) ? serie.slice(-n) : serie;
+  const fbUlt = ultimoCon(serie, 'fb_total'), igUlt = ultimoCon(serie, 'ig_total');
+  // Cambio en 30 días: contra el total de hace 30 días de calendario, no 30 filas atrás.
+  const hace = d => { const t = new Date(d + 'T00:00:00Z'); t.setUTCDate(t.getUTCDate() - 30); return t.toISOString().slice(0, 10); };
+  const fbHace = fbUlt ? serie.find(r => r.date >= hace(fbUlt.date) && r.fb_total != null) : null;
+  const d30 = fbUlt && fbHace ? delta(fbUlt.fb_total, fbHace.fb_total) : null;
+  const ult30 = serie.filter(r => fbUlt && r.date > hace(fbUlt.date));
+  const igNuevos30 = sumaCampo(serie.filter(r => igUlt && r.date > hace(igUlt.date)), 'ig_nuevos');
+
+  // Altas y bajas por MES: por día son de un dígito y el ruido tapa la tendencia.
+  const porMes = {};
+  S.forEach(r => {
+    const m = r.date.slice(0, 7), a = porMes[m] || (porMes[m] = { altas: 0, bajas: 0, dias: 0 });
+    if (r.fb_altas != null) { a.altas += r.fb_altas; a.bajas += r.fb_bajas || 0; a.dias++; }
+  });
+  const M = Object.keys(porMes).sort();
+  const igDias = serie.filter(r => r.ig_nuevos != null).slice(-30);
+  const igTot = serie.filter(r => r.ig_total != null);
+
+  host.innerHTML = `<div class="ficha">
+      <div><div class="k">Facebook · seguidores</div><div class="v">${fbUlt ? fbUlt.fb_total.toLocaleString('es-MX') : '—'}</div>
+        <div class="d">${conSigno(d30)} en 30 días${d30 != null && fbHace.fb_total ? ` (${(100 * d30 / fbHace.fb_total).toFixed(Math.abs(100 * d30 / fbHace.fb_total) < 0.1 ? 2 : 1)}%)` : ''} · al ${fbUlt ? fbUlt.date : '—'}</div></div>
+      <div><div class="k">Facebook · altas − bajas, 30 días</div><div class="v">${conSigno(sumaCampo(ult30, 'fb_altas'))} / −${sumaCampo(ult30, 'fb_bajas').toLocaleString('es-MX')}</div>
+        <div class="d">Seguidores nuevos y personas que dejaron de seguir</div></div>
+      <div><div class="k">Instagram · seguidores</div><div class="v">${igUlt ? igUlt.ig_total.toLocaleString('es-MX') : '—'}</div>
+        <div class="d">Al ${igUlt ? igUlt.date : '—'}</div></div>
+      <div><div class="k">Instagram · nuevos, 30 días</div><div class="v">+${igNuevos30.toLocaleString('es-MX')}</div>
+        <div class="d">Instagram no informa bajas: es lo que entró, no el neto</div></div>
+    </div>
+    <div class="charts-grid">
+      <div class="panel"><h3>Facebook · seguidores totales</h3>
+        <div class="cap">Total de seguidores de la página al cierre de cada día.</div>
+        <div class="ch alto"><canvas id="sg-fb-total"></canvas></div>${legend([[C.azul, 'Seguidores']])}</div>
+      <div class="panel"><h3>Facebook · altas y bajas por mes</h3>
+        <div class="cap">Barras: seguidores nuevos (verde) y bajas (rojo). Línea: el neto del mes. Si las altas caen sin que suban las bajas, es que la marca dejó de atraer, no que la estén abandonando.</div>
+        <div class="ch alto"><canvas id="sg-fb-mes"></canvas></div>${legend([[C.verde, 'Altas'], [C.rojo, 'Bajas'], [C.azul, 'Neto']])}</div>
+      <div class="panel"><h3>Instagram · seguidores nuevos por día</h3>
+        <div class="cap">Últimos ${igDias.length} días. Meta solo entrega los últimos 30 días de esta métrica; desde el 5-oct-2026 se guardan a diario y la serie se va alargando sola. Llega con ~2 días de atraso.</div>
+        <div class="ch alto"><canvas id="sg-ig-dia"></canvas></div>${legend([[C.rosa, 'Nuevos']])}</div>
+      <div class="panel"><h3>Instagram · seguidores totales</h3>
+        ${igTot.length > 1
+          ? `<div class="cap">Una foto diaria del total desde el ${igTot[0].date}: Meta no da el total de días pasados.</div>
+             <div class="ch alto"><canvas id="sg-ig-total"></canvas></div>${legend([[C.rosa, 'Seguidores']])}`
+          : `<div class="cap">Meta no da el total de Instagram de días pasados, solo el de hoy. La serie se arma con
+             una foto diaria desde el ${igTot.length ? igTot[0].date : '5-oct-2026'} y se dibuja en cuanto haya dos días.</div>`}</div>
+    </div>`;
+
+  mkMulti('sg-fb-total', S.map(r => r.date), [
+    { label: 'Seguidores', color: C.azul, data: S.map(r => r.fb_total ?? null), puntoRadio: 0, tension: .2 },
+  ], { fmt: 'num', sinBandas: true, desdeCero: false });
+  mkMulti('sg-fb-mes', M, [
+    { type: 'bar', label: 'Altas', orden: 1, color: C.verde, data: M.map(m => porMes[m].dias ? porMes[m].altas : null) },
+    { type: 'bar', label: 'Bajas', orden: 1, color: C.rojo, data: M.map(m => porMes[m].dias ? -porMes[m].bajas : null) },
+    { type: 'line', label: 'Neto', color: C.azul, data: M.map(m => porMes[m].dias ? porMes[m].altas - porMes[m].bajas : null) },
+  ], { fmt: 'num', pieTooltip: k => porMes[M[k]].dias < 28 ? [`Mes parcial: ${porMes[M[k]].dias} días con dato`] : [] });
+  mkMulti('sg-ig-dia', igDias.map(r => r.date.slice(5)), [
+    { type: 'bar', label: 'Nuevos', color: C.rosa, data: igDias.map(r => r.ig_nuevos) },
+  ], { fmt: 'num', sinBandas: true });
+  if (igTot.length > 1) mkMulti('sg-ig-total', igTot.map(r => r.date), [
+    { label: 'Seguidores', color: C.rosa, data: igTot.map(r => r.ig_total) },
+  ], { fmt: 'num', sinBandas: true, desdeCero: false });
+}
+
 // ── Filtros y render ──────────────────────────────────────────────────────────
 function chips(label, opciones, activo, onPick) {
   return `<div class="fgroup"><span class="flabel">${label}</span><div class="chips">${
@@ -977,10 +1207,15 @@ function chips(label, opciones, activo, onPick) {
 
 function render() {
   const M = DATA.metrics;
-  document.getElementById('paisTitulo').textContent = PAIS === 'MX' ? 'México' : 'Colombia';
+  const H = HOJAS[PAIS];
+  document.getElementById('hojas').innerHTML = Object.entries(HOJAS).map(([k, h]) =>
+    `<button class="tab${k === PAIS ? ' active' : ''}" data-hoja="${k}">${h.nombre}${
+      k === 'PCOM' ? '' : `<small>${h.pais}</small>`}</button>`).join('');
+  document.getElementById('paisTitulo').textContent = H.nombre;
+  document.title = `Salud de marca — ${H.nombre}`;
+  // Plaza solo aplica a tráfico y exit poll, que solo existen para Tuhabi (México).
   document.getElementById('filtros').innerHTML =
-    chips('País', ['MX', 'CO'], PAIS, 'pais') +
-    chips('Plaza · aplica a tráfico y exit poll', ['Todas', 'MTY', 'GDL', 'CDMX', 'Resto'], PLAZA, 'plaza') +
+    (PAIS === 'MX' ? chips('Plaza · aplica a tráfico y exit poll', ['Todas', 'MTY', 'GDL', 'CDMX', 'Resto'], PLAZA, 'plaza') : '') +
     chips('Periodo', VENTANAS, MESES, 'meses');
 
   // La leyenda solo aparece donde hay campañas: en CO no hay TV, así que tampoco banda que
@@ -998,7 +1233,13 @@ function render() {
 
   destroyCharts();
   const app = document.getElementById('app');
-  const secs = [
+  const SEC_SEGUIDORES = ['seguidores', 'Seguidores en Facebook e Instagram',
+    `Cuánta gente decide seguir a ${H.nombre} en redes, y cuánta deja de hacerlo. Es una señal de
+     comunidad, más lenta que la pauta: sube cuando la marca atrae por sí misma. Serie diaria; el
+     periodo de arriba también aplica aquí.`,
+    drawSeguidores, ['Comunidad', 'Quién elige seguirnos. Es una decisión de la persona, no un efecto directo de la pauta.']];
+  // Propiedades.com no corre Brand Lift ni tiene el resto de las fuentes: su hoja es solo comunidad.
+  const secs = PAIS === 'PCOM' ? [SEC_SEGUIDORES] : [
     ['brand_lift', 'Brand Lift continuo de Meta',
      'Meta encuesta cada mes a un grupo expuesto a la pauta y a un grupo de control equivalente al que le retiene los anuncios. El <strong>lift</strong> es la diferencia neta entre los dos: lo que la pauta causó, no lo que correlaciona.',
      drawBrandLift, ['Percepción', 'Qué piensan de nosotros. Se pregunta, no se deduce del comportamiento.']],
@@ -1008,6 +1249,7 @@ function render() {
     ['encuestador', 'Agente encuestador de marca — Pulso Inmobiliario',
      'Encuesta por WhatsApp y por un agente de voz a dueños que publican vivienda en propiedades.com y a brokers independientes; el selector de <strong>Público</strong> muestra cada uno por separado. Primero va cada pregunta en el orden de la encuesta y después las agrupaciones. Responde dos de las tres preguntas de este indicador: <strong>¿nos conocen?</strong> y <strong>¿con qué atributo nos relacionan?</strong>, y agrega el embudo de consideración. La tercera —<strong>¿nos ven como comprador directo, como inmobiliaria o como varias cosas?</strong>— todavía no está en el cuestionario. Es el único indicador de este tablero que le pregunta a gente que <em>no</em> ha interactuado con nosotros: todos los demás miden sobre audiencia ya alcanzada por la pauta o ya registrada.',
      drawEncuestador],
+    SEC_SEGUIDORES,
     ['traffic', 'Tráfico por plaza',
      'Usuarios únicos que llegan al sitio, por plaza. Si la marca funciona, el tráfico sube sin que suba la inversión.',
      drawTraffic, ['Demanda', 'Cuánta gente llega al sitio. Es comportamiento, no opinión.']],
@@ -1036,7 +1278,7 @@ function render() {
   const total = secs.length, conDato = secs.filter(([k]) =>
     M[k] && M[k][PAIS] && ['ok', 'stale'].includes(M[k][PAIS].status)).length;
   document.getElementById('cobertura').textContent =
-    `${conDato} de ${total} indicadores con dato en ${PAIS === 'MX' ? 'México' : 'Colombia'}`;
+    `${conDato} de ${total} indicadores con dato para ${H.nombre}`;
 
   // El hash se resuelve acá y no lo deja el navegador: las secciones se crean dinámicamente en
   // render(), así que al cargar la página el elemento al que apunta #h-tv todavía no existe.
@@ -1051,12 +1293,16 @@ window.rerender = render;
 // La vista queda en la URL: así se puede mandar "el tablero de Colombia" por Slack en vez de
 // "abre el tablero y dale click a CO".
 function syncURL() {
-  const q = new URLSearchParams({ pais: PAIS, plaza: PLAZA, meses: MESES, bloque: BLOQUE, leads: LEADS_SEL, publico: PUBLICO });
+  const q = new URLSearchParams({ hoja: HOJAS[PAIS].slug, plaza: PLAZA, meses: MESES, bloque: BLOQUE, leads: LEADS_SEL, publico: PUBLICO });
   history.replaceState(null, '', `?${q}`);
 }
 function readURL() {
   const q = new URLSearchParams(location.search);
+  // `pais` es el parámetro de antes de las hojas por marca: los enlaces viejos (y el de la
+  // tarjeta de TV en Google Chat) siguen abriendo la hoja correcta.
   if (['MX', 'CO'].includes(q.get('pais'))) PAIS = q.get('pais');
+  const hoja = Object.keys(HOJAS).find(k => HOJAS[k].slug === q.get('hoja'));
+  if (hoja) PAIS = hoja;
   if (['Todas', 'MTY', 'GDL', 'CDMX', 'Resto'].includes(q.get('plaza'))) PLAZA = q.get('plaza');
   if (VENTANAS.includes(q.get('meses'))) MESES = q.get('meses');
   if (BLOQUES.includes(q.get('bloque'))) BLOQUE = q.get('bloque');
@@ -1065,9 +1311,16 @@ function readURL() {
 }
 
 document.addEventListener('click', e => {
+  const t = e.target.closest('.tab[data-hoja]');
+  if (t) {
+    PAIS = t.dataset.hoja;
+    syncURL();
+    render();
+    window.scrollTo({ top: 0 });
+    return;
+  }
   const b = e.target.closest('.chip'); if (!b) return;
-  if (b.dataset.pick === 'pais') PAIS = b.dataset.val;
-  else if (b.dataset.pick === 'meses') MESES = b.dataset.val;
+  if (b.dataset.pick === 'meses') MESES = b.dataset.val;
   else if (b.dataset.pick === 'bloque') BLOQUE = b.dataset.val;
   else if (b.dataset.pick === 'leads') LEADS_SEL = b.dataset.val;
   else if (b.dataset.pick === 'publico') PUBLICO = b.dataset.val;
