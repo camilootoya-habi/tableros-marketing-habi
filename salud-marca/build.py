@@ -154,18 +154,23 @@ def collect_seguidores(now):
         cache["last_refresh"] = now
         SOCIAL.save_cache(cache["datos"], now)
 
+    # `series` va por MES (años de historia sin inflar data.json) y `diario` trae los últimos 45
+    # días, que es donde vive la serie de Instagram (Meta solo da 30 días de nuevos).
     out = {}
     for clave in SOCIAL.MARCAS:
-        serie = SOCIAL.series(cache.get("datos", {}), clave)
+        diaria = SOCIAL.series(cache.get("datos", {}), clave)
+        serie = SOCIAL.mensual(diaria)
         fallo = (not ok) or clave in errores
         if not serie:
             out[clave] = contract.metric(
                 "error", reason=errores.get(clave) or errores.get("_") or "Sin datos de seguidores.")
-        elif fallo:
+            continue
+        if fallo:
             out[clave] = contract.metric("stale", source="cache", series=serie,
                                          last_updated=cache.get("last_refresh"))
         else:
             out[clave] = contract.metric("ok", source="api", series=serie, last_updated=now)
+        out[clave]["diario"] = diaria[-45:]
     return out
 
 

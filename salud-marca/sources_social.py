@@ -33,6 +33,12 @@ FB_METRICAS = ("page_follows", "page_daily_follows_unique", "page_daily_unfollow
 FB_CAMPO = {"page_follows": "fb_total", "page_daily_follows_unique": "fb_altas",
             "page_daily_unfollows_unique": "fb_bajas"}
 DIA = 86400
+# `page_follows` (el total) solo es real desde este día: antes Meta devuelve un valor CONGELADO
+# (el mismo número en 2019, 2021 y jul-2024, verificado el 5-oct-2026). Las altas y bajas
+# diarias sí son reales hacia atrás (al menos desde 2021), así que el total anterior se
+# reconstruye con ellas en `series()`: en 2 años, altas − bajas difiere del cambio real del
+# total en menos de 1% (Habi: +4.569 contra +4.544).
+FB_TOTAL_DESDE = "2024-10-04"
 
 
 def _dia(end_time):
@@ -70,6 +76,8 @@ def _fb_insights(page_id, page_token, desde, hasta):
         for v in m.get("values") or []:
             d = _dia(v["end_time"])
             # El día en curso trae altas y bajas a medias: solo se guardan días cerrados.
+            if campo == "fb_total" and d < FB_TOTAL_DESDE:
+                continue   # total congelado, no real
             if campo and isinstance(v.get("value"), (int, float)) and d < datetime.date.today().isoformat():
                 dias.setdefault(d, {})[campo] = v["value"]
     return dias
@@ -128,8 +136,10 @@ def fetch(hoy=None):
     return True, out, errores
 
 
-def backfill_fb(dias=730):
+def backfill_fb(dias=365 * 7):
     """Historia de Facebook hacia atrás, en ventanas de 89 días. SOLO A MANO.
+    Se detiene en la primera ventana sin una sola alta ni baja: antes de eso la página no tenía
+    datos (en las tres marcas, hacia 2019-2020).
     Uso: python3 -c "import sources_social as S; S.backfill_to_cache()"."""
     ok, err, paginas = _token_paginas()
     if not ok:
@@ -140,22 +150,28 @@ def backfill_fb(dias=730):
         p = paginas[m["fb"]]
         hasta = fin
         while hasta > fin - dias * DIA:
-            # Meta responde a veces "unexpected error, retry later" en ventanas viejas: se
-            # reintenta una vez y, si persiste, se corta la historia de esa marca ahí (lo ya
-            # traído se conserva) en vez de perder el backfill entero.
-            try:
+            # Meta responde a ratos "unexpected error, retry later", más en ventanas largas: van
+            # de 30 días con 3 reintentos y espera creciente. Si persiste, se corta la historia de
+            # esa marca ahí (lo traído se conserva y volver a correr el backfill la completa).
+            dias_v, error = None, None
+            for intento in range(4):
                 try:
-                    dias_v = _fb_insights(m["fb"], p["access_token"], hasta - 89 * DIA, hasta)
-                except RuntimeError:
-                    time.sleep(5)
-                    dias_v = _fb_insights(m["fb"], p["access_token"], hasta - 89 * DIA, hasta)
-            except RuntimeError as e:
+                    dias_v = _fb_insights(m["fb"], p["access_token"], hasta - 30 * DIA, hasta)
+                    break
+                except RuntimeError as e:
+                    error = e
+                    time.sleep(5 * (intento + 1))
+            if dias_v is None:
                 print(f"backfill {clave}: se corta antes de "
-                      f"{datetime.date.fromtimestamp(hasta).isoformat()} — {e}")
+                      f"{datetime.date.fromtimestamp(hasta).isoformat()} — {error}")
+                break
+            if not any((v.get("fb_altas") or 0) + (v.get("fb_bajas") or 0) for v in dias_v.values()):
+                print(f"backfill {clave}: sin altas ni bajas antes de "
+                      f"{datetime.date.fromtimestamp(hasta).isoformat()}, fin de la historia")
                 break
             for d, v in dias_v.items():
                 out.setdefault(clave, {}).setdefault(d, {}).update(v)
-            hasta -= 89 * DIA
+            hasta -= 30 * DIA
     return out
 
 
@@ -190,5 +206,40 @@ def merge(cache, fresh):
 
 
 def series(datos, clave):
-    """Filas diarias ordenadas: {date, fb_total, fb_altas, fb_bajas, ig_total, ig_nuevos}."""
-    return [{"date": d, **v} for d, v in sorted((datos.get(clave) or {}).items())]
+    """Filas diarias ordenadas: {date, fb_total, fb_total_est, fb_altas, fb_bajas, ig_total,
+    ig_nuevos}. `fb_total_est` es el total reconstruido hacia atrás desde el primer total real:
+    total(d − 1) = total(d) − altas(d) + bajas(d). Va en un campo aparte para que el tablero lo
+    dibuje distinto y nunca se confunda con un dato que Meta midió."""
+    filas = [{"date": d, **{k: x for k, x in v.items() if not (k == "fb_total" and d < FB_TOTAL_DESDE)}}
+             for d, v in sorted((datos.get(clave) or {}).items())]
+    primero = next((i for i, r in enumerate(filas) if r.get("fb_total") is not None), None)
+    if primero:
+        total = filas[primero]["fb_total"]
+        for i in range(primero, 0, -1):
+            r = filas[i]
+            if r.get("fb_altas") is None:
+                break   # hueco en las altas: no se puede seguir reconstruyendo
+            total = total - r["fb_altas"] + (r.get("fb_bajas") or 0)
+            filas[i - 1]["fb_total_est"] = total
+    return filas
+
+
+def mensual(filas):
+    """Una fila por mes. Totales = el ÚLTIMO del mes (foto de cierre); altas, bajas y nuevos =
+    la SUMA. `dias_*` dice cuántos días aportaron, para marcar meses incompletos (el en curso,
+    o el primero de Instagram) en vez de leerlos como una caída."""
+    out = {}
+    for r in filas:
+        m = out.setdefault(r["date"][:7], {"month": r["date"][:7], "fb_altas": 0, "fb_bajas": 0,
+                                            "ig_nuevos": 0, "dias_fb": 0, "dias_ig": 0})
+        for k in ("fb_total", "fb_total_est", "ig_total"):
+            if r.get(k) is not None:
+                m[k] = r[k]
+        if r.get("fb_altas") is not None:
+            m["fb_altas"] += r["fb_altas"]
+            m["fb_bajas"] += r.get("fb_bajas") or 0
+            m["dias_fb"] += 1
+        if r.get("ig_nuevos") is not None:
+            m["ig_nuevos"] += r["ig_nuevos"]
+            m["dias_ig"] += 1
+    return [out[k] for k in sorted(out)]

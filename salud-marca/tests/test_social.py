@@ -30,6 +30,29 @@ def test_ig_no_guarda_ceros_recientes_que_todavia_no_llegan(monkeypatch):
     assert dias == {"2026-09-30": {"ig_nuevos": 0}, "2026-10-02": {"ig_nuevos": 40}}
 
 
+def test_series_descarta_el_total_congelado_y_lo_reconstruye_con_altas_y_bajas():
+    datos = {"MX": {
+        "2024-10-01": {"fb_total": 35831, "fb_altas": 5, "fb_bajas": 1},   # congelado: se descarta
+        "2024-10-02": {"fb_total": 35831, "fb_altas": 4, "fb_bajas": 0},
+        "2024-10-03": {"fb_total": 35831, "fb_altas": 3, "fb_bajas": 2},
+        "2024-10-04": {"fb_total": 100, "fb_altas": 7, "fb_bajas": 1},     # primer total real
+    }}
+    f = S.series(datos, "MX")
+    assert [r.get("fb_total") for r in f] == [None, None, None, 100]
+    # 3-oct = 100 − 7 + 1 = 94 · 2-oct = 94 − 3 + 2 = 93 · 1-oct = 93 − 4 + 0 = 89
+    assert [r.get("fb_total_est") for r in f] == [89, 93, 94, None]
+
+
+def test_mensual_toma_el_cierre_del_total_y_suma_altas_bajas_y_nuevos():
+    filas = [{"date": "2026-09-29", "fb_total": 10, "fb_altas": 2, "fb_bajas": 1, "ig_nuevos": 4},
+             {"date": "2026-09-30", "fb_total": 11, "fb_altas": 3, "fb_bajas": 0, "ig_total": 50},
+             {"date": "2026-10-01", "fb_total": 12, "fb_altas": 1, "fb_bajas": 0}]
+    m = S.mensual(filas)
+    assert m[0] == {"month": "2026-09", "fb_total": 11, "ig_total": 50, "fb_altas": 5, "fb_bajas": 1,
+                    "ig_nuevos": 4, "dias_fb": 2, "dias_ig": 1}
+    assert m[1]["month"] == "2026-10" and m[1]["fb_total"] == 12 and m[1]["dias_fb"] == 1
+
+
 def _fetch_ok(hoy):
     return True, {c: {"2026-10-04": {"fb_total": 100, "ig_total": 50}} for c in S.MARCAS}, {}
 
