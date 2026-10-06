@@ -227,12 +227,18 @@ def collect_seguidores(now):
     # dice si un post de Facebook se promocionó (ver sources_fb_posts.py).
     fb_tops = {c: {"180": FBP.top(cache["fb_posts"].get(c, {}), hace180),
                    "historico": FBP.top(cache["fb_posts"].get(c, {}))} for c in SOCIAL.MARCAS}
+    # Las 10 publicaciones más recientes de cada red, para la fila "Lo más reciente".
+    recientes = lambda posts: sorted((dict(p, id=i) for i, p in posts.items()), key=lambda p: p["fecha"], reverse=True)[:10]
+    ig_recientes = {c: recientes(cache["posts"].get(c, {})) for c in SOCIAL.MARCAS}
+    fb_recientes = {c: recientes(cache["fb_posts"].get(c, {})) for c in SOCIAL.MARCAS}
     if ok:
         SOCIAL.save_cache(cache["datos"], now, cache.get("ig_mes"), cache.get("posts"), cache.get("ig_demo"),
                           cache.get("fb_posts"))
     fb_en_top = [p for c, per in fb_tops.items() for lista in per.values() for p in lista]
+    fb_en_top += [p for lista in fb_recientes.values() for p in lista]
     for p in fb_en_top:
-        c = next(k for k, t in fb_tops.items() if p in t["180"] or p in t["historico"])
+        c = next(k for k in SOCIAL.MARCAS if any(p["id"] == x["id"] for x in
+                 fb_tops[k]["180"] + fb_tops[k]["historico"] + fb_recientes[k]))
         if (p["id"] not in fb_imagenes and c in fb_tokens
                 and not os.path.exists(os.path.join(FBP.MINIATURAS, f"{p['id']}.jpg"))):
             fb_imagenes[p["id"]] = FBP.url_imagen(p["id"], fb_tokens[c])
@@ -244,6 +250,7 @@ def collect_seguidores(now):
 
     # Miniaturas: las de la lista de hoy ya traen URL; las de posts viejos se piden una por una.
     en_top = [p for c in tops.values() for per in c.values() for lista in per.values() for p in lista]
+    en_top += [p for lista in ig_recientes.values() for p in lista]
     if ok:
         for p in en_top:
             if p["id"] not in imagenes and not os.path.exists(os.path.join(IGP.MINIATURAS, f"{p['id']}.jpg")):
@@ -291,6 +298,8 @@ def collect_seguidores(now):
                                    for per, listas in tops[clave].items()}
         fb_img = lambda p: dict(p, img=f"fb_miniaturas/{p['id']}.jpg" if p["id"] in fb_con_img else None)
         out[clave]["fb_top"] = {per: [fb_img(p) for p in lista] for per, lista in fb_tops[clave].items()}
+        out[clave]["ig_recientes"] = [img(p) for p in ig_recientes[clave]]
+        out[clave]["fb_recientes"] = [fb_img(p) for p in fb_recientes[clave]]
         demo = cache.get("ig_demo", {}).get(clave) or {}
         if demo:
             out[clave]["demografia"] = {"mes": max(demo), **demo[max(demo)]}

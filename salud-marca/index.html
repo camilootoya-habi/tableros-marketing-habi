@@ -998,6 +998,12 @@ const AYUDA = {
     <p>Si los alcanzados son más jóvenes que los seguidores, la pauta le está hablando a otra gente que
     la que ya nos sigue. Meta solo da los alcanzados y los que interactúan del <strong>mes en curso</strong>:
     al inicio del mes la muestra es chica.</p>`],
+  recientes: ['Lo más reciente', `
+    <p>Las 10 últimas publicaciones, de la más nueva a la más vieja, para revisar cómo le va a lo que se
+    acaba de publicar sin esperar a que entre (o no) a un top.</p>
+    <p>Las cifras de una publicación de hace uno o dos días todavía están creciendo: se actualizan a
+    diario durante sus primeros 45 días. En Instagram, la etiqueta <strong>Con pauta</strong> dice si
+    se promocionó; en Facebook la API no lo informa.</p>`],
   ig_churn: ['Se van: bajas por cada 100 altas', `
     <p>Por cada 100 cuentas que empezaron a seguir la marca en el mes, cuántas dejaron de seguirla (o se
     fueron de Instagram). 30 quiere decir que por cada 10 seguidores nuevos se perdieron 3.</p>
@@ -1822,8 +1828,9 @@ function bloqueContenido(serie, L, mesActual) {
 
   // En el top histórico se ordena por likes + comentarios (la métrica que tienen todos los posts);
   // en 180 días, por las interacciones de Meta. La tarjeta muestra la cifra con la que se ordenó.
-  const tarjeta = historico => (p, i) => `<a class="top-post" href="${esc(p.link)}" target="_blank" rel="noopener">
-      <div class="img" style="${p.img ? `background-image:url('${p.img}')` : ''}"><span class="rank">#${i + 1}</span>
+  // `rango` falso = sin el número de lugar (la fila de lo más reciente no es un ranking).
+  const tarjeta = (historico, rango = true) => (p, i) => `<a class="top-post" href="${esc(p.link)}" target="_blank" rel="noopener">
+      <div class="img" style="${p.img ? `background-image:url('${p.img}')` : ''}">${rango ? `<span class="rank">#${i + 1}</span>` : ''}
         <span class="fmt">${(FORMATOS.find(x => x[0] === p.formato) || [, p.formato])[1]}</span>
         ${p.pauta ? '<span class="pauta">Con pauta</span>' : ''}</div>
       <div class="info">${historico
@@ -1862,6 +1869,9 @@ function bloqueContenido(serie, L, mesActual) {
         <div class="cap">Barras: vistas del mes por formato. Línea: promedio por publicación (eje derecho). Desde ago-2025.</div>
         <div class="ch alto"><canvas id="sg-ig-vpp"></canvas></div>${legend(FORMATOS.map(([, n, c]) => [c, n]).concat([[C.azul, 'Por publicación']]))}</div>
     </div>
+    <div class="flabel" style="display:flex;align-items:center;margin-top:16px">Lo más reciente${ayuda('recientes')}</div>
+    ${(met.ig_recientes || []).length ? `<div class="top-grid" style="margin-top:8px">${met.ig_recientes.map(tarjeta(false, false)).join('')}</div>`
+      : '<div class="cap">Sin publicaciones.</div>'}
     <div class="flabel" style="display:flex;align-items:center;margin-top:16px">Las que más engancharon${ayuda('ig_top')}</div>
     ${topHtml || '<div class="cap">Sin publicaciones recientes.</div>'}`;
 }
@@ -2140,13 +2150,16 @@ function bloqueFbAlcance(serie) {
 }
 
 function bloqueFbContenido(serie) {
-  const tops = (((DATA.metrics.seguidores || {})[PAIS] || {}).fb_top) || {};
-  const tarjeta = (p, i) => `<a class="top-post" href="${esc(p.link)}" target="_blank" rel="noopener">
-      <div class="img" style="${p.img ? `background-image:url('${p.img}')` : ''}"><span class="rank">#${i + 1}</span>
+  const met = ((DATA.metrics.seguidores || {})[PAIS] || {});
+  const tops = met.fb_top || {};
+  // `rango` falso = sin el número de lugar (la fila de lo más reciente no es un ranking).
+  const tarjetaCon = rango => (p, i) => `<a class="top-post" href="${esc(p.link)}" target="_blank" rel="noopener">
+      <div class="img" style="${p.img ? `background-image:url('${p.img}')` : ''}">${rango ? `<span class="rank">#${i + 1}</span>` : ''}
         <span class="fmt">${(FB_FORMATOS.find(x => x[0] === p.formato) || [, p.formato])[1]}</span></div>
       <div class="info"><b>${(p.reacciones + p.comentarios + p.compartidos).toLocaleString('es-MX')}</b> interacciones
         ${p.vistas ? ` · ${fmtMil(p.vistas)} vistas` : ''}<br>${p.fecha}
         <div class="txt">${esc(p.texto)}</div></div></a>`;
+  const tarjeta = tarjetaCon(true);
   const grupo = (titulo, lista) => `<div class="flabel" style="margin:14px 0 8px">${titulo}</div>
       ${lista && lista.length ? `<div class="top-grid">${lista.map(tarjeta).join('')}</div>`
         : '<div class="cap">Sin publicaciones en este periodo.</div>'}`;
@@ -2160,6 +2173,9 @@ function bloqueFbContenido(serie) {
         <div class="cap">Barras: reacciones + comentarios + compartidos por tipo. Línea: promedio por publicación (eje derecho).</div>
         <div class="ch alto"><canvas id="sg-fb-int"></canvas></div>${legend(FB_FORMATOS.map(([, n, c]) => [c, n]).concat([[C.azul, 'Por publicación']]))}</div>
     </div>
+    <div class="flabel" style="display:flex;align-items:center;margin-top:16px">Lo más reciente${ayuda('recientes')}</div>
+    ${(met.fb_recientes || []).length ? `<div class="top-grid" style="margin-top:8px">${met.fb_recientes.map(tarjetaCon(false)).join('')}</div>`
+      : '<div class="cap">Sin publicaciones.</div>'}
     <div class="flabel" style="display:flex;align-items:center;margin-top:16px">Las que más engancharon${ayuda('fb_top')}</div>
     <div class="cap" style="margin-top:4px">Sin filtro de pauta: Facebook no dice si una publicación se promocionó.</div>
     ${grupo('Últimos 180 días · por reacciones + comentarios + compartidos', tops['180'])}
