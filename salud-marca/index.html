@@ -109,6 +109,11 @@
   .delta.sube { color: #059669; background: rgba(52, 211, 153, .15); }
   .delta.baja { color: #dc2626; background: rgba(248, 113, 113, .15); }
   .delta.neutro { color: var(--text-muted-2); background: var(--row-border); }
+  /* Alcance e interacción de Instagram: dos líneas de 4 con el mismo eje de meses. */
+  .cuatro { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
+  .cuatro > * { min-width: 0; }
+  @media (max-width: 1100px) { .cuatro { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  @media (max-width: 640px) { .cuatro { grid-template-columns: 1fr; } }
   /* Del contenido al sitio: 5 gráficas en una línea (3 valores + 2 conversiones). Rejilla FIJA
      para que las cinco compartan ancho y se lean de izquierda a derecha como un embudo. */
   .cinco { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 10px; }
@@ -993,6 +998,12 @@ const AYUDA = {
     <p>Si los alcanzados son más jóvenes que los seguidores, la pauta le está hablando a otra gente que
     la que ya nos sigue. Meta solo da los alcanzados y los que interactúan del <strong>mes en curso</strong>:
     al inicio del mes la muestra es chica.</p>`],
+  ig_churn: ['Se van: bajas por cada 100 altas', `
+    <p>Por cada 100 cuentas que empezaron a seguir la marca en el mes, cuántas dejaron de seguirla (o se
+    fueron de Instagram). 30 quiere decir que por cada 10 seguidores nuevos se perdieron 3.</p>
+    <p>Es el equivalente que sí existe en Instagram de la gráfica "pauta vs. orgánico" de Facebook: la API
+    de Instagram no separa a los nuevos seguidores por su origen. Si sube, la marca está perdiendo a
+    gente que ya tenía, aunque siga sumando nuevos. Existe desde oct-2025.</p>`],
   tendencia: ['Tendencia de los últimos días y semanas', `
     <p>Lo mensual dice hacia dónde va la marca; esto dice qué pasó la semana pasada. Seis indicadores con
     su minigráfica:</p>
@@ -1671,7 +1682,6 @@ function drawSeguidores(host, serie, que) {
   const igUlt = ultimoCon(serie, 'ig_total');
   const igCerr = serie.filter(r => r.ig_altas != null && r.month < mesActual).slice(-12);
   const igAltas = sumaCampo(igCerr, 'ig_altas'), igBajas = sumaCampo(igCerr, 'ig_bajas');
-  const igUltCerr = [...serie].reverse().find(r => r.month < mesActual && r.ig_clics != null);
   const totalIg = r => r ? (r.ig_total ?? r.ig_total_est ?? null) : null;
 
   // De las altas con dato de origen (desde ~ago-2024), cuántas llegaron por pauta en 12 meses.
@@ -1683,6 +1693,8 @@ function drawSeguidores(host, serie, que) {
         <div class="d">${crec12 != null ? `${conSigno(crec12)} en 12 meses (${(100 * crec12 / totalFb(fbHace12)).toFixed(1)}%)` : ''}</div></div>
       <div><div class="k">Últimos 12 meses</div><div class="v">+${sumaCampo(u12, 'fb_altas').toLocaleString('es-MX')} / −${sumaCampo(u12, 'fb_bajas').toLocaleString('es-MX')}</div>
         <div class="d">Altas y bajas de los ${u12.length} meses cerrados</div></div>
+      <div><div class="k">Se van</div><div class="v">${sumaCampo(u12, 'fb_altas') ? Math.round(100 * sumaCampo(u12, 'fb_bajas') / sumaCampo(u12, 'fb_altas')) + '%' : '—'}</div>
+        <div class="d">Bajas por cada 100 altas en esos meses</div></div>
       <div><div class="k">Llegaron por pauta</div><div class="v">${pag12 + org12 ? Math.round(100 * pag12 / (pag12 + org12)) + '%' : '—'}</div>
         <div class="d">De los nuevos seguidores de esos 12 meses</div></div>
     </div>
@@ -1698,20 +1710,18 @@ function drawSeguidores(host, serie, que) {
         <div class="ch alto"><canvas id="sg-fb-pag"></canvas></div>${legend([[C.ambar, 'Por pauta'], [C.verde, 'Orgánicas'], [C.azul, '% por pauta']])}</div>
     </div>
     ${bloqueFbAlcance(serie)}
-    ${bloqueFbContenido(serie)}
-    ${bloqueFbAudiencia(serie, mesActual)}`;
+    ${bloqueFbAudiencia(serie, mesActual)}
+    ${bloqueFbContenido(serie)}`;
 
   const igHtml = `${bloqueTendencia('ig')}
     <div class="pulso-bloque">Comunidad</div>
     <div class="ficha">
       <div><div class="k">Seguidores</div><div class="v">${igUlt ? igUlt.ig_total.toLocaleString('es-MX') : '—'}</div>
         <div class="d">Hoy, según Meta</div></div>
-      <div><div class="k">Neto, últimos ${igCerr.length} meses</div><div class="v">${conSigno(igAltas - igBajas)}</div>
-        <div class="d">+${igAltas.toLocaleString('es-MX')} altas / −${igBajas.toLocaleString('es-MX')} bajas</div></div>
+      <div><div class="k">Últimos 12 meses</div><div class="v">+${igAltas.toLocaleString('es-MX')} / −${igBajas.toLocaleString('es-MX')}</div>
+        <div class="d">Altas y bajas de los ${igCerr.length} meses cerrados</div></div>
       <div><div class="k">Se van</div><div class="v">${igAltas ? Math.round(100 * igBajas / igAltas) + '%' : '—'}</div>
         <div class="d">Bajas por cada 100 altas en esos meses</div></div>
-      <div><div class="k">Clics al sitio web</div><div class="v">${igUltCerr ? igUltCerr.ig_clics.toLocaleString('es-MX') : '—'}</div>
-        <div class="d">Desde el perfil, en ${igUltCerr ? igUltCerr.month : '—'}</div></div>
     </div>
     <div class="charts-grid">
       <div class="panel"><h3>Seguidores totales${ayuda('ig_total')}</h3>
@@ -1720,16 +1730,13 @@ function drawSeguidores(host, serie, que) {
       <div class="panel"><h3>Altas y bajas por mes${ayuda('ig_mov')}</h3>
         <div class="cap">Quién empezó y quién dejó de seguir. La línea es el neto.</div>
         <div class="ch alto"><canvas id="sg-ig-mov"></canvas></div>${legend([[C.verde, 'Altas'], [C.rojo, 'Bajas'], [C.rosa, 'Neto']])}</div>
-      <div class="panel"><h3>Vistas por mes${ayuda('ig_vistas')}</h3>
-        <div class="cap">Cuántas veces se vio el contenido. Incluye lo promocionado.</div>
-        <div class="ch alto"><canvas id="sg-ig-vistas"></canvas></div>${legend([[C.rosa, 'Vistas']])}</div>
-      <div class="panel"><h3>Interacciones por mes${ayuda('ig_inter')}</h3>
-        <div class="cap">Likes, comentarios, compartidos y guardados. Línea: interacciones ÷ vistas.</div>
-        <div class="ch alto"><canvas id="sg-ig-inter"></canvas></div>${legend([[C.cian, 'Interacciones'], [C.ambar, 'Tasa de interacción']])}</div>
+      <div class="panel"><h3>Se van: bajas por cada 100 altas${ayuda('ig_churn')}</h3>
+        <div class="cap">Por mes. Instagram no separa altas por pauta; esto es lo que sí da.</div>
+        <div class="ch alto"><canvas id="sg-ig-churn"></canvas></div>${legend([[C.rojo, 'Bajas por cada 100 altas']])}</div>
     </div>
-    ${bloqueContenido(serie, L, mesActual)}
     ${bloqueEmbudo(serie, mesActual)}
-    ${bloqueAudiencia(serie, mesActual)}`;
+    ${bloqueAudiencia(serie, mesActual)}
+    ${bloqueContenido(serie, L, mesActual)}`;
   // Cada hoja pinta solo su parte. Las gráficas de la otra se saltan solas: `mkMulti` no dibuja
   // si su canvas no existe.
   host.innerHTML = que === 'fb' ? fbHtml : igHtml;
@@ -1767,14 +1774,11 @@ function drawSeguidores(host, serie, que) {
     { type: 'bar', label: 'Bajas', orden: 1, color: Lig.map(m => tenue(C.rojo, m)), data: Lig.map(m => ig(m, 'ig_bajas') == null ? null : -ig(m, 'ig_bajas')) },
     { type: 'line', label: 'Neto', color: C.rosa, data: Lig.map(m => ig(m, 'ig_altas') == null ? null : ig(m, 'ig_altas') - ig(m, 'ig_bajas')) },
   ], { fmt: 'num', sinBandas: true, pieTooltip: enCurso });
-  mkMulti('sg-ig-vistas', Lig, [
-    { type: 'bar', label: 'Vistas', color: Lig.map(m => tenue(C.rosa, m)), data: Lig.map(m => ig(m, 'ig_vistas')) },
-  ], { fmt: 'compacto', sinBandas: true, pieTooltip: enCurso });
-  mkMulti('sg-ig-inter', Lig, [
-    { type: 'bar', label: 'Interacciones', orden: 1, color: Lig.map(m => tenue(C.cian, m)), data: Lig.map(m => ig(m, 'ig_interacciones')) },
-    { type: 'line', label: 'Tasa de interacción', eje: 'y1', color: C.ambar, tension: .1,
-      data: Lig.map(m => ig(m, 'ig_vistas') ? ig(m, 'ig_interacciones') / ig(m, 'ig_vistas') : null) },
-  ], { fmt: 'num', fmtDerecha: 'pctFino', sinBandas: true, pieTooltip: enCurso });
+  const Lmov = Lig.filter(m => ig(m, 'ig_altas') != null);
+  mkMulti('sg-ig-churn', Lmov, [
+    { label: 'Bajas por cada 100 altas', color: C.rojo, tension: .2, puntoRadio: 2,
+      data: Lmov.map(m => ig(m, 'ig_altas') ? Math.round(1000 * ig(m, 'ig_bajas') / ig(m, 'ig_altas')) / 10 : null) },
+  ], { fmt: 'num', sinBandas: true, pieTooltip: k => Lmov[k] === mesActual ? ['Mes en curso: todavía no termina'] : [] });
   dibujarContenido(serie, L, Lig);
   dibujarEmbudo(serie, L, mesActual);
   dibujarAudiencia(serie, L, mesActual);
@@ -1884,18 +1888,25 @@ function dibujarContenido(serie, L, Lig) {
     { fmt: 'compacto', fmtDerecha: 'compacto', apilado: true, sinBandas: true });
 }
 
-// ── Instagram · del contenido al sitio ────────────────────────────────────────
-// Una línea de 5 gráficas con el mismo eje de meses: tres valores (vistas desde ago-2025, visitas
-// al perfil y clics al sitio desde nov-2024) y las dos conversiones entre ellos.
+// ── Instagram · alcance e interacción (incluye el camino al sitio) ──────────────
+// Dos líneas de 4 con el mismo eje de meses. Arriba, lo mismo que Facebook: vistas, personas
+// alcanzadas, interacciones e interacciones por mil vistas. Abajo, del contenido al sitio: visitas al
+// perfil, clics al sitio y las dos conversiones entre pasos.
 const por = (a, b, base) => (a != null && b) ? base * a / b : null;
 
 function bloqueEmbudo(serie, mesActual) {
-  if (!serie.some(r => r.ig_perfil != null)) return '';
+  if (!serie.some(r => r.ig_vistas != null || r.ig_perfil != null)) return '';
   const panel = (id, titulo, cap, help) => `<div class="panel"><h3>${titulo}${ayuda(help)}</h3>
       <div class="cap">${cap}</div><div class="ch"><canvas id="${id}"></canvas></div></div>`;
-  return `<div class="pulso-bloque">Del contenido al sitio</div>
-    <div class="cinco">
+  return `<div class="pulso-bloque">Alcance e interacción</div>
+    <div class="cuatro">
       ${panel('sg-ig-e-vistas', 'Vistas', 'Veces que se vio el contenido.', 'ig_vistas')}
+      ${panel('sg-ig-e-alc', 'Personas alcanzadas', 'Distintas, en 30 días del mes.', 'ig_alcance')}
+      ${panel('sg-ig-e-inter', 'Interacciones', 'Likes, comentarios, compartidos y guardados.', 'ig_inter')}
+      ${panel('sg-ig-e-tasa', 'Interacciones por mil vistas', 'Si el contenido engancha o solo se ve.', 'ig_inter')}
+    </div>
+    <div class="flabel" style="margin:12px 0 6px">Del contenido al sitio</div>
+    <div class="cuatro">
       ${panel('sg-ig-e-perfil', 'Visitas al perfil', 'Personas que entraron al perfil.', 'ig_perfil_mes')}
       ${panel('sg-ig-e-clics', 'Clics al sitio', 'Clics al link del sitio web.', 'ig_perfil_mes')}
       ${panel('sg-ig-e-c1', 'Vistas → perfil', 'Visitas al perfil por cada 10 mil vistas.', 'ig_embudo')}
@@ -1905,22 +1916,25 @@ function bloqueEmbudo(serie, mesActual) {
 
 function dibujarEmbudo(serie, L, mesActual) {
   const fila = m => serie.find(r => r.month === m) || {};
-  const primero = serie.find(r => r.ig_perfil != null);
+  const primero = serie.find(r => r.ig_perfil != null || r.ig_vistas != null);
   const Lp = primero ? L.filter(m => m >= primero.month) : [];
   const tenue = (c, m) => m === mesActual ? c + '55' : c;
   const enCurso = k => Lp[k] === mesActual ? ['Mes en curso: todavía no termina'] : [];
-  const col = (id, campo, label, color, fmt) => mkMulti(id, Lp, [
-    { type: 'bar', label, color: Lp.map(m => tenue(color, m)), data: Lp.map(m => fila(m)[campo] ?? null) },
+  const col = (id, valor, label, color, fmt) => mkMulti(id, Lp, [
+    { type: 'bar', label, color: Lp.map(m => tenue(color, m)), data: Lp.map(m => valor(fila(m))) },
   ], { fmt, sinBandas: true, pieTooltip: enCurso });
-  col('sg-ig-e-vistas', 'ig_vistas', 'Vistas', C.rosa, 'compacto');
-  col('sg-ig-e-perfil', 'ig_perfil', 'Visitas al perfil', C.cian, 'num');
-  col('sg-ig-e-clics', 'ig_clics', 'Clics al sitio', C.azul, 'num');
+  const linea = (id, valor, label, color, fmt) => mkMulti(id, Lp, [
+    { label, color, tension: .2, puntoRadio: 2, data: Lp.map(m => valor(fila(m))) },
+  ], { fmt, sinBandas: true, pieTooltip: enCurso });
   const r1 = v => v == null ? null : Math.round(10 * v) / 10;
-  const tasa = (id, num, den, base, label, color) => mkMulti(id, Lp, [
-    { label, color, tension: .2, puntoRadio: 2, data: Lp.map(m => r1(por(fila(m)[num], fila(m)[den], base))) },
-  ], { fmt: 'num', sinBandas: true, pieTooltip: enCurso });
-  tasa('sg-ig-e-c1', 'ig_perfil', 'ig_vistas', 1e4, 'Por cada 10 mil vistas', C.cian);
-  tasa('sg-ig-e-c2', 'ig_clics', 'ig_perfil', 100, 'Por cada 100 visitas', C.azul);
+  col('sg-ig-e-vistas', r => r.ig_vistas ?? null, 'Vistas', C.rosa, 'compacto');
+  linea('sg-ig-e-alc', r => r.ig_alc_seg != null ? r.ig_alc_seg + r.ig_alc_noseg : null, 'Personas alcanzadas', C.rosa, 'compacto');
+  col('sg-ig-e-inter', r => r.ig_interacciones ?? null, 'Interacciones', C.cian, 'num');
+  linea('sg-ig-e-tasa', r => r1(por(r.ig_interacciones, r.ig_vistas, 1000)), 'Por cada mil vistas', C.cian, 'num');
+  col('sg-ig-e-perfil', r => r.ig_perfil ?? null, 'Visitas al perfil', C.azul, 'num');
+  col('sg-ig-e-clics', r => r.ig_clics ?? null, 'Clics al sitio', C.azul, 'num');
+  linea('sg-ig-e-c1', r => r1(por(r.ig_perfil, r.ig_vistas, 1e4)), 'Por cada 10 mil vistas', C.azul, 'num');
+  linea('sg-ig-e-c2', r => r1(por(r.ig_clics, r.ig_perfil, 100)), 'Por cada 100 visitas', C.azul, 'num');
 }
 
 // ── Instagram · audiencia ─────────────────────────────────────────────────────
