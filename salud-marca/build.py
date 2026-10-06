@@ -11,6 +11,7 @@ import contract
 import sources_bq as BQ
 import sources_brand_lift as BL
 import sources_pulso as PULSO
+import sources_ig_posts as IGP
 import sources_social as SOCIAL
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -158,7 +159,36 @@ def collect_seguidores(now):
         except Exception as e:
             print(f"WARN seguidores IG mensual: {type(e).__name__}: {e}")
         cache["last_refresh"] = now
-        SOCIAL.save_cache(cache["datos"], now, cache.get("ig_mes"))
+    # Publicaciones de Instagram: las 100 más recientes de cada marca (likes, comentarios y, en las
+    # de los últimos 45 días, vistas y demás). Un fallo de una marca no toca a las otras.
+    imagenes = {}
+    for clave, m in SOCIAL.MARCAS.items():
+        if not ok:
+            break
+        try:
+            cache["posts"][clave], imgs = IGP.actualizar(cache["posts"].get(clave, {}), m["ig"], hoy=now[:10])
+            imagenes.update(imgs)
+        except Exception as e:
+            print(f"WARN publicaciones {clave}: {type(e).__name__}: {e}")
+    if ok:
+        SOCIAL.save_cache(cache["datos"], now, cache.get("ig_mes"), cache.get("posts"))
+
+    # Top 5 del último mes CERRADO en que la marca publicó, y del en curso si ya hay algo. No "el
+    # mes anterior" a secas: Habi publicó 1 vez en sep-2026 y Propiedades.com 0, y su top saldría
+    # vacío. Miniaturas guardadas en el repo.
+    mes_act = now[:7]
+    tops = {}
+    for c in SOCIAL.MARCAS:
+        posts_c = cache["posts"].get(c, {})
+        cerrados = sorted({p["fecha"][:7] for p in posts_c.values() if p["fecha"][:7] < mes_act})
+        meses_top = ([cerrados[-1]] if cerrados else []) + ([mes_act] if any(
+            p["fecha"].startswith(mes_act) for p in posts_c.values()) else [])
+        tops[c] = {mes: IGP.top(posts_c, mes) for mes in meses_top}
+    try:
+        con_img = IGP.miniaturas([t for c in tops.values() for t in c.values()], imagenes)
+    except Exception as e:
+        print(f"WARN miniaturas: {type(e).__name__}: {e}")
+        con_img = set()
 
     # `series` va por MES (años de historia sin inflar data.json) y `diario` trae los últimos 45
     # días, que es donde vive la serie de Instagram (Meta solo da 30 días de nuevos).
@@ -166,6 +196,11 @@ def collect_seguidores(now):
     for clave in SOCIAL.MARCAS:
         diaria = SOCIAL.series(cache.get("datos", {}), clave)
         serie = SOCIAL.mensual(diaria, cache.get("ig_mes", {}).get(clave))
+        # Publicaciones por mes y formato: van en la misma fila del mes que el resto.
+        por_mes = {r["month"]: r for r in serie}
+        for mes, v in IGP.mensual(cache["posts"].get(clave, {})).items():
+            por_mes.setdefault(mes, {"month": mes}).update(v)
+        serie = [por_mes[k] for k in sorted(por_mes)]
         fallo = (not ok) or clave in errores
         if not serie:
             out[clave] = contract.metric(
@@ -177,6 +212,8 @@ def collect_seguidores(now):
         else:
             out[clave] = contract.metric("ok", source="api", series=serie, last_updated=now)
         out[clave]["diario"] = diaria[-45:]
+        out[clave]["top_posts"] = {mes: [dict(p, img=f"ig_miniaturas/{p['id']}.jpg" if p["id"] in con_img else None)
+                                         for p in lista] for mes, lista in tops[clave].items()}
     return out
 
 

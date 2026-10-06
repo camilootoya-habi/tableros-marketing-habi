@@ -80,6 +80,17 @@
   .kpi .v { font-size: 15px; font-weight: 700; color: var(--text-title); margin-top: 2px; font-variant-numeric: tabular-nums; }
   .kpi .v small { font-size: 11.5px; font-weight: 500; color: var(--text-muted-2); }
 
+  /* Top de publicaciones de Instagram: miniatura cuadrada + datos + link. */
+  .top-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 12px; }
+  .top-post { background: var(--card); border: 1px solid var(--border); border-radius: 10px; overflow: hidden; display: flex; flex-direction: column; min-width: 0; color: inherit; text-decoration: none; transition: border-color .15s; }
+  .top-post:hover { border-color: var(--accent); }
+  .top-post .img { aspect-ratio: 1; background: var(--row-border) center / cover no-repeat; position: relative; }
+  .top-post .rank { position: absolute; top: 7px; left: 7px; background: rgba(0, 0, 0, .65); color: #fff; font-size: 11px; font-weight: 700; border-radius: 5px; padding: 2px 7px; }
+  .top-post .fmt { position: absolute; top: 7px; right: 7px; background: rgba(0, 0, 0, .65); color: #fff; font-size: 10.5px; border-radius: 5px; padding: 2px 7px; }
+  .top-post .info { padding: 8px 10px 10px; font-size: 11.5px; color: var(--text-muted-2); line-height: 1.45; }
+  .top-post .info b { color: var(--text-title); font-size: 13px; }
+  .top-post .txt { color: var(--text-muted-3); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; margin-top: 3px; }
+
   /* Eficiencia: una tarjeta por pregunta con veredicto en palabras. */
   .costo-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 12px; }
   .costo-grid > * { min-width: 0; }
@@ -391,11 +402,12 @@ function mkMulti(id, labels, datasets, o = {}) {
   const izq = o.fmt || 'num', der = o.fmtDerecha;
   const usaDerecha = datasets.some(d => d.eje === 'y1');
   const scales = {
-    x: { ticks: { color: tick, maxTicksLimit: 8 }, grid: { display: false } },
+    // `o.apilado`: barras una sobre otra (publicaciones por formato suman el total del mes).
+    x: { stacked: !!o.apilado, ticks: { color: tick, maxTicksLimit: 8 }, grid: { display: false } },
     // `o.max` fuerza el techo del eje. Se usa para que dos paneles hermanos compartan escala:
     // sin eso cada uno autoescala y dos series de niveles distintos se ven del mismo tamaño.
     // `sMin`/`sMax`: lo que no es una serie pero debe caber (los bigotes del intervalo).
-    y: { beginAtZero: o.desdeCero ?? (izq !== 'pts'), stacked: false, max: o.max,
+    y: { beginAtZero: o.desdeCero ?? (izq !== 'pts'), stacked: !!o.apilado, max: o.max,
          suggestedMin: o.sMin, suggestedMax: o.sMax,
          ticks: { color: tick, callback: FMT_EJE[izq] }, grid: { color: grid } },
   };
@@ -832,6 +844,29 @@ const AYUDA = {
     el contenido engancha o solo se ve. Es baja (centésimas de punto) porque las vistas incluyen la pauta,
     que llega a mucha gente que no sigue la cuenta.</p>
     <p class="ej">Ejemplo: 3,719 interacciones sobre 9.4 M de vistas = 0.04%.</p>`],
+  ig_pub: ['Publicaciones por mes', `
+    <p>Cuántas publicaciones salieron cada mes en el feed, por formato:</p>
+    <ul><li><strong>Video</strong>: Reels y los videos de feed de antes de que existieran los Reels.</li>
+    <li><strong>Carrusel</strong>: varias imágenes o videos en un solo post.</li>
+    <li><strong>Imagen</strong>: una sola foto.</li></ul>
+    <p>No incluye historias: Meta solo deja leerlas las 24 horas que duran. La historia viene completa
+    desde que la cuenta empezó a publicar.</p>`],
+  ig_li: ['Likes + comentarios por publicación', `
+    <p>Promedio de likes y comentarios por publicación, por formato. Es la <strong>única métrica que
+    existe para toda la historia</strong>: guardados, compartidos y vistas solo llegan desde ago-2025.</p>
+    <p>Sirve para comparar formatos entre sí y ver si el contenido engancha más o menos que antes. Un mes
+    con pocas publicaciones se mueve mucho: léelo en tendencia.</p>
+    <p><strong>Ojo</strong>: si un post se promocionó, sus likes incluyen los de la pauta.</p>`],
+  ig_vpp: ['Vistas por publicación', `
+    <p>Promedio de vistas de cada publicación según su formato, para lo publicado desde ago-2025 (antes
+    Meta no da vistas por publicación).</p>
+    <p>Incluye las vistas pagadas de los posts promocionados, así que un formato puede verse más visto
+    solo porque se pautó más.</p>`],
+  ig_top: ['Las publicaciones que más engancharon', `
+    <p>Las 5 con más <strong>interacciones</strong> del mes (likes, comentarios, guardados y compartidos,
+    según Meta). En publicaciones de antes de ago-2025, se ordena por likes + comentarios.</p>
+    <p>Se muestra el último mes cerrado en que la marca publicó y el mes en curso si ya hay algo. Clic
+    en una publicación para abrirla en Instagram.</p>`],
 };
 const ayuda = k => AYUDA[k] ? `<button type="button" class="help-btn" data-ayuda="${k}" aria-label="Más información">?</button>` : '';
 
@@ -1312,6 +1347,10 @@ function drawSeguidores(host, serie) {
   const L = recortar(serie.map(r => r.month), MESES);
   const fila = m => serie.find(r => r.month === m);
   const mesActual = new Date().toISOString().slice(0, 7);
+  // La serie arranca con la publicación más vieja (Habi y Propiedades.com: 2019); Facebook, en
+  // oct-2021. Cada bloque recorta a los meses donde tiene dato.
+  const primerFb = (serie.find(r => r.dias_fb || r.fb_total != null || r.fb_total_est != null) || {}).month;
+  const Lfb = primerFb ? L.filter(m => m >= primerFb) : [];
 
   // ── Facebook ──
   // Meses cerrados: el en curso suma pocos días y se leería como una caída.
@@ -1370,21 +1409,22 @@ function drawSeguidores(host, serie) {
       <div class="panel"><h3>Interacciones por mes${ayuda('ig_inter')}</h3>
         <div class="cap">Likes, comentarios, compartidos y guardados. Línea: interacciones ÷ vistas.</div>
         <div class="ch alto"><canvas id="sg-ig-inter"></canvas></div>${legend([[C.cian, 'Interacciones'], [C.ambar, 'Tasa de interacción']])}</div>
-    </div>`;
+    </div>
+    ${bloqueContenido(serie, L, mesActual)}`;
 
   // Facebook. El reconstruido llega hasta el primer mes medido para que las dos líneas se toquen.
-  const primerReal = L.find(m => (fila(m) || {}).fb_total != null);
-  mkMulti('sg-fb-total', L, [
+  const primerReal = Lfb.find(m => (fila(m) || {}).fb_total != null);
+  mkMulti('sg-fb-total', Lfb, [
     { label: 'Reconstruido', color: C.azul + '88', dash: [5, 4], puntoRadio: 0, tension: .2,
-      data: L.map(m => m <= (primerReal || '9999') ? totalFb(fila(m)) : null) },
-    { label: 'Medido por Meta', color: C.azul, puntoRadio: 0, tension: .2, data: L.map(m => (fila(m) || {}).fb_total ?? null) },
+      data: Lfb.map(m => m <= (primerReal || '9999') ? totalFb(fila(m)) : null) },
+    { label: 'Medido por Meta', color: C.azul, puntoRadio: 0, tension: .2, data: Lfb.map(m => (fila(m) || {}).fb_total ?? null) },
   ], { fmt: 'num', desdeCero: false });
   const parcial = m => { const r = fila(m); return r && r.dias_fb < diasDelMes(m); };
-  mkMulti('sg-fb-mes', L, [
-    { type: 'bar', label: 'Altas', orden: 1, color: L.map(m => parcial(m) ? C.verde + '55' : C.verde), data: L.map(m => (fila(m) || {}).dias_fb ? fila(m).fb_altas : null) },
-    { type: 'bar', label: 'Bajas', orden: 1, color: L.map(m => parcial(m) ? C.rojo + '55' : C.rojo), data: L.map(m => (fila(m) || {}).dias_fb ? -fila(m).fb_bajas : null) },
-    { type: 'line', label: 'Neto', color: C.azul, data: L.map(m => (fila(m) || {}).dias_fb ? fila(m).fb_altas - fila(m).fb_bajas : null) },
-  ], { fmt: 'num', pieTooltip: k => parcial(L[k]) ? [`Mes en curso: ${fila(L[k]).dias_fb} días con dato`] : [] });
+  mkMulti('sg-fb-mes', Lfb, [
+    { type: 'bar', label: 'Altas', orden: 1, color: Lfb.map(m => parcial(m) ? C.verde + '55' : C.verde), data: Lfb.map(m => (fila(m) || {}).dias_fb ? fila(m).fb_altas : null) },
+    { type: 'bar', label: 'Bajas', orden: 1, color: Lfb.map(m => parcial(m) ? C.rojo + '55' : C.rojo), data: Lfb.map(m => (fila(m) || {}).dias_fb ? -fila(m).fb_bajas : null) },
+    { type: 'line', label: 'Neto', color: C.azul, data: Lfb.map(m => (fila(m) || {}).dias_fb ? fila(m).fb_altas - fila(m).fb_bajas : null) },
+  ], { fmt: 'num', pieTooltip: k => parcial(Lfb[k]) ? [`Mes en curso: ${fila(Lfb[k]).dias_fb} días con dato`] : [] });
 
   // Instagram. El mes en curso va translúcido en barras: todavía no termina.
   const ig = (m, k) => (fila(m) || {})[k] ?? null;
@@ -1408,6 +1448,90 @@ function drawSeguidores(host, serie) {
     { type: 'line', label: 'Tasa de interacción', eje: 'y1', color: C.ambar, tension: .1,
       data: Lig.map(m => ig(m, 'ig_vistas') ? ig(m, 'ig_interacciones') / ig(m, 'ig_vistas') : null) },
   ], { fmt: 'num', fmtDerecha: 'pctFino', sinBandas: true, pieTooltip: enCurso });
+  dibujarContenido(serie, L, Lig);
+}
+
+// ── Instagram · contenido ─────────────────────────────────────────────────────
+// Publicaciones por mes y formato (toda la historia), likes + comentarios por publicación (la
+// única métrica que existe para toda la historia), vistas por publicación (desde ago-2025) y el
+// top 5 con miniatura. Datos de sources_ig_posts.py.
+const FORMATOS = [['video', 'Video', C.rosa], ['carrusel', 'Carrusel', C.cian], ['imagen', 'Imagen', C.ambar]];
+const MESES_ES = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
+const nombreMes = m => `${MESES_ES[+m.slice(5) - 1]}-${m.slice(0, 4)}`;
+const pubs = r => FORMATOS.reduce((a, [f]) => a + ((r || {})[`pub_${f}`] || 0), 0);
+const sumaF = (rows, pre) => rows.reduce((a, r) => a + FORMATOS.reduce((b, [f]) => b + (r[`${pre}_${f}`] || 0), 0), 0);
+const ultimos12 = (serie, mesActual) => {
+  const d = new Date(mesActual + '-01T00:00:00Z'); d.setUTCMonth(d.getUTCMonth() - 12);
+  const desde = d.toISOString().slice(0, 7);
+  return serie.filter(r => r.month >= desde && r.month < mesActual);
+};
+
+function bloqueContenido(serie, L, mesActual) {
+  const ult = [...serie].reverse().find(r => r.month < mesActual && pubs(r) > 0);
+  const u12 = ultimos12(serie, mesActual);
+  const n12 = sumaF(u12, 'pub');
+  const porFmt = FORMATOS.map(([f, nombre]) => {
+    const n = u12.reduce((a, r) => a + (r[`pub_${f}`] || 0), 0);
+    const li = u12.reduce((a, r) => a + (r[`li_${f}`] || 0), 0);
+    return { f, nombre, n, prom: n ? li / n : null };
+  });
+  const mejor = porFmt.filter(x => x.n >= 3).sort((a, b) => b.prom - a.prom)[0];
+  const video = porFmt.find(x => x.f === 'video');
+  const nv = sumaF(u12, 'nv'), vistas = sumaF(u12, 'vistas');
+  const tops = ((DATA.metrics.seguidores || {})[PAIS] || {}).top_posts || {};
+
+  const tarjeta = (p, i) => `<a class="top-post" href="${esc(p.link)}" target="_blank" rel="noopener">
+      <div class="img" style="${p.img ? `background-image:url('${p.img}')` : ''}"><span class="rank">#${i + 1}</span>
+        <span class="fmt">${(FORMATOS.find(x => x[0] === p.formato) || [, p.formato])[1]}</span></div>
+      <div class="info"><b>${(p.interacciones ?? (p.likes + p.comentarios)).toLocaleString('es-MX')}</b> interacciones
+        ${p.vistas ? ` · ${fmtMil(p.vistas)} vistas` : ''}<br>${p.fecha}
+        <div class="txt">${esc(p.texto)}</div></div></a>`;
+  const topHtml = Object.keys(tops).sort().reverse().map(mes => `
+      <div class="flabel" style="margin:14px 0 8px">${nombreMes(mes)}${mes === mesActual ? ' · en curso' : ''} ·
+        ${tops[mes].length === 1 ? 'su única publicación' : `las ${tops[mes].length} con más interacción`}</div>
+      <div class="top-grid">${tops[mes].map(tarjeta).join('')}</div>`).join('');
+
+  return `<div class="pulso-bloque">Instagram · contenido</div>
+    <div class="ficha">
+      <div><div class="k">Publicaciones${ult ? ` en ${nombreMes(ult.month)}` : ''}</div><div class="v">${ult ? pubs(ult) : '—'}</div>
+        <div class="d">Promedio de los últimos 12 meses: ${(n12 / 12).toFixed(1)} por mes</div></div>
+      <div><div class="k">Videos y Reels</div><div class="v">${n12 ? Math.round(100 * video.n / n12) + '%' : '—'}</div>
+        <div class="d">De lo publicado en 12 meses (${n12} publicaciones)</div></div>
+      <div><div class="k">Formato que más engancha</div><div class="v">${mejor ? mejor.nombre : '—'}</div>
+        <div class="d">${porFmt.filter(x => x.n).map(x => `${x.nombre} ${Math.round(x.prom)}`).join(' · ')} likes + coment. por publicación</div></div>
+      <div><div class="k">Vistas por publicación</div><div class="v">${nv ? fmtMil(vistas / nv) : '—'}</div>
+        <div class="d">Promedio de 12 meses (solo hay desde ago-2025)</div></div>
+    </div>
+    <div class="charts-grid">
+      <div class="panel"><h3>Publicaciones por mes${ayuda('ig_pub')}</h3>
+        <div class="cap">Cuántas salieron cada mes, por formato.</div>
+        <div class="ch alto"><canvas id="sg-ig-pub"></canvas></div>${legend(FORMATOS.map(([, n, c]) => [c, n]))}</div>
+      <div class="panel"><h3>Likes + comentarios por publicación${ayuda('ig_li')}</h3>
+        <div class="cap">Promedio de cada formato. Es la métrica que existe para toda la historia.</div>
+        <div class="ch alto"><canvas id="sg-ig-li"></canvas></div>${legend(FORMATOS.map(([, n, c]) => [c, n]))}</div>
+      <div class="panel"><h3>Vistas por publicación${ayuda('ig_vpp')}</h3>
+        <div class="cap">Promedio de cada formato, desde ago-2025.</div>
+        <div class="ch alto"><canvas id="sg-ig-vpp"></canvas></div>${legend(FORMATOS.map(([, n, c]) => [c, n]))}</div>
+    </div>
+    <div class="flabel" style="display:flex;align-items:center;margin-top:16px">Las que más engancharon${ayuda('ig_top')}</div>
+    ${topHtml || '<div class="cap">Sin publicaciones recientes.</div>'}`;
+}
+
+function dibujarContenido(serie, L, Lig) {
+  const fila = m => serie.find(r => r.month === m) || {};
+  const conPub = serie.find(r => pubs(r) > 0);
+  const Lpub = conPub ? L.filter(m => m >= conPub.month) : [];
+  mkMulti('sg-ig-pub', Lpub, FORMATOS.map(([f, n, c]) => (
+    { type: 'bar', label: n, color: c, data: Lpub.map(m => fila(m)[`pub_${f}`] || 0) })),
+    { fmt: 'num', apilado: true, sinBandas: true });
+  mkMulti('sg-ig-li', Lpub, FORMATOS.map(([f, n, c]) => (
+    { label: n, color: c, puntoRadio: 1.5, tension: .25,
+      data: Lpub.map(m => fila(m)[`pub_${f}`] ? fila(m)[`li_${f}`] / fila(m)[`pub_${f}`] : null) })),
+    { fmt: 'num', sinBandas: true });
+  mkMulti('sg-ig-vpp', Lig, FORMATOS.map(([f, n, c]) => (
+    { label: n, color: c, puntoRadio: 2, tension: .2,
+      data: Lig.map(m => fila(m)[`nv_${f}`] ? fila(m)[`vistas_${f}`] / fila(m)[`nv_${f}`] : null) })),
+    { fmt: 'compacto', sinBandas: true });
 }
 
 // ── Filtros y render ──────────────────────────────────────────────────────────

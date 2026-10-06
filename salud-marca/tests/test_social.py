@@ -15,7 +15,9 @@ def test_el_dia_del_dato_es_el_anterior_al_end_time():
 def test_merge_nunca_borra_y_pisa_campo_por_campo():
     cache = {"datos": {"MX": {"2026-10-01": {"fb_total": 10, "ig_total": 5}}}, "last_refresh": "x"}
     fresh = {"MX": {"2026-10-01": {"fb_total": 11}, "2026-10-02": {"fb_total": 12}}}
+    cache["posts"] = {"MX": {"p1": {"likes": 3}}}
     m = S.merge(cache, fresh)
+    assert m["posts"] == {"MX": {"p1": {"likes": 3}}}, "merge conserva las publicaciones"
     assert m["datos"]["MX"]["2026-10-01"] == {"fb_total": 11, "ig_total": 5}
     assert m["datos"]["MX"]["2026-10-02"] == {"fb_total": 12}
     assert cache["datos"]["MX"]["2026-10-01"]["fb_total"] == 10, "no muta el caché de entrada"

@@ -35,8 +35,9 @@ jobs:
         with:
           python-version: '3.12'
 
-      - name: Instalar pytest
-        run: python -m pip install --quiet pytest
+      - name: Instalar pytest y Pillow
+        # Pillow achica las miniaturas del top de Instagram (~10 KB cada una en vez de ~100 KB).
+        run: python -m pip install --quiet pytest pillow
 
       - uses: google-github-actions/setup-gcloud@v2
 
@@ -66,8 +67,10 @@ jobs:
           git config user.name  'github-actions[bot]'
           git config user.email 'github-actions[bot]@users.noreply.github.com'
           # questions.json: build.py mapea solo los estudios nuevos de Brand Lift (auto_map).
+          # -A en ig_miniaturas: build.py agrega las del top nuevo y borra las que salieron.
           git add salud-marca/data.json salud-marca/brand_lift_cache.json \
                   salud-marca/social_cache.json salud-marca/questions.json
+          git add -A salud-marca/ig_miniaturas
           git diff --cached --quiet && echo "sin cambios" && exit 0
           git commit -m "data(salud-marca): refresh $(date -u +%Y-%m-%dT%H:%MZ)"
           for i in 1 2 3 4 5; do

@@ -260,7 +260,7 @@ def backfill_fb(dias=365 * 7):
 def backfill_to_cache():
     cache = load_cache()
     nuevo = merge(cache, backfill_fb())
-    save_cache(nuevo["datos"], nuevo.get("last_refresh"), nuevo.get("ig_mes"))
+    save_cache(nuevo["datos"], nuevo.get("last_refresh"), nuevo.get("ig_mes"), nuevo.get("posts"))
     for k, v in nuevo["datos"].items():
         print(f"backfill {k}: {len(v)} días")
 
@@ -270,23 +270,28 @@ def backfill_ig_to_cache(meses=24):
     Uso: python3 -c "import sources_social as S; S.backfill_ig_to_cache()"."""
     cache = load_cache()
     nuevo = merge_ig(cache, fetch_ig_meses(meses=meses))
-    save_cache(nuevo["datos"], nuevo.get("last_refresh"), nuevo.get("ig_mes"))
+    save_cache(nuevo["datos"], nuevo.get("last_refresh"), nuevo.get("ig_mes"), nuevo.get("posts"))
     for k, v in nuevo["ig_mes"].items():
         print(f"backfill IG {k}: {len(v)} meses, desde {min(v)}")
 
 
 def load_cache():
     if not os.path.exists(CACHE):
-        return {"datos": {}, "ig_mes": {}, "last_refresh": None}
+        return {"datos": {}, "ig_mes": {}, "posts": {}, "last_refresh": None}
     c = json.loads(open(CACHE, encoding="utf-8").read())
     c.setdefault("ig_mes", {})
+    c.setdefault("posts", {})
     return c
 
 
-def save_cache(datos, last_refresh, ig_mes=None):
-    """`ig_mes` = métricas MENSUALES de Instagram por marca (la API no las da por día)."""
+def save_cache(datos, last_refresh, ig_mes=None, posts=None):
+    """`ig_mes` = métricas MENSUALES de Instagram por marca (la API no las da por día).
+    `posts` = publicaciones de Instagram por marca (ver sources_ig_posts.py). Si no se pasa,
+    se conserva lo que ya había en el archivo: nadie borra publicaciones por omisión."""
+    if posts is None:
+        posts = load_cache().get("posts", {})
     with open(CACHE, "w", encoding="utf-8") as f:
-        json.dump({"datos": datos, "ig_mes": ig_mes or {}, "last_refresh": last_refresh}, f,
+        json.dump({"datos": datos, "ig_mes": ig_mes or {}, "posts": posts, "last_refresh": last_refresh}, f,
                   ensure_ascii=False, indent=1, sort_keys=True)
         f.write("\n")
 
@@ -297,7 +302,7 @@ def merge(cache, fresh):
     for k, dias in fresh.items():
         for d, v in dias.items():
             datos.setdefault(k, {}).setdefault(d, {}).update(v)
-    return {"datos": datos, "ig_mes": cache.get("ig_mes", {}), "last_refresh": cache.get("last_refresh")}
+    return {**cache, "datos": datos}
 
 
 def merge_ig(cache, fresh_meses):
@@ -306,7 +311,7 @@ def merge_ig(cache, fresh_meses):
     for k, meses in fresh_meses.items():
         for m, v in meses.items():
             ig.setdefault(k, {}).setdefault(m, {}).update(v)
-    return {"datos": cache.get("datos", {}), "ig_mes": ig, "last_refresh": cache.get("last_refresh")}
+    return {**cache, "ig_mes": ig}
 
 
 def series(datos, clave):
