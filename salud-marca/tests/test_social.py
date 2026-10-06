@@ -92,6 +92,24 @@ def test_ig_mes_sin_altas_en_una_mitad_no_guarda_altas_ni_bajas(monkeypatch):
     assert "ig_altas" not in v and v["ig_vistas"] == 200
 
 
+def test_ig_mes_guarda_el_alcance_de_seguidores_y_no_seguidores(monkeypatch):
+    def fake_get(path, token, **p):
+        if p["metric"] == "reach":
+            return True, {"data": [{"total_value": {"breakdowns": [{"results": [
+                {"dimension_values": ["FOLLOWER"], "value": 120}, {"dimension_values": ["NON_FOLLOWER"], "value": 9000}]}]}}]}
+        return True, {"data": []}
+    monkeypatch.setattr(S, "_get", fake_get)
+    v = S._ig_mes("ig", "tok", datetime.date(2026, 9, 1), ahora=10 ** 10)
+    assert v == {"ig_alc_seg": 120, "ig_alc_noseg": 9000}
+
+
+def test_save_cache_conserva_publicaciones_y_demografia_si_no_se_pasan():
+    S.save_cache({}, None, {}, {"MX": {"p": {}}}, {"MX": {"2026-10": {"edad": {"25-34": 5}}}})
+    S.save_cache({"MX": {}}, "t", {})
+    c = S.load_cache()
+    assert c["posts"] == {"MX": {"p": {}}} and c["ig_demo"]["MX"]["2026-10"]["edad"] == {"25-34": 5}
+
+
 def test_mensual_reconstruye_el_total_de_instagram_hacia_atras():
     filas = [{"date": "2026-10-05", "ig_total": 1000}]
     ig_mes = {"2026-08": {"ig_altas": 50, "ig_bajas": 10},

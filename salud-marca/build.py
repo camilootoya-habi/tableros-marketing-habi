@@ -158,6 +158,13 @@ def collect_seguidores(now):
             cache = SOCIAL.merge_ig(cache, SOCIAL.fetch_ig_meses(meses=2))
         except Exception as e:
             print(f"WARN seguidores IG mensual: {type(e).__name__}: {e}")
+        # Demografía de seguidores: Meta solo da la de hoy, así que se guarda como la foto del mes
+        # (se sobrescribe cada día; la del último día del mes es la que queda).
+        for clave, m in SOCIAL.MARCAS.items():
+            try:
+                cache["ig_demo"].setdefault(clave, {})[now[:7]] = SOCIAL.fetch_demografia(m["ig"])
+            except Exception as e:
+                print(f"WARN demografía {clave}: {type(e).__name__}: {e}")
         cache["last_refresh"] = now
     # Publicaciones de Instagram: las 100 más recientes de cada marca (likes, comentarios y, en las
     # de los últimos 45 días, vistas y demás). Un fallo de una marca no toca a las otras.
@@ -181,16 +188,16 @@ def collect_seguidores(now):
         posts_c = cache["posts"].get(c, {})
         tops[c] = {}
         for periodo, desde, criterio in (("180", hace180, IGP.puntaje), ("historico", "", IGP.likes_coment)):
-            todas = IGP.top(posts_c, desde, criterio=criterio)
+            todas = IGP.top(posts_c, desde, n=10, criterio=criterio)
             for p in todas:
                 if "pauta" not in p and verificar:
                     v = verificar(p["id"])
                     if v is not None:
                         p["pauta"] = posts_c[p["id"]]["pauta"] = v
             tops[c][periodo] = {"todas": todas,
-                                "organicas": IGP.top(posts_c, desde, organicas=True, criterio=criterio, verificar=verificar)}
+                                "organicas": IGP.top(posts_c, desde, n=10, organicas=True, criterio=criterio, verificar=verificar)}
     if ok:
-        SOCIAL.save_cache(cache["datos"], now, cache.get("ig_mes"), cache.get("posts"))
+        SOCIAL.save_cache(cache["datos"], now, cache.get("ig_mes"), cache.get("posts"), cache.get("ig_demo"))
 
     # Miniaturas: las de la lista de hoy ya traen URL; las de posts viejos se piden una por una.
     en_top = [p for c in tops.values() for per in c.values() for lista in per.values() for p in lista]
@@ -229,6 +236,9 @@ def collect_seguidores(now):
         img = lambda p: dict(p, img=f"ig_miniaturas/{p['id']}.jpg" if p["id"] in con_img else None)
         out[clave]["top_posts"] = {per: {k: [img(p) for p in lista] for k, lista in listas.items()}
                                    for per, listas in tops[clave].items()}
+        demo = cache.get("ig_demo", {}).get(clave) or {}
+        if demo:
+            out[clave]["demografia"] = {"mes": max(demo), **demo[max(demo)]}
         # Cuántas publicaciones de los últimos 180 días tuvieron pauta: contexto para el filtro.
         recientes = [p for p in cache["posts"].get(clave, {}).values() if p["fecha"] >= hace180]
         out[clave]["pauta_180"] = {"total": len(recientes),

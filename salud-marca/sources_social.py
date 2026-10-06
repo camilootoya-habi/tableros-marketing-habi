@@ -150,6 +150,20 @@ def _ig_mes(ig_id, token, ini, ahora=None):
                      "website_clicks": "ig_clics", "profile_views": "ig_perfil"}.get(d.get("name"))
             if campo:
                 tot[campo] = tot.get(campo, 0) + ((d.get("total_value") or {}).get("value") or 0)
+    # Alcance de seguidores vs no seguidores. Es alcance ÚNICO, que no se puede sumar entre
+    # mitades: se pide una sola ventana de 30 días desde el día 1 (la API no acepta más), así que
+    # en meses de 31 días queda fuera el último. Existe desde 2026 (antes la API no da el corte).
+    desde, hasta = _ts(ini), min(_ts(ini) + 30 * DIA, _ts(fin), ahora)
+    if desde < hasta:
+        ok, pl = _get(f"{ig_id}/insights", token, metric="reach", period="day", metric_type="total_value",
+                      breakdown="follow_type", since=desde, until=hasta)
+        if ok:
+            for d in pl.get("data") or []:
+                for bd in (d.get("total_value") or {}).get("breakdowns") or []:
+                    for x in bd.get("results") or []:
+                        campo = {"FOLLOWER": "ig_alc_seg", "NON_FOLLOWER": "ig_alc_noseg"}.get(x["dimension_values"][0])
+                        if campo and x.get("value"):
+                            tot[campo] = x["value"]
     # Altas y bajas solo si TODAS las mitades consultadas trajeron dato: el mes en que empieza la
     # historia (sep-2025) trae solo la segunda mitad y se leería como un mes sin crecimiento.
     if mitades_con_follows < mitades:
@@ -162,6 +176,28 @@ def _ig_mes(ig_id, token, ini, ahora=None):
         if not tot.get(k):
             tot.pop(k, None)
     return tot
+
+
+DEMO_CORTES = {"age": "edad", "gender": "genero", "city": "ciudad", "country": "pais"}
+
+
+def fetch_demografia(ig_id):
+    """Edad, género, ciudad y país de los SEGUIDORES de hoy. Meta solo da la foto actual (el
+    parámetro `timeframe` se ignora, verificado el 6-oct-2026): el historial sale de guardar una
+    foto por mes. Ciudades y países van completos; el tablero muestra el top."""
+    token = BL._tokens()[0][1]
+    out = {}
+    for corte, nombre in DEMO_CORTES.items():
+        ok, pl = _get(f"{ig_id}/insights", token, metric="follower_demographics", period="lifetime",
+                      metric_type="total_value", breakdown=corte)
+        if not ok:
+            raise RuntimeError((pl.get("error") or {}).get("message"))
+        res = []
+        for d in pl.get("data") or []:
+            for bd in (d.get("total_value") or {}).get("breakdowns") or []:
+                res += bd.get("results") or []
+        out[nombre] = {x["dimension_values"][0]: x["value"] for x in res}
+    return out
 
 
 def fetch_ig_meses(paginas=None, meses=2, ahora=None):
@@ -277,22 +313,26 @@ def backfill_ig_to_cache(meses=24):
 
 def load_cache():
     if not os.path.exists(CACHE):
-        return {"datos": {}, "ig_mes": {}, "posts": {}, "last_refresh": None}
+        return {"datos": {}, "ig_mes": {}, "posts": {}, "ig_demo": {}, "last_refresh": None}
     c = json.loads(open(CACHE, encoding="utf-8").read())
-    c.setdefault("ig_mes", {})
-    c.setdefault("posts", {})
+    for k in ("ig_mes", "posts", "ig_demo"):
+        c.setdefault(k, {})
     return c
 
 
-def save_cache(datos, last_refresh, ig_mes=None, posts=None):
+def save_cache(datos, last_refresh, ig_mes=None, posts=None, ig_demo=None):
     """`ig_mes` = métricas MENSUALES de Instagram por marca (la API no las da por día).
-    `posts` = publicaciones de Instagram por marca (ver sources_ig_posts.py). Si no se pasa,
-    se conserva lo que ya había en el archivo: nadie borra publicaciones por omisión."""
+    `posts` = publicaciones de Instagram por marca (ver sources_ig_posts.py).
+    `ig_demo` = foto mensual de la demografía de seguidores ({marca: {AAAA-MM: {...}}}).
+    `posts` e `ig_demo` que no se pasan se conservan del archivo: nadie los borra por omisión."""
+    previo = load_cache() if posts is None or ig_demo is None else {}
     if posts is None:
-        posts = load_cache().get("posts", {})
+        posts = previo.get("posts", {})
+    if ig_demo is None:
+        ig_demo = previo.get("ig_demo", {})
     with open(CACHE, "w", encoding="utf-8") as f:
-        json.dump({"datos": datos, "ig_mes": ig_mes or {}, "posts": posts, "last_refresh": last_refresh}, f,
-                  ensure_ascii=False, indent=1, sort_keys=True)
+        json.dump({"datos": datos, "ig_mes": ig_mes or {}, "posts": posts, "ig_demo": ig_demo,
+                   "last_refresh": last_refresh}, f, ensure_ascii=False, indent=1, sort_keys=True)
         f.write("\n")
 
 
