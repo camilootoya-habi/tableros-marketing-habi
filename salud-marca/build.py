@@ -151,15 +151,21 @@ def collect_seguidores(now):
         print(f"WARN seguidores {k}: {e}")
     if ok:
         cache = SOCIAL.merge(cache, fresh)
+        # Métricas mensuales de Instagram: el mes en curso y el anterior. Un fallo aquí no tumba
+        # los seguidores diarios: se avisa y se sirve lo que ya había en el caché.
+        try:
+            cache = SOCIAL.merge_ig(cache, SOCIAL.fetch_ig_meses(meses=2))
+        except Exception as e:
+            print(f"WARN seguidores IG mensual: {type(e).__name__}: {e}")
         cache["last_refresh"] = now
-        SOCIAL.save_cache(cache["datos"], now)
+        SOCIAL.save_cache(cache["datos"], now, cache.get("ig_mes"))
 
     # `series` va por MES (años de historia sin inflar data.json) y `diario` trae los últimos 45
     # días, que es donde vive la serie de Instagram (Meta solo da 30 días de nuevos).
     out = {}
     for clave in SOCIAL.MARCAS:
         diaria = SOCIAL.series(cache.get("datos", {}), clave)
-        serie = SOCIAL.mensual(diaria)
+        serie = SOCIAL.mensual(diaria, cache.get("ig_mes", {}).get(clave))
         fallo = (not ok) or clave in errores
         if not serie:
             out[clave] = contract.metric(

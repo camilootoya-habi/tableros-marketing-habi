@@ -8080,6 +8080,9 @@
     "fb_bajas": 0,
     "fb_total": 34259,
     "ig_total": 78775
+   },
+   "2026-10-06": {
+    "ig_total": 78803
    }
   },
   "MX": {
@@ -15999,169 +16002,172 @@
    "2026-09-08": {
     "fb_altas": 30,
     "fb_bajas": 5,
-    "fb_total": 43548,
+    "fb_total": 43540,
     "ig_nuevos": 22
    },
    "2026-09-09": {
     "fb_altas": 24,
     "fb_bajas": 5,
-    "fb_total": 43567,
+    "fb_total": 43559,
     "ig_nuevos": 24
    },
    "2026-09-10": {
     "fb_altas": 21,
     "fb_bajas": 1,
-    "fb_total": 43587,
+    "fb_total": 43579,
     "ig_nuevos": 21
    },
    "2026-09-11": {
     "fb_altas": 16,
     "fb_bajas": 2,
-    "fb_total": 43601,
+    "fb_total": 43593,
     "ig_nuevos": 15
    },
    "2026-09-12": {
     "fb_altas": 13,
     "fb_bajas": 2,
-    "fb_total": 43612,
+    "fb_total": 43604,
     "ig_nuevos": 15
    },
    "2026-09-13": {
     "fb_altas": 14,
     "fb_bajas": 2,
-    "fb_total": 43624,
+    "fb_total": 43616,
     "ig_nuevos": 26
    },
    "2026-09-14": {
     "fb_altas": 24,
     "fb_bajas": 7,
-    "fb_total": 43641,
+    "fb_total": 43633,
     "ig_nuevos": 17
    },
    "2026-09-15": {
     "fb_altas": 19,
     "fb_bajas": 4,
-    "fb_total": 43656,
+    "fb_total": 43648,
     "ig_nuevos": 16
    },
    "2026-09-16": {
     "fb_altas": 15,
     "fb_bajas": 4,
-    "fb_total": 43667,
+    "fb_total": 43659,
     "ig_nuevos": 21
    },
    "2026-09-17": {
     "fb_altas": 27,
     "fb_bajas": 5,
-    "fb_total": 43689,
+    "fb_total": 43681,
     "ig_nuevos": 7
    },
    "2026-09-18": {
     "fb_altas": 20,
     "fb_bajas": 1,
-    "fb_total": 43708,
+    "fb_total": 43700,
     "ig_nuevos": 7
    },
    "2026-09-19": {
     "fb_altas": 10,
     "fb_bajas": 1,
-    "fb_total": 43717,
+    "fb_total": 43709,
     "ig_nuevos": 9
    },
    "2026-09-20": {
     "fb_altas": 22,
     "fb_bajas": 2,
-    "fb_total": 43737,
+    "fb_total": 43729,
     "ig_nuevos": 15
    },
    "2026-09-21": {
     "fb_altas": 32,
     "fb_bajas": 4,
-    "fb_total": 43765,
+    "fb_total": 43757,
     "ig_nuevos": 32
    },
    "2026-09-22": {
     "fb_altas": 87,
     "fb_bajas": 5,
-    "fb_total": 43847,
+    "fb_total": 43839,
     "ig_nuevos": 30
    },
    "2026-09-23": {
     "fb_altas": 20,
     "fb_bajas": 4,
-    "fb_total": 43863,
+    "fb_total": 43855,
     "ig_nuevos": 25
    },
    "2026-09-24": {
     "fb_altas": 28,
     "fb_bajas": 2,
-    "fb_total": 43889,
+    "fb_total": 43881,
     "ig_nuevos": 30
    },
    "2026-09-25": {
     "fb_altas": 21,
     "fb_bajas": 3,
-    "fb_total": 43907,
+    "fb_total": 43899,
     "ig_nuevos": 17
    },
    "2026-09-26": {
     "fb_altas": 20,
     "fb_bajas": 6,
-    "fb_total": 43921,
+    "fb_total": 43913,
     "ig_nuevos": 17
    },
    "2026-09-27": {
     "fb_altas": 21,
     "fb_bajas": 7,
-    "fb_total": 43935,
+    "fb_total": 43927,
     "ig_nuevos": 30
    },
    "2026-09-28": {
     "fb_altas": 29,
     "fb_bajas": 3,
-    "fb_total": 43961,
+    "fb_total": 43953,
     "ig_nuevos": 27
    },
    "2026-09-29": {
     "fb_altas": 22,
     "fb_bajas": 2,
-    "fb_total": 43981,
+    "fb_total": 43973,
     "ig_nuevos": 28
    },
    "2026-09-30": {
     "fb_altas": 22,
     "fb_bajas": 4,
-    "fb_total": 43999,
+    "fb_total": 43991,
     "ig_nuevos": 22
    },
    "2026-10-01": {
     "fb_altas": 38,
     "fb_bajas": 4,
-    "fb_total": 44033,
+    "fb_total": 44025,
     "ig_nuevos": 17
    },
    "2026-10-02": {
     "fb_altas": 24,
     "fb_bajas": 4,
-    "fb_total": 44053,
+    "fb_total": 44045,
     "ig_nuevos": 19
    },
    "2026-10-03": {
     "fb_altas": 12,
     "fb_bajas": 2,
-    "fb_total": 44063,
+    "fb_total": 44055,
     "ig_nuevos": 19
    },
    "2026-10-04": {
     "fb_altas": 21,
     "fb_bajas": 2,
-    "fb_total": 44082
+    "fb_total": 44074
    },
    "2026-10-05": {
     "fb_altas": 5,
     "fb_bajas": 1,
     "fb_total": 44083,
     "ig_total": 26807
+   },
+   "2026-10-06": {
+    "ig_total": 26817
    }
   },
   "PCOM": {
@@ -24081,171 +24087,638 @@
    "2026-09-08": {
     "fb_altas": 4,
     "fb_bajas": 4,
-    "fb_total": 46390,
+    "fb_total": 46386,
     "ig_nuevos": 4
    },
    "2026-09-09": {
     "fb_altas": 4,
     "fb_bajas": 0,
-    "fb_total": 46394,
+    "fb_total": 46390,
     "ig_nuevos": 6
    },
    "2026-09-10": {
     "fb_altas": 5,
     "fb_bajas": 1,
-    "fb_total": 46398,
+    "fb_total": 46394,
     "ig_nuevos": 1
    },
    "2026-09-11": {
     "fb_altas": 1,
     "fb_bajas": 0,
-    "fb_total": 46399,
+    "fb_total": 46395,
     "ig_nuevos": 0
    },
    "2026-09-12": {
     "fb_altas": 0,
     "fb_bajas": 3,
-    "fb_total": 46396,
+    "fb_total": 46392,
     "ig_nuevos": 4
    },
    "2026-09-13": {
     "fb_altas": 1,
     "fb_bajas": 1,
-    "fb_total": 46396,
+    "fb_total": 46392,
     "ig_nuevos": 5
    },
    "2026-09-14": {
     "fb_altas": 4,
     "fb_bajas": 0,
-    "fb_total": 46400,
+    "fb_total": 46396,
     "ig_nuevos": 4
    },
    "2026-09-15": {
     "fb_altas": 2,
     "fb_bajas": 1,
-    "fb_total": 46401,
+    "fb_total": 46397,
     "ig_nuevos": 2
    },
    "2026-09-16": {
     "fb_altas": 0,
     "fb_bajas": 1,
-    "fb_total": 46400,
+    "fb_total": 46396,
     "ig_nuevos": 4
    },
    "2026-09-17": {
     "fb_altas": 1,
     "fb_bajas": 3,
-    "fb_total": 46398,
+    "fb_total": 46394,
     "ig_nuevos": 4
    },
    "2026-09-18": {
     "fb_altas": 4,
     "fb_bajas": 3,
-    "fb_total": 46399,
+    "fb_total": 46395,
     "ig_nuevos": 2
    },
    "2026-09-19": {
     "fb_altas": 2,
     "fb_bajas": 2,
-    "fb_total": 46399,
+    "fb_total": 46395,
     "ig_nuevos": 4
    },
    "2026-09-20": {
     "fb_altas": 1,
     "fb_bajas": 0,
-    "fb_total": 46400,
+    "fb_total": 46396,
     "ig_nuevos": 4
    },
    "2026-09-21": {
     "fb_altas": 3,
     "fb_bajas": 1,
-    "fb_total": 46402,
+    "fb_total": 46398,
     "ig_nuevos": 5
    },
    "2026-09-22": {
     "fb_altas": 4,
     "fb_bajas": 2,
-    "fb_total": 46404,
+    "fb_total": 46400,
     "ig_nuevos": 2
    },
    "2026-09-23": {
     "fb_altas": 1,
     "fb_bajas": 1,
-    "fb_total": 46404,
+    "fb_total": 46400,
     "ig_nuevos": 3
    },
    "2026-09-24": {
     "fb_altas": 2,
     "fb_bajas": 5,
-    "fb_total": 46401,
+    "fb_total": 46397,
     "ig_nuevos": 2
    },
    "2026-09-25": {
     "fb_altas": 1,
     "fb_bajas": 1,
-    "fb_total": 46401,
+    "fb_total": 46397,
     "ig_nuevos": 7
    },
    "2026-09-26": {
     "fb_altas": 0,
     "fb_bajas": 2,
-    "fb_total": 46399,
+    "fb_total": 46395,
     "ig_nuevos": 4
    },
    "2026-09-27": {
     "fb_altas": 2,
     "fb_bajas": 1,
-    "fb_total": 46400,
+    "fb_total": 46396,
     "ig_nuevos": 2
    },
    "2026-09-28": {
     "fb_altas": 3,
     "fb_bajas": 4,
-    "fb_total": 46399,
+    "fb_total": 46395,
     "ig_nuevos": 4
    },
    "2026-09-29": {
     "fb_altas": 3,
     "fb_bajas": 1,
-    "fb_total": 46401,
+    "fb_total": 46397,
     "ig_nuevos": 2
    },
    "2026-09-30": {
     "fb_altas": 3,
     "fb_bajas": 1,
-    "fb_total": 46403,
+    "fb_total": 46399,
     "ig_nuevos": 1
    },
    "2026-10-01": {
     "fb_altas": 1,
     "fb_bajas": 0,
-    "fb_total": 46404,
+    "fb_total": 46400,
     "ig_nuevos": 5
    },
    "2026-10-02": {
     "fb_altas": 3,
     "fb_bajas": 1,
-    "fb_total": 46406,
+    "fb_total": 46402,
     "ig_nuevos": 1
    },
    "2026-10-03": {
     "fb_altas": 2,
     "fb_bajas": 2,
-    "fb_total": 46406,
+    "fb_total": 46402,
     "ig_nuevos": 1
    },
    "2026-10-04": {
     "fb_altas": 1,
     "fb_bajas": 2,
-    "fb_total": 46405
+    "fb_total": 46401
    },
    "2026-10-05": {
     "fb_altas": 3,
     "fb_bajas": 0,
     "fb_total": 46408,
     "ig_total": 4273
+   },
+   "2026-10-06": {
+    "ig_total": 4274
    }
   }
  },
- "last_refresh": "2026-10-05T19:13:26Z"
+ "ig_mes": {
+  "CO": {
+   "2024-11": {
+    "ig_clics": 1526,
+    "ig_perfil": 16599
+   },
+   "2024-12": {
+    "ig_clics": 789,
+    "ig_perfil": 10528
+   },
+   "2025-01": {
+    "ig_clics": 1417,
+    "ig_perfil": 14416
+   },
+   "2025-02": {
+    "ig_clics": 1163,
+    "ig_perfil": 12294
+   },
+   "2025-03": {
+    "ig_clics": 1044,
+    "ig_perfil": 12365
+   },
+   "2025-04": {
+    "ig_clics": 924,
+    "ig_perfil": 9155
+   },
+   "2025-05": {
+    "ig_clics": 728,
+    "ig_perfil": 7391
+   },
+   "2025-06": {
+    "ig_clics": 1120,
+    "ig_perfil": 9573
+   },
+   "2025-07": {
+    "ig_clics": 1366,
+    "ig_perfil": 11107
+   },
+   "2025-08": {
+    "ig_clics": 1228,
+    "ig_interacciones": 1186,
+    "ig_perfil": 10437,
+    "ig_vistas": 2175095
+   },
+   "2025-09": {
+    "ig_clics": 1113,
+    "ig_interacciones": 4185,
+    "ig_perfil": 10111,
+    "ig_vistas": 8483676
+   },
+   "2025-10": {
+    "ig_altas": 824,
+    "ig_bajas": 560,
+    "ig_clics": 1038,
+    "ig_interacciones": 4987,
+    "ig_perfil": 8893,
+    "ig_vistas": 6165383
+   },
+   "2025-11": {
+    "ig_altas": 739,
+    "ig_bajas": 502,
+    "ig_clics": 898,
+    "ig_interacciones": 4253,
+    "ig_perfil": 7358,
+    "ig_vistas": 5060768
+   },
+   "2025-12": {
+    "ig_altas": 862,
+    "ig_bajas": 475,
+    "ig_clics": 776,
+    "ig_interacciones": 7043,
+    "ig_perfil": 10199,
+    "ig_vistas": 7978751
+   },
+   "2026-01": {
+    "ig_altas": 1328,
+    "ig_bajas": 554,
+    "ig_clics": 1480,
+    "ig_interacciones": 8357,
+    "ig_perfil": 16591,
+    "ig_vistas": 15920330
+   },
+   "2026-02": {
+    "ig_altas": 1419,
+    "ig_bajas": 447,
+    "ig_clics": 1059,
+    "ig_interacciones": 6648,
+    "ig_perfil": 12075,
+    "ig_vistas": 11755924
+   },
+   "2026-03": {
+    "ig_altas": 1793,
+    "ig_bajas": 519,
+    "ig_clics": 1172,
+    "ig_interacciones": 6599,
+    "ig_perfil": 11215,
+    "ig_vistas": 11176332
+   },
+   "2026-04": {
+    "ig_altas": 1411,
+    "ig_bajas": 509,
+    "ig_clics": 918,
+    "ig_interacciones": 5256,
+    "ig_perfil": 9029,
+    "ig_vistas": 8914124
+   },
+   "2026-05": {
+    "ig_altas": 1523,
+    "ig_bajas": 608,
+    "ig_clics": 875,
+    "ig_interacciones": 5619,
+    "ig_perfil": 9232,
+    "ig_vistas": 8396352
+   },
+   "2026-06": {
+    "ig_altas": 1613,
+    "ig_bajas": 597,
+    "ig_clics": 754,
+    "ig_interacciones": 6754,
+    "ig_perfil": 8884,
+    "ig_vistas": 8831498
+   },
+   "2026-07": {
+    "ig_altas": 1590,
+    "ig_bajas": 593,
+    "ig_clics": 900,
+    "ig_interacciones": 5721,
+    "ig_perfil": 9264,
+    "ig_vistas": 7958520
+   },
+   "2026-08": {
+    "ig_altas": 1959,
+    "ig_bajas": 568,
+    "ig_clics": 915,
+    "ig_interacciones": 6004,
+    "ig_perfil": 8440,
+    "ig_vistas": 8907495
+   },
+   "2026-09": {
+    "ig_altas": 1854,
+    "ig_bajas": 504,
+    "ig_clics": 950,
+    "ig_interacciones": 6577,
+    "ig_perfil": 8398,
+    "ig_vistas": 7888293
+   },
+   "2026-10": {
+    "ig_altas": 220,
+    "ig_bajas": 65,
+    "ig_clics": 108,
+    "ig_interacciones": 844,
+    "ig_perfil": 1103,
+    "ig_vistas": 936032
+   }
+  },
+  "MX": {
+   "2024-11": {
+    "ig_clics": 337,
+    "ig_perfil": 7407
+   },
+   "2024-12": {
+    "ig_clics": 315,
+    "ig_perfil": 6883
+   },
+   "2025-01": {
+    "ig_clics": 530,
+    "ig_perfil": 9629
+   },
+   "2025-02": {
+    "ig_clics": 390,
+    "ig_perfil": 5398
+   },
+   "2025-03": {
+    "ig_clics": 441,
+    "ig_perfil": 6424
+   },
+   "2025-04": {
+    "ig_clics": 469,
+    "ig_perfil": 5466
+   },
+   "2025-05": {
+    "ig_clics": 445,
+    "ig_perfil": 5694
+   },
+   "2025-06": {
+    "ig_clics": 369,
+    "ig_perfil": 6926
+   },
+   "2025-07": {
+    "ig_clics": 473,
+    "ig_perfil": 7780
+   },
+   "2025-08": {
+    "ig_clics": 388,
+    "ig_interacciones": 752,
+    "ig_perfil": 6721,
+    "ig_vistas": 4158206
+   },
+   "2025-09": {
+    "ig_clics": 350,
+    "ig_interacciones": 3269,
+    "ig_perfil": 7785,
+    "ig_vistas": 17321867
+   },
+   "2025-10": {
+    "ig_altas": 300,
+    "ig_bajas": 215,
+    "ig_clics": 323,
+    "ig_interacciones": 3608,
+    "ig_perfil": 5776,
+    "ig_vistas": 12207560
+   },
+   "2025-11": {
+    "ig_altas": 243,
+    "ig_bajas": 158,
+    "ig_clics": 216,
+    "ig_interacciones": 2285,
+    "ig_perfil": 3267,
+    "ig_vistas": 6157790
+   },
+   "2025-12": {
+    "ig_altas": 346,
+    "ig_bajas": 179,
+    "ig_clics": 386,
+    "ig_interacciones": 3408,
+    "ig_perfil": 5500,
+    "ig_vistas": 6194200
+   },
+   "2026-01": {
+    "ig_altas": 638,
+    "ig_bajas": 183,
+    "ig_clics": 740,
+    "ig_interacciones": 6744,
+    "ig_perfil": 11065,
+    "ig_vistas": 15111520
+   },
+   "2026-02": {
+    "ig_altas": 633,
+    "ig_bajas": 164,
+    "ig_clics": 548,
+    "ig_interacciones": 5381,
+    "ig_perfil": 8826,
+    "ig_vistas": 14954162
+   },
+   "2026-03": {
+    "ig_altas": 1169,
+    "ig_bajas": 229,
+    "ig_clics": 682,
+    "ig_interacciones": 5898,
+    "ig_perfil": 9356,
+    "ig_vistas": 16354194
+   },
+   "2026-04": {
+    "ig_altas": 928,
+    "ig_bajas": 215,
+    "ig_clics": 484,
+    "ig_interacciones": 5902,
+    "ig_perfil": 7967,
+    "ig_vistas": 11846466
+   },
+   "2026-05": {
+    "ig_altas": 816,
+    "ig_bajas": 243,
+    "ig_clics": 353,
+    "ig_interacciones": 4881,
+    "ig_perfil": 5926,
+    "ig_vistas": 7896421
+   },
+   "2026-06": {
+    "ig_altas": 783,
+    "ig_bajas": 227,
+    "ig_clics": 362,
+    "ig_interacciones": 5119,
+    "ig_perfil": 5650,
+    "ig_vistas": 7572619
+   },
+   "2026-07": {
+    "ig_altas": 781,
+    "ig_bajas": 206,
+    "ig_clics": 353,
+    "ig_interacciones": 4981,
+    "ig_perfil": 5816,
+    "ig_vistas": 10085617
+   },
+   "2026-08": {
+    "ig_altas": 829,
+    "ig_bajas": 260,
+    "ig_clics": 324,
+    "ig_interacciones": 4504,
+    "ig_perfil": 5394,
+    "ig_vistas": 11043934
+   },
+   "2026-09": {
+    "ig_altas": 717,
+    "ig_bajas": 229,
+    "ig_clics": 287,
+    "ig_interacciones": 3719,
+    "ig_perfil": 4942,
+    "ig_vistas": 9352942
+   },
+   "2026-10": {
+    "ig_altas": 77,
+    "ig_bajas": 28,
+    "ig_clics": 28,
+    "ig_interacciones": 520,
+    "ig_perfil": 708,
+    "ig_vistas": 1242241
+   }
+  },
+  "PCOM": {
+   "2024-11": {
+    "ig_clics": 15,
+    "ig_perfil": 777
+   },
+   "2024-12": {
+    "ig_clics": 11,
+    "ig_perfil": 350
+   },
+   "2025-01": {
+    "ig_clics": 14,
+    "ig_perfil": 428
+   },
+   "2025-02": {
+    "ig_clics": 97,
+    "ig_perfil": 600
+   },
+   "2025-03": {
+    "ig_clics": 146,
+    "ig_perfil": 993
+   },
+   "2025-04": {
+    "ig_clics": 72,
+    "ig_perfil": 555
+   },
+   "2025-05": {
+    "ig_clics": 100,
+    "ig_perfil": 678
+   },
+   "2025-06": {
+    "ig_clics": 83,
+    "ig_perfil": 568
+   },
+   "2025-07": {
+    "ig_clics": 55,
+    "ig_perfil": 444
+   },
+   "2025-08": {
+    "ig_clics": 94,
+    "ig_interacciones": 76,
+    "ig_perfil": 774,
+    "ig_vistas": 37099
+   },
+   "2025-09": {
+    "ig_clics": 67,
+    "ig_interacciones": 261,
+    "ig_perfil": 540,
+    "ig_vistas": 79780
+   },
+   "2025-10": {
+    "ig_altas": 63,
+    "ig_bajas": 32,
+    "ig_clics": 25,
+    "ig_interacciones": 308,
+    "ig_perfil": 372,
+    "ig_vistas": 20493
+   },
+   "2025-11": {
+    "ig_altas": 46,
+    "ig_bajas": 19,
+    "ig_clics": 15,
+    "ig_interacciones": 207,
+    "ig_perfil": 254,
+    "ig_vistas": 10230
+   },
+   "2025-12": {
+    "ig_altas": 31,
+    "ig_bajas": 22,
+    "ig_clics": 28,
+    "ig_interacciones": 57,
+    "ig_perfil": 186,
+    "ig_vistas": 5106
+   },
+   "2026-01": {
+    "ig_altas": 43,
+    "ig_bajas": 26,
+    "ig_clics": 22,
+    "ig_interacciones": 21,
+    "ig_perfil": 252,
+    "ig_vistas": 5453
+   },
+   "2026-02": {
+    "ig_altas": 49,
+    "ig_bajas": 18,
+    "ig_clics": 14,
+    "ig_interacciones": 30,
+    "ig_perfil": 176,
+    "ig_vistas": 2842
+   },
+   "2026-03": {
+    "ig_altas": 51,
+    "ig_bajas": 18,
+    "ig_clics": 21,
+    "ig_interacciones": 6,
+    "ig_perfil": 160,
+    "ig_vistas": 904
+   },
+   "2026-04": {
+    "ig_altas": 40,
+    "ig_bajas": 23,
+    "ig_clics": 27,
+    "ig_interacciones": 12,
+    "ig_perfil": 188,
+    "ig_vistas": 1194
+   },
+   "2026-05": {
+    "ig_altas": 64,
+    "ig_bajas": 39,
+    "ig_clics": 8,
+    "ig_interacciones": 29,
+    "ig_perfil": 179,
+    "ig_vistas": 1899
+   },
+   "2026-06": {
+    "ig_altas": 49,
+    "ig_bajas": 29,
+    "ig_clics": 26,
+    "ig_interacciones": 9,
+    "ig_perfil": 188,
+    "ig_vistas": 915
+   },
+   "2026-07": {
+    "ig_altas": 90,
+    "ig_bajas": 27,
+    "ig_clics": 39,
+    "ig_interacciones": 78,
+    "ig_perfil": 338,
+    "ig_vistas": 34257
+   },
+   "2026-08": {
+    "ig_altas": 150,
+    "ig_bajas": 35,
+    "ig_clics": 72,
+    "ig_interacciones": 106,
+    "ig_perfil": 729,
+    "ig_vistas": 190142
+   },
+   "2026-09": {
+    "ig_altas": 111,
+    "ig_bajas": 43,
+    "ig_clics": 93,
+    "ig_interacciones": 59,
+    "ig_perfil": 607,
+    "ig_vistas": 141290
+   },
+   "2026-10": {
+    "ig_altas": 8,
+    "ig_bajas": 3,
+    "ig_clics": 7,
+    "ig_interacciones": 4,
+    "ig_perfil": 55,
+    "ig_vistas": 17880
+   }
+  }
+ },
+ "last_refresh": "2026-10-06T01:36:13Z"
 }

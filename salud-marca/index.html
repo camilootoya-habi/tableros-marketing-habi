@@ -365,11 +365,18 @@ function destroyCharts() { _charts.forEach(c => c.destroy()); _charts = []; }
 // Formatea un valor según el tipo de eje. `pct` y `pts` vienen como fracción en data.json.
 const FMT = {
   pct: v => (100 * v).toFixed(2) + '%', pts: v => (100 * v).toFixed(1) + ' pts',
+  pctFino: v => (100 * v).toFixed(3) + '%',
+  compacto: v => v.toLocaleString('es-MX'),
   money: v => '$' + v.toLocaleString('es-MX', { maximumFractionDigits: 2 }),
   num: v => v.toLocaleString('es-MX'),
 };
 const FMT_EJE = {
   pct: v => (100 * v).toFixed(0) + '%', pts: v => (100 * v).toFixed(0),
+  // Tasas de interacción de Instagram (0.02-0.08%): con 0 decimales el eje dice "0%" en todo.
+  pctFino: v => (100 * v).toFixed(2) + '%',
+  // Millones en el eje ("18 M" y no "18,000,000"); el tooltip sí da la cifra completa.
+  compacto: v => Math.abs(v) >= 1e6 ? (v / 1e6).toLocaleString('es-MX', { maximumFractionDigits: 1 }) + ' M'
+    : Math.abs(v) >= 1e3 ? (v / 1e3).toLocaleString('es-MX', { maximumFractionDigits: 0 }) + ' mil' : v.toLocaleString('es-MX'),
   // Montos chicos (costo por persona: US$0.05-0.40) necesitan 2 decimales o el eje repite "$0.3".
   money: v => '$' + v.toLocaleString('es-MX', { maximumFractionDigits: Math.abs(v) < 10 ? 2 : 1 }),
   num: v => v.toLocaleString('es-MX'),
@@ -801,13 +808,30 @@ const AYUDA = {
     <strong>Bajas</strong> (rojo): las que dejaron de seguirla. La <strong>línea</strong> es el neto.</p>
     <p>Para leerla: si el neto cae porque bajan las altas, la marca dejó de atraer gente nueva. Si cae
     porque suben las bajas, está perdiendo a la que tenía. Son problemas distintos.</p>`],
-  seg_ig: ['Instagram', `
-    <p>Meta da mucha menos historia de Instagram que de Facebook:</p>
-    <ul><li><strong>Seguidores nuevos por día</strong>: solo los últimos 30 días, con ~2 días de atraso.
-    No informa bajas, así que es lo que entró, no el neto.</li>
-    <li><strong>Total de seguidores</strong>: solo el de hoy, nunca el de días pasados.</li></ul>
-    <p>Desde el 5-oct-2026 el tablero guarda los dos todos los días, así que la historia de Instagram
-    empieza ahí y se va alargando sola.</p>`],
+  ig_total: ['Instagram: seguidores totales', `
+    <p>Meta solo da el total de seguidores de <strong>hoy</strong>: nunca el de días pasados.</p>
+    <p>La <strong>línea punteada</strong> lo reconstruye hacia atrás con las altas y bajas de cada mes:
+    cierre del mes anterior = cierre de este mes − altas + bajas. Es el mismo método que en Facebook,
+    pero aquí <strong>no se puede validar</strong> contra un total medido, así que léelo como una
+    aproximación. El <strong>punto sólido</strong> es el total real de hoy.</p>
+    <p>Las altas y bajas existen desde oct-2025: más atrás no hay con qué reconstruir.</p>`],
+  ig_mov: ['Instagram: altas y bajas', `
+    <p><strong>Altas</strong> (verde): cuentas que empezaron a seguir la marca ese mes.
+    <strong>Bajas</strong> (rojo): cuentas que dejaron de seguirla o se fueron de Instagram. La
+    <strong>línea</strong> es el neto.</p>
+    <p>Meta lo entrega desde oct-2025. El mes en curso va translúcido: todavía no termina.</p>`],
+  ig_vistas: ['Instagram: vistas', `
+    <p>Cuántas veces se vio el contenido de la cuenta en el mes: reels, posts e historias, contando
+    repeticiones.</p>
+    <p><strong>Ojo</strong>: incluye las vistas pagadas. Cuando se promociona un post desde la cuenta,
+    sus vistas entran aquí, así que un mes alto puede ser más pauta y no más interés en la marca.
+    Meta lo entrega desde ago-2025.</p>`],
+  ig_inter: ['Instagram: interacciones', `
+    <p><strong>Barras</strong>: likes, comentarios, compartidos y guardados del mes.</p>
+    <p><strong>Línea</strong>: la <strong>tasa de interacción</strong>, interacciones ÷ vistas. Dice si
+    el contenido engancha o solo se ve. Es baja (centésimas de punto) porque las vistas incluyen la pauta,
+    que llega a mucha gente que no sigue la cuenta.</p>
+    <p class="ej">Ejemplo: 3,719 interacciones sobre 9.4 M de vistas = 0.04%.</p>`],
 };
 const ayuda = k => AYUDA[k] ? `<button type="button" class="help-btn" data-ayuda="${k}" aria-label="Más información">?</button>` : '';
 
@@ -1285,48 +1309,70 @@ const diasDelMes = m => { const [y, n] = m.split('-').map(Number); return new Da
 const totalFb = r => r ? (r.fb_total ?? r.fb_total_est ?? null) : null;
 
 function drawSeguidores(host, serie) {
-  const diario = ((DATA.metrics.seguidores || {})[PAIS] || {}).diario || [];
   const L = recortar(serie.map(r => r.month), MESES);
   const fila = m => serie.find(r => r.month === m);
+  const mesActual = new Date().toISOString().slice(0, 7);
+
+  // ── Facebook ──
   // Meses cerrados: el en curso suma pocos días y se leería como una caída.
   const cerrados = serie.filter(r => r.dias_fb >= diasDelMes(r.month));
   const u12 = cerrados.slice(-12);
   const fbUlt = ultimoCon(serie, 'fb_total');
   const fbHace12 = serie[serie.indexOf(fbUlt) - 12];
   const crec12 = fbUlt && totalFb(fbHace12) != null ? fbUlt.fb_total - totalFb(fbHace12) : null;
-  const igUlt = ultimoCon(diario, 'ig_total');
-  const igDias = diario.filter(r => r.ig_nuevos != null).slice(-30);
-  const igTot = diario.filter(r => r.ig_total != null);
 
-  host.innerHTML = `<div class="ficha">
-      <div><div class="k">Facebook · seguidores</div><div class="v">${fbUlt ? fbUlt.fb_total.toLocaleString('es-MX') : '—'}</div>
+  // ── Instagram ── (por mes: altas/bajas desde oct-2025, vistas e interacciones desde ago-2025)
+  const conIg = serie.filter(r => r.ig_vistas != null || r.ig_altas != null || r.ig_total != null);
+  const Lig = conIg.length ? L.filter(m => m >= conIg[0].month) : [];
+  const igUlt = ultimoCon(serie, 'ig_total');
+  const igCerr = serie.filter(r => r.ig_altas != null && r.month < mesActual).slice(-12);
+  const igAltas = sumaCampo(igCerr, 'ig_altas'), igBajas = sumaCampo(igCerr, 'ig_bajas');
+  const igUltCerr = [...serie].reverse().find(r => r.month < mesActual && r.ig_clics != null);
+  const totalIg = r => r ? (r.ig_total ?? r.ig_total_est ?? null) : null;
+
+  host.innerHTML = `<div class="pulso-bloque" style="margin-top:4px">Facebook</div>
+    <div class="ficha">
+      <div><div class="k">Seguidores</div><div class="v">${fbUlt ? fbUlt.fb_total.toLocaleString('es-MX') : '—'}</div>
         <div class="d">${crec12 != null ? `${conSigno(crec12)} en 12 meses (${(100 * crec12 / totalFb(fbHace12)).toFixed(1)}%)` : ''}</div></div>
-      <div><div class="k">Facebook · últimos 12 meses</div><div class="v">+${sumaCampo(u12, 'fb_altas').toLocaleString('es-MX')} / −${sumaCampo(u12, 'fb_bajas').toLocaleString('es-MX')}</div>
+      <div><div class="k">Últimos 12 meses</div><div class="v">+${sumaCampo(u12, 'fb_altas').toLocaleString('es-MX')} / −${sumaCampo(u12, 'fb_bajas').toLocaleString('es-MX')}</div>
         <div class="d">Altas y bajas de los ${u12.length} meses cerrados</div></div>
-      <div><div class="k">Instagram · seguidores</div><div class="v">${igUlt ? igUlt.ig_total.toLocaleString('es-MX') : '—'}</div>
-        <div class="d">Al ${igUlt ? igUlt.date : '—'}</div></div>
-      <div><div class="k">Instagram · nuevos, ${igDias.length} días</div><div class="v">+${sumaCampo(igDias, 'ig_nuevos').toLocaleString('es-MX')}</div>
-        <div class="d">Instagram no informa bajas</div></div>
     </div>
     <div class="charts-grid">
-      <div class="panel"><h3>Facebook · seguidores totales${ayuda('seg_fb_total')}</h3>
+      <div class="panel"><h3>Seguidores totales${ayuda('seg_fb_total')}</h3>
         <div class="cap">Al cierre de cada mes. Punteado: reconstruido con altas y bajas.</div>
         <div class="ch alto"><canvas id="sg-fb-total"></canvas></div>${legend([[C.azul, 'Medido por Meta'], [C.azul + '88', 'Reconstruido']])}</div>
-      <div class="panel"><h3>Facebook · altas y bajas por mes${ayuda('seg_fb_mov')}</h3>
+      <div class="panel"><h3>Altas y bajas por mes${ayuda('seg_fb_mov')}</h3>
         <div class="cap">Quién empezó y quién dejó de seguir la página. La línea es el neto.</div>
         <div class="ch alto"><canvas id="sg-fb-mes"></canvas></div>${legend([[C.verde, 'Altas'], [C.rojo, 'Bajas'], [C.azul, 'Neto']])}</div>
-      <div class="panel"><h3>Instagram · seguidores nuevos por día${ayuda('seg_ig')}</h3>
-        <div class="cap">Últimos ${igDias.length} días: Meta no da más historia de Instagram.</div>
-        <div class="ch alto"><canvas id="sg-ig-dia"></canvas></div>${legend([[C.rosa, 'Nuevos']])}</div>
-      <div class="panel"><h3>Instagram · seguidores totales${ayuda('seg_ig')}</h3>
-        ${igTot.length > 1
-          ? `<div class="cap">Una foto diaria desde el ${igTot[0].date}.</div>
-             <div class="ch alto"><canvas id="sg-ig-total"></canvas></div>${legend([[C.rosa, 'Seguidores']])}`
-          : `<div class="cap">Meta solo da el total de hoy. La serie se arma con una foto diaria desde el
-             ${igTot.length ? igTot[0].date : '5-oct-2026'} y aparece en cuanto haya dos días.</div>`}</div>
+    </div>
+
+    <div class="pulso-bloque">Instagram</div>
+    <div class="ficha">
+      <div><div class="k">Seguidores</div><div class="v">${igUlt ? igUlt.ig_total.toLocaleString('es-MX') : '—'}</div>
+        <div class="d">Hoy, según Meta</div></div>
+      <div><div class="k">Neto, últimos ${igCerr.length} meses</div><div class="v">${conSigno(igAltas - igBajas)}</div>
+        <div class="d">+${igAltas.toLocaleString('es-MX')} altas / −${igBajas.toLocaleString('es-MX')} bajas</div></div>
+      <div><div class="k">Se van</div><div class="v">${igAltas ? Math.round(100 * igBajas / igAltas) + '%' : '—'}</div>
+        <div class="d">Bajas por cada 100 altas en esos meses</div></div>
+      <div><div class="k">Clics al sitio web</div><div class="v">${igUltCerr ? igUltCerr.ig_clics.toLocaleString('es-MX') : '—'}</div>
+        <div class="d">Desde el perfil, en ${igUltCerr ? igUltCerr.month : '—'}</div></div>
+    </div>
+    <div class="charts-grid">
+      <div class="panel"><h3>Seguidores totales${ayuda('ig_total')}</h3>
+        <div class="cap">Punteado: reconstruido con altas y bajas. Punto: el total de hoy.</div>
+        <div class="ch alto"><canvas id="sg-ig-total"></canvas></div>${legend([[C.rosa, 'Total de hoy'], [C.rosa + '88', 'Reconstruido']])}</div>
+      <div class="panel"><h3>Altas y bajas por mes${ayuda('ig_mov')}</h3>
+        <div class="cap">Quién empezó y quién dejó de seguir. La línea es el neto.</div>
+        <div class="ch alto"><canvas id="sg-ig-mov"></canvas></div>${legend([[C.verde, 'Altas'], [C.rojo, 'Bajas'], [C.rosa, 'Neto']])}</div>
+      <div class="panel"><h3>Vistas por mes${ayuda('ig_vistas')}</h3>
+        <div class="cap">Cuántas veces se vio el contenido. Incluye lo promocionado.</div>
+        <div class="ch alto"><canvas id="sg-ig-vistas"></canvas></div>${legend([[C.rosa, 'Vistas']])}</div>
+      <div class="panel"><h3>Interacciones por mes${ayuda('ig_inter')}</h3>
+        <div class="cap">Likes, comentarios, compartidos y guardados. Línea: interacciones ÷ vistas.</div>
+        <div class="ch alto"><canvas id="sg-ig-inter"></canvas></div>${legend([[C.cian, 'Interacciones'], [C.ambar, 'Tasa de interacción']])}</div>
     </div>`;
 
-  // El reconstruido llega hasta el primer mes medido para que las dos líneas se toquen.
+  // Facebook. El reconstruido llega hasta el primer mes medido para que las dos líneas se toquen.
   const primerReal = L.find(m => (fila(m) || {}).fb_total != null);
   mkMulti('sg-fb-total', L, [
     { label: 'Reconstruido', color: C.azul + '88', dash: [5, 4], puntoRadio: 0, tension: .2,
@@ -1339,12 +1385,29 @@ function drawSeguidores(host, serie) {
     { type: 'bar', label: 'Bajas', orden: 1, color: L.map(m => parcial(m) ? C.rojo + '55' : C.rojo), data: L.map(m => (fila(m) || {}).dias_fb ? -fila(m).fb_bajas : null) },
     { type: 'line', label: 'Neto', color: C.azul, data: L.map(m => (fila(m) || {}).dias_fb ? fila(m).fb_altas - fila(m).fb_bajas : null) },
   ], { fmt: 'num', pieTooltip: k => parcial(L[k]) ? [`Mes en curso: ${fila(L[k]).dias_fb} días con dato`] : [] });
-  mkMulti('sg-ig-dia', igDias.map(r => r.date.slice(5)), [
-    { type: 'bar', label: 'Nuevos', color: C.rosa, data: igDias.map(r => r.ig_nuevos) },
-  ], { fmt: 'num', sinBandas: true });
-  if (igTot.length > 1) mkMulti('sg-ig-total', igTot.map(r => r.date), [
-    { label: 'Seguidores', color: C.rosa, data: igTot.map(r => r.ig_total) },
-  ], { fmt: 'num', sinBandas: true, desdeCero: false });
+
+  // Instagram. El mes en curso va translúcido en barras: todavía no termina.
+  const ig = (m, k) => (fila(m) || {})[k] ?? null;
+  const tenue = (color, m) => m === mesActual ? color + '55' : color;
+  const enCurso = k => Lig[k] === mesActual ? ['Mes en curso: todavía no termina'] : [];
+  mkMulti('sg-ig-total', Lig, [
+    { label: 'Reconstruido', color: C.rosa + '88', dash: [5, 4], puntoRadio: 0, tension: .2,
+      data: Lig.map(m => ig(m, 'ig_total_est') ?? ig(m, 'ig_total')) },
+    { label: 'Total de hoy', color: C.rosa, puntoRadio: 5, data: Lig.map(m => ig(m, 'ig_total')) },
+  ], { fmt: 'num', desdeCero: false, sinBandas: true });
+  mkMulti('sg-ig-mov', Lig, [
+    { type: 'bar', label: 'Altas', orden: 1, color: Lig.map(m => tenue(C.verde, m)), data: Lig.map(m => ig(m, 'ig_altas')) },
+    { type: 'bar', label: 'Bajas', orden: 1, color: Lig.map(m => tenue(C.rojo, m)), data: Lig.map(m => ig(m, 'ig_bajas') == null ? null : -ig(m, 'ig_bajas')) },
+    { type: 'line', label: 'Neto', color: C.rosa, data: Lig.map(m => ig(m, 'ig_altas') == null ? null : ig(m, 'ig_altas') - ig(m, 'ig_bajas')) },
+  ], { fmt: 'num', sinBandas: true, pieTooltip: enCurso });
+  mkMulti('sg-ig-vistas', Lig, [
+    { type: 'bar', label: 'Vistas', color: Lig.map(m => tenue(C.rosa, m)), data: Lig.map(m => ig(m, 'ig_vistas')) },
+  ], { fmt: 'compacto', sinBandas: true, pieTooltip: enCurso });
+  mkMulti('sg-ig-inter', Lig, [
+    { type: 'bar', label: 'Interacciones', orden: 1, color: Lig.map(m => tenue(C.cian, m)), data: Lig.map(m => ig(m, 'ig_interacciones')) },
+    { type: 'line', label: 'Tasa de interacción', eje: 'y1', color: C.ambar, tension: .1,
+      data: Lig.map(m => ig(m, 'ig_vistas') ? ig(m, 'ig_interacciones') / ig(m, 'ig_vistas') : null) },
+  ], { fmt: 'num', fmtDerecha: 'pctFino', sinBandas: true, pieTooltip: enCurso });
 }
 
 // ── Filtros y render ──────────────────────────────────────────────────────────

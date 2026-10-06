@@ -1,3 +1,4 @@
+import datetime
 import pathlib
 import sys
 
@@ -51,6 +52,54 @@ def test_mensual_toma_el_cierre_del_total_y_suma_altas_bajas_y_nuevos():
     assert m[0] == {"month": "2026-09", "fb_total": 11, "ig_total": 50, "fb_altas": 5, "fb_bajas": 1,
                     "ig_nuevos": 4, "dias_fb": 2, "dias_ig": 1}
     assert m[1]["month"] == "2026-10" and m[1]["fb_total"] == 12 and m[1]["dias_fb"] == 1
+
+
+def test_ig_mes_suma_las_dos_mitades_y_descarta_meses_sin_datos(monkeypatch):
+    llamadas = []
+
+    def fake_get(path, token, **p):
+        llamadas.append((p["since"], p["until"]))
+        if p["metric"] == "follows_and_unfollows":
+            return True, {"data": [{"total_value": {"breakdowns": [{"results": [
+                {"dimension_values": ["FOLLOWER"], "value": 10}, {"dimension_values": ["NON_FOLLOWER"], "value": 3}]}]}}]}
+        return True, {"data": [{"name": "views", "total_value": {"value": 100}},
+                               {"name": "total_interactions", "total_value": {"value": 5}}]}
+    monkeypatch.setattr(S, "_get", fake_get)
+    v = S._ig_mes("ig", "tok", datetime.date(2026, 8, 1), ahora=10 ** 10)
+    assert v == {"ig_altas": 20, "ig_bajas": 6, "ig_vistas": 200, "ig_interacciones": 10}
+    assert all(b - a <= 30 * S.DIA for a, b in llamadas), "ninguna ventana pasa de 30 días"
+
+    # Mes viejo: la API devuelve vistas en 0 e interacciones negativas → no hay dato, no un cero.
+    monkeypatch.setattr(S, "_get", lambda path, token, **p: (True, {"data": [
+        {"name": "views", "total_value": {"value": 0}}, {"name": "total_interactions", "total_value": {"value": -5}}]}))
+    assert S._ig_mes("ig", "tok", datetime.date(2025, 4, 1), ahora=10 ** 10) == {}
+
+
+def test_ig_mes_sin_altas_en_una_mitad_no_guarda_altas_ni_bajas(monkeypatch):
+    # La historia empieza a mitad de mes: la primera mitad no trae follows. Sería un mes "flojo"
+    # falso, así que se descartan altas y bajas (las vistas sí cuentan).
+    def fake_get(path, token, **p):
+        if p["metric"] == "follows_and_unfollows":
+            con = p["since"] >= S._ts(datetime.date(2025, 9, 16))
+            res = [{"dimension_values": ["FOLLOWER"], "value": 13}] if con else []
+            return True, {"data": [{"total_value": {"breakdowns": [{"results": res}]}}]}
+        return True, {"data": [{"name": "views", "total_value": {"value": 100}},
+                               {"name": "total_interactions", "total_value": {"value": 5}}]}
+    monkeypatch.setattr(S, "_get", fake_get)
+    v = S._ig_mes("ig", "tok", datetime.date(2025, 9, 1), ahora=10 ** 10)
+    assert "ig_altas" not in v and v["ig_vistas"] == 200
+
+
+def test_mensual_reconstruye_el_total_de_instagram_hacia_atras():
+    filas = [{"date": "2026-10-05", "ig_total": 1000}]
+    ig_mes = {"2026-08": {"ig_altas": 50, "ig_bajas": 10},
+              "2026-09": {"ig_altas": 70, "ig_bajas": 20},
+              "2026-10": {"ig_altas": 30, "ig_bajas": 5}}
+    m = {r["month"]: r for r in S.mensual(filas, ig_mes)}
+    assert m["2026-10"]["ig_total"] == 1000
+    assert m["2026-09"]["ig_total_est"] == 975        # 1000 − 30 + 5
+    assert m["2026-08"]["ig_total_est"] == 925        # 975 − 70 + 20
+    assert "ig_total_est" not in m["2026-10"]
 
 
 def _fetch_ok(hoy):
