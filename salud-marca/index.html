@@ -51,6 +51,12 @@
   .tab.active { background: var(--accent); color: var(--accent-on); border-color: var(--accent); }
   .tab:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
   .tabs .tab, .tabs .back-link { height: 37px; display: inline-flex; align-items: center; }
+  .tabs { flex-wrap: wrap; row-gap: 8px; }
+  .tabs .theme-btn { height: 37px; padding: 0 12px; }
+  /* Segunda fila del header: filtros compactos, con la etiqueta al lado y no arriba. */
+  .tabs .filters { flex-basis: 100%; justify-content: center; gap: 22px; margin: 0; }
+  .tabs .fgroup { flex-direction: row; align-items: center; gap: 8px; }
+  .tabs .chip { padding: 3px 11px; font-size: 12px; }
   .tab small { font-weight: 500; opacity: .75; margin-left: 5px; font-size: 11.5px; }
 
   /* Ayuda: texto corto a la vista, "?" para la explicación larga (mismo patrón que
@@ -227,15 +233,18 @@
 <body>
 <!-- Header fijo: Hub (izq) · una hoja por marca (centro). Reemplaza al filtro de país: cada marca
      es su propio país (Tuhabi = México, Habi = Colombia) y Propiedades.com no tiene país propio. -->
+<!-- Los filtros globales (plaza, periodo) y el tema viven también en el header: así siguen a la
+     mano al bajar por un tablero largo, sin volver arriba para cambiar el periodo. -->
 <nav class="tabs">
   <a href="../" class="back-link">← Volver al hub</a>
   <div class="tabnav" id="hojas"></div>
+  <button class="theme-btn" id="themeToggle" onclick="toggleTheme()" aria-label="Cambiar tema">☀️</button>
+  <div class="filters" id="filtros"></div>
 </nav>
 
 <div class="header">
   <h1>Salud de marca — <span id="paisTitulo">Tuhabi</span></h1>
   <span id="cobertura" class="cobertura"></span>
-  <button class="theme-btn" id="themeToggle" onclick="toggleTheme()">🌙</button>
 </div>
 <p class="sub">Cómo se transforma la marca mes a mes. Los indicadores se agrupan por
 <strong>tipo de señal</strong>: qué piensan de nosotros (percepción), cuánta gente nos busca sola
@@ -245,14 +254,15 @@ respuesta directa: acá no hay costo por lead.</p>
 <dialog id="ayuda" class="help-dialog"><div id="ayudaCuerpo"></div>
   <button type="button" class="close-btn" onclick="this.closest('dialog').close()">Cerrar</button></dialog>
 
-<div class="filters" id="filtros"></div>
 <div id="leyendaTV"></div>
 <div id="app"></div>
 
 <script>
-if (localStorage.getItem('tablero-theme') === 'light') {
+// Modo claro por defecto (decisión de Camilo, 6-oct-2026); oscuro solo si alguien lo eligió.
+if (localStorage.getItem('tablero-theme') !== 'dark') {
   document.body.classList.add('light');
-  document.getElementById('themeToggle').textContent = '☀️';
+} else {
+  document.getElementById('themeToggle').textContent = '🌙';
 }
 
 const cssv = n => getComputedStyle(document.body).getPropertyValue(n).trim();
@@ -1354,7 +1364,7 @@ function render() {
   document.title = `Salud de marca — ${H.nombre}`;
   // Plaza solo aplica a tráfico y exit poll, que solo existen para Tuhabi (México).
   document.getElementById('filtros').innerHTML =
-    (PAIS === 'MX' ? chips('Plaza · aplica a tráfico y exit poll', ['Todas', 'MTY', 'GDL', 'CDMX', 'Resto'], PLAZA, 'plaza') : '') +
+    (PAIS === 'MX' ? chips('Plaza (tráfico y exit poll)', ['Todas', 'MTY', 'GDL', 'CDMX', 'Resto'], PLAZA, 'plaza') : '') +
     chips('Periodo', VENTANAS, MESES, 'meses');
 
   // La leyenda solo aparece donde hay campañas: en CO no hay TV, así que tampoco banda que
