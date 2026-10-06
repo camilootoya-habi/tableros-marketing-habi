@@ -197,6 +197,21 @@ def fetch_demografia(ig_id):
             for bd in (d.get("total_value") or {}).get("breakdowns") or []:
                 res += bd.get("results") or []
         out[nombre] = {x["dimension_values"][0]: x["value"] for x in res}
+    # Edad de a quién le LLEGA el contenido y de quién INTERACTÚA, para compararla con la de los
+    # seguidores. Meta solo acepta `this_month` (mes en curso hasta hoy; last_30_days, prev_month y
+    # last_90_days dan error desde v25): guardado a diario, el último día del mes deja el mes completo.
+    for metrica, nombre in (("reached_audience_demographics", "edad_alcance"),
+                            ("engaged_audience_demographics", "edad_interaccion")):
+        ok, pl = _get(f"{ig_id}/insights", token, metric=metrica, period="lifetime",
+                      metric_type="total_value", breakdown="age", timeframe="this_month")
+        if not ok:
+            continue
+        res = []
+        for d in pl.get("data") or []:
+            for bd in (d.get("total_value") or {}).get("breakdowns") or []:
+                res += bd.get("results") or []
+        if res:
+            out[nombre] = {x["dimension_values"][0]: x["value"] for x in res}
     return out
 
 
