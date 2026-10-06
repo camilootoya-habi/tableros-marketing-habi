@@ -389,6 +389,7 @@ const FMT = {
   pct: v => (100 * v).toFixed(2) + '%', pts: v => (100 * v).toFixed(1) + ' pts',
   pctFino: v => (100 * v).toFixed(3) + '%',
   compacto: v => v.toLocaleString('es-MX'),
+  usdMil: v => 'US$' + Math.round(v).toLocaleString('es-MX'),
   money: v => '$' + v.toLocaleString('es-MX', { maximumFractionDigits: 2 }),
   num: v => v.toLocaleString('es-MX'),
 };
@@ -399,6 +400,7 @@ const FMT_EJE = {
   // Millones en el eje ("18 M" y no "18,000,000"); el tooltip sí da la cifra completa.
   compacto: v => Math.abs(v) >= 1e6 ? (v / 1e6).toLocaleString('es-MX', { maximumFractionDigits: 1 }) + ' M'
     : Math.abs(v) >= 1e3 ? (v / 1e3).toLocaleString('es-MX', { maximumFractionDigits: 0 }) + ' mil' : v.toLocaleString('es-MX'),
+  usdMil: v => Math.abs(v) >= 1e3 ? `$${(v / 1e3).toLocaleString('es-MX', { maximumFractionDigits: 0 })} mil` : `$${v}`,
   // Montos chicos (costo por persona: US$0.05-0.40) necesitan 2 decimales o el eje repite "$0.3".
   money: v => '$' + v.toLocaleString('es-MX', { maximumFractionDigits: Math.abs(v) < 10 ? 2 : 1 }),
   num: v => v.toLocaleString('es-MX'),
@@ -826,9 +828,32 @@ const AYUDA = {
     intervalo −7.5 a +0.2 no lo es: podría ser cero.</p>
     <p>La <strong>probabilidad de efecto positivo</strong> es otra forma de decirlo que calcula Meta: 100%
     es certeza de que la pauta ayudó; 50% es una moneda al aire.</p>`],
-  bl_bench: ['Benchmark de la región', `
-    <p>El lift <strong>típico</strong> que logran otros anunciantes de la región en esa misma pregunta, según
-    Meta. Sirve para saber si nuestro efecto es bueno o malo comparado con el mercado.</p>
+  bl_entrega: ['Inversión y entrega por mes', `
+    <p>Lo que Meta midió de las campañas incluidas en cada estudio mensual:</p>
+    <ul><li><strong>Inversión medida</strong>: gasto en USD.</li>
+    <li><strong>Alcance</strong>: personas distintas que vieron al menos un anuncio.</li>
+    <li><strong>Frecuencia</strong>: impresiones ÷ alcance. Muy baja, la gente no alcanza a recordar; muy
+    alta, se satura.</li>
+    <li><strong>Impresiones</strong>: veces que se mostró un anuncio.</li></ul>
+    <p>Sirve para leer el lift de cada pregunta en contexto: un mes con menos inversión o menos
+    alcance debería mover menos.</p>`],
+  bl_movidas_mes: ['Personas movidas por mes', `
+    <p>A cuántas personas la pauta les cambió la respuesta cada mes: el lift multiplicado por el alcance.</p>
+    <p class="ej">Ejemplo: 9.1 M de personas alcanzadas y un lift de 16.6 pts en Ad recall ≈ 1.5 M de personas
+    que recuerdan el anuncio gracias a la pauta.</p>
+    <p>Solo se muestra cuando el lift es significativo y positivo: si no, no hay personas movidas que contar.</p>`],
+  bl_scatter: ['¿Más inversión, más efecto?', `
+    <p>Cada punto es un mes: a la derecha, más inversión; arriba, más lift. El color dice si el lift de
+    ese mes fue significativo.</p>
+    <p>Si los puntos suben de izquierda a derecha, <strong>el dinero está comprando marca</strong>. Si están
+    dispersos, el límite es otro: el creativo, la frecuencia o la audiencia.</p>
+    <p>La <strong>correlación</strong> va de −1 a 1: cerca de 0 es que no hay relación. Con pocos meses es una
+    pista, no una prueba. El mes en curso no entra porque su estudio no ha cerrado.</p>`],
+  bl_bench: ['Benchmarks de la región y de la industria', `
+    <p>El lift <strong>típico</strong> que logran otros anunciantes en esa misma pregunta, según Meta, en dos
+    versiones: los de la <strong>región</strong> (todos los anunciantes de la zona) y los de la
+    <strong>industria</strong> (anunciantes del mismo tipo de negocio). Sirven para saber si nuestro efecto
+    es bueno o malo comparado con el mercado.</p>
     <p class="ej">Ejemplo: Ad recall +16.6 pts contra un benchmark de +5.4 pts: la pauta mueve la recordación
     tres veces más que el anunciante promedio.</p>`],
   bl_personas: ['Personas movidas', `
@@ -1092,6 +1117,115 @@ function dibujarCostos(serie, L, preguntas) {
   });
 }
 
+// ── Brand Lift: entrega, personas movidas e inversión vs lift ─────────────────
+// Inversión, alcance, impresiones y frecuencia son del ESTUDIO (iguales en sus 3-4 preguntas):
+// se toman de cualquier fila del mes.
+const porMesEstudio = serie => {
+  const out = {};
+  serie.forEach(r => { if (!out[r.month] && r.spend != null) out[r.month] = r; });
+  return out;
+};
+const preguntasReales = preguntas => preguntas.filter(q => !q.startsWith('sin_identificar'));
+
+function bloqueEntrega() {
+  const panel = (id, titulo, cap) => `<div class="panel"><h3>${titulo}</h3>
+      <div class="cap">${cap}</div><div class="ch"><canvas id="${id}"></canvas></div></div>`;
+  return `<div class="flabel" style="display:flex;align-items:center;margin:2px 0 6px">Inversión y entrega por mes${ayuda('bl_entrega')}</div>
+    <div class="charts-grid" style="margin-bottom:16px">
+      ${panel('bl-ent-spend', 'Inversión medida', 'USD de las campañas de cada estudio.')}
+      ${panel('bl-ent-reach', 'Alcance', 'Personas distintas que vieron la pauta.')}
+      ${panel('bl-ent-freq', 'Frecuencia', 'Veces que la vio cada persona.')}
+      ${panel('bl-ent-imp', 'Impresiones', 'Veces que se mostró un anuncio.')}
+    </div>`;
+}
+
+function dibujarEntrega(serie, L) {
+  const e = porMesEstudio(serie);
+  const v = k => L.map(m => (e[m] || {})[k] ?? null);
+  const tenue = c => L.map(m => (e[m] || {}).parcial ? c + '55' : c);
+  mkMulti('bl-ent-spend', L, [{ type: 'bar', label: 'Inversión (USD)', color: tenue(C.verde), data: v('spend') }], { fmt: 'usdMil' });
+  mkMulti('bl-ent-reach', L, [{ type: 'bar', label: 'Alcance', color: tenue(C.azul), data: v('reached') }], { fmt: 'compacto' });
+  mkMulti('bl-ent-freq', L, [{ label: 'Frecuencia', color: C.ambar, puntoRadio: 2, tension: .2,
+    data: v('frequency').map(x => x == null ? null : Math.round(10 * x) / 10) }], { fmt: 'num' });
+  mkMulti('bl-ent-imp', L, [{ type: 'bar', label: 'Impresiones', color: tenue(C.cian), data: v('impressions') }], { fmt: 'compacto' });
+}
+
+function bloqueMovidas(serie, preguntas) {
+  const qs = preguntasReales(preguntas);
+  const conEfecto = q => serie.some(r => r.question === q && sigDe(r) === 'si' && r.incremental > 0);
+  return `<div class="pulso-bloque" style="display:flex;align-items:center">Personas movidas por mes${ayuda('bl_movidas_mes')}</div>
+    <div class="cap" style="font-size:12.5px;margin:-4px 0 10px">A cuántas personas la pauta les cambió la respuesta. Solo meses con efecto significativo y positivo.</div>
+    <div class="costo-grid">${qs.map((q, i) => conEfecto(q)
+      ? `<div class="panel"><h3>${NOMBRE_PREGUNTA[q] || q}</h3><div class="ch"><canvas id="bl-mov-${i}"></canvas></div></div>`
+      : `<div class="panel" style="align-self:start"><h3>${NOMBRE_PREGUNTA[q] || q}</h3>
+          <div class="cap">Ningún mes de esta ventana tuvo un efecto significativo y positivo: no hubo personas movidas que contar.</div></div>`).join('')}</div>`;
+}
+
+function dibujarMovidas(serie, L, preguntas) {
+  preguntasReales(preguntas).forEach((q, i) => {
+    const s = serie.filter(r => r.question === q);
+    const f = m => s.find(r => r.month === m);
+    const vale = r => r && sigDe(r) === 'si' && r.incremental > 0;
+    mkMulti(`bl-mov-${i}`, L, [{ type: 'bar', label: 'Personas movidas', color: L.map(m => (f(m) || {}).parcial ? C.verde + '55' : C.verde),
+      data: L.map(m => vale(f(m)) ? f(m).incremental : null) }],
+      { fmt: 'compacto', pieTooltip: k => f(L[k]) && !vale(f(L[k])) ? ['Sin efecto significativo ese mes'] : [] });
+  });
+}
+
+// Correlación de Pearson: qué tanto se mueven juntos inversión y lift. Con pocos meses es una pista,
+// no una prueba: el texto lo dice en palabras y con cuántos meses se calculó.
+function pearson(xs, ys) {
+  const n = xs.length;
+  if (n < 4) return null;
+  const mx = xs.reduce((a, b) => a + b, 0) / n, my = ys.reduce((a, b) => a + b, 0) / n;
+  let sxy = 0, sxx = 0, syy = 0;
+  xs.forEach((x, i) => { sxy += (x - mx) * (ys[i] - my); sxx += (x - mx) ** 2; syy += (ys[i] - my) ** 2; });
+  return sxx && syy ? sxy / Math.sqrt(sxx * syy) : null;
+}
+const leerR = r => r == null ? 'Pocos meses para decir algo.'
+  : Math.abs(r) < .3 ? 'Sin relación clara: más inversión no trajo más efecto.'
+  : r > 0 ? `${Math.abs(r) < .6 ? 'Relación moderada' : 'Relación fuerte'}: los meses con más inversión tuvieron más lift.`
+  : `${Math.abs(r) < .6 ? 'Relación moderada' : 'Relación fuerte'} pero al revés: más inversión, menos lift.`;
+
+function bloqueInversionLift(serie, preguntas) {
+  const qs = preguntasReales(preguntas);
+  return `<div class="pulso-bloque" style="display:flex;align-items:center">¿Más inversión, más efecto?${ayuda('bl_scatter')}</div>
+    <div class="cap" style="font-size:12.5px;margin:-4px 0 10px">Cada punto es un mes: inversión del estudio contra el lift de la pregunta.</div>
+    <div class="costo-grid">${qs.map((q, i) => {
+      const s = serie.filter(r => r.question === q && r.spend != null && r.lift != null && !r.parcial);
+      const r = pearson(s.map(x => x.spend), s.map(x => x.lift));
+      return `<div class="panel"><h3>${NOMBRE_PREGUNTA[q] || q}</h3>
+        <div class="cap">${leerR(r)}${r == null ? '' : ` (correlación ${r.toFixed(2)}, ${s.length} meses)`}</div>
+        <div class="ch"><canvas id="bl-sc-${i}"></canvas></div>
+        ${legend([[C.verde, 'Subió (significativo)'], [C.gris, 'No concluyente'], [C.rojo, 'Bajó (significativo)']])}</div>`;
+    }).join('')}</div>`;
+}
+
+function dibujarInversionLift(serie, preguntas) {
+  preguntasReales(preguntas).forEach((q, i) => {
+    const s = serie.filter(r => r.question === q && r.spend != null && r.lift != null && !r.parcial);
+    const color = r => ({ si: C.verde, neg: C.rojo })[sigDe(r)] || C.gris;
+    mkScatter(`bl-sc-${i}`, s.map(r => ({ x: r.spend, y: r.lift, color: color(r),
+      tip: `${r.month}: ${fmtUSD(r.spend)} → ${pts(r.lift)} pts` })), { fmtX: 'usdMil', fmtY: 'pts', xTitle: 'Inversión (USD)', yTitle: 'Lift (pts)' });
+  });
+}
+
+// Gráfica de puntos (Chart.js scatter) con los mismos colores de ejes y grilla que mkMulti.
+function mkScatter(id, puntos, o = {}) {
+  const c = document.getElementById(id); if (!c || !window.Chart) return;
+  const grid = cssv('--border'), tick = cssv('--text-muted-2');
+  const eje = (fmt, titulo) => ({ ticks: { color: tick, callback: FMT_EJE[fmt], maxTicksLimit: 6 }, grid: { color: grid },
+    title: { display: !!titulo, text: titulo, color: tick, font: { size: 11 } } });
+  _charts.push(new Chart(c, {
+    type: 'scatter',
+    data: { datasets: [{ data: puntos.map(p => ({ x: p.x, y: p.y })), pointRadius: 5, pointHoverRadius: 7,
+      pointBackgroundColor: puntos.map(p => p.color), pointBorderColor: puntos.map(p => p.color) }] },
+    options: { responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false }, tooltip: { callbacks: { label: ctx => puntos[ctx.dataIndex].tip } } },
+      scales: { x: eje(o.fmtX, o.xTitle), y: eje(o.fmtY, o.yTitle) } },
+  }));
+}
+
 function drawBrandLift(host, serie) {
   const preguntas = ordenar(new Set(serie.map(r => r.question)));
   const TODOS = meses(serie);
@@ -1129,7 +1263,7 @@ function drawBrandLift(host, serie) {
     cero.</div>` : '';
 
   const ultMes = [...L].reverse().find(m => serie.some(r => r.month === m));
-  host.innerHTML = fichaEstudio(serie, ultMes) + avisoHuecos + preguntas.map((q, i) => {
+  host.innerHTML = fichaEstudio(serie, ultMes) + bloqueEntrega() + avisoHuecos + preguntas.map((q, i) => {
     const s = serie.filter(r => r.question === q);
     const ult = s[s.length - 1] || {};
     const lift = 100 * (ult.lift || 0);
@@ -1143,8 +1277,9 @@ function drawBrandLift(host, serie) {
         ${kpi(`Lift · ${ult.month || '—'}`, `${lift >= 0 ? '+' : ''}${lift.toFixed(1)} pts ${sigBadge(ult)}`,
               ult.ci_lower != null ? `entre ${pts(ult.ci_lower)} y ${pts(ult.ci_upper)} pts` : '', 'bl_sig')}
         ${kpi('Expuestos vs no expuestos', `${(100 * (ult.exposed || 0)).toFixed(1)}% vs ${(100 * (ult.control || 0)).toFixed(1)}%`, '', 'bl_lift')}
-        ${ult.benchmark_region != null ? kpi('Benchmark región', `${pts(ult.benchmark_region)} pts`,
-              veces ? `el nuestro es ${veces.toFixed(1)}× el típico` : '', 'bl_bench') : ''}
+        ${ult.benchmark_region != null ? kpi('Benchmark región · industria',
+              `${pts(ult.benchmark_region)} · ${pts(ult.benchmark_vertical)} pts`,
+              veces ? `el nuestro es ${veces.toFixed(1)}× el típico de la región` : '', 'bl_bench') : ''}
         ${movidas ? kpi('Personas movidas', fmtMil(ult.incremental), `a ${fmtUSD(ult.cost_per_incremental)} cada una`, 'bl_personas') : ''}
       </div>`;
     const pieResumen = `Máximo ${recortado ? 'del periodo' : 'histórico'}: ${(100 * (pico.lift || 0)).toFixed(1)} pts en ${pico.month || '—'}${notaParcial}`;
@@ -1166,11 +1301,14 @@ function drawBrandLift(host, serie) {
           <div class="ch"><canvas id="bl-e-${i}"></canvas></div>${legend([[C.azul, 'Expuestos'], [C.cian, `Promedio ${VENTANA_MEDIA} meses`]])}</div>
         <div class="panel"><h3>Lift${ayuda('bl_lift')}</h3>
           <div class="cap">Lo que causó la pauta. El bigote es el margen de error. ${pieResumen}.</div>
-          <div class="ch"><canvas id="bl-l-${i}"></canvas></div>${legend([[C.verde, 'Subió (significativo)'], [C.rojo, 'Bajó (significativo)'], [C.gris, 'No concluyente'], [C.ambar, 'Benchmark región']])}</div>
+          <div class="ch"><canvas id="bl-l-${i}"></canvas></div>${legend([[C.verde, 'Subió (significativo)'], [C.rojo, 'Bajó (significativo)'], [C.gris, 'No concluyente'], [C.ambar, 'Benchmark región'], [C.rosa, 'Benchmark industria']])}</div>
       </div>
     </div>`;
-  }).join('') + costoPorPersona(serie, L, preguntas);
+  }).join('') + costoPorPersona(serie, L, preguntas) + bloqueMovidas(serie, preguntas) + bloqueInversionLift(serie, preguntas);
   dibujarCostos(serie, L, preguntas);
+  dibujarEntrega(serie, L);
+  dibujarMovidas(serie, L, preguntas);
+  dibujarInversionLift(serie, preguntas);
 
   preguntas.forEach((q, i) => {
     const s = serie.filter(r => r.question === q);
@@ -1178,22 +1316,26 @@ function drawBrandLift(host, serie) {
     // Techo común a las dos tasas: la escala no puede depender de qué panel se mira.
     const tope = Math.max(...[...col('exposed'), ...col('control')].filter(v => v != null), 0);
     const ctrl = col('control'), expo = col('exposed');
+    // Encuestados de cada grupo en el tooltip: un mes con muestra chica se mueve más por azar.
+    const muestra = k => { const r = s.find(x => x.month === L[k]);
+      return r && r.responders_test ? [`Encuestados: ${r.responders_test.toLocaleString('es-MX')} expuestos · ${(r.responders_control || 0).toLocaleString('es-MX')} no expuestos`] : []; };
     mkMulti(`bl-c-${i}`, L, [
       { type: 'bar', label: 'No expuestos', color: conParcial(C.gris + '88', '33'), data: ctrl },
       { type: 'line', label: `Promedio ${VENTANA_MEDIA} meses`, color: C.gris, data: mediaMovil(ctrl) },
-    ], { fmt: 'pct', max: tope });
+    ], { fmt: 'pct', max: tope, pieTooltip: muestra });
     mkMulti(`bl-e-${i}`, L, [
       { type: 'bar', label: 'Expuestos', color: conParcial(C.azul), data: expo },
       { type: 'line', label: `Promedio ${VENTANA_MEDIA} meses`, color: C.cian, data: mediaMovil(expo) },
-    ], { fmt: 'pct', max: tope });
+    ], { fmt: 'pct', max: tope, pieTooltip: muestra });
     // El signo del lift es la lectura entera del panel: verde = la pauta subió el indicador,
     // rojo = lo bajó. Un solo color obligaba a leer el eje para saber de qué lado está cada
     // barra. El mes en curso va translúcido igual que en los otros paneles.
     // El color ya no dice solo el signo sino si el efecto es real: verde/rojo cuando el intervalo
     // de 95% no toca el cero, gris cuando sí. La línea ámbar es el benchmark de Meta para la región.
     const lifts = col('lift'), lo = col('ci_lower'), hi = col('ci_upper'), bench = col('benchmark_region');
+    const benchInd = col('benchmark_vertical');
     const fila = m => s.find(r => r.month === m);
-    const extremos = [...lo, ...hi, ...bench].filter(v => v != null);
+    const extremos = [...lo, ...hi, ...bench, ...benchInd].filter(v => v != null);
     mkMulti(`bl-l-${i}`, L, [
       { type: 'bar', label: 'Lift', orden: 1, data: lifts,
         color: L.map(m => {
@@ -1202,6 +1344,7 @@ function drawBrandLift(host, serie) {
           return parciales.has(m) ? base + '55' : base;
         }) },
       { type: 'line', label: 'Benchmark región', color: C.ambar, data: bench, dash: [4, 3], puntoRadio: 0, grosor: 1.5 },
+      { type: 'line', label: 'Benchmark industria', color: C.rosa, data: benchInd, dash: [2, 3], puntoRadio: 0, grosor: 1.5 },
     ], { fmt: 'pts', sMin: Math.min(0, ...extremos), sMax: Math.max(0, ...extremos),
          bigotes: { lo, hi, color: cssv('--text-muted-2') },
          pieTooltip: k => {
@@ -1209,7 +1352,7 @@ function drawBrandLift(host, serie) {
            if (!r || r.ci_lower == null) return [];
            return [`Intervalo 95%: ${pts(r.ci_lower)} a ${pts(r.ci_upper)} pts`, SIG_TXT[sigDe(r)],
                    r.confidence != null ? `Prob. de efecto positivo: ${Math.round(100 * r.confidence)}%` : '',
-                   r.incremental > 0 ? `Personas movidas: ${fmtMil(r.incremental)}` : ''].filter(Boolean);
+                   r.incremental > 0 ? `Personas movidas: ${fmtMil(r.incremental)}` : ''].filter(Boolean).concat(muestra(k));
          } });
   });
 }
