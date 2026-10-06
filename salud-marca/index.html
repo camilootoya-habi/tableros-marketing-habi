@@ -1362,10 +1362,9 @@ function render() {
       k === 'PCOM' ? '' : `<small>${h.pais}</small>`}</button>`).join('');
   document.getElementById('paisTitulo').textContent = H.nombre;
   document.title = `Salud de marca — ${H.nombre}`;
-  // Plaza solo aplica a tráfico y exit poll, que solo existen para Tuhabi (México).
-  document.getElementById('filtros').innerHTML =
-    (PAIS === 'MX' ? chips('Plaza (tráfico y exit poll)', ['Todas', 'MTY', 'GDL', 'CDMX', 'Resto'], PLAZA, 'plaza') : '') +
-    chips('Periodo', VENTANAS, MESES, 'meses');
+  // El filtro de plaza se quitó el 6-oct-2026 (decisión de Camilo): tráfico y exit poll se ven
+  // siempre con todas las plazas. `PLAZA` queda fijo en 'Todas' y el código por plaza se conserva.
+  document.getElementById('filtros').innerHTML = chips('Periodo', VENTANAS, MESES, 'meses');
 
   // La leyenda solo aparece donde hay campañas: en CO no hay TV, así que tampoco banda que
   // explicar.
@@ -1441,7 +1440,7 @@ window.rerender = render;
 // La vista queda en la URL: así se puede mandar "el tablero de Colombia" por Slack en vez de
 // "abre el tablero y dale click a CO".
 function syncURL() {
-  const q = new URLSearchParams({ hoja: HOJAS[PAIS].slug, plaza: PLAZA, meses: MESES, bloque: BLOQUE, leads: LEADS_SEL, publico: PUBLICO });
+  const q = new URLSearchParams({ hoja: HOJAS[PAIS].slug, meses: MESES, bloque: BLOQUE, leads: LEADS_SEL, publico: PUBLICO });
   history.replaceState(null, '', `?${q}`);
 }
 function readURL() {
@@ -1451,7 +1450,6 @@ function readURL() {
   if (['MX', 'CO'].includes(q.get('pais'))) PAIS = q.get('pais');
   const hoja = Object.keys(HOJAS).find(k => HOJAS[k].slug === q.get('hoja'));
   if (hoja) PAIS = hoja;
-  if (['Todas', 'MTY', 'GDL', 'CDMX', 'Resto'].includes(q.get('plaza'))) PLAZA = q.get('plaza');
   if (VENTANAS.includes(q.get('meses'))) MESES = q.get('meses');
   if (BLOQUES.includes(q.get('bloque'))) BLOQUE = q.get('bloque');
   if (q.get('leads') in LEADS_OPC) LEADS_SEL = q.get('leads');
@@ -1479,7 +1477,7 @@ document.addEventListener('click', e => {
   else if (b.dataset.pick === 'bloque') BLOQUE = b.dataset.val;
   else if (b.dataset.pick === 'leads') LEADS_SEL = b.dataset.val;
   else if (b.dataset.pick === 'publico') PUBLICO = b.dataset.val;
-  else PLAZA = b.dataset.val;
+  else return;
   syncURL();
   render();
 });
