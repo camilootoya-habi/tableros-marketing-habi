@@ -96,13 +96,12 @@
   .top-post .info b { color: var(--text-title); font-size: 13px; }
   .top-post .txt { color: var(--text-muted-3); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; margin-top: 3px; }
 
-  /* Embudo de Instagram: tres pasos con la tasa de paso entre cada uno. */
-  .embudo { display: flex; align-items: stretch; gap: 8px; flex-wrap: wrap; margin-top: 6px; }
-  .embudo .paso { flex: 1 1 140px; background: var(--bg); border: 1px solid var(--border); border-radius: 9px; padding: 11px 13px; min-width: 0; }
-  .embudo .paso .k { font-size: 10.5px; text-transform: uppercase; letter-spacing: .5px; color: var(--text-muted-3); font-weight: 700; }
-  .embudo .paso .v { font-size: 20px; font-weight: 800; color: var(--text-title); font-variant-numeric: tabular-nums; margin-top: 2px; }
-  .embudo .flecha { flex: 0 0 auto; display: flex; flex-direction: column; justify-content: center; align-items: center; font-size: 11px; color: var(--text-muted-2); text-align: center; line-height: 1.3; max-width: 96px; }
-  .embudo .flecha b { font-size: 18px; color: var(--accent); line-height: 1; }
+  /* Del contenido al sitio: 5 gráficas en una línea (3 valores + 2 conversiones). Rejilla FIJA
+     para que las cinco compartan ancho y se lean de izquierda a derecha como un embudo. */
+  .cinco { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 10px; }
+  .cinco > * { min-width: 0; }
+  @media (max-width: 1300px) { .cinco { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+  @media (max-width: 800px) { .cinco { grid-template-columns: 1fr; } }
 
   /* Eficiencia: una tarjeta por pregunta con veredicto en palabras. */
   .costo-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 12px; }
@@ -924,24 +923,24 @@ const AYUDA = {
     muy viejos esa lista puede no incluir promociones ya borradas, así que en el top histórico la marca
     es menos segura que en los últimos 180 días.</p>
     <p>Clic en una publicación para abrirla en Instagram.</p>`],
-  ig_embudo: ['Del contenido al sitio', `
-    <p>Tres pasos del mes: cuántas veces se vio el contenido (<strong>vistas</strong>), cuántas personas
-    entraron al perfil (<strong>visitas al perfil</strong>) y cuántas tocaron el link al sitio web
-    (<strong>clics al sitio</strong>). Cada flecha dice cuántos pasan al siguiente paso.</p>
-    <p class="ej">Ejemplo: 9.35 M de vistas → 4,942 visitas al perfil (5.3 por cada 10 mil vistas) → 287
-    clics (5.8 de cada 100 visitas).</p>
+  ig_embudo: ['Conversión entre pasos', `
+    <p>El camino de Instagram al sitio tiene tres pasos: se ve el contenido (<strong>vistas</strong>),
+    alguien entra al perfil (<strong>visitas al perfil</strong>) y toca el link al sitio web
+    (<strong>clics al sitio</strong>). Las dos gráficas de la derecha dicen cuántos pasan de un paso al
+    siguiente cada mes:</p>
+    <ul><li><strong>Vistas → perfil</strong>: visitas al perfil por cada 10 mil vistas. Si baja, el
+    contenido se ve pero no despierta curiosidad por la marca.</li>
+    <li><strong>Perfil → sitio</strong>: clics al sitio por cada 100 visitas al perfil. Si baja, el
+    perfil (bio, link, historias destacadas) no invita a dar el paso.</li></ul>
+    <p class="ej">Ejemplo, Tuhabi en sep-2026: 9.35 M de vistas → 4,942 visitas al perfil (5.3 por cada
+    10 mil vistas) → 287 clics (5.8 de cada 100 visitas).</p>
     <p>Las vistas incluyen la pauta, que llega a mucha gente que no conoce la marca: por eso el primer
     paso es tan angosto.</p>`],
-  ig_perfil_mes: ['Visitas al perfil y clics por mes', `
-    <p><strong>Barras</strong>: personas que entraron al perfil de la marca. Es la señal de que alguien
-    quiso saber más después de ver algo.</p>
-    <p><strong>Línea</strong>: clics al link del sitio web desde el perfil.</p>
-    <p>Meta lo entrega desde nov-2024.</p>`],
-  ig_tasas: ['Qué tan bien convierte el perfil', `
-    <p><strong>Clics al sitio por cada 100 visitas al perfil</strong>: de los que entran, cuántos van al
-    sitio. Si baja, el perfil (bio, link, historias destacadas) no está invitando a dar el paso.</p>
-    <p><strong>Nuevos seguidores por cada 100 visitas al perfil</strong>: es una proporción, no una
-    conversión exacta. También se puede seguir sin entrar al perfil, por ejemplo desde un Reel.</p>`],
+  ig_perfil_mes: ['Visitas al perfil y clics al sitio', `
+    <p><strong>Visitas al perfil</strong>: personas que entraron al perfil de la marca. Es la señal de
+    que alguien quiso saber más después de ver algo.</p>
+    <p><strong>Clics al sitio</strong>: toques al link del sitio web desde el perfil.</p>
+    <p>Meta los entrega desde nov-2024. El mes en curso va translúcido: todavía no termina.</p>`],
   ig_alcance: ['A quién le llega: seguidores vs. no seguidores', `
     <p>El <strong>alcance</strong> es cuántas personas distintas vieron algo de la cuenta en el mes. Meta lo
     separa entre quienes ya siguen la cuenta y quienes no.</p>
@@ -1661,47 +1660,22 @@ function dibujarContenido(serie, L, Lig) {
     { fmt: 'compacto', fmtDerecha: 'compacto', apilado: true, sinBandas: true });
 }
 
-// ── Instagram · embudo: del contenido al sitio ────────────────────────────────
-// Vistas (desde ago-2025) → visitas al perfil → clics al sitio (desde nov-2024), del último mes
-// cerrado, y su evolución. Los nuevos seguidores se dan como proporción de las visitas al perfil,
-// no como conversión: también se sigue desde un Reel sin pasar por el perfil.
-const unMes = (m, delta) => { const d = new Date(m + '-01T00:00:00Z'); d.setUTCMonth(d.getUTCMonth() + delta); return d.toISOString().slice(0, 7); };
+// ── Instagram · del contenido al sitio ────────────────────────────────────────
+// Una línea de 5 gráficas con el mismo eje de meses: tres valores (vistas desde ago-2025, visitas
+// al perfil y clics al sitio desde nov-2024) y las dos conversiones entre ellos.
 const por = (a, b, base) => (a != null && b) ? base * a / b : null;
-const dec1 = v => v == null ? '—' : v.toLocaleString('es-MX', { maximumFractionDigits: 1 });
 
 function bloqueEmbudo(serie, mesActual) {
-  const u = [...serie].reverse().find(r => r.month < mesActual && r.ig_perfil != null);
-  if (!u) return '';
-  const hace = serie.find(r => r.month === unMes(u.month, -12));
-  const yoy = hace && hace.ig_perfil ? u.ig_perfil / hace.ig_perfil - 1 : null;
-  const paso = (k, v) => `<div class="paso"><div class="k">${k}</div><div class="v">${v}</div></div>`;
-  const flecha = (v, txt) => `<div class="flecha"><b>→</b>${v == null ? '' : `${dec1(v)} ${txt}`}</div>`;
+  if (!serie.some(r => r.ig_perfil != null)) return '';
+  const panel = (id, titulo, cap, help) => `<div class="panel"><h3>${titulo}${ayuda(help)}</h3>
+      <div class="cap">${cap}</div><div class="ch"><canvas id="${id}"></canvas></div></div>`;
   return `<div class="pulso-bloque">Del contenido al sitio</div>
-    <div class="ficha">
-      <div><div class="k">Visitas al perfil · ${nombreMes(u.month)}</div><div class="v">${u.ig_perfil.toLocaleString('es-MX')}</div>
-        <div class="d">${u.ig_vistas ? `${dec1(por(u.ig_perfil, u.ig_vistas, 1e4))} por cada 10 mil vistas` : ''}</div></div>
-      <div><div class="k">Clics al sitio</div><div class="v">${u.ig_clics != null ? u.ig_clics.toLocaleString('es-MX') : '—'}</div>
-        <div class="d">${dec1(por(u.ig_clics, u.ig_perfil, 100))} de cada 100 visitas al perfil</div></div>
-      <div><div class="k">Nuevos seguidores</div><div class="v">${dec1(por(u.ig_altas, u.ig_perfil, 100))}</div>
-        <div class="d">Por cada 100 visitas al perfil</div></div>
-      <div><div class="k">Visitas al perfil vs. hace un año</div><div class="v">${yoy == null ? '—' : `${yoy >= 0 ? '+' : ''}${Math.round(100 * yoy)}%`}</div>
-        <div class="d">${hace ? `${hace.ig_perfil.toLocaleString('es-MX')} en ${nombreMes(hace.month)}` : 'Sin dato de hace un año'}</div></div>
-    </div>
-    <div class="charts-grid">
-      <div class="panel"><h3>El embudo de ${nombreMes(u.month)}${ayuda('ig_embudo')}</h3>
-        <div class="cap">De cada paso, cuántos pasan al siguiente.</div>
-        <div class="embudo">
-          ${u.ig_vistas ? paso('Vistas', fmtMil(u.ig_vistas)) + flecha(por(u.ig_perfil, u.ig_vistas, 1e4), 'de cada 10 mil') : ''}
-          ${paso('Visitas al perfil', u.ig_perfil.toLocaleString('es-MX'))}
-          ${flecha(por(u.ig_clics, u.ig_perfil, 100), 'de cada 100')}
-          ${paso('Clics al sitio', u.ig_clics != null ? u.ig_clics.toLocaleString('es-MX') : '—')}
-        </div></div>
-      <div class="panel"><h3>Visitas al perfil y clics por mes${ayuda('ig_perfil_mes')}</h3>
-        <div class="cap">Barras: visitas al perfil. Línea: clics al sitio (eje derecho).</div>
-        <div class="ch alto"><canvas id="sg-ig-perfil"></canvas></div>${legend([[C.rosa, 'Visitas al perfil'], [C.azul, 'Clics al sitio']])}</div>
-      <div class="panel"><h3>Qué tan bien convierte el perfil${ayuda('ig_tasas')}</h3>
-        <div class="cap">Por cada 100 visitas al perfil, cada mes.</div>
-        <div class="ch alto"><canvas id="sg-ig-tasas"></canvas></div>${legend([[C.azul, 'Clics al sitio'], [C.verde, 'Nuevos seguidores']])}</div>
+    <div class="cinco">
+      ${panel('sg-ig-e-vistas', 'Vistas', 'Veces que se vio el contenido.', 'ig_vistas')}
+      ${panel('sg-ig-e-perfil', 'Visitas al perfil', 'Personas que entraron al perfil.', 'ig_perfil_mes')}
+      ${panel('sg-ig-e-clics', 'Clics al sitio', 'Clics al link del sitio web.', 'ig_perfil_mes')}
+      ${panel('sg-ig-e-c1', 'Vistas → perfil', 'Visitas al perfil por cada 10 mil vistas.', 'ig_embudo')}
+      ${panel('sg-ig-e-c2', 'Perfil → sitio', 'Clics al sitio por cada 100 visitas al perfil.', 'ig_embudo')}
     </div>`;
 }
 
@@ -1711,15 +1685,18 @@ function dibujarEmbudo(serie, L, mesActual) {
   const Lp = primero ? L.filter(m => m >= primero.month) : [];
   const tenue = (c, m) => m === mesActual ? c + '55' : c;
   const enCurso = k => Lp[k] === mesActual ? ['Mes en curso: todavía no termina'] : [];
-  mkMulti('sg-ig-perfil', Lp, [
-    { type: 'bar', label: 'Visitas al perfil', orden: 1, color: Lp.map(m => tenue(C.rosa, m)), data: Lp.map(m => fila(m).ig_perfil ?? null) },
-    { type: 'line', label: 'Clics al sitio', eje: 'y1', color: C.azul, tension: .2, data: Lp.map(m => fila(m).ig_clics ?? null) },
-  ], { fmt: 'num', fmtDerecha: 'num', sinBandas: true, pieTooltip: enCurso });
+  const col = (id, campo, label, color, fmt) => mkMulti(id, Lp, [
+    { type: 'bar', label, color: Lp.map(m => tenue(color, m)), data: Lp.map(m => fila(m)[campo] ?? null) },
+  ], { fmt, sinBandas: true, pieTooltip: enCurso });
+  col('sg-ig-e-vistas', 'ig_vistas', 'Vistas', C.rosa, 'compacto');
+  col('sg-ig-e-perfil', 'ig_perfil', 'Visitas al perfil', C.cian, 'num');
+  col('sg-ig-e-clics', 'ig_clics', 'Clics al sitio', C.azul, 'num');
   const r1 = v => v == null ? null : Math.round(10 * v) / 10;
-  mkMulti('sg-ig-tasas', Lp, [
-    { label: 'Clics al sitio', color: C.azul, tension: .2, data: Lp.map(m => r1(por(fila(m).ig_clics, fila(m).ig_perfil, 100))) },
-    { label: 'Nuevos seguidores', color: C.verde, tension: .2, data: Lp.map(m => r1(por(fila(m).ig_altas, fila(m).ig_perfil, 100))) },
+  const tasa = (id, num, den, base, label, color) => mkMulti(id, Lp, [
+    { label, color, tension: .2, puntoRadio: 2, data: Lp.map(m => r1(por(fila(m)[num], fila(m)[den], base))) },
   ], { fmt: 'num', sinBandas: true, pieTooltip: enCurso });
+  tasa('sg-ig-e-c1', 'ig_perfil', 'ig_vistas', 1e4, 'Por cada 10 mil vistas', C.cian);
+  tasa('sg-ig-e-c2', 'ig_clics', 'ig_perfil', 100, 'Por cada 100 visitas', C.azul);
 }
 
 // ── Instagram · audiencia ─────────────────────────────────────────────────────
