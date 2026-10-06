@@ -8076,9 +8076,9 @@
     "fb_total": 34258
    },
    "2026-10-05": {
-    "fb_altas": 8,
-    "fb_bajas": 1,
-    "fb_total": 34264,
+    "fb_altas": 9,
+    "fb_bajas": 2,
+    "fb_total": 34265,
     "ig_total": 78775
    },
    "2026-10-06": {
@@ -16161,13 +16161,13 @@
     "fb_total": 44074
    },
    "2026-10-05": {
-    "fb_altas": 18,
-    "fb_bajas": 2,
-    "fb_total": 44091,
+    "fb_altas": 26,
+    "fb_bajas": 3,
+    "fb_total": 44097,
     "ig_total": 26807
    },
    "2026-10-06": {
-    "ig_total": 26821
+    "ig_total": 26822
    }
   },
   "PCOM": {
@@ -24246,7 +24246,7 @@
     "fb_total": 46400
    },
    "2026-10-05": {
-    "fb_altas": 3,
+    "fb_altas": 4,
     "fb_bajas": 1,
     "fb_total": 46403,
     "ig_total": 4273
@@ -24805,14 +24805,14 @@
     "ig_vistas": 7888295
    },
    "2026-10": {
-    "ig_alc_noseg": 372855,
-    "ig_alc_seg": 16323,
+    "ig_alc_noseg": 373035,
+    "ig_alc_seg": 16337,
     "ig_altas": 220,
     "ig_bajas": 65,
     "ig_clics": 117,
-    "ig_interacciones": 904,
-    "ig_perfil": 1157,
-    "ig_vistas": 978633
+    "ig_interacciones": 907,
+    "ig_perfil": 1159,
+    "ig_vistas": 979921
    }
   },
   "MX": {
@@ -24985,14 +24985,14 @@
     "ig_vistas": 9352942
    },
    "2026-10": {
-    "ig_alc_noseg": 774350,
-    "ig_alc_seg": 5320,
+    "ig_alc_noseg": 775028,
+    "ig_alc_seg": 5322,
     "ig_altas": 77,
     "ig_bajas": 28,
     "ig_clics": 28,
-    "ig_interacciones": 570,
-    "ig_perfil": 736,
-    "ig_vistas": 1296812
+    "ig_interacciones": 575,
+    "ig_perfil": 737,
+    "ig_vistas": 1300409
    }
   },
   "PCOM": {
@@ -25165,18 +25165,18 @@
     "ig_vistas": 141290
    },
    "2026-10": {
-    "ig_alc_noseg": 5305,
+    "ig_alc_noseg": 5336,
     "ig_alc_seg": 53,
     "ig_altas": 8,
     "ig_bajas": 3,
     "ig_clics": 8,
     "ig_interacciones": 4,
     "ig_perfil": 59,
-    "ig_vistas": 18552
+    "ig_vistas": 18601
    }
   }
  },
- "last_refresh": "2026-10-06T04:36:28Z",
+ "last_refresh": "2026-10-06T04:49:03Z",
  "posts": {
   "CO": {
    "17842262945118539": {
@@ -42443,7 +42443,7 @@
     "vistas": 4525
    },
    "18141929419594879": {
-    "alcance": 359,
+    "alcance": 366,
     "comentarios": 0,
     "compartidos": 4,
     "fecha": "2026-10-05",
@@ -42454,7 +42454,7 @@
     "link": "https://www.instagram.com/reel/DeH23fKCvtN/",
     "pauta": true,
     "texto": "Le dieron el trabajo en Querétaro… pero la casa todavía tenía hipoteca. 🏠",
-    "vistas": 523
+    "vistas": 525
    },
    "18141965482521393": {
     "alcance": 580,
@@ -42525,18 +42525,18 @@
     "vistas": 667
    },
    "18154222711459215": {
-    "alcance": 114,
+    "alcance": 145,
     "comentarios": 0,
     "compartidos": 0,
     "fecha": "2026-10-06",
     "formato": "video",
     "guardados": 0,
-    "interacciones": 8,
-    "likes": 7,
+    "interacciones": 10,
+    "likes": 9,
     "link": "https://www.instagram.com/reel/DeIlw3wAqWw/",
     "pauta": false,
     "texto": "A veces los hijos llegan a enseñarnos que los sueños sí se cumplen. 🏠",
-    "vistas": 211
+    "vistas": 237
    },
    "18154907197250307": {
     "comentarios": 4,
