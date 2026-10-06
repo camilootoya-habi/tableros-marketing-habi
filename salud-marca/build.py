@@ -170,22 +170,36 @@ def collect_seguidores(now):
             imagenes.update(imgs)
         except Exception as e:
             print(f"WARN publicaciones {clave}: {type(e).__name__}: {e}")
-    if ok:
-        SOCIAL.save_cache(cache["datos"], now, cache.get("ig_mes"), cache.get("posts"))
-
-    # Top 5 del último mes CERRADO en que la marca publicó, y del en curso si ya hay algo. No "el
-    # mes anterior" a secas: Habi publicó 1 vez en sep-2026 y Propiedades.com 0, y su top saldría
-    # vacío. Miniaturas guardadas en el repo.
-    mes_act = now[:7]
+    # Top 5 de los últimos 180 días (por interacciones de Meta) y de toda la historia (por likes +
+    # comentarios, la única métrica que tienen todos los posts), cada uno con todas las
+    # publicaciones y solo las orgánicas. Verificar la pauta llama a la API: se hace solo con los
+    # candidatos y el resultado queda en el caché. Sin conexión (`ok` falso) no se verifica nada.
+    verificar = IGP.con_pauta if ok else None
+    hace180 = (datetime.date.fromisoformat(now[:10]) - datetime.timedelta(days=180)).isoformat()
     tops = {}
     for c in SOCIAL.MARCAS:
         posts_c = cache["posts"].get(c, {})
-        cerrados = sorted({p["fecha"][:7] for p in posts_c.values() if p["fecha"][:7] < mes_act})
-        meses_top = ([cerrados[-1]] if cerrados else []) + ([mes_act] if any(
-            p["fecha"].startswith(mes_act) for p in posts_c.values()) else [])
-        tops[c] = {mes: IGP.top(posts_c, mes) for mes in meses_top}
+        tops[c] = {}
+        for periodo, desde, criterio in (("180", hace180, IGP.puntaje), ("historico", "", IGP.likes_coment)):
+            todas = IGP.top(posts_c, desde, criterio=criterio)
+            for p in todas:
+                if "pauta" not in p and verificar:
+                    v = verificar(p["id"])
+                    if v is not None:
+                        p["pauta"] = posts_c[p["id"]]["pauta"] = v
+            tops[c][periodo] = {"todas": todas,
+                                "organicas": IGP.top(posts_c, desde, organicas=True, criterio=criterio, verificar=verificar)}
+    if ok:
+        SOCIAL.save_cache(cache["datos"], now, cache.get("ig_mes"), cache.get("posts"))
+
+    # Miniaturas: las de la lista de hoy ya traen URL; las de posts viejos se piden una por una.
+    en_top = [p for c in tops.values() for per in c.values() for lista in per.values() for p in lista]
+    if ok:
+        for p in en_top:
+            if p["id"] not in imagenes and not os.path.exists(os.path.join(IGP.MINIATURAS, f"{p['id']}.jpg")):
+                imagenes[p["id"]] = IGP.url_imagen(p["id"])
     try:
-        con_img = IGP.miniaturas([t for c in tops.values() for t in c.values()], imagenes)
+        con_img = IGP.miniaturas([en_top], imagenes)
     except Exception as e:
         print(f"WARN miniaturas: {type(e).__name__}: {e}")
         con_img = set()
@@ -212,8 +226,14 @@ def collect_seguidores(now):
         else:
             out[clave] = contract.metric("ok", source="api", series=serie, last_updated=now)
         out[clave]["diario"] = diaria[-45:]
-        out[clave]["top_posts"] = {mes: [dict(p, img=f"ig_miniaturas/{p['id']}.jpg" if p["id"] in con_img else None)
-                                         for p in lista] for mes, lista in tops[clave].items()}
+        img = lambda p: dict(p, img=f"ig_miniaturas/{p['id']}.jpg" if p["id"] in con_img else None)
+        out[clave]["top_posts"] = {per: {k: [img(p) for p in lista] for k, lista in listas.items()}
+                                   for per, listas in tops[clave].items()}
+        # Cuántas publicaciones de los últimos 180 días tuvieron pauta: contexto para el filtro.
+        recientes = [p for p in cache["posts"].get(clave, {}).values() if p["fecha"] >= hace180]
+        out[clave]["pauta_180"] = {"total": len(recientes),
+                                   "con_pauta": sum(1 for p in recientes if p.get("pauta") is True),
+                                   "verificadas": sum(1 for p in recientes if "pauta" in p)}
     return out
 
 

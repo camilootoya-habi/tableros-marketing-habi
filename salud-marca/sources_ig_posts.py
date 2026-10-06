@@ -6,8 +6,8 @@ Lo que da Meta (verificado el 6-oct-2026 con el token de AgenteCreativo):
   marcas completas, así que likes + comentarios son la única métrica comparable en 5 años.
 - Las métricas por publicación (vistas, alcance, guardados, compartidos) piden UNA llamada por
   post. Solo se piden para lo publicado desde ago-2025: antes de eso Meta devuelve vistas en 0.
-- Las URLs de imagen caducan. Las miniaturas del top 5 se descargan chicas al repo
-  (`ig_miniaturas/`) y solo para los meses que el tablero muestra; las demás se borran.
+- Las URLs de imagen caducan. Las miniaturas del top (180 días e histórico, con y sin pauta) se
+  descargan chicas al repo (`ig_miniaturas/`); las que salen del top se borran.
 
 Ojo: likes, comentarios y vistas incluyen lo que trae la pauta cuando un post se promociona.
 """
@@ -80,6 +80,57 @@ def metricas(post_id):
             for d in pl.get("data") or [] if d.get("name") in nombres}
 
 
+# ── ¿Tuvo pauta? ─────────────────────────────────────────────────────────────
+# Dos fuentes, verificadas el 6-oct-2026 sobre los últimos 60 posts de @tuhabimx (coinciden en los
+# mismos 2 posts):
+#  1. `boost_ads_list` del post: los anuncios que lo promocionan, sin importar desde qué cuenta se
+#     lanzaron. Una llamada por post: se usa a diario para lo reciente y para verificar candidatos.
+#  2. Los anuncios de las cuentas que ve el token cuyo creativo es un post de Instagram
+#     (`effective_instagram_media_id`). Son ~16 mil anuncios (~150 llamadas): solo en el backfill.
+# `pauta`: True = tuvo; False = verificado sin pauta; ausente = no verificado.
+CUENTAS = ("act_205661715114408", "act_1719704135983664", "act_234510228146877",
+           "act_770068953990542", "act_3159349764081647", "act_1746373153181888",
+           "act_1102638265553679", "act_27374651732195975")
+
+
+def con_pauta(post_id):
+    """True/False según `boost_ads_list`; None si la API falló (no se adivina)."""
+    ok, pl = BL._get(post_id, fields="boost_ads_list", access_token=_token())
+    if not ok:
+        return None
+    return bool((pl.get("boost_ads_list") or {}).get("data"))
+
+
+def media_en_anuncios(cuentas=CUENTAS):
+    """Ids de publicaciones de Instagram usadas como creativo en algún anuncio. SOLO BACKFILL."""
+    ids = set()
+    for act in cuentas:
+        after = None
+        while True:
+            params = {"fields": "creative{effective_instagram_media_id,source_instagram_media_id}",
+                      "limit": 100, "access_token": _token()}
+            if after:
+                params["after"] = after
+            ok, pl = BL._get(f"{act}/ads", **params)
+            if not ok:
+                print(f"WARN anuncios {act}: {(pl.get('error') or {}).get('message')}")
+                break
+            for a in pl.get("data") or []:
+                cr = a.get("creative") or {}
+                ids |= {cr[k] for k in ("effective_instagram_media_id", "source_instagram_media_id") if cr.get(k)}
+            after = ((pl.get("paging") or {}).get("cursors") or {}).get("after")
+            if not (pl.get("paging") or {}).get("next"):
+                break
+    return ids
+
+
+def url_imagen(post_id):
+    """URL fresca de la imagen de un post viejo (las de la lista caducan y el cron solo relee
+    las 100 más recientes)."""
+    ok, pl = BL._get(post_id, fields="thumbnail_url,media_url", access_token=_token())
+    return (pl.get("thumbnail_url") or pl.get("media_url")) if ok else None
+
+
 def actualizar(posts, ig_id, paginas=1, metricas_desde=None, hoy=None):
     """Funde en `posts` ({id: post}) lo que trae la API. El cron pide 1 página (las 100 más
     recientes) y re-pide métricas de lo publicado en los últimos 45 días, que es cuando todavía se
@@ -94,6 +145,11 @@ def actualizar(posts, ig_id, paginas=1, metricas_desde=None, hoy=None):
         imagenes[raw["id"]] = p.pop("_img")
         if p["fecha"] >= desde:
             p.update(metricas(raw["id"]))
+            # Lo reciente se re-verifica: un post se puede pautar días después de publicarlo.
+            if posts.get(raw["id"], {}).get("pauta") is not True:
+                v = con_pauta(raw["id"])
+                if v is not None:
+                    p["pauta"] = v
         posts.setdefault(raw["id"], {}).update(p)
     return posts, imagenes
 
@@ -119,9 +175,30 @@ def puntaje(p):
     return p.get("interacciones") if p.get("interacciones") is not None else p.get("likes", 0) + p.get("comentarios", 0)
 
 
-def top(posts, mes, n=5):
-    del_mes = [dict(p, id=i) for i, p in posts.items() if p["fecha"].startswith(mes)]
-    return sorted(del_mes, key=puntaje, reverse=True)[:n]
+def likes_coment(p):
+    return p.get("likes", 0) + p.get("comentarios", 0)
+
+
+def top(posts, desde="", n=5, organicas=False, criterio=puntaje, verificar=None):
+    """Las `n` publicaciones con mejor `criterio` desde la fecha `desde` (AAAA-MM-DD).
+    Con `organicas=True` deja fuera las que tuvieron pauta. Un candidato sin verificar se verifica
+    con `verificar(id)` (normalmente `con_pauta`) y el resultado queda guardado en `posts`; si la
+    verificación falla, el candidato se salta: mejor perder una orgánica que colar una pautada."""
+    candidatos = sorted(((i, p) for i, p in posts.items() if p["fecha"] >= desde),
+                        key=lambda x: criterio(x[1]), reverse=True)
+    out = []
+    for i, p in candidatos:
+        if organicas:
+            if "pauta" not in p and verificar:
+                v = verificar(i)
+                if v is not None:
+                    p["pauta"] = v
+            if p.get("pauta") is not False:
+                continue
+        out.append(dict(p, id=i))
+        if len(out) == n:
+            break
+    return out
 
 
 def miniaturas(tops, imagenes, lado=240):

@@ -87,6 +87,7 @@
   .top-post .img { aspect-ratio: 1; background: var(--row-border) center / cover no-repeat; position: relative; }
   .top-post .rank { position: absolute; top: 7px; left: 7px; background: rgba(0, 0, 0, .65); color: #fff; font-size: 11px; font-weight: 700; border-radius: 5px; padding: 2px 7px; }
   .top-post .fmt { position: absolute; top: 7px; right: 7px; background: rgba(0, 0, 0, .65); color: #fff; font-size: 10.5px; border-radius: 5px; padding: 2px 7px; }
+  .top-post .pauta { position: absolute; bottom: 7px; left: 7px; background: #f59e0b; color: #1c1917; font-size: 10.5px; font-weight: 700; border-radius: 5px; padding: 2px 7px; }
   .top-post .info { padding: 8px 10px 10px; font-size: 11.5px; color: var(--text-muted-2); line-height: 1.45; }
   .top-post .info b { color: var(--text-title); font-size: 13px; }
   .top-post .txt { color: var(--text-muted-3); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; margin-top: 3px; }
@@ -863,10 +864,18 @@ const AYUDA = {
     <p>Incluye las vistas pagadas de los posts promocionados, así que un formato puede verse más visto
     solo porque se pautó más.</p>`],
   ig_top: ['Las publicaciones que más engancharon', `
-    <p>Las 5 con más <strong>interacciones</strong> del mes (likes, comentarios, guardados y compartidos,
-    según Meta). En publicaciones de antes de ago-2025, se ordena por likes + comentarios.</p>
-    <p>Se muestra el último mes cerrado en que la marca publicó y el mes en curso si ya hay algo. Clic
-    en una publicación para abrirla en Instagram.</p>`],
+    <p><strong>Últimos 180 días</strong>: las 5 con más interacciones según Meta (likes, comentarios,
+    guardados y compartidos).</p>
+    <p><strong>Toda la historia</strong>: las 5 con más likes + comentarios, la única métrica que tienen
+    todas las publicaciones. Ordenar por interacciones favorecería a las recientes solo por tener más datos.</p>
+    <p><strong>Con pauta</strong>: la publicación se promocionó con anuncios, así que parte de sus
+    interacciones las trajo el dinero. Con <strong>Solo orgánicas</strong> quedan fuera, y lo que queda es
+    el contenido que funcionó por sí mismo. Si Meta no puede confirmar si un post tuvo pauta, también
+    queda fuera del filtro: mejor perder una orgánica que colar una pautada.</p>
+    <p class="ej">Cómo se sabe: Meta lista los anuncios que promocionan cada publicación. Para posts
+    muy viejos esa lista puede no incluir promociones ya borradas, así que en el top histórico la marca
+    es menos segura que en los últimos 180 días.</p>
+    <p>Clic en una publicación para abrirla en Instagram.</p>`],
 };
 const ayuda = k => AYUDA[k] ? `<button type="button" class="help-btn" data-ayuda="${k}" aria-label="Más información">?</button>` : '';
 
@@ -1456,6 +1465,10 @@ function drawSeguidores(host, serie) {
 // única métrica que existe para toda la historia), vistas por publicación (desde ago-2025) y el
 // top 5 con miniatura. Datos de sources_ig_posts.py.
 const FORMATOS = [['video', 'Video', C.rosa], ['carrusel', 'Carrusel', C.cian], ['imagen', 'Imagen', C.ambar]];
+// Filtro del top: con "Solo orgánicas" quedan fuera las publicaciones que tuvieron pauta, para ver
+// qué contenido funciona por sí mismo.
+const TOP_FILTROS = ['Todas', 'Solo orgánicas'];
+let TOP_FILTRO = 'Todas';
 const MESES_ES = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
 const nombreMes = m => `${MESES_ES[+m.slice(5) - 1]}-${m.slice(0, 4)}`;
 const pubs = r => FORMATOS.reduce((a, [f]) => a + ((r || {})[`pub_${f}`] || 0), 0);
@@ -1478,18 +1491,30 @@ function bloqueContenido(serie, L, mesActual) {
   const mejor = porFmt.filter(x => x.n >= 3).sort((a, b) => b.prom - a.prom)[0];
   const video = porFmt.find(x => x.f === 'video');
   const nv = sumaF(u12, 'nv'), vistas = sumaF(u12, 'vistas');
-  const tops = ((DATA.metrics.seguidores || {})[PAIS] || {}).top_posts || {};
+  const met = (DATA.metrics.seguidores || {})[PAIS] || {};
+  const tops = met.top_posts || {};
+  const pa = met.pauta_180;
+  const filtro = TOP_FILTRO === 'Solo orgánicas' ? 'organicas' : 'todas';
 
-  const tarjeta = (p, i) => `<a class="top-post" href="${esc(p.link)}" target="_blank" rel="noopener">
+  // En el top histórico se ordena por likes + comentarios (la métrica que tienen todos los posts);
+  // en 180 días, por las interacciones de Meta. La tarjeta muestra la cifra con la que se ordenó.
+  const tarjeta = historico => (p, i) => `<a class="top-post" href="${esc(p.link)}" target="_blank" rel="noopener">
       <div class="img" style="${p.img ? `background-image:url('${p.img}')` : ''}"><span class="rank">#${i + 1}</span>
-        <span class="fmt">${(FORMATOS.find(x => x[0] === p.formato) || [, p.formato])[1]}</span></div>
-      <div class="info"><b>${(p.interacciones ?? (p.likes + p.comentarios)).toLocaleString('es-MX')}</b> interacciones
+        <span class="fmt">${(FORMATOS.find(x => x[0] === p.formato) || [, p.formato])[1]}</span>
+        ${p.pauta ? '<span class="pauta">Con pauta</span>' : ''}</div>
+      <div class="info">${historico
+          ? `<b>${(p.likes + p.comentarios).toLocaleString('es-MX')}</b> likes + coment.`
+          : `<b>${(p.interacciones ?? (p.likes + p.comentarios)).toLocaleString('es-MX')}</b> interacciones`}
         ${p.vistas ? ` · ${fmtMil(p.vistas)} vistas` : ''}<br>${p.fecha}
         <div class="txt">${esc(p.texto)}</div></div></a>`;
-  const topHtml = Object.keys(tops).sort().reverse().map(mes => `
-      <div class="flabel" style="margin:14px 0 8px">${nombreMes(mes)}${mes === mesActual ? ' · en curso' : ''} ·
-        ${tops[mes].length === 1 ? 'su única publicación' : `las ${tops[mes].length} con más interacción`}</div>
-      <div class="top-grid">${tops[mes].map(tarjeta).join('')}</div>`).join('');
+  const grupo = (titulo, lista, historico) => `<div class="flabel" style="margin:14px 0 8px">${titulo}</div>
+      ${lista && lista.length ? `<div class="top-grid">${lista.map(tarjeta(historico)).join('')}</div>`
+        : '<div class="cap">No hay publicaciones que cumplan el filtro.</div>'}`;
+  const topHtml = tops['180'] ? `
+      ${chips('Mostrar', TOP_FILTROS, TOP_FILTRO, 'toppauta')}
+      ${pa ? `<div class="cap" style="margin-top:6px">En los últimos 180 días, <strong>${pa.con_pauta} de ${pa.total}</strong> publicaciones tuvieron pauta.</div>` : ''}
+      ${grupo(`Últimos 180 días · por interacciones`, tops['180'][filtro], false)}
+      ${grupo(`Toda la historia · por likes + comentarios`, tops.historico[filtro], true)}` : '';
 
   return `<div class="pulso-bloque">Instagram · contenido</div>
     <div class="ficha">
@@ -1664,6 +1689,7 @@ document.addEventListener('click', e => {
   else if (b.dataset.pick === 'bloque') BLOQUE = b.dataset.val;
   else if (b.dataset.pick === 'leads') LEADS_SEL = b.dataset.val;
   else if (b.dataset.pick === 'publico') PUBLICO = b.dataset.val;
+  else if (b.dataset.pick === 'toppauta') TOP_FILTRO = b.dataset.val;
   else return;
   syncURL();
   render();
