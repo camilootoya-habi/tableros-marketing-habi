@@ -70,7 +70,7 @@ jobs:
           # -A en ig_miniaturas: build.py agrega las del top nuevo y borra las que salieron.
           git add salud-marca/data.json salud-marca/brand_lift_cache.json \
                   salud-marca/social_cache.json salud-marca/questions.json
-          git add -A salud-marca/ig_miniaturas
+          git add -A salud-marca/ig_miniaturas salud-marca/fb_miniaturas
           git diff --cached --quiet && echo "sin cambios" && exit 0
           git commit -m "data(salud-marca): refresh $(date -u +%Y-%m-%dT%H:%MZ)"
           for i in 1 2 3 4 5; do

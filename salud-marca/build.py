@@ -11,6 +11,7 @@ import contract
 import sources_bq as BQ
 import sources_brand_lift as BL
 import sources_pulso as PULSO
+import sources_fb_posts as FBP
 import sources_ig_posts as IGP
 import sources_social as SOCIAL
 
@@ -177,6 +178,27 @@ def collect_seguidores(now):
             imagenes.update(imgs)
         except Exception as e:
             print(f"WARN publicaciones {clave}: {type(e).__name__}: {e}")
+    # Facebook: las 100 publicaciones más recientes de cada página y la ciudad de sus seguidores.
+    # Van con el token de la PÁGINA, que sale de `me/accounts`.
+    fb_imagenes, fb_tokens = {}, {}
+    if ok:
+        _, _, paginas = SOCIAL._token_paginas()
+        for clave, m in SOCIAL.MARCAS.items():
+            ptok = (paginas.get(m["fb"]) or {}).get("access_token")
+            if not ptok:
+                print(f"WARN Facebook {clave}: el token no ve la página")
+                continue
+            fb_tokens[clave] = ptok
+            try:
+                cache["fb_posts"][clave], imgs = FBP.actualizar(cache["fb_posts"].get(clave, {}), m["fb"], ptok, hoy=now[:10])
+                fb_imagenes.update(imgs)
+            except Exception as e:
+                print(f"WARN publicaciones FB {clave}: {type(e).__name__}: {e}")
+            try:
+                cache["ig_demo"].setdefault(clave, {}).setdefault(now[:7], {})["fb_ciudad"] = \
+                    SOCIAL.fetch_fb_ciudades(m["fb"], ptok)
+            except Exception as e:
+                print(f"WARN ciudades FB {clave}: {type(e).__name__}: {e}")
     # Top 5 de los últimos 180 días (por interacciones de Meta) y de toda la historia (por likes +
     # comentarios, la única métrica que tienen todos los posts), cada uno con todas las
     # publicaciones y solo las orgánicas. Verificar la pauta llama a la API: se hace solo con los
@@ -196,8 +218,24 @@ def collect_seguidores(now):
                         p["pauta"] = posts_c[p["id"]]["pauta"] = v
             tops[c][periodo] = {"todas": todas,
                                 "organicas": IGP.top(posts_c, desde, n=10, organicas=True, criterio=criterio, verificar=verificar)}
+    # Top 10 de Facebook por reacciones + comentarios + compartidos. Sin filtro de pauta: la API no
+    # dice si un post de Facebook se promocionó (ver sources_fb_posts.py).
+    fb_tops = {c: {"180": FBP.top(cache["fb_posts"].get(c, {}), hace180),
+                   "historico": FBP.top(cache["fb_posts"].get(c, {}))} for c in SOCIAL.MARCAS}
     if ok:
-        SOCIAL.save_cache(cache["datos"], now, cache.get("ig_mes"), cache.get("posts"), cache.get("ig_demo"))
+        SOCIAL.save_cache(cache["datos"], now, cache.get("ig_mes"), cache.get("posts"), cache.get("ig_demo"),
+                          cache.get("fb_posts"))
+    fb_en_top = [p for c, per in fb_tops.items() for lista in per.values() for p in lista]
+    for p in fb_en_top:
+        c = next(k for k, t in fb_tops.items() if p in t["180"] or p in t["historico"])
+        if (p["id"] not in fb_imagenes and c in fb_tokens
+                and not os.path.exists(os.path.join(FBP.MINIATURAS, f"{p['id']}.jpg"))):
+            fb_imagenes[p["id"]] = FBP.url_imagen(p["id"], fb_tokens[c])
+    try:
+        fb_con_img = FBP.miniaturas([fb_en_top], fb_imagenes)
+    except Exception as e:
+        print(f"WARN miniaturas FB: {type(e).__name__}: {e}")
+        fb_con_img = set()
 
     # Miniaturas: las de la lista de hoy ya traen URL; las de posts viejos se piden una por una.
     en_top = [p for c in tops.values() for per in c.values() for lista in per.values() for p in lista]
@@ -221,6 +259,8 @@ def collect_seguidores(now):
         por_mes = {r["month"]: r for r in serie}
         for mes, v in IGP.mensual(cache["posts"].get(clave, {})).items():
             por_mes.setdefault(mes, {"month": mes}).update(v)
+        for mes, v in FBP.mensual(cache["fb_posts"].get(clave, {})).items():
+            por_mes.setdefault(mes, {"month": mes}).update(v)
         serie = [por_mes[k] for k in sorted(por_mes)]
         fallo = (not ok) or clave in errores
         if not serie:
@@ -236,6 +276,8 @@ def collect_seguidores(now):
         img = lambda p: dict(p, img=f"ig_miniaturas/{p['id']}.jpg" if p["id"] in con_img else None)
         out[clave]["top_posts"] = {per: {k: [img(p) for p in lista] for k, lista in listas.items()}
                                    for per, listas in tops[clave].items()}
+        fb_img = lambda p: dict(p, img=f"fb_miniaturas/{p['id']}.jpg" if p["id"] in fb_con_img else None)
+        out[clave]["fb_top"] = {per: [fb_img(p) for p in lista] for per, lista in fb_tops[clave].items()}
         demo = cache.get("ig_demo", {}).get(clave) or {}
         if demo:
             out[clave]["demografia"] = {"mes": max(demo), **demo[max(demo)]}

@@ -955,6 +955,47 @@ const AYUDA = {
     <p>Si los alcanzados son más jóvenes que los seguidores, la pauta le está hablando a otra gente que
     la que ya nos sigue. Meta solo da los alcanzados y los que interactúan del <strong>mes en curso</strong>:
     al inicio del mes la muestra es chica.</p>`],
+  fb_pag: ['Nuevos seguidores: pauta vs. orgánico', `
+    <p>Meta separa a los nuevos seguidores de la página entre los que llegaron <strong>por un anuncio</strong>
+    (pauta) y los que llegaron solos (<strong>orgánicos</strong>).</p>
+    <p>Si el % por pauta sube, la comunidad crece porque se le paga, no porque la marca atraiga sola. Si
+    las orgánicas suben, la marca está ganando interés por sí misma.</p>
+    <p>Existe desde ~ago-2024: antes Meta lo da en cero. Su total puede no coincidir exactamente con
+    las altas de la gráfica de al lado, porque Meta las cuenta por separado.</p>`],
+  fb_alcance: ['Alcance e interacción', `
+    <ul><li><strong>Vistas</strong>: veces que se vio el contenido de la página (publicaciones, videos,
+    historias). Cuenta repeticiones.</li>
+    <li><strong>Personas alcanzadas</strong>: personas distintas que vieron algo de la página en los 28 días
+    al cierre de cada mes. No se puede sumar por día; por eso se toma esa ventana.</li>
+    <li><strong>Interacciones</strong>: reacciones, comentarios, compartidos y clics en las publicaciones.</li>
+    <li><strong>Visitas a la página</strong>: veces que alguien abrió la página de la marca.</li>
+    <li><strong>Interacciones por mil vistas</strong>: si el contenido engancha o solo se ve.</li></ul>
+    <p><strong>Ojo</strong>: casi todo esto lo mueve la pauta. Por ejemplo, el 99.8% de las vistas de video de
+    Tuhabi son pagadas. Hay dato desde ~ago-2024 (alcance desde abr-2025).</p>`],
+  fb_pub: ['Publicaciones por mes', `
+    <p>Cuántas publicaciones salieron cada mes en la página, por tipo: <strong>video</strong>,
+    <strong>foto</strong> o <strong>texto</strong>. La historia viene completa desde que la página empezó a
+    publicar.</p>`],
+  fb_int: ['Interacciones de las publicaciones', `
+    <p><strong>Barras</strong>: reacciones + comentarios + compartidos que juntaron las publicaciones de cada
+    mes, por tipo. <strong>Línea</strong>: el promedio por publicación, que dice si cada post engancha más o
+    menos que antes sin que lo distorsione publicar más o menos.</p>
+    <p>Es la métrica que existe para toda la historia. Incluye lo que trajo la pauta.</p>`],
+  fb_top: ['Las publicaciones que más engancharon', `
+    <p>Las 10 con más reacciones + comentarios + compartidos en los últimos 180 días y en toda la historia.</p>
+    <p><strong>No se puede separar lo orgánico de lo pautado</strong>, como en Instagram: la API de Facebook
+    marca todos los posts como "sin promoción activa", se hayan pautado o no. La otra vía es recorrer todos
+    los anuncios de las cuentas publicitarias, que agota su cuota. Si un post aparece muy arriba, puede ser
+    porque se promocionó.</p>`],
+  fb_ciudades: ['Ciudades de los seguidores', `
+    <p>Las 10 ciudades con más seguidores de la página, como % del total de seguidores. Es la foto de hoy;
+    desde oct-2026 se guarda una por mes.</p>
+    <p>Edad y género de los seguidores de Facebook ya no están disponibles: Meta los retiró de la API.</p>`],
+  fb_reac: ['Cómo reaccionan', `
+    <p>Las reacciones a las publicaciones de la página, por tipo. La mayoría siempre es "Me gusta"; lo que
+    vale vigilar es el % de <strong>reacciones negativas</strong> ("Me enoja" y "Me entristece"): si sube,
+    algo del contenido o de la marca está molestando.</p>
+    <p>Hay dato desde ~ago-2024.</p>`],
   ig_genero_ciudad: ['Género y ciudades de los seguidores', `
     <p>La foto de hoy de quienes siguen la cuenta. "Sin dato" son cuentas que no declaran género.</p>
     <p>Meta da las 45 ciudades con más seguidores; el porcentaje es sobre el total de seguidores, así
@@ -1465,11 +1506,16 @@ function drawSeguidores(host, serie, que) {
   const igUltCerr = [...serie].reverse().find(r => r.month < mesActual && r.ig_clics != null);
   const totalIg = r => r ? (r.ig_total ?? r.ig_total_est ?? null) : null;
 
-  const fbHtml = `<div class="ficha">
+  // De las altas con dato de origen (desde ~ago-2024), cuántas llegaron por pauta en 12 meses.
+  const pag12 = sumaCampo(u12, 'fb_altas_pag'), org12 = sumaCampo(u12, 'fb_altas_org');
+  const fbHtml = `<div class="pulso-bloque" style="margin-top:4px">Comunidad</div>
+    <div class="ficha">
       <div><div class="k">Seguidores</div><div class="v">${fbUlt ? fbUlt.fb_total.toLocaleString('es-MX') : '—'}</div>
         <div class="d">${crec12 != null ? `${conSigno(crec12)} en 12 meses (${(100 * crec12 / totalFb(fbHace12)).toFixed(1)}%)` : ''}</div></div>
       <div><div class="k">Últimos 12 meses</div><div class="v">+${sumaCampo(u12, 'fb_altas').toLocaleString('es-MX')} / −${sumaCampo(u12, 'fb_bajas').toLocaleString('es-MX')}</div>
         <div class="d">Altas y bajas de los ${u12.length} meses cerrados</div></div>
+      <div><div class="k">Llegaron por pauta</div><div class="v">${pag12 + org12 ? Math.round(100 * pag12 / (pag12 + org12)) + '%' : '—'}</div>
+        <div class="d">De los nuevos seguidores de esos 12 meses</div></div>
     </div>
     <div class="charts-grid">
       <div class="panel"><h3>Seguidores totales${ayuda('seg_fb_total')}</h3>
@@ -1478,7 +1524,13 @@ function drawSeguidores(host, serie, que) {
       <div class="panel"><h3>Altas y bajas por mes${ayuda('seg_fb_mov')}</h3>
         <div class="cap">Quién empezó y quién dejó de seguir la página. La línea es el neto.</div>
         <div class="ch alto"><canvas id="sg-fb-mes"></canvas></div>${legend([[C.verde, 'Altas'], [C.rojo, 'Bajas'], [C.azul, 'Neto']])}</div>
-    </div>`;
+      <div class="panel"><h3>Nuevos seguidores: pauta vs. orgánico${ayuda('fb_pag')}</h3>
+        <div class="cap">Barras: altas por pauta y sin pauta. Línea: % por pauta (eje derecho).</div>
+        <div class="ch alto"><canvas id="sg-fb-pag"></canvas></div>${legend([[C.ambar, 'Por pauta'], [C.verde, 'Orgánicas'], [C.azul, '% por pauta']])}</div>
+    </div>
+    ${bloqueFbAlcance(serie)}
+    ${bloqueFbContenido(serie)}
+    ${bloqueFbAudiencia(serie, mesActual)}`;
 
   const igHtml = `<div class="pulso-bloque" style="margin-top:4px">Comunidad</div>
     <div class="ficha">
@@ -1525,6 +1577,7 @@ function drawSeguidores(host, serie, que) {
     { type: 'bar', label: 'Bajas', orden: 1, color: Lfb.map(m => parcial(m) ? C.rojo + '55' : C.rojo), data: Lfb.map(m => (fila(m) || {}).dias_fb ? -fila(m).fb_bajas : null) },
     { type: 'line', label: 'Neto', color: C.azul, data: Lfb.map(m => (fila(m) || {}).dias_fb ? fila(m).fb_altas - fila(m).fb_bajas : null) },
   ], { fmt: 'num', pieTooltip: k => parcial(Lfb[k]) ? [`Mes en curso: ${fila(Lfb[k]).dias_fb} días con dato`] : [] });
+  dibujarFacebook(serie, L, mesActual);
 
   // Instagram. El mes en curso va translúcido en barras: todavía no termina.
   const ig = (m, k) => (fila(m) || {})[k] ?? null;
@@ -1762,6 +1815,132 @@ function dibujarAudiencia(serie, L, mesActual) {
     { type: 'bar', label: 'Alcanzados', color: C.gris, data: serieEdad(dm.edad_alcance) },
     { type: 'bar', label: 'Interactúan', color: C.cian, data: serieEdad(dm.edad_interaccion) },
   ], { fmt: 'pct', sinBandas: true });
+}
+
+// ── Facebook: alcance, contenido y audiencia ──────────────────────────────────
+// Misma lógica que Instagram. Datos de sources_social.py (métricas diarias de la página, reales
+// desde ~ago-2024; antes Meta da ceros y el build los borra) y sources_fb_posts.py.
+const FB_FORMATOS = [['video', 'Video', C.rosa], ['foto', 'Foto', C.cian], ['texto', 'Texto', C.gris]];
+const REACCIONES = [['like', 'Me gusta', C.azul], ['love', 'Me encanta', C.rosa], ['haha', 'Me divierte', C.ambar],
+                    ['wow', 'Me asombra', C.cian], ['sorry', 'Me entristece', C.gris], ['anger', 'Me enoja', C.rojo]];
+const fbPubs = r => FB_FORMATOS.reduce((a, [f]) => a + ((r || {})[`fbpub_${f}`] || 0), 0);
+const desdeMes = (serie, L, cond) => { const r = serie.find(cond); return r ? L.filter(m => m >= r.month) : []; };
+
+function bloqueFbAlcance(serie) {
+  if (!serie.some(r => r.fb_vistas != null)) return '';
+  const panel = (id, titulo, cap, help) => `<div class="panel"><h3>${titulo}${ayuda(help)}</h3>
+      <div class="cap">${cap}</div><div class="ch"><canvas id="${id}"></canvas></div></div>`;
+  return `<div class="pulso-bloque">Alcance e interacción</div>
+    <div class="cinco">
+      ${panel('sg-fb-vistas', 'Vistas', 'Veces que se vio el contenido.', 'fb_alcance')}
+      ${panel('sg-fb-alc', 'Personas alcanzadas', 'Distintas, en los 28 días al cierre del mes.', 'fb_alcance')}
+      ${panel('sg-fb-inter', 'Interacciones', 'Reacciones, comentarios, compartidos y clics.', 'fb_alcance')}
+      ${panel('sg-fb-visitas', 'Visitas a la página', 'Veces que se abrió la página.', 'fb_alcance')}
+      ${panel('sg-fb-tasa', 'Interacciones por mil vistas', 'Si el contenido engancha o solo se ve.', 'fb_alcance')}
+    </div>`;
+}
+
+function bloqueFbContenido(serie) {
+  const tops = (((DATA.metrics.seguidores || {})[PAIS] || {}).fb_top) || {};
+  const tarjeta = (p, i) => `<a class="top-post" href="${esc(p.link)}" target="_blank" rel="noopener">
+      <div class="img" style="${p.img ? `background-image:url('${p.img}')` : ''}"><span class="rank">#${i + 1}</span>
+        <span class="fmt">${(FB_FORMATOS.find(x => x[0] === p.formato) || [, p.formato])[1]}</span></div>
+      <div class="info"><b>${(p.reacciones + p.comentarios + p.compartidos).toLocaleString('es-MX')}</b> interacciones
+        ${p.vistas ? ` · ${fmtMil(p.vistas)} vistas` : ''}<br>${p.fecha}
+        <div class="txt">${esc(p.texto)}</div></div></a>`;
+  const grupo = (titulo, lista) => `<div class="flabel" style="margin:14px 0 8px">${titulo}</div>
+      ${lista && lista.length ? `<div class="top-grid">${lista.map(tarjeta).join('')}</div>`
+        : '<div class="cap">Sin publicaciones en este periodo.</div>'}`;
+  if (!serie.some(r => fbPubs(r) > 0)) return '';
+  return `<div class="pulso-bloque">Contenido</div>
+    <div class="charts-grid">
+      <div class="panel"><h3>Publicaciones por mes${ayuda('fb_pub')}</h3>
+        <div class="cap">Cuántas salieron cada mes, por tipo.</div>
+        <div class="ch alto"><canvas id="sg-fb-pub"></canvas></div>${legend(FB_FORMATOS.map(([, n, c]) => [c, n]))}</div>
+      <div class="panel"><h3>Interacciones de las publicaciones por mes${ayuda('fb_int')}</h3>
+        <div class="cap">Barras: reacciones + comentarios + compartidos por tipo. Línea: promedio por publicación (eje derecho).</div>
+        <div class="ch alto"><canvas id="sg-fb-int"></canvas></div>${legend(FB_FORMATOS.map(([, n, c]) => [c, n]).concat([[C.azul, 'Por publicación']]))}</div>
+    </div>
+    <div class="flabel" style="display:flex;align-items:center;margin-top:16px">Las que más engancharon${ayuda('fb_top')}</div>
+    <div class="cap" style="margin-top:4px">Sin filtro de pauta: Facebook no dice si una publicación se promocionó.</div>
+    ${grupo('Últimos 180 días · por reacciones + comentarios + compartidos', tops['180'])}
+    ${grupo('Toda la historia · por reacciones + comentarios + compartidos', tops.historico)}`;
+}
+
+function bloqueFbAudiencia(serie, mesActual) {
+  const dm = (((DATA.metrics.seguidores || {})[PAIS] || {}).demografia) || {};
+  const ciudades = Object.entries(dm.fb_ciudad || {}).sort((a, b) => b[1] - a[1]).slice(0, 10);
+  const fbUlt = ultimoCon(serie, 'fb_total');
+  const total = fbUlt ? fbUlt.fb_total : 0;
+  const u12 = ultimos12(serie, mesActual);
+  const reac = REACCIONES.map(([k, n, c]) => [n, c, sumaCampo(u12, `fb_r_${k}`)]);
+  const totReac = reac.reduce((a, x) => a + x[2], 0);
+  if (!ciudades.length && !totReac) return '';
+  const corto = c => c.split(',')[0].replace('Mexico City', 'Ciudad de México');
+  return `<div class="pulso-bloque">Audiencia</div>
+    <div class="charts-grid">
+      <div class="panel"><h3>Top 10 ciudades de los seguidores${ayuda('fb_ciudades')}</h3>
+        <div class="cap">% del total de seguidores de la página, hoy.</div>
+        ${ciudades.map(([c, n]) => BARRA(esc(corto(c)), Math.round(100 * n / (total || 1)), C.cian, null,
+          `${(100 * n / (total || 1)).toFixed(1)}%`)).join('') || '<div class="cap">Sin dato de ciudades.</div>'}</div>
+      <div class="panel"><h3>Cómo reaccionan${ayuda('fb_reac')}</h3>
+        <div class="cap">Reacciones de los últimos 12 meses, por tipo.</div>
+        ${totReac ? reac.map(([n, c, v]) => BARRA(n, Math.round(100 * v / totReac), c, null,
+          `${(100 * v / totReac).toFixed(1)}%`)).join('') : '<div class="cap">Sin dato de reacciones.</div>'}</div>
+      <div class="panel"><h3>Reacciones negativas por mes${ayuda('fb_reac')}</h3>
+        <div class="cap">"Me enoja" + "Me entristece", como % de todas las reacciones.</div>
+        <div class="ch alto"><canvas id="sg-fb-neg"></canvas></div>${legend([[C.rojo, '% negativas']])}</div>
+    </div>`;
+}
+
+function dibujarFacebook(serie, L, mesActual) {
+  const fila = m => serie.find(r => r.month === m) || {};
+  const tenue = (c, m) => m === mesActual ? c + '55' : c;
+  const enCursoEn = Ls => k => Ls[k] === mesActual ? ['Mes en curso: todavía no termina'] : [];
+
+  // Altas por pauta vs orgánicas (desde ~ago-2024).
+  const Lpag = desdeMes(serie, L, r => r.fb_altas_pag != null);
+  mkMulti('sg-fb-pag', Lpag, [
+    { type: 'bar', label: 'Por pauta', color: Lpag.map(m => tenue(C.ambar, m)), data: Lpag.map(m => fila(m).fb_altas_pag ?? null) },
+    { type: 'bar', label: 'Orgánicas', color: Lpag.map(m => tenue(C.verde, m)), data: Lpag.map(m => fila(m).fb_altas_org ?? null) },
+    { type: 'line', label: '% por pauta', eje: 'y1', color: C.azul, tension: .2,
+      data: Lpag.map(m => { const r = fila(m), t = (r.fb_altas_pag || 0) + (r.fb_altas_org || 0); return t ? r.fb_altas_pag / t : null; }) },
+  ], { fmt: 'num', fmtDerecha: 'pct', apilado: true, sinBandas: true, pieTooltip: enCursoEn(Lpag) });
+
+  // Alcance e interacción: 5 gráficas con el mismo eje de meses.
+  const Lv = desdeMes(serie, L, r => r.fb_vistas != null);
+  const col = (id, campo, label, color, fmt) => mkMulti(id, Lv, [
+    { type: 'bar', label, color: Lv.map(m => tenue(color, m)), data: Lv.map(m => fila(m)[campo] ?? null) },
+  ], { fmt, sinBandas: true, pieTooltip: enCursoEn(Lv) });
+  col('sg-fb-vistas', 'fb_vistas', 'Vistas', C.azul, 'compacto');
+  col('sg-fb-inter', 'fb_inter', 'Interacciones', C.cian, 'compacto');
+  col('sg-fb-visitas', 'fb_visitas', 'Visitas a la página', C.verde, 'compacto');
+  mkMulti('sg-fb-alc', Lv, [
+    { label: 'Personas alcanzadas', color: C.azul, tension: .2, puntoRadio: 2, data: Lv.map(m => fila(m).fb_alcance28 ?? null) },
+  ], { fmt: 'compacto', sinBandas: true, pieTooltip: enCursoEn(Lv) });
+  mkMulti('sg-fb-tasa', Lv, [
+    { label: 'Por cada mil vistas', color: C.cian, tension: .2, puntoRadio: 2,
+      data: Lv.map(m => fila(m).fb_vistas ? Math.round(10000 * fila(m).fb_inter / fila(m).fb_vistas) / 10 : null) },
+  ], { fmt: 'num', sinBandas: true, pieTooltip: enCursoEn(Lv) });
+
+  // Contenido.
+  const Lpub = desdeMes(serie, L, r => fbPubs(r) > 0);
+  mkMulti('sg-fb-pub', Lpub, FB_FORMATOS.map(([f, n, c]) => (
+    { type: 'bar', label: n, color: c, data: Lpub.map(m => fila(m)[`fbpub_${f}`] || 0) })),
+    { fmt: 'num', apilado: true, sinBandas: true });
+  mkMulti('sg-fb-int', Lpub, FB_FORMATOS.map(([f, n, c]) => (
+    { type: 'bar', label: n, color: c, data: Lpub.map(m => fila(m)[`fbint_${f}`] || 0) })).concat([
+    { type: 'line', label: 'Por publicación', eje: 'y1', color: C.azul, puntoRadio: 1.5, tension: .25,
+      data: Lpub.map(m => { const n = fbPubs(fila(m)); return n ? FB_FORMATOS.reduce((a, [f]) => a + (fila(m)[`fbint_${f}`] || 0), 0) / n : null; }) }]),
+    { fmt: 'compacto', fmtDerecha: 'num', apilado: true, sinBandas: true });
+
+  // Reacciones negativas.
+  const Lr = desdeMes(serie, L, r => r.fb_r_like != null);
+  mkMulti('sg-fb-neg', Lr, [
+    { label: '% negativas', color: C.rojo, tension: .2, puntoRadio: 2,
+      data: Lr.map(m => { const r = fila(m), t = REACCIONES.reduce((a, [k]) => a + (r[`fb_r_${k}`] || 0), 0);
+                          return t ? ((r.fb_r_anger || 0) + (r.fb_r_sorry || 0)) / t : null; }) },
+  ], { fmt: 'pct', sinBandas: true, pieTooltip: enCursoEn(Lr) });
 }
 
 // ── Filtros y render ──────────────────────────────────────────────────────────

@@ -11,6 +11,7 @@ import pytest
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1]))
 import sources_brand_lift as BL
+import sources_fb_posts as FBP
 import sources_ig_posts as IGP
 import sources_social as SOCIAL
 
@@ -32,3 +33,4 @@ def sin_red_ni_cache_social(tmp_path, monkeypatch):
     monkeypatch.setattr(SOCIAL, "CACHE", str(tmp_path / "social_cache.json"))
     # `miniaturas()` borra las que ya no están en el top: en los tests apunta a una carpeta temporal.
     monkeypatch.setattr(IGP, "MINIATURAS", str(tmp_path / "ig_miniaturas"))
+    monkeypatch.setattr(FBP, "MINIATURAS", str(tmp_path / "fb_miniaturas"))

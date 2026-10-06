@@ -23,6 +23,41 @@ def test_merge_nunca_borra_y_pisa_campo_por_campo():
     assert cache["datos"]["MX"]["2026-10-01"]["fb_total"] == 10, "no muta el caché de entrada"
 
 
+def test_fb_insights_separa_diccionarios_y_toma_el_alcance_de_28_dias(monkeypatch):
+    def fake_get(path, token, **p):
+        if p["metric"] == "page_total_media_view_unique":
+            return True, {"data": [{"values": [{"end_time": "2026-09-30T07:00:00+0000", "value": 8000}]}]}
+        return True, {"data": [
+            {"name": "page_media_view", "values": [{"end_time": "2026-09-30T07:00:00+0000", "value": 1000}]},
+            {"name": "page_fan_adds_by_paid_non_paid_unique",
+             "values": [{"end_time": "2026-09-30T07:00:00+0000", "value": {"paid": 3, "unpaid": 2, "total": 5}}]},
+            {"name": "page_actions_post_reactions_total",
+             "values": [{"end_time": "2026-09-30T07:00:00+0000", "value": {"like": 40, "anger": 1}}]}]}
+    monkeypatch.setattr(S, "_get", fake_get)
+    d = S._fb_insights("page", "tok", 0, 1)["2026-09-29"]
+    assert d == {"fb_vistas": 1000, "fb_altas_pag": 3, "fb_altas_org": 2, "fb_r_like": 40, "fb_r_anger": 1,
+                 "fb_alcance28": 8000}
+
+
+def test_mensual_suma_las_metricas_de_facebook_y_toma_el_alcance_del_cierre():
+    filas = [{"date": "2026-09-01", "fb_vistas": 10, "fb_altas_pag": 1, "fb_r_like": 4, "fb_alcance28": 500},
+             {"date": "2026-09-30", "fb_vistas": 20, "fb_altas_pag": 2, "fb_r_like": 6, "fb_alcance28": 900}]
+    m = S.mensual(filas)[0]
+    assert (m["fb_vistas"], m["fb_altas_pag"], m["fb_r_like"], m["fb_alcance28"]) == (30, 3, 10, 900)
+
+
+def test_mensual_borra_meses_de_facebook_que_la_api_da_en_cero():
+    # 2023: Meta da 0 en vistas y altas pagadas/orgánicas aunque hubo 300 altas → no es dato.
+    filas = [{"date": "2023-05-10", "fb_altas": 300, "fb_bajas": 5, "fb_vistas": 0, "fb_altas_pag": 0,
+              "fb_altas_org": 0, "fb_r_like": 0},
+             {"date": "2026-09-10", "fb_altas": 30, "fb_bajas": 1, "fb_vistas": 900, "fb_altas_pag": 0,
+              "fb_altas_org": 12, "fb_r_like": 4}]
+    viejo, nuevo = S.mensual(filas)
+    assert not any(k in viejo for k in ("fb_vistas", "fb_altas_pag", "fb_altas_org", "fb_r_like"))
+    assert viejo["fb_altas"] == 300, "las altas totales sí son reales"
+    assert nuevo["fb_altas_pag"] == 0 and nuevo["fb_altas_org"] == 12, "un cero dentro de un grupo con dato sí cuenta"
+
+
 def test_ig_no_guarda_ceros_recientes_que_todavia_no_llegan(monkeypatch):
     valores = [{"end_time": "2026-10-01T07:00:00+0000", "value": 0},
                {"end_time": "2026-10-03T07:00:00+0000", "value": 40},

@@ -201,17 +201,19 @@ def top(posts, desde="", n=5, organicas=False, criterio=puntaje, verificar=None)
     return out
 
 
-def miniaturas(tops, imagenes, lado=240):
+def miniaturas(tops, imagenes, lado=240, carpeta=None):
     """Baja chica la miniatura de cada post del top (si no está ya) y borra las que ya no salen.
-    Sin Pillow guarda la imagen tal cual. Devuelve los ids que tienen miniatura."""
-    os.makedirs(MINIATURAS, exist_ok=True)
+    Sin Pillow guarda la imagen tal cual. Devuelve los ids que tienen miniatura.
+    `carpeta`: cada red tiene la suya, porque la limpieza borra todo lo que no está en SU top."""
+    carpeta = carpeta or MINIATURAS
+    os.makedirs(carpeta, exist_ok=True)
     quedan = {p["id"] for t in tops for p in t}
-    for f in os.listdir(MINIATURAS):
+    for f in os.listdir(carpeta):
         if f.endswith(".jpg") and f[:-4] not in quedan:
-            os.remove(os.path.join(MINIATURAS, f))
+            os.remove(os.path.join(carpeta, f))
     con = set()
     for pid in quedan:
-        ruta = os.path.join(MINIATURAS, f"{pid}.jpg")
+        ruta = os.path.join(carpeta, f"{pid}.jpg")
         if not os.path.exists(ruta) and imagenes.get(pid):
             try:
                 crudo = urlopen(imagenes[pid], timeout=30).read()

@@ -29,9 +29,21 @@ MARCAS = {
     "CO": {"nombre": "Habi", "fb": "120470019348648", "ig": "17841421889298348"},
     "PCOM": {"nombre": "Propiedades.com", "fb": "382083361865231", "ig": "17841416041613709"},
 }
-FB_METRICAS = ("page_follows", "page_daily_follows_unique", "page_daily_unfollows_unique")
+FB_METRICAS = ("page_follows", "page_daily_follows_unique", "page_daily_unfollows_unique",
+               "page_media_view", "page_post_engagements", "page_views_total", "page_video_views",
+               "page_video_views_paid", "page_fan_adds_by_paid_non_paid_unique",
+               "page_actions_post_reactions_total")
+# Métricas diarias que son un número. Verificadas el 6-oct-2026: altas y bajas desde 2021; vistas,
+# interacciones y visitas a la página ~2 años; video ~1 año. `page_impressions*` ya no existen.
 FB_CAMPO = {"page_follows": "fb_total", "page_daily_follows_unique": "fb_altas",
-            "page_daily_unfollows_unique": "fb_bajas"}
+            "page_daily_unfollows_unique": "fb_bajas", "page_media_view": "fb_vistas",
+            "page_post_engagements": "fb_inter", "page_views_total": "fb_visitas",
+            "page_video_views": "fb_video", "page_video_views_paid": "fb_video_pag"}
+# Métricas diarias que vienen como diccionario: cada clave va a su propio campo.
+FB_DICT = {"page_fan_adds_by_paid_non_paid_unique": {"paid": "fb_altas_pag", "unpaid": "fb_altas_org"},
+           "page_actions_post_reactions_total": "fb_r_"}   # prefijo: fb_r_like, fb_r_love, …
+# Campos diarios que se SUMAN para el mes. Los totales y el alcance de 28 días se toman al cierre.
+FB_SUMAN = ("fb_vistas", "fb_inter", "fb_visitas", "fb_video", "fb_video_pag", "fb_altas_pag", "fb_altas_org")
 DIA = 86400
 # `page_follows` (el total) solo es real desde este día: antes Meta devuelve un valor CONGELADO
 # (el mismo número en 2019, 2021 y jul-2024, verificado el 5-oct-2026). Las altas y bajas
@@ -71,15 +83,32 @@ def _fb_insights(page_id, page_token, desde, hasta):
     if not ok:
         raise RuntimeError((pl.get("error") or {}).get("message"))
     dias = {}
+    hoy = datetime.date.today().isoformat()
     for m in pl.get("data") or []:
-        campo = FB_CAMPO.get(m.get("name"))
+        campo, dic = FB_CAMPO.get(m.get("name")), FB_DICT.get(m.get("name"))
         for v in m.get("values") or []:
             d = _dia(v["end_time"])
             # El día en curso trae altas y bajas a medias: solo se guardan días cerrados.
-            if campo == "fb_total" and d < FB_TOTAL_DESDE:
-                continue   # total congelado, no real
-            if campo and isinstance(v.get("value"), (int, float)) and d < datetime.date.today().isoformat():
-                dias.setdefault(d, {})[campo] = v["value"]
+            if d >= hoy or (campo == "fb_total" and d < FB_TOTAL_DESDE):
+                continue   # total congelado antes de FB_TOTAL_DESDE: no es real
+            val = v.get("value")
+            if campo and isinstance(val, (int, float)):
+                dias.setdefault(d, {})[campo] = val
+            elif dic and isinstance(val, dict):
+                for k, n in val.items():
+                    dest = dic.get(k) if isinstance(dic, dict) else dic + k
+                    if dest and isinstance(n, (int, float)):
+                        dias.setdefault(d, {})[dest] = n
+    # Personas alcanzadas: es alcance ÚNICO, no se puede sumar por día. Meta da el de los últimos 28
+    # días a cada fecha; el mes toma el valor de su último día (`mensual`).
+    ok, pl = _get(f"{page_id}/insights", page_token, metric="page_total_media_view_unique",
+                  period="days_28", since=desde, until=hasta)
+    if ok:
+        for m in pl.get("data") or []:
+            for v in m.get("values") or []:
+                d = _dia(v["end_time"])
+                if d < hoy and isinstance(v.get("value"), (int, float)) and v["value"] > 0:
+                    dias.setdefault(d, {})["fb_alcance28"] = v["value"]
     return dias
 
 
@@ -215,6 +244,18 @@ def fetch_demografia(ig_id):
     return out
 
 
+def fetch_fb_ciudades(page_id, page_token):
+    """Ciudad de los seguidores de la página (las 45 con más), la foto del último día. Edad y
+    género de Facebook ya no existen en la API (`page_fans_gender_age` fue retirada)."""
+    hasta = int(time.time())
+    ok, pl = _get(f"{page_id}/insights", page_token, metric="page_follows_city", period="day",
+                  since=hasta - 3 * DIA, until=hasta)
+    if not ok:
+        raise RuntimeError((pl.get("error") or {}).get("message"))
+    vals = [v.get("value") for m in pl.get("data") or [] for v in m.get("values") or [] if v.get("value")]
+    return vals[-1] if vals else {}
+
+
 def fetch_ig_meses(paginas=None, meses=2, ahora=None):
     """{marca: {AAAA-MM: métricas}} de los últimos `meses` meses (el en curso incluido). El cron
     pide 2: el mes en curso y el anterior, que todavía se corrige los primeros días."""
@@ -328,26 +369,28 @@ def backfill_ig_to_cache(meses=24):
 
 def load_cache():
     if not os.path.exists(CACHE):
-        return {"datos": {}, "ig_mes": {}, "posts": {}, "ig_demo": {}, "last_refresh": None}
+        return {"datos": {}, "ig_mes": {}, "posts": {}, "ig_demo": {}, "fb_posts": {}, "last_refresh": None}
     c = json.loads(open(CACHE, encoding="utf-8").read())
-    for k in ("ig_mes", "posts", "ig_demo"):
+    for k in ("ig_mes", "posts", "ig_demo", "fb_posts"):
         c.setdefault(k, {})
     return c
 
 
-def save_cache(datos, last_refresh, ig_mes=None, posts=None, ig_demo=None):
+def save_cache(datos, last_refresh, ig_mes=None, posts=None, ig_demo=None, fb_posts=None):
     """`ig_mes` = métricas MENSUALES de Instagram por marca (la API no las da por día).
     `posts` = publicaciones de Instagram por marca (ver sources_ig_posts.py).
-    `ig_demo` = foto mensual de la demografía de seguidores ({marca: {AAAA-MM: {...}}}).
-    `posts` e `ig_demo` que no se pasan se conservan del archivo: nadie los borra por omisión."""
-    previo = load_cache() if posts is None or ig_demo is None else {}
-    if posts is None:
-        posts = previo.get("posts", {})
-    if ig_demo is None:
-        ig_demo = previo.get("ig_demo", {})
+    `ig_demo` = foto mensual de la demografía de seguidores ({marca: {AAAA-MM: {...}}}); también
+    lleva las ciudades de los seguidores de Facebook (`fb_ciudad`).
+    `fb_posts` = publicaciones de Facebook por marca (ver sources_fb_posts.py).
+    Lo que no se pasa (salvo `ig_mes`) se conserva del archivo: nadie lo borra por omisión."""
+    previo = load_cache() if None in (posts, ig_demo, fb_posts) else {}
+    posts = previo.get("posts", {}) if posts is None else posts
+    ig_demo = previo.get("ig_demo", {}) if ig_demo is None else ig_demo
+    fb_posts = previo.get("fb_posts", {}) if fb_posts is None else fb_posts
     with open(CACHE, "w", encoding="utf-8") as f:
         json.dump({"datos": datos, "ig_mes": ig_mes or {}, "posts": posts, "ig_demo": ig_demo,
-                   "last_refresh": last_refresh}, f, ensure_ascii=False, indent=1, sort_keys=True)
+                   "fb_posts": fb_posts, "last_refresh": last_refresh}, f,
+                  ensure_ascii=False, indent=1, sort_keys=True)
         f.write("\n")
 
 
@@ -405,9 +448,13 @@ def mensual(filas, ig_mes=None):
     for r in filas:
         m = out.setdefault(r["date"][:7], {"month": r["date"][:7], "fb_altas": 0, "fb_bajas": 0,
                                             "ig_nuevos": 0, "dias_fb": 0, "dias_ig": 0})
-        for k in ("fb_total", "fb_total_est", "ig_total"):
+        for k in ("fb_total", "fb_total_est", "ig_total", "fb_alcance28"):
             if r.get(k) is not None:
                 m[k] = r[k]
+        # Vistas, interacciones, visitas, video, altas pagadas/orgánicas y reacciones: se suman.
+        for k, v in r.items():
+            if (k in FB_SUMAN or k.startswith("fb_r_")) and isinstance(v, (int, float)):
+                m[k] = m.get(k, 0) + v
         if r.get("fb_altas") is not None:
             m["fb_altas"] += r["fb_altas"]
             m["fb_bajas"] += r.get("fb_bajas") or 0
@@ -416,6 +463,15 @@ def mensual(filas, ig_mes=None):
             m["ig_nuevos"] += r["ig_nuevos"]
             m["dias_ig"] += 1
     meses = [out[k] for k in sorted(out)]
+    # Antes de ~ago-2024 Meta devuelve CEROS (no "sin dato") en estas métricas de página, incluso en
+    # meses con cientos de altas. Un mes entero en cero no es real: el grupo se borra para que la
+    # gráfica muestre un hueco y no una caída a cero. Ningún mes real tiene, p. ej., 0 vistas.
+    for r in meses:
+        for grupo in (("fb_altas_pag", "fb_altas_org"), ("fb_vistas",), ("fb_inter",), ("fb_visitas",),
+                      ("fb_video", "fb_video_pag"), tuple(k for k in r if k.startswith("fb_r_"))):
+            if grupo and all(k in r for k in grupo[:1]) and not sum(r.get(k) or 0 for k in grupo):
+                for k in grupo:
+                    r.pop(k, None)
     # Desde el PRIMER mes medido hacia atrás: los meses con foto diaria real (desde oct-2026) nunca
     # se reconstruyen, y el punteado queda solo para lo anterior.
     primero = next((i for i, r in enumerate(meses) if r.get("ig_total") is not None), None)
