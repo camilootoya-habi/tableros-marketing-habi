@@ -57,6 +57,10 @@
   .tabs .filters { flex-basis: 100%; justify-content: center; gap: 22px; margin: 0; }
   .tabs .fgroup { flex-direction: row; align-items: center; gap: 8px; }
   .tabs .chip { padding: 3px 11px; font-size: 12px; }
+  .chip small { font-weight: 500; opacity: .7; font-size: 10.5px; }
+  /* Marca sin datos en esta hoja: visible (para que se sepa que existe) pero sin acción. */
+  .chip.off { opacity: .38; cursor: not-allowed; }
+  .chip.off:hover { border-color: var(--border); color: var(--text-muted-2); }
   .tab small { font-weight: 500; opacity: .75; margin-left: 5px; font-size: 11.5px; }
 
   /* Ayuda: texto corto a la vista, "?" para la explicación larga (mismo patrón que
@@ -258,10 +262,9 @@
   <h1>Salud de marca — <span id="paisTitulo">Tuhabi</span></h1>
   <span id="cobertura" class="cobertura"></span>
 </div>
-<p class="sub">Cómo se transforma la marca mes a mes. Los indicadores se agrupan por
-<strong>tipo de señal</strong>: qué piensan de nosotros (percepción), cuánta gente nos busca sola
-(búsqueda) y cuánta llega al sitio (demanda). Se lee como <strong>Brand Equity</strong>, no como
-respuesta directa: acá no hay costo por lead.</p>
+<p class="sub">Cómo se transforma la marca mes a mes. Cada hoja de arriba es una fuente y la marca
+se elige al lado del periodo. Se lee como <strong>Brand Equity</strong>, no como respuesta directa:
+acá no hay costo por lead.</p>
 
 <dialog id="ayuda" class="help-dialog"><div id="ayudaCuerpo"></div>
   <button type="button" class="close-btn" onclick="this.closest('dialog').close()">Cerrar</button></dialog>
@@ -568,6 +571,39 @@ const HOJAS = {
   CO: { nombre: 'Habi', pais: 'Colombia', slug: 'habi' },
   PCOM: { nombre: 'Propiedades.com', pais: 'México', slug: 'propiedades' },
 };
+// Una hoja por FUENTE en el header (decisión de Camilo, 6-oct-2026) y la marca como selector
+// aparte. Cada hoja declara qué marcas tiene; las demás salen deshabilitadas con `sinDato` como
+// explicación. `metrica` es la clave de data.json (Instagram y Facebook comparten `seguidores`).
+// `fn` se resuelve al dibujar: las funciones están declaradas más abajo.
+const SECCIONES = [
+  { k: 'brand_lift', nombre: 'Brand Lift', metrica: 'brand_lift', marcas: ['MX', 'CO'], ayuda: 'bl',
+    titulo: 'Brand Lift continuo de Meta', fn: () => drawBrandLift,
+    hint: 'Un experimento mensual de Meta: compara a quienes vieron la pauta con quienes no. La diferencia es lo que la pauta <strong>causó</strong>.',
+    sinDato: 'Propiedades.com no corre estudios de Brand Lift con Meta.' },
+  { k: 'instagram', nombre: 'Instagram', metrica: 'seguidores', marcas: ['MX', 'CO', 'PCOM'], ayuda: 'seg',
+    titulo: 'Instagram', fn: () => drawInstagram,
+    hint: 'Quién nos sigue, qué publicamos y qué engancha. Por mes.' },
+  { k: 'facebook', nombre: 'Facebook', metrica: 'seguidores', marcas: ['MX', 'CO', 'PCOM'], ayuda: 'seg',
+    titulo: 'Facebook', fn: () => drawFacebook,
+    hint: 'Cuánta gente decide seguir la página y cuánta deja de hacerlo. Por mes.' },
+  { k: 'exit_poll', nombre: 'Exit poll', metrica: 'exit_poll', marcas: ['MX'],
+    titulo: 'Atribución declarada — exit poll de registro', fn: () => drawExitPoll,
+    hint: 'Lo que la gente dice cuando se le pregunta dónde nos conoció, al momento de registrarse. Es declarado, no medido: sirve para leer tendencia, nunca para atribuir cierres.',
+    sinDato: 'El exit poll solo existe en el registro de Tuhabi (México). En Colombia la pregunta dejó de capturarse en abr-2025.' },
+  { k: 'encuestador', nombre: 'Pulso', metrica: 'encuestador', marcas: ['MX'],
+    titulo: 'Agente encuestador de marca — Pulso Inmobiliario', fn: () => drawEncuestador,
+    hint: 'Encuesta por WhatsApp y por un agente de voz a dueños que publican vivienda en propiedades.com y a brokers independientes; el selector de <strong>Público</strong> muestra cada uno por separado. Responde <strong>¿nos conocen?</strong> y <strong>¿con qué atributo nos relacionan?</strong>, y agrega el embudo de consideración. Es la única fuente de este tablero que le pregunta a gente que <em>no</em> ha interactuado con nosotros.',
+    sinDato: 'Pulso solo encuesta en México: la línea de WhatsApp, la base y el cuestionario son de MX.' },
+  { k: 'traffic', nombre: 'Tráfico', metrica: 'traffic', marcas: ['MX'],
+    titulo: 'Tráfico al sitio', fn: () => drawTraffic,
+    hint: 'Usuarios únicos que llegan al sitio. Si la marca funciona, el tráfico sube sin que suba la inversión.',
+    sinDato: 'Solo hay export de GA4 utilizable para México. El tráfico de Colombia se mide en el WBR 2.0.' },
+  { k: 'tv', nombre: 'TV', metrica: 'tv', marcas: ['MX'],
+    titulo: 'Impacto de la TV abierta', fn: () => drawTV,
+    hint: 'Campaña nacional con Televisa, sep-nov 2026. El efecto de un spot dura unos 30 minutos y es chico frente al tráfico diario, así que solo se separa del ruido mirando el minuto exacto de la emisión. La cifra de incrementalidad con su intervalo se publica cada mañana en Google Chat; acá se ve la forma.',
+    sinDato: 'La campaña de TV abierta es solo de Tuhabi en México.' },
+];
+let SECCION = 'brand_lift';
 let DATA = null, PAIS = 'MX', PLAZA = 'Todas', MESES = '24 meses';
 // Ancho del bloque del gráfico intradía, en minutos. 10 por defecto: un spot mueve
 // ~20-25 visitas en sus primeros 15 minutos, que en un bloque de 10 (~70 esperadas, ruido ±8)
@@ -1352,7 +1388,10 @@ const conSigno = v => v == null ? '—' : (v >= 0 ? '+' : '') + Math.round(v).to
 const diasDelMes = m => { const [y, n] = m.split('-').map(Number); return new Date(Date.UTC(y, n, 0)).getUTCDate(); };
 const totalFb = r => r ? (r.fb_total ?? r.fb_total_est ?? null) : null;
 
-function drawSeguidores(host, serie) {
+function drawFacebook(host, serie) { drawSeguidores(host, serie, 'fb'); }
+function drawInstagram(host, serie) { drawSeguidores(host, serie, 'ig'); }
+
+function drawSeguidores(host, serie, que) {
   const L = recortar(serie.map(r => r.month), MESES);
   const fila = m => serie.find(r => r.month === m);
   const mesActual = new Date().toISOString().slice(0, 7);
@@ -1378,8 +1417,7 @@ function drawSeguidores(host, serie) {
   const igUltCerr = [...serie].reverse().find(r => r.month < mesActual && r.ig_clics != null);
   const totalIg = r => r ? (r.ig_total ?? r.ig_total_est ?? null) : null;
 
-  host.innerHTML = `<div class="pulso-bloque" style="margin-top:4px">Facebook</div>
-    <div class="ficha">
+  const fbHtml = `<div class="ficha">
       <div><div class="k">Seguidores</div><div class="v">${fbUlt ? fbUlt.fb_total.toLocaleString('es-MX') : '—'}</div>
         <div class="d">${crec12 != null ? `${conSigno(crec12)} en 12 meses (${(100 * crec12 / totalFb(fbHace12)).toFixed(1)}%)` : ''}</div></div>
       <div><div class="k">Últimos 12 meses</div><div class="v">+${sumaCampo(u12, 'fb_altas').toLocaleString('es-MX')} / −${sumaCampo(u12, 'fb_bajas').toLocaleString('es-MX')}</div>
@@ -1392,9 +1430,9 @@ function drawSeguidores(host, serie) {
       <div class="panel"><h3>Altas y bajas por mes${ayuda('seg_fb_mov')}</h3>
         <div class="cap">Quién empezó y quién dejó de seguir la página. La línea es el neto.</div>
         <div class="ch alto"><canvas id="sg-fb-mes"></canvas></div>${legend([[C.verde, 'Altas'], [C.rojo, 'Bajas'], [C.azul, 'Neto']])}</div>
-    </div>
+    </div>`;
 
-    <div class="pulso-bloque">Instagram</div>
+  const igHtml = `<div class="pulso-bloque" style="margin-top:4px">Comunidad</div>
     <div class="ficha">
       <div><div class="k">Seguidores</div><div class="v">${igUlt ? igUlt.ig_total.toLocaleString('es-MX') : '—'}</div>
         <div class="d">Hoy, según Meta</div></div>
@@ -1420,6 +1458,9 @@ function drawSeguidores(host, serie) {
         <div class="ch alto"><canvas id="sg-ig-inter"></canvas></div>${legend([[C.cian, 'Interacciones'], [C.ambar, 'Tasa de interacción']])}</div>
     </div>
     ${bloqueContenido(serie, L, mesActual)}`;
+  // Cada hoja pinta solo su parte. Las gráficas de la otra se saltan solas: `mkMulti` no dibuja
+  // si su canvas no existe.
+  host.innerHTML = que === 'fb' ? fbHtml : igHtml;
 
   // Facebook. El reconstruido llega hasta el primer mes medido para que las dos líneas se toquen.
   const primerReal = Lfb.find(m => (fila(m) || {}).fb_total != null);
@@ -1516,7 +1557,7 @@ function bloqueContenido(serie, L, mesActual) {
       ${grupo(`Últimos 180 días · por interacciones`, tops['180'][filtro], false)}
       ${grupo(`Toda la historia · por likes + comentarios`, tops.historico[filtro], true)}` : '';
 
-  return `<div class="pulso-bloque">Instagram · contenido</div>
+  return `<div class="pulso-bloque">Contenido</div>
     <div class="ficha">
       <div><div class="k">Publicaciones${ult ? ` en ${nombreMes(ult.month)}` : ''}</div><div class="v">${ult ? pubs(ult) : '—'}</div>
         <div class="d">Promedio de los últimos 12 meses: ${(n12 / 12).toFixed(1)} por mes</div></div>
@@ -1566,21 +1607,34 @@ function chips(label, opciones, activo, onPick) {
   }</div></div>`;
 }
 
+// Selector de marca: las que no tienen esta hoja salen deshabilitadas, con la razón al pasar el
+// mouse. No se usa el atributo `disabled` porque en un botón deshabilitado el navegador no siempre
+// muestra el `title`.
+function marcaChips(S) {
+  return `<div class="fgroup"><span class="flabel">Marca</span><div class="chips">${Object.entries(HOJAS).map(([k, h]) => {
+    const ok = S.marcas.includes(k);
+    return `<button class="chip ${k === PAIS ? 'on' : ''}${ok ? '' : ' off'}" data-pick="marca" data-val="${k}"
+      ${ok ? '' : `aria-disabled="true" title="${esc(S.sinDato || 'Sin datos para esta marca.')}"`}>${h.nombre}${
+      k === 'PCOM' ? '' : ` <small>${h.pais}</small>`}</button>`;
+  }).join('')}</div></div>`;
+}
+
 function render() {
   const M = DATA.metrics;
+  const S = SECCIONES.find(s => s.k === SECCION) || SECCIONES[0];
+  if (!S.marcas.includes(PAIS)) PAIS = S.marcas[0];   // la marca de antes no tiene esta hoja
   const H = HOJAS[PAIS];
-  document.getElementById('hojas').innerHTML = Object.entries(HOJAS).map(([k, h]) =>
-    `<button class="tab${k === PAIS ? ' active' : ''}" data-hoja="${k}">${h.nombre}${
-      k === 'PCOM' ? '' : `<small>${h.pais}</small>`}</button>`).join('');
+  document.getElementById('hojas').innerHTML = SECCIONES.map(s =>
+    `<button class="tab${s.k === S.k ? ' active' : ''}" data-seccion="${s.k}">${s.nombre}</button>`).join('');
   document.getElementById('paisTitulo').textContent = H.nombre;
-  document.title = `Salud de marca — ${H.nombre}`;
+  document.title = `${S.nombre} · ${H.nombre} — Salud de marca`;
   // El filtro de plaza se quitó el 6-oct-2026 (decisión de Camilo): tráfico y exit poll se ven
   // siempre con todas las plazas. `PLAZA` queda fijo en 'Todas' y el código por plaza se conserva.
-  document.getElementById('filtros').innerHTML = chips('Periodo', VENTANAS, MESES, 'meses');
+  document.getElementById('filtros').innerHTML = marcaChips(S) + chips('Periodo', VENTANAS, MESES, 'meses');
 
-  // La leyenda solo aparece donde hay campañas: en CO no hay TV, así que tampoco banda que
-  // explicar.
-  const camps = CAMPANAS[PAIS] || [];
+  // La leyenda de campañas va solo en las hojas cuyas gráficas mensuales pintan las bandas, y solo
+  // para Tuhabi: en Colombia no hubo TV.
+  const camps = ['brand_lift', 'facebook', 'exit_poll', 'traffic'].includes(S.k) ? (CAMPANAS[PAIS] || []) : [];
   const rotulo = c => `${c.desde} a ${c.hasta || 'hoy'}`;
   document.getElementById('leyendaTV').innerHTML = camps.length ? `<div class="leyenda-tv">
     <span>Las franjas sombreadas de todas las gráficas marcan campañas:</span>
@@ -1593,75 +1647,31 @@ function render() {
 
   destroyCharts();
   const app = document.getElementById('app');
-  const SEC_SEGUIDORES = ['seguidores', 'Seguidores en Facebook e Instagram' + ayuda('seg'),
-    `Cuánta gente decide seguir a ${H.nombre} en redes, y cuánta deja de hacerlo. Por mes.`,
-    drawSeguidores, ['Comunidad', 'Quién elige seguirnos. Es una decisión de la persona, no un efecto directo de la pauta.']];
-  // Propiedades.com no corre Brand Lift ni tiene el resto de las fuentes: su hoja es solo comunidad.
-  // Seguidores va justo después de Brand Lift: las dos son señales de Meta sobre la misma audiencia.
-  const secs = PAIS === 'PCOM' ? [SEC_SEGUIDORES] : [
-    ['brand_lift', 'Brand Lift continuo de Meta' + ayuda('bl'),
-     'Un experimento mensual de Meta: compara a quienes vieron la pauta con quienes no. La diferencia es lo que la pauta <strong>causó</strong>.',
-     drawBrandLift, ['Percepción medida', 'Qué cambia la pauta en la cabeza de la gente, medido con un experimento.']],
-    SEC_SEGUIDORES,
-    ['exit_poll', 'Atribución declarada — exit poll de registro',
-     'Lo que la gente dice cuando se le pregunta dónde nos conoció, al momento de registrarse. Es declarado, no medido: sirve para leer tendencia, nunca para atribuir cierres.',
-     drawExitPoll, ['Percepción declarada', 'Lo que la gente nos dice cuando le preguntamos.']],
-    ['encuestador', 'Agente encuestador de marca — Pulso Inmobiliario',
-     'Encuesta por WhatsApp y por un agente de voz a dueños que publican vivienda en propiedades.com y a brokers independientes; el selector de <strong>Público</strong> muestra cada uno por separado. Primero va cada pregunta en el orden de la encuesta y después las agrupaciones. Responde dos de las tres preguntas de este indicador: <strong>¿nos conocen?</strong> y <strong>¿con qué atributo nos relacionan?</strong>, y agrega el embudo de consideración. La tercera —<strong>¿nos ven como comprador directo, como inmobiliaria o como varias cosas?</strong>— todavía no está en el cuestionario. Es el único indicador de este tablero que le pregunta a gente que <em>no</em> ha interactuado con nosotros: todos los demás miden sobre audiencia ya alcanzada por la pauta o ya registrada.',
-     drawEncuestador],
-    ['traffic', 'Tráfico por plaza',
-     'Usuarios únicos que llegan al sitio, por plaza. Si la marca funciona, el tráfico sube sin que suba la inversión.',
-     drawTraffic, ['Demanda', 'Cuánta gente llega al sitio. Es comportamiento, no opinión.']],
-    ['tv', 'Impacto de la TV abierta',
-     'Campaña nacional con Televisa, sep-nov 2026. El efecto de un spot dura unos 30 minutos y es chico frente al tráfico diario, así que solo se separa del ruido mirando el minuto exacto de la emisión. La cifra de incrementalidad con su intervalo se publica cada mañana en Google Chat; acá se ve la forma.',
-     drawTV],
-  ];
-
-  app.innerHTML = secs.map(([k, , , , bloque]) =>
-    (bloque ? `<div class="bloque"><h2 class="bloque-h">${bloque[0]}</h2><p class="bloque-p">${bloque[1]}</p></div>` : '') +
-    `<div class="section"><h2 id="h-${k}"></h2><p class="hint" id="p-${k}"></p><div id="c-${k}"></div></div>`).join('');
-
-  secs.forEach(([k, titulo, hint, fn]) => {
-    const m = M[k] && M[k][PAIS];
-    document.getElementById(`p-${k}`).innerHTML = hint;
-    // `fn` null = métrica declarada que todavía no tiene forma de dibujarse (el encuestador).
-    // Su `status` es `not_available`, así que `renderMetric` nunca llega a llamarla; el null es
-    // para que quede explícito que no hay dibujo pendiente de escribir, sino fuente pendiente
-    // de existir.
-    const badge = renderMetric(document.getElementById(`c-${k}`), m, fn || (() => {}));
-    document.getElementById(`h-${k}`).innerHTML = titulo + ' ' + badge + ' ' + srcTag(m);
-  });
-
-  // Cobertura: cuántas celdas de este país tienen dato. Es honesto y de paso es el indicador de
-  // progreso del proyecto — hoy dice 4 de 7 en MX.
-  const total = secs.length, conDato = secs.filter(([k]) =>
-    M[k] && M[k][PAIS] && ['ok', 'stale'].includes(M[k][PAIS].status)).length;
-  document.getElementById('cobertura').textContent =
-    `${conDato} de ${total} indicadores con dato para ${H.nombre}`;
-
-  // El hash se resuelve acá y no lo deja el navegador: las secciones se crean dinámicamente en
-  // render(), así que al cargar la página el elemento al que apunta #h-tv todavía no existe.
-  // El enlace de la tarjeta de Google Chat depende de esto para caer en el panel de TV.
-  if (location.hash) {
-    const destino = document.getElementById(location.hash.slice(1));
-    if (destino) requestAnimationFrame(() => destino.scrollIntoView({ behavior: 'smooth' }));
-  }
+  app.innerHTML = `<div class="section"><h2 id="h-${S.k}"></h2><p class="hint" id="p-${S.k}"></p><div id="c-${S.k}"></div></div>`;
+  const m = M[S.metrica] && M[S.metrica][PAIS];
+  document.getElementById(`p-${S.k}`).innerHTML = S.hint;
+  const badge = renderMetric(document.getElementById(`c-${S.k}`), m, S.fn());
+  document.getElementById(`h-${S.k}`).innerHTML = S.titulo + (S.ayuda ? ayuda(S.ayuda) : '') + ' ' + badge + ' ' + srcTag(m);
+  document.getElementById('cobertura').textContent = '';
 }
 window.rerender = render;
 
-// La vista queda en la URL: así se puede mandar "el tablero de Colombia" por Slack en vez de
-// "abre el tablero y dale click a CO".
+// La vista queda en la URL (?hoja=instagram&marca=habi): así se manda "el Instagram de Habi" por
+// Slack en vez de "abre el tablero, dale a Instagram y luego a Habi".
 function syncURL() {
-  const q = new URLSearchParams({ hoja: HOJAS[PAIS].slug, meses: MESES, bloque: BLOQUE, leads: LEADS_SEL, publico: PUBLICO });
+  const q = new URLSearchParams({ hoja: SECCION, marca: HOJAS[PAIS].slug, meses: MESES, bloque: BLOQUE, leads: LEADS_SEL, publico: PUBLICO });
   history.replaceState(null, '', `?${q}`);
 }
 function readURL() {
   const q = new URLSearchParams(location.search);
-  // `pais` es el parámetro de antes de las hojas por marca: los enlaces viejos (y el de la
-  // tarjeta de TV en Google Chat) siguen abriendo la hoja correcta.
+  // Enlaces viejos: `pais` (antes de las hojas) y `hoja=<marca>` (hojas por marca, oct-2026). El de
+  // la tarjeta de TV en Google Chat es `?pais=MX#h-tv`: el ancla `#h-<hoja>` abre esa hoja.
   if (['MX', 'CO'].includes(q.get('pais'))) PAIS = q.get('pais');
-  const hoja = Object.keys(HOJAS).find(k => HOJAS[k].slug === q.get('hoja'));
-  if (hoja) PAIS = hoja;
+  const marca = Object.keys(HOJAS).find(k => HOJAS[k].slug === (q.get('marca') || q.get('hoja')));
+  if (marca) PAIS = marca;
+  if (SECCIONES.some(s => s.k === q.get('hoja'))) SECCION = q.get('hoja');
+  const ancla = (location.hash || '').replace('#h-', '');
+  if (SECCIONES.some(s => s.k === ancla)) SECCION = ancla;
   if (VENTANAS.includes(q.get('meses'))) MESES = q.get('meses');
   if (BLOQUES.includes(q.get('bloque'))) BLOQUE = q.get('bloque');
   if (q.get('leads') in LEADS_OPC) LEADS_SEL = q.get('leads');
@@ -1676,16 +1686,20 @@ document.addEventListener('click', e => {
     document.getElementById('ayuda').showModal();
     return;
   }
-  const t = e.target.closest('.tab[data-hoja]');
+  const t = e.target.closest('.tab[data-seccion]');
   if (t) {
-    PAIS = t.dataset.hoja;
+    SECCION = t.dataset.seccion;
     syncURL();
     render();
     window.scrollTo({ top: 0 });
     return;
   }
   const b = e.target.closest('.chip'); if (!b) return;
-  if (b.dataset.pick === 'meses') MESES = b.dataset.val;
+  if (b.dataset.pick === 'marca') {
+    if (b.getAttribute('aria-disabled') === 'true') return;
+    PAIS = b.dataset.val;
+  }
+  else if (b.dataset.pick === 'meses') MESES = b.dataset.val;
   else if (b.dataset.pick === 'bloque') BLOQUE = b.dataset.val;
   else if (b.dataset.pick === 'leads') LEADS_SEL = b.dataset.val;
   else if (b.dataset.pick === 'publico') PUBLICO = b.dataset.val;
