@@ -207,6 +207,56 @@ def _ig_mes(ig_id, token, ini, ahora=None):
     return tot
 
 
+def _ig_dia(ig_id, token, dia):
+    """Métricas de Instagram de UN día (AAAA-MM-DD), para la fila de tendencia. La API no las da
+    como serie diaria (piden `metric_type=total_value`), así que es una ventana de un día: dos
+    llamadas por día. Campos con sufijo `_d` para no confundirlos con los mensuales."""
+    d = datetime.date.fromisoformat(dia)
+    desde, hasta = _ts(d), _ts(d + datetime.timedelta(days=1))
+    out = {}
+    ok, pl = _get(f"{ig_id}/insights", token, metric="follows_and_unfollows", period="day",
+                  metric_type="total_value", breakdown="follow_type", since=desde, until=hasta)
+    if not ok:
+        raise RuntimeError((pl.get("error") or {}).get("message"))
+    for m in pl.get("data") or []:
+        for bd in (m.get("total_value") or {}).get("breakdowns") or []:
+            for x in bd.get("results") or []:
+                campo = {"FOLLOWER": "ig_altas_d", "NON_FOLLOWER": "ig_bajas_d"}.get(x["dimension_values"][0])
+                if campo:
+                    out[campo] = x["value"]
+    ok, pl = _get(f"{ig_id}/insights", token, metric="views,total_interactions,website_clicks,profile_views",
+                  period="day", metric_type="total_value", since=desde, until=hasta)
+    if not ok:
+        raise RuntimeError((pl.get("error") or {}).get("message"))
+    for m in pl.get("data") or []:
+        campo = {"views": "ig_vistas_d", "total_interactions": "ig_inter_d",
+                 "website_clicks": "ig_clics_d", "profile_views": "ig_perfil_d"}.get(m.get("name"))
+        if campo:
+            out[campo] = (m.get("total_value") or {}).get("value") or 0
+    # Un día sin vistas no existió para la API (aún no llega o es anterior a la historia): no se guarda.
+    if not out.get("ig_vistas_d"):
+        return {k: v for k, v in out.items() if k in ("ig_altas_d", "ig_bajas_d")}
+    return out
+
+
+def fetch_ig_dias(dias=3, hoy=None):
+    """{marca: {día: métricas}} de los últimos `dias` días CERRADOS. El cron pide 3: Instagram
+    corrige los días recientes con uno o dos días de atraso. El backfill pide ~130 (14 semanas
+    más las 4 de comparación)."""
+    tokens = BL._tokens()
+    if not tokens:
+        raise RuntimeError("sin token de Meta")
+    hoy = datetime.date.fromisoformat(hoy) if hoy else datetime.date.today()
+    fechas = [(hoy - datetime.timedelta(days=i)).isoformat() for i in range(1, dias + 1)]
+    out = {}
+    for clave, m in MARCAS.items():
+        for f in fechas:
+            v = _ig_dia(m["ig"], tokens[0][1], f)
+            if v:
+                out.setdefault(clave, {})[f] = v
+    return out
+
+
 DEMO_CORTES = {"age": "edad", "gender": "genero", "city": "ciudad", "country": "pais"}
 
 

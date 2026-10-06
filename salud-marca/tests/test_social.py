@@ -46,6 +46,24 @@ def test_mensual_suma_las_metricas_de_facebook_y_toma_el_alcance_del_cierre():
     assert (m["fb_vistas"], m["fb_altas_pag"], m["fb_r_like"], m["fb_alcance28"]) == (30, 3, 10, 900)
 
 
+def test_ig_dia_pide_una_ventana_de_un_dia_y_descarta_dias_sin_vistas(monkeypatch):
+    ventanas = []
+
+    def fake_get(path, token, **p):
+        ventanas.append(p["until"] - p["since"])
+        if p["metric"] == "follows_and_unfollows":
+            return True, {"data": [{"total_value": {"breakdowns": [{"results": [
+                {"dimension_values": ["FOLLOWER"], "value": 20}, {"dimension_values": ["NON_FOLLOWER"], "value": 7}]}]}}]}
+        return True, {"data": [{"name": "views", "total_value": {"value": vistas}},
+                               {"name": "total_interactions", "total_value": {"value": 90}}]}
+    monkeypatch.setattr(S, "_get", fake_get)
+    vistas = 3000
+    assert S._ig_dia("ig", "tok", "2026-10-03") == {"ig_altas_d": 20, "ig_bajas_d": 7, "ig_vistas_d": 3000, "ig_inter_d": 90}
+    assert set(ventanas) == {S.DIA}
+    vistas = 0
+    assert S._ig_dia("ig", "tok", "2026-10-05") == {"ig_altas_d": 20, "ig_bajas_d": 7}
+
+
 def test_mensual_borra_meses_de_facebook_que_la_api_da_en_cero():
     # 2023: Meta da 0 en vistas y altas pagadas/orgánicas aunque hubo 300 altas → no es dato.
     filas = [{"date": "2023-05-10", "fb_altas": 300, "fb_bajas": 5, "fb_vistas": 0, "fb_altas_pag": 0,

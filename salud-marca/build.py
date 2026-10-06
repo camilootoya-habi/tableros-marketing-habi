@@ -159,6 +159,11 @@ def collect_seguidores(now):
             cache = SOCIAL.merge_ig(cache, SOCIAL.fetch_ig_meses(meses=2))
         except Exception as e:
             print(f"WARN seguidores IG mensual: {type(e).__name__}: {e}")
+        # Instagram por día (fila de tendencia): los 3 últimos días cerrados, que Meta todavía corrige.
+        try:
+            cache = SOCIAL.merge(cache, SOCIAL.fetch_ig_dias(3, hoy=now[:10]))
+        except Exception as e:
+            print(f"WARN seguidores IG diario: {type(e).__name__}: {e}")
         # Demografía de seguidores: Meta solo da la de hoy, así que se guarda como la foto del mes
         # (se sobrescribe cada día; la del último día del mes es la que queda).
         for clave, m in SOCIAL.MARCAS.items():
@@ -272,7 +277,15 @@ def collect_seguidores(now):
                                          last_updated=cache.get("last_refresh"))
         else:
             out[clave] = contract.metric("ok", source="api", series=serie, last_updated=now)
-        out[clave]["diario"] = diaria[-45:]
+        # Tendencia: 14 semanas + 4 de comparación ≈ 130 días, con las publicaciones de cada día para
+        # marcar en las minigráficas de dónde salió un pico.
+        pubs_ig, pubs_fb = {}, {}
+        for p in cache["posts"].get(clave, {}).values():
+            pubs_ig[p["fecha"]] = pubs_ig.get(p["fecha"], 0) + 1
+        for p in cache["fb_posts"].get(clave, {}).values():
+            pubs_fb[p["fecha"]] = pubs_fb.get(p["fecha"], 0) + 1
+        out[clave]["diario"] = [dict(r, ig_pubs=pubs_ig.get(r["date"], 0), fb_pubs=pubs_fb.get(r["date"], 0))
+                                for r in diaria[-130:]]
         img = lambda p: dict(p, img=f"ig_miniaturas/{p['id']}.jpg" if p["id"] in con_img else None)
         out[clave]["top_posts"] = {per: {k: [img(p) for p in lista] for k, lista in listas.items()}
                                    for per, listas in tops[clave].items()}

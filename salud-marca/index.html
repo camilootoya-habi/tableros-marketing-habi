@@ -96,6 +96,19 @@
   .top-post .info b { color: var(--text-title); font-size: 13px; }
   .top-post .txt { color: var(--text-muted-3); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; margin-top: 3px; }
 
+  /* Tendencia: 6 tarjetas con minigráfica, valor del periodo y cambio contra el anterior. */
+  .seis { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 10px; }
+  .seis > * { min-width: 0; }
+  @media (max-width: 1300px) { .seis { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+  @media (max-width: 700px) { .seis { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  .panel.tend { padding: 10px 11px 8px; }
+  .panel.tend h3 { font-size: 11.5px; line-height: 1.3; }
+  .tend-v { display: flex; align-items: baseline; gap: 8px; margin: 2px 0 4px; flex-wrap: wrap; }
+  .tend-v b { font-size: 19px; color: var(--text-title); font-variant-numeric: tabular-nums; }
+  .delta { font-size: 11.5px; font-weight: 700; border-radius: 4px; padding: 1px 6px; }
+  .delta.sube { color: #059669; background: rgba(52, 211, 153, .15); }
+  .delta.baja { color: #dc2626; background: rgba(248, 113, 113, .15); }
+  .delta.neutro { color: var(--text-muted-2); background: var(--row-border); }
   /* Del contenido al sitio: 5 gráficas en una línea (3 valores + 2 conversiones). Rejilla FIJA
      para que las cinco compartan ancho y se lean de izquierda a derecha como un embudo. */
   .cinco { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 10px; }
@@ -980,6 +993,18 @@ const AYUDA = {
     <p>Si los alcanzados son más jóvenes que los seguidores, la pauta le está hablando a otra gente que
     la que ya nos sigue. Meta solo da los alcanzados y los que interactúan del <strong>mes en curso</strong>:
     al inicio del mes la muestra es chica.</p>`],
+  tendencia: ['Tendencia de los últimos días y semanas', `
+    <p>Lo mensual dice hacia dónde va la marca; esto dice qué pasó la semana pasada. Seis indicadores con
+    su minigráfica:</p>
+    <ul><li><strong>14 días</strong>: cada barra es un día. El número grande es la suma de los últimos 7 días
+    y la flecha lo compara con los 7 anteriores.</li>
+    <li><strong>14 semanas</strong> (de lunes a domingo): el número grande es la última semana cerrada y la
+    flecha la compara con el promedio de las 4 anteriores. La semana en curso va translúcida.</li></ul>
+    <p><strong>Punto gris</strong>: ese día (o semana) se publicó algo; el tooltip dice cuántas
+    publicaciones. <strong>Línea ámbar</strong> (solo Tuhabi): hubo spots de TV.</p>
+    <p>Solo entran días cerrados. Instagram corrige sus datos con uno o dos días de atraso: el último día
+    puede moverse un poco. En "% de altas por pauta" la flecha va en gris: subir o bajar no es bueno ni
+    malo por sí mismo.</p>`],
   fb_pag: ['Nuevos seguidores: pauta vs. orgánico', `
     <p>Meta separa a los nuevos seguidores de la página entre los que llegaron <strong>por un anuncio</strong>
     (pauta) y los que llegaron solos (<strong>orgánicos</strong>).</p>
@@ -1651,7 +1676,8 @@ function drawSeguidores(host, serie, que) {
 
   // De las altas con dato de origen (desde ~ago-2024), cuántas llegaron por pauta en 12 meses.
   const pag12 = sumaCampo(u12, 'fb_altas_pag'), org12 = sumaCampo(u12, 'fb_altas_org');
-  const fbHtml = `<div class="pulso-bloque" style="margin-top:4px">Comunidad</div>
+  const fbHtml = `${bloqueTendencia('fb')}
+    <div class="pulso-bloque">Comunidad</div>
     <div class="ficha">
       <div><div class="k">Seguidores</div><div class="v">${fbUlt ? fbUlt.fb_total.toLocaleString('es-MX') : '—'}</div>
         <div class="d">${crec12 != null ? `${conSigno(crec12)} en 12 meses (${(100 * crec12 / totalFb(fbHace12)).toFixed(1)}%)` : ''}</div></div>
@@ -1675,7 +1701,8 @@ function drawSeguidores(host, serie, que) {
     ${bloqueFbContenido(serie)}
     ${bloqueFbAudiencia(serie, mesActual)}`;
 
-  const igHtml = `<div class="pulso-bloque" style="margin-top:4px">Comunidad</div>
+  const igHtml = `${bloqueTendencia('ig')}
+    <div class="pulso-bloque">Comunidad</div>
     <div class="ficha">
       <div><div class="k">Seguidores</div><div class="v">${igUlt ? igUlt.ig_total.toLocaleString('es-MX') : '—'}</div>
         <div class="d">Hoy, según Meta</div></div>
@@ -1721,6 +1748,7 @@ function drawSeguidores(host, serie, que) {
     { type: 'line', label: 'Neto', color: C.azul, data: Lfb.map(m => (fila(m) || {}).dias_fb ? fila(m).fb_altas - fila(m).fb_bajas : null) },
   ], { fmt: 'num', pieTooltip: k => parcial(Lfb[k]) ? [`Mes en curso: ${fila(Lfb[k]).dias_fb} días con dato`] : [] });
   dibujarFacebook(serie, L, mesActual);
+  dibujarTendencia(que);
 
   // Instagram. El mes en curso va translúcido en barras: todavía no termina.
   const ig = (m, k) => (fila(m) || {})[k] ?? null;
@@ -1960,6 +1988,120 @@ function dibujarAudiencia(serie, L, mesActual) {
   ], { fmt: 'pct', sinBandas: true });
 }
 
+// ── Tendencia: últimos 14 días / 14 semanas (Instagram y Facebook) ────────────
+// Seis indicadores con minigráfica, el valor del periodo y su cambio contra el anterior:
+// - 14 días: últimos 7 días contra los 7 anteriores.
+// - 14 semanas (lunes a domingo): la última semana cerrada contra el promedio de las 4 anteriores.
+// Solo días cerrados. Las publicaciones del día van como punto gris y, en Tuhabi, los días con
+// spots de TV como línea ámbar. Datos: `diario` de data.json (130 días).
+const TENDENCIAS = ['14 días', '14 semanas'];
+let TENDENCIA = '14 días';
+const sumaK = (rows, f) => rows.reduce((a, r) => { const v = f(r); return v == null ? a : a + v; }, 0);
+const hayK = (rows, f) => rows.some(r => f(r) != null);
+const IND_TENDENCIA = {
+  ig: [
+    { titulo: 'Nuevos seguidores netos', fmt: 'num', bueno: 'sube',
+      agg: rs => hayK(rs, r => r.ig_altas_d) ? sumaK(rs, r => r.ig_altas_d) - sumaK(rs, r => r.ig_bajas_d) : null },
+    { titulo: 'Vistas', fmt: 'compacto', bueno: 'sube', agg: rs => hayK(rs, r => r.ig_vistas_d) ? sumaK(rs, r => r.ig_vistas_d) : null },
+    { titulo: 'Interacciones', fmt: 'num', bueno: 'sube', agg: rs => hayK(rs, r => r.ig_inter_d) ? sumaK(rs, r => r.ig_inter_d) : null },
+    { titulo: 'Interacciones por mil vistas', fmt: 'dec', bueno: 'sube', tasa: true,
+      agg: rs => { const v = sumaK(rs, r => r.ig_vistas_d); return v ? 1000 * sumaK(rs, r => r.ig_inter_d) / v : null; } },
+    { titulo: 'Visitas al perfil', fmt: 'num', bueno: 'sube', agg: rs => hayK(rs, r => r.ig_perfil_d) ? sumaK(rs, r => r.ig_perfil_d) : null },
+    { titulo: 'Clics al sitio', fmt: 'num', bueno: 'sube', agg: rs => hayK(rs, r => r.ig_clics_d) ? sumaK(rs, r => r.ig_clics_d) : null },
+  ],
+  fb: [
+    { titulo: 'Nuevos seguidores netos', fmt: 'num', bueno: 'sube',
+      agg: rs => hayK(rs, r => r.fb_altas) ? sumaK(rs, r => r.fb_altas) - sumaK(rs, r => r.fb_bajas) : null },
+    { titulo: 'Vistas', fmt: 'compacto', bueno: 'sube', agg: rs => hayK(rs, r => r.fb_vistas) ? sumaK(rs, r => r.fb_vistas) : null },
+    { titulo: 'Interacciones', fmt: 'compacto', bueno: 'sube', agg: rs => hayK(rs, r => r.fb_inter) ? sumaK(rs, r => r.fb_inter) : null },
+    { titulo: 'Interacciones por mil vistas', fmt: 'dec', bueno: 'sube', tasa: true,
+      agg: rs => { const v = sumaK(rs, r => r.fb_vistas); return v ? 1000 * sumaK(rs, r => r.fb_inter) / v : null; } },
+    { titulo: 'Visitas a la página', fmt: 'num', bueno: 'sube', agg: rs => hayK(rs, r => r.fb_visitas) ? sumaK(rs, r => r.fb_visitas) : null },
+    { titulo: '% de altas por pauta', fmt: 'pct', bueno: 'neutro', tasa: true,
+      agg: rs => { const t = sumaK(rs, r => r.fb_altas_pag) + sumaK(rs, r => r.fb_altas_org); return t ? sumaK(rs, r => r.fb_altas_pag) / t : null; } },
+  ],
+};
+const lunes = d => { const t = new Date(d + 'T00:00:00Z'); t.setUTCDate(t.getUTCDate() - ((t.getUTCDay() + 6) % 7)); return t.toISOString().slice(0, 10); };
+const masDias = (d, n) => { const t = new Date(d + 'T00:00:00Z'); t.setUTCDate(t.getUTCDate() + n); return t.toISOString().slice(0, 10); };
+const fmtTend = { num: v => Math.round(v).toLocaleString('es-MX'), compacto: v => fmtMil(v), dec: v => v.toFixed(1),
+                  pct: v => (100 * v).toFixed(0) + '%' };
+
+// Cubetas: [{etiqueta, rows, parcial}] para los días o las semanas, más el periodo de comparación.
+// Cada INDICADOR termina en su propio último día con dato: en Instagram las vistas llegan con ~1-2
+// días de atraso y las altas/bajas con uno más. Si todos se cortaran en el último día de la serie,
+// los "últimos 7 días" serían 5 contra 7 y la flecha mostraría una caída falsa.
+const CAMPOS_TEND = { ig: ['ig_altas_d', 'ig_vistas_d', 'ig_inter_d', 'ig_vistas_d', 'ig_perfil_d', 'ig_clics_d'],
+                      fb: ['fb_altas', 'fb_vistas', 'fb_inter', 'fb_vistas', 'fb_visitas', 'fb_altas_pag'] };
+function cubetasTendencia(diario, campo) {
+  const fechas = diario.filter(r => r[campo] != null).map(r => r.date).sort();
+  if (!fechas.length) return null;
+  const fin = fechas[fechas.length - 1];
+  const fila = {};
+  diario.forEach(r => { fila[r.date] = r; });
+  if (TENDENCIA === '14 días') {
+    const dias = Array.from({ length: 28 }, (_, i) => masDias(fin, i - 27));
+    const c = dias.map(d => ({ etiqueta: d.slice(5), desde: d, hasta: d, rows: fila[d] ? [fila[d]] : [] }));
+    return { cubetas: c.slice(-14), actual: c.slice(-7), previo: c.slice(-14, -7), fin };
+  }
+  const ultLunes = lunes(fin), semanaCompleta = masDias(ultLunes, 6) <= fin;
+  const semanas = Array.from({ length: 18 }, (_, i) => masDias(ultLunes, 7 * (i - 17)));
+  const c = semanas.map(s => ({ etiqueta: s.slice(5), desde: s, hasta: masDias(s, 6),
+    rows: Array.from({ length: 7 }, (_, j) => fila[masDias(s, j)]).filter(Boolean),
+    parcial: s === ultLunes && !semanaCompleta }));
+  const cerradas = c.filter(x => !x.parcial);
+  return { cubetas: c.slice(-14), actual: cerradas.slice(-1), previo: cerradas.slice(-5, -1), promedio: true, fin };
+}
+
+function bloqueTendencia(red) {
+  const diario = (((DATA.metrics.seguidores || {})[PAIS] || {}).diario) || [];
+  if (!diario.length) return '';
+  const tarjetas = IND_TENDENCIA[red].map((ind, i) => {
+    const b = cubetasTendencia(diario, CAMPOS_TEND[red][i]);
+    if (!b) return `<div class="panel tend"><h3>${ind.titulo}</h3><div class="cap">Sin dato todavía.</div></div>`;
+    const valor = ind.agg(b.actual.flatMap(x => x.rows));
+    let base = ind.agg(b.previo.flatMap(x => x.rows));
+    if (b.promedio && base != null && !ind.tasa) base = base / Math.max(1, b.previo.length);
+    const delta = valor != null && base ? (valor - base) / Math.abs(base) : null;
+    const cls = delta == null || ind.bueno === 'neutro' ? 'neutro' : delta >= 0 ? 'sube' : 'baja';
+    return `<div class="panel tend"><h3>${ind.titulo}</h3>
+      <div class="tend-v"><b>${valor == null ? '—' : fmtTend[ind.fmt](valor)}</b>
+        ${delta == null ? '' : `<span class="delta ${cls}">${delta >= 0 ? '▲' : '▼'} ${Math.abs(100 * delta).toFixed(0)}%</span>`}</div>
+      <div class="ch chico"><canvas id="tend-${red}-${i}"></canvas></div>
+      <div class="cap" style="margin:4px 0 0">Hasta el ${b.fin.slice(8)}-${b.fin.slice(5, 7)}</div></div>`;
+  }).join('');
+  return `<div class="pulso-bloque" style="margin-top:4px;display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+      <span style="display:flex;align-items:center">Tendencia${ayuda('tendencia')}</span>${chips('', TENDENCIAS, TENDENCIA, 'tendencia')}</div>
+    <div class="cap" style="font-size:12px;margin:-4px 0 8px">Valor ${TENDENCIA === '14 días' ? 'de los últimos 7 días; la flecha compara con los 7 anteriores'
+      : 'de la última semana cerrada; la flecha compara con el promedio de las 4 anteriores'}.
+      ${PAIS === 'MX' ? 'Línea ámbar: hubo spots de TV. ' : ''}Punto gris: se publicó algo.</div>
+    <div class="seis">${tarjetas}</div>`;
+}
+
+function dibujarTendencia(red) {
+  const diario = (((DATA.metrics.seguidores || {})[PAIS] || {}).diario) || [];
+  const spots = {};
+  if (PAIS === 'MX') ((((DATA.metrics.tv || {}).MX) || {}).series || []).forEach(r => { if (r.spots) spots[r.fecha] = r.spots; });
+  const enCubeta = (c, mapa) => Object.entries(mapa).reduce((a, [d, n]) => d >= c.desde && d <= c.hasta ? a + n : a, 0);
+  const campoPubs = red === 'ig' ? 'ig_pubs' : 'fb_pubs';
+  IND_TENDENCIA[red].forEach((ind, i) => {
+    const b = cubetasTendencia(diario, CAMPOS_TEND[red][i]);
+    if (!b) return;
+    const pubs = b.cubetas.map(c => c.rows.reduce((a, r) => a + (r[campoPubs] || 0), 0));
+    const tv = b.cubetas.map(c => enCubeta(c, spots));
+    const vals = b.cubetas.map(c => c.rows.length ? ind.agg(c.rows) : null);
+    const color = ind.bueno === 'neutro' ? C.ambar : red === 'ig' ? C.rosa : C.azul;
+    mkMulti(`tend-${red}-${i}`, b.cubetas.map(c => c.etiqueta), [
+      { type: 'bar', label: ind.titulo, orden: 1, color: b.cubetas.map(c => c.parcial ? color + '55' : color), data: vals },
+      // Publicaciones: un punto sobre el eje en las cubetas con algo publicado.
+      { type: 'line', label: 'Publicaciones', color: C.gris, grosor: 0, data: pubs.map(n => n ? 0 : null),
+        puntoRadio: pubs.map(n => n ? 3 : 0) },
+    ], { fmt: ind.fmt === 'pct' ? 'pct' : ind.fmt === 'compacto' ? 'compacto' : 'num', sinBandas: true,
+         spots: { indices: tv.map((n, k) => n ? k : -1).filter(k => k >= 0), color: C.ambar },
+         pieTooltip: k => [pubs[k] ? `Publicaciones: ${pubs[k]}` : '', tv[k] ? `Spots de TV: ${tv[k]}` : '',
+                           b.cubetas[k].parcial ? 'Semana en curso' : ''].filter(Boolean) });
+  });
+}
+
 // ── Facebook: alcance, contenido y audiencia ──────────────────────────────────
 // Misma lógica que Instagram. Datos de sources_social.py (métricas diarias de la página, reales
 // desde ~ago-2024; antes Meta da ceros y el build los borra) y sources_fb_posts.py.
@@ -2190,6 +2332,7 @@ document.addEventListener('click', e => {
   else if (b.dataset.pick === 'leads') LEADS_SEL = b.dataset.val;
   else if (b.dataset.pick === 'publico') PUBLICO = b.dataset.val;
   else if (b.dataset.pick === 'toppauta') TOP_FILTRO = b.dataset.val;
+  else if (b.dataset.pick === 'tendencia') TENDENCIA = b.dataset.val;
   else return;
   syncURL();
   render();
