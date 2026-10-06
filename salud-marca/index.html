@@ -103,6 +103,8 @@
   @media (max-width: 700px) { .seis { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
   .panel.tend { padding: 10px 11px 8px; }
   .panel.tend h3 { font-size: 11.5px; line-height: 1.3; }
+  /* Más alta que `.ch.chico`: abajo reserva el espacio de los puntos de publicaciones y TV. */
+  .panel.tend .ch.chico { height: 165px; }
   .tend-v { display: flex; align-items: baseline; gap: 8px; margin: 2px 0 4px; flex-wrap: wrap; }
   .tend-v b { font-size: 19px; color: var(--text-title); font-variant-numeric: tabular-nums; }
   .delta { font-size: 11.5px; font-weight: 700; border-radius: 4px; padding: 1px 6px; }
@@ -398,7 +400,39 @@ const bigotes = {
     ctx.restore();
   },
 };
-if (window.Chart) Chart.register(bandasTV, marcasSpot, bigotes);
+// Marcadores debajo de las etiquetas del eje X (fila de tendencia): un punto gris por publicación,
+// apilados hacia abajo; con más de MAX_PUNTOS va el número. Debajo, un punto ámbar si hubo spots de
+// TV. Van FUERA del área de la gráfica para no taparle nada a las columnas; `mkMulti` reserva el
+// espacio con `layout.padding.bottom`.
+const MAX_PUNTOS = 4, PASO_PUNTO = 6;
+const ALTO_MARCADORES = 6 + (MAX_PUNTOS + 1) * PASO_PUNTO + 4;
+const marcadores = {
+  id: 'marcadores',
+  afterDraw(chart) {
+    const o = (chart.options.plugins || {}).marcadores || {};
+    const pubs = o.pubs || [], tv = o.tv || [];
+    const x = chart.scales.x;
+    if ((!pubs.length && !tv.length) || !x) return;
+    const ctx = chart.ctx, y0 = x.bottom + 6, r = 2.5;
+    const punto = (px, py, color) => { ctx.fillStyle = color; ctx.beginPath(); ctx.arc(px, py, r, 0, 2 * Math.PI); ctx.fill(); };
+    ctx.save();
+    for (let i = 0; i < Math.max(pubs.length, tv.length); i++) {
+      const px = x.getPixelForValue(i), n = pubs[i] || 0;
+      let y = y0;
+      if (n > MAX_PUNTOS) {
+        ctx.fillStyle = o.gris; ctx.font = '600 10px system-ui, sans-serif';
+        ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.fillText(String(n), px, y);
+        y += PASO_PUNTO + 2;
+      } else {
+        for (let k = 0; k < n; k++) { punto(px, y, o.gris); y += PASO_PUNTO; }
+      }
+      if (tv[i]) punto(px, y, o.ambar);
+    }
+    ctx.restore();
+  },
+};
+if (window.Chart) Chart.register(bandasTV, marcasSpot, bigotes, marcadores);
 let _charts = [];
 function destroyCharts() { _charts.forEach(c => c.destroy()); _charts = []; }
 
@@ -467,10 +501,13 @@ function mkMulti(id, labels, datasets, o = {}) {
     options: {
       responsive: true, maintainAspectRatio: false,
       interaction: { mode: 'index', intersect: false },
+      // Con `o.marcadores` se reserva abajo el espacio de los puntos (ver plugin `marcadores`).
+      layout: o.marcadores ? { padding: { bottom: ALTO_MARCADORES } } : {},
       plugins: { legend: { display: false },
         bandasTV: { bandas: o.sinBandas ? [] : (CAMPANAS[PAIS] || []) },
         marcasSpot: o.spots || {},
         bigotes: o.bigotes || {},
+        marcadores: o.marcadores ? { gris: cssv('--text-muted-3'), ambar: C.ambar, ...o.marcadores } : {},
         tooltip: { callbacks: { label: ctx => {
         const y = ctx.parsed.y;
         if (y == null) return `${ctx.dataset.label}: sin dato`;
@@ -978,7 +1015,8 @@ const AYUDA = {
     <p class="ej">Ejemplo, Tuhabi en sep-2026: 9.35 M de vistas → 4,942 visitas al perfil (5.3 por cada
     10 mil vistas) → 287 clics (5.8 de cada 100 visitas).</p>
     <p>Las vistas incluyen la pauta, que llega a mucha gente que no conoce la marca: por eso el primer
-    paso es tan angosto.</p>`],
+    paso es tan angosto.</p>
+    <p>Facebook no tiene clics al sitio ni «perfil → sitio»: la API de páginas no entrega los clics.</p>`],
   ig_perfil_mes: ['Visitas al perfil y clics al sitio', `
     <p><strong>Visitas al perfil</strong>: personas que entraron al perfil de la marca. Es la señal de
     que alguien quiso saber más después de ver algo.</p>
@@ -1017,8 +1055,9 @@ const AYUDA = {
     y la flecha lo compara con los 7 anteriores.</li>
     <li><strong>14 semanas</strong> (de lunes a domingo): el número grande es la última semana cerrada y la
     flecha la compara con el promedio de las 4 anteriores. La semana en curso va translúcida.</li></ul>
-    <p><strong>Punto gris</strong>: ese día (o semana) se publicó algo; el tooltip dice cuántas
-    publicaciones. <strong>Línea ámbar</strong> (solo Tuhabi): hubo spots de TV.</p>
+    <p>Debajo de cada columna, <strong>un punto gris por publicación</strong> de ese día (o semana),
+    apilados: tres puntos son tres publicaciones. Con más de 4 va el número en vez de los puntos. Debajo,
+    un <strong>punto amarillo</strong> (solo Tuhabi) si hubo spots de TV. El tooltip da las cifras exactas.</p>
     <p>Solo entran días cerrados. Instagram corrige sus datos con uno o dos días de atraso: el último día
     puede moverse un poco. En "% de altas por pauta" la flecha va en gris: subir o bajar no es bueno ni
     malo por sí mismo.</p>`],
@@ -1038,7 +1077,8 @@ const AYUDA = {
     <li><strong>Visitas a la página</strong>: veces que alguien abrió la página de la marca.</li>
     <li><strong>Interacciones por mil vistas</strong>: si el contenido engancha o solo se ve.</li></ul>
     <p><strong>Ojo</strong>: casi todo esto lo mueve la pauta. Por ejemplo, el 99.8% de las vistas de video de
-    Tuhabi son pagadas. Hay dato desde ~ago-2024 (alcance desde abr-2025).</p>`],
+    Tuhabi son pagadas. Hay dato desde ~ago-2024 (alcance desde abr-2025).</p>
+    <p>Facebook no tiene clics al sitio como Instagram: la API de páginas no los entrega.</p>`],
   fb_pub: ['Publicaciones por mes', `
     <p>Cuántas publicaciones salieron cada mes en la página, por tipo: <strong>video</strong>,
     <strong>foto</strong> o <strong>texto</strong>. La historia viene completa desde que la página empezó a
@@ -1898,29 +1938,31 @@ function dibujarContenido(serie, L, Lig) {
     { fmt: 'compacto', fmtDerecha: 'compacto', apilado: true, sinBandas: true });
 }
 
-// ── Instagram · alcance e interacción (incluye el camino al sitio) ──────────────
-// Dos líneas de 4 con el mismo eje de meses. Arriba, lo mismo que Facebook: vistas, personas
-// alcanzadas, interacciones e interacciones por mil vistas. Abajo, del contenido al sitio: visitas al
-// perfil, clics al sitio y las dos conversiones entre pasos.
+// ── Instagram · alcance e interacción ───────────────────────────────────────────
+// Misma regla que Facebook: arriba los VALORES del mes en columnas y abajo las CONVERSIONES entre
+// etapas en líneas, con el mismo eje de meses. Instagram tiene además clics al sitio (y su
+// conversión): la API de páginas de Facebook no los entrega.
 const por = (a, b, base) => (a != null && b) ? base * a / b : null;
+const panelGrafica = (id, titulo, cap, help) => `<div class="panel"><h3>${titulo}${ayuda(help)}</h3>
+      <div class="cap">${cap}</div><div class="ch"><canvas id="${id}"></canvas></div></div>`;
 
 function bloqueEmbudo(serie, mesActual) {
   if (!serie.some(r => r.ig_vistas != null || r.ig_perfil != null)) return '';
-  const panel = (id, titulo, cap, help) => `<div class="panel"><h3>${titulo}${ayuda(help)}</h3>
-      <div class="cap">${cap}</div><div class="ch"><canvas id="${id}"></canvas></div></div>`;
+  const g = panelGrafica;
   return `<div class="pulso-bloque">Alcance e interacción</div>
-    <div class="cuatro">
-      ${panel('sg-ig-e-vistas', 'Vistas', 'Veces que se vio el contenido.', 'ig_vistas')}
-      ${panel('sg-ig-e-alc', 'Personas alcanzadas', 'Distintas, en 30 días del mes.', 'ig_alcance')}
-      ${panel('sg-ig-e-inter', 'Interacciones', 'Likes, comentarios, compartidos y guardados.', 'ig_inter')}
-      ${panel('sg-ig-e-tasa', 'Interacciones por mil vistas', 'Si el contenido engancha o solo se ve.', 'ig_inter')}
+    <div class="flabel" style="margin:0 0 6px">Valores del mes</div>
+    <div class="cinco">
+      ${g('sg-ig-e-vistas', 'Vistas', 'Veces que se vio el contenido.', 'ig_vistas')}
+      ${g('sg-ig-e-alc', 'Personas alcanzadas', 'Distintas, en 30 días del mes.', 'ig_alcance')}
+      ${g('sg-ig-e-inter', 'Interacciones', 'Likes, comentarios, compartidos y guardados.', 'ig_inter')}
+      ${g('sg-ig-e-perfil', 'Visitas al perfil', 'Personas que entraron al perfil.', 'ig_perfil_mes')}
+      ${g('sg-ig-e-clics', 'Clics al sitio', 'Clics al link del sitio web.', 'ig_perfil_mes')}
     </div>
-    <div class="flabel" style="margin:12px 0 6px">Del contenido al sitio</div>
-    <div class="cuatro">
-      ${panel('sg-ig-e-perfil', 'Visitas al perfil', 'Personas que entraron al perfil.', 'ig_perfil_mes')}
-      ${panel('sg-ig-e-clics', 'Clics al sitio', 'Clics al link del sitio web.', 'ig_perfil_mes')}
-      ${panel('sg-ig-e-c1', 'Vistas → perfil', 'Visitas al perfil por cada 10 mil vistas.', 'ig_embudo')}
-      ${panel('sg-ig-e-c2', 'Perfil → sitio', 'Clics al sitio por cada 100 visitas al perfil.', 'ig_embudo')}
+    <div class="flabel" style="margin:12px 0 6px">Conversión entre etapas</div>
+    <div class="cinco">
+      ${g('sg-ig-e-tasa', 'Vistas → interacciones', 'Interacciones por cada mil vistas.', 'ig_embudo')}
+      ${g('sg-ig-e-c1', 'Vistas → visitas al perfil', 'Visitas al perfil por cada 10 mil vistas.', 'ig_embudo')}
+      ${g('sg-ig-e-c2', 'Perfil → sitio', 'Clics al sitio por cada 100 visitas al perfil.', 'ig_embudo')}
     </div>`;
 }
 
@@ -1930,21 +1972,21 @@ function dibujarEmbudo(serie, L, mesActual) {
   const Lp = primero ? L.filter(m => m >= primero.month) : [];
   const tenue = (c, m) => m === mesActual ? c + '55' : c;
   const enCurso = k => Lp[k] === mesActual ? ['Mes en curso: todavía no termina'] : [];
-  const col = (id, valor, label, color, fmt) => mkMulti(id, Lp, [
-    { type: 'bar', label, color: Lp.map(m => tenue(color, m)), data: Lp.map(m => valor(fila(m))) },
+  const col = (id, valor, label, fmt) => mkMulti(id, Lp, [
+    { type: 'bar', label, color: Lp.map(m => tenue(C.rosa, m)), data: Lp.map(m => valor(fila(m))) },
   ], { fmt, sinBandas: true, pieTooltip: enCurso });
-  const linea = (id, valor, label, color, fmt) => mkMulti(id, Lp, [
-    { label, color, tension: .2, puntoRadio: 2, data: Lp.map(m => valor(fila(m))) },
-  ], { fmt, sinBandas: true, pieTooltip: enCurso });
+  const linea = (id, valor, label) => mkMulti(id, Lp, [
+    { label, color: C.rosa, tension: .2, puntoRadio: 2, data: Lp.map(m => valor(fila(m))) },
+  ], { fmt: 'num', sinBandas: true, pieTooltip: enCurso });
   const r1 = v => v == null ? null : Math.round(10 * v) / 10;
-  col('sg-ig-e-vistas', r => r.ig_vistas ?? null, 'Vistas', C.rosa, 'compacto');
-  linea('sg-ig-e-alc', r => r.ig_alc_seg != null ? r.ig_alc_seg + r.ig_alc_noseg : null, 'Personas alcanzadas', C.rosa, 'compacto');
-  col('sg-ig-e-inter', r => r.ig_interacciones ?? null, 'Interacciones', C.cian, 'num');
-  linea('sg-ig-e-tasa', r => r1(por(r.ig_interacciones, r.ig_vistas, 1000)), 'Por cada mil vistas', C.cian, 'num');
-  col('sg-ig-e-perfil', r => r.ig_perfil ?? null, 'Visitas al perfil', C.azul, 'num');
-  col('sg-ig-e-clics', r => r.ig_clics ?? null, 'Clics al sitio', C.azul, 'num');
-  linea('sg-ig-e-c1', r => r1(por(r.ig_perfil, r.ig_vistas, 1e4)), 'Por cada 10 mil vistas', C.azul, 'num');
-  linea('sg-ig-e-c2', r => r1(por(r.ig_clics, r.ig_perfil, 100)), 'Por cada 100 visitas', C.azul, 'num');
+  col('sg-ig-e-vistas', r => r.ig_vistas ?? null, 'Vistas', 'compacto');
+  col('sg-ig-e-alc', r => r.ig_alc_seg != null ? r.ig_alc_seg + r.ig_alc_noseg : null, 'Personas alcanzadas', 'compacto');
+  col('sg-ig-e-inter', r => r.ig_interacciones ?? null, 'Interacciones', 'num');
+  col('sg-ig-e-perfil', r => r.ig_perfil ?? null, 'Visitas al perfil', 'num');
+  col('sg-ig-e-clics', r => r.ig_clics ?? null, 'Clics al sitio', 'num');
+  linea('sg-ig-e-tasa', r => r1(por(r.ig_interacciones, r.ig_vistas, 1000)), 'Por cada mil vistas');
+  linea('sg-ig-e-c1', r => r1(por(r.ig_perfil, r.ig_vistas, 1e4)), 'Por cada 10 mil vistas');
+  linea('sg-ig-e-c2', r => r1(por(r.ig_clics, r.ig_perfil, 100)), 'Por cada 100 visitas');
 }
 
 // ── Instagram · audiencia ─────────────────────────────────────────────────────
@@ -2047,6 +2089,8 @@ const IND_TENDENCIA = {
 };
 const lunes = d => { const t = new Date(d + 'T00:00:00Z'); t.setUTCDate(t.getUTCDate() - ((t.getUTCDay() + 6) % 7)); return t.toISOString().slice(0, 10); };
 const masDias = (d, n) => { const t = new Date(d + 'T00:00:00Z'); t.setUTCDate(t.getUTCDate() + n); return t.toISOString().slice(0, 10); };
+// "06 oct": día y mes sin ambigüedad (con "10-06" no se sabe si es 10 de junio o 6 de octubre).
+const diaMes = d => `${d.slice(8, 10)} ${MESES_ES[+d.slice(5, 7) - 1]}`;
 const fmtTend = { num: v => Math.round(v).toLocaleString('es-MX'), compacto: v => fmtMil(v), dec: v => v.toFixed(1),
                   pct: v => (100 * v).toFixed(0) + '%' };
 
@@ -2064,12 +2108,12 @@ function cubetasTendencia(diario, campo) {
   diario.forEach(r => { fila[r.date] = r; });
   if (TENDENCIA === '14 días') {
     const dias = Array.from({ length: 28 }, (_, i) => masDias(fin, i - 27));
-    const c = dias.map(d => ({ etiqueta: d.slice(5), desde: d, hasta: d, rows: fila[d] ? [fila[d]] : [] }));
+    const c = dias.map(d => ({ etiqueta: diaMes(d), desde: d, hasta: d, rows: fila[d] ? [fila[d]] : [] }));
     return { cubetas: c.slice(-14), actual: c.slice(-7), previo: c.slice(-14, -7), fin };
   }
   const ultLunes = lunes(fin), semanaCompleta = masDias(ultLunes, 6) <= fin;
   const semanas = Array.from({ length: 18 }, (_, i) => masDias(ultLunes, 7 * (i - 17)));
-  const c = semanas.map(s => ({ etiqueta: s.slice(5), desde: s, hasta: masDias(s, 6),
+  const c = semanas.map(s => ({ etiqueta: diaMes(s), desde: s, hasta: masDias(s, 6),
     rows: Array.from({ length: 7 }, (_, j) => fila[masDias(s, j)]).filter(Boolean),
     parcial: s === ultLunes && !semanaCompleta }));
   const cerradas = c.filter(x => !x.parcial);
@@ -2097,7 +2141,7 @@ function bloqueTendencia(red) {
       <span style="display:flex;align-items:center">Tendencia${ayuda('tendencia')}</span>${chips('', TENDENCIAS, TENDENCIA, 'tendencia')}</div>
     <div class="cap" style="font-size:12px;margin:-4px 0 8px">Valor ${TENDENCIA === '14 días' ? 'de los últimos 7 días; la flecha compara con los 7 anteriores'
       : 'de la última semana cerrada; la flecha compara con el promedio de las 4 anteriores'}.
-      ${PAIS === 'MX' ? 'Línea ámbar: hubo spots de TV. ' : ''}Punto gris: se publicó algo.</div>
+      Debajo de cada columna: un punto gris por publicación (con más de ${MAX_PUNTOS}, el número)${PAIS === 'MX' ? ' y un punto amarillo si hubo spots de TV' : ''}.</div>
     <div class="seis">${tarjetas}</div>`;
 }
 
@@ -2116,11 +2160,9 @@ function dibujarTendencia(red) {
     const color = ind.bueno === 'neutro' ? C.ambar : red === 'ig' ? C.rosa : C.azul;
     mkMulti(`tend-${red}-${i}`, b.cubetas.map(c => c.etiqueta), [
       { type: 'bar', label: ind.titulo, orden: 1, color: b.cubetas.map(c => c.parcial ? color + '55' : color), data: vals },
-      // Publicaciones: un punto sobre el eje en las cubetas con algo publicado.
-      { type: 'line', label: 'Publicaciones', color: C.gris, grosor: 0, data: pubs.map(n => n ? 0 : null),
-        puntoRadio: pubs.map(n => n ? 3 : 0) },
     ], { fmt: ind.fmt === 'pct' ? 'pct' : ind.fmt === 'compacto' ? 'compacto' : 'num', sinBandas: true,
-         spots: { indices: tv.map((n, k) => n ? k : -1).filter(k => k >= 0), color: C.ambar },
+         // Debajo del eje: un punto gris por publicación y uno ámbar si hubo spots de TV.
+         marcadores: { pubs, tv },
          pieTooltip: k => [pubs[k] ? `Publicaciones: ${pubs[k]}` : '', tv[k] ? `Spots de TV: ${tv[k]}` : '',
                            b.cubetas[k].parcial ? 'Semana en curso' : ''].filter(Boolean) });
   });
@@ -2137,15 +2179,19 @@ const desdeMes = (serie, L, cond) => { const r = serie.find(cond); return r ? L.
 
 function bloqueFbAlcance(serie) {
   if (!serie.some(r => r.fb_vistas != null)) return '';
-  const panel = (id, titulo, cap, help) => `<div class="panel"><h3>${titulo}${ayuda(help)}</h3>
-      <div class="cap">${cap}</div><div class="ch"><canvas id="${id}"></canvas></div></div>`;
+  const g = panelGrafica;
   return `<div class="pulso-bloque">Alcance e interacción</div>
+    <div class="flabel" style="margin:0 0 6px">Valores del mes</div>
     <div class="cinco">
-      ${panel('sg-fb-vistas', 'Vistas', 'Veces que se vio el contenido.', 'fb_alcance')}
-      ${panel('sg-fb-alc', 'Personas alcanzadas', 'Distintas, en los 28 días al cierre del mes.', 'fb_alcance')}
-      ${panel('sg-fb-inter', 'Interacciones', 'Reacciones, comentarios, compartidos y clics.', 'fb_alcance')}
-      ${panel('sg-fb-visitas', 'Visitas a la página', 'Veces que se abrió la página.', 'fb_alcance')}
-      ${panel('sg-fb-tasa', 'Interacciones por mil vistas', 'Si el contenido engancha o solo se ve.', 'fb_alcance')}
+      ${g('sg-fb-vistas', 'Vistas', 'Veces que se vio el contenido.', 'fb_alcance')}
+      ${g('sg-fb-alc', 'Personas alcanzadas', 'Distintas, en los 28 días al cierre del mes.', 'fb_alcance')}
+      ${g('sg-fb-inter', 'Interacciones', 'Reacciones, comentarios, compartidos y clics.', 'fb_alcance')}
+      ${g('sg-fb-visitas', 'Visitas a la página', 'Veces que se abrió la página.', 'fb_alcance')}
+    </div>
+    <div class="flabel" style="margin:12px 0 6px">Conversión entre etapas</div>
+    <div class="cinco">
+      ${g('sg-fb-tasa', 'Vistas → interacciones', 'Interacciones por cada mil vistas.', 'fb_alcance')}
+      ${g('sg-fb-c1', 'Vistas → visitas a la página', 'Visitas a la página por cada 10 mil vistas.', 'fb_alcance')}
     </div>`;
 }
 
@@ -2192,7 +2238,24 @@ function bloqueFbAudiencia(serie, mesActual) {
   const totReac = reac.reduce((a, x) => a + x[2], 0);
   if (!ciudades.length && !totReac) return '';
   const corto = c => c.split(',')[0].replace('Mexico City', 'Ciudad de México');
+  // Cuatro datos arriba, como en Instagram. Facebook no tiene edad ni género (Meta los retiró) ni
+  // separa el alcance por seguidores: los cuatro salen de ciudades y reacciones.
+  const pctSeg = n => total ? 100 * n / total : null;
+  const top3 = ciudades.slice(0, 3).reduce((a, [, n]) => a + n, 0);
+  const v = k => (reac.find(x => x[0] === (REACCIONES.find(r => r[0] === k) || [])[1]) || [])[2] || 0;
+  const neg = v('anger') + v('sorry'), afecto = v('love') + v('haha') + v('wow');
+  const pctR = n => totReac ? (100 * n / totReac).toFixed(1) + '%' : '—';
   return `<div class="pulso-bloque">Audiencia</div>
+    <div class="ficha">
+      <div><div class="k">Ciudad principal</div><div class="v" style="font-size:16px">${ciudades.length ? corto(ciudades[0][0]) : '—'}</div>
+        <div class="d">${ciudades.length && total ? `${pctSeg(ciudades[0][1]).toFixed(0)}% de los seguidores` : ''}</div></div>
+      <div><div class="k">En las 3 primeras ciudades</div><div class="v">${ciudades.length && total ? pctSeg(top3).toFixed(0) + '%' : '—'}</div>
+        <div class="d">${ciudades.slice(0, 3).map(([c]) => corto(c)).join(' · ')}</div></div>
+      <div><div class="k">Reacciones negativas</div><div class="v">${pctR(neg)}</div>
+        <div class="d">"Me enoja" + "Me entristece", 12 meses</div></div>
+      <div><div class="k">Reacciones de afecto</div><div class="v">${pctR(afecto)}</div>
+        <div class="d">"Me encanta", "Me divierte" y "Me asombra", 12 meses</div></div>
+    </div>
     <div class="charts-grid">
       <div class="panel"><h3>Top 10 ciudades de los seguidores${ayuda('fb_ciudades')}</h3>
         <div class="cap">% del total de seguidores de la página, hoy.</div>
@@ -2222,21 +2285,21 @@ function dibujarFacebook(serie, L, mesActual) {
       data: Lpag.map(m => { const r = fila(m), t = (r.fb_altas_pag || 0) + (r.fb_altas_org || 0); return t ? r.fb_altas_pag / t : null; }) },
   ], { fmt: 'num', fmtDerecha: 'pct', apilado: true, sinBandas: true, pieTooltip: enCursoEn(Lpag) });
 
-  // Alcance e interacción: 5 gráficas con el mismo eje de meses.
+  // Alcance e interacción: valores en columnas y conversiones en líneas (igual que Instagram).
   const Lv = desdeMes(serie, L, r => r.fb_vistas != null);
-  const col = (id, campo, label, color, fmt) => mkMulti(id, Lv, [
-    { type: 'bar', label, color: Lv.map(m => tenue(color, m)), data: Lv.map(m => fila(m)[campo] ?? null) },
-  ], { fmt, sinBandas: true, pieTooltip: enCursoEn(Lv) });
-  col('sg-fb-vistas', 'fb_vistas', 'Vistas', C.azul, 'compacto');
-  col('sg-fb-inter', 'fb_inter', 'Interacciones', C.cian, 'compacto');
-  col('sg-fb-visitas', 'fb_visitas', 'Visitas a la página', C.verde, 'compacto');
-  mkMulti('sg-fb-alc', Lv, [
-    { label: 'Personas alcanzadas', color: C.azul, tension: .2, puntoRadio: 2, data: Lv.map(m => fila(m).fb_alcance28 ?? null) },
+  const col = (id, valor, label) => mkMulti(id, Lv, [
+    { type: 'bar', label, color: Lv.map(m => tenue(C.azul, m)), data: Lv.map(m => valor(fila(m))) },
   ], { fmt: 'compacto', sinBandas: true, pieTooltip: enCursoEn(Lv) });
-  mkMulti('sg-fb-tasa', Lv, [
-    { label: 'Por cada mil vistas', color: C.cian, tension: .2, puntoRadio: 2,
-      data: Lv.map(m => fila(m).fb_vistas ? Math.round(10000 * fila(m).fb_inter / fila(m).fb_vistas) / 10 : null) },
+  const linea = (id, valor, label) => mkMulti(id, Lv, [
+    { label, color: C.azul, tension: .2, puntoRadio: 2, data: Lv.map(m => valor(fila(m))) },
   ], { fmt: 'num', sinBandas: true, pieTooltip: enCursoEn(Lv) });
+  const r1 = v => v == null ? null : Math.round(10 * v) / 10;
+  col('sg-fb-vistas', r => r.fb_vistas ?? null, 'Vistas');
+  col('sg-fb-alc', r => r.fb_alcance28 ?? null, 'Personas alcanzadas');
+  col('sg-fb-inter', r => r.fb_inter ?? null, 'Interacciones');
+  col('sg-fb-visitas', r => r.fb_visitas ?? null, 'Visitas a la página');
+  linea('sg-fb-tasa', r => r1(por(r.fb_inter, r.fb_vistas, 1000)), 'Por cada mil vistas');
+  linea('sg-fb-c1', r => r1(por(r.fb_visitas, r.fb_vistas, 1e4)), 'Por cada 10 mil vistas');
 
   // Contenido.
   const Lpub = desdeMes(serie, L, r => fbPubs(r) > 0);
