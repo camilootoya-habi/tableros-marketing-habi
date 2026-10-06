@@ -416,10 +416,12 @@ def mensual(filas, ig_mes=None):
             m["ig_nuevos"] += r["ig_nuevos"]
             m["dias_ig"] += 1
     meses = [out[k] for k in sorted(out)]
-    ult = next((i for i in range(len(meses) - 1, -1, -1) if meses[i].get("ig_total") is not None), None)
-    if ult is not None:
-        cierre = meses[ult]["ig_total"]
-        for i in range(ult, 0, -1):
+    # Desde el PRIMER mes medido hacia atrás: los meses con foto diaria real (desde oct-2026) nunca
+    # se reconstruyen, y el punteado queda solo para lo anterior.
+    primero = next((i for i, r in enumerate(meses) if r.get("ig_total") is not None), None)
+    if primero is not None:
+        cierre = meses[primero]["ig_total"]
+        for i in range(primero, 0, -1):
             r = meses[i]
             if r.get("ig_altas") is None:
                 break   # sin altas y bajas ese mes no se puede seguir hacia atrás

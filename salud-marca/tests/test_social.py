@@ -122,6 +122,15 @@ def test_mensual_reconstruye_el_total_de_instagram_hacia_atras():
     assert "ig_total_est" not in m["2026-10"]
 
 
+def test_mensual_no_reconstruye_meses_que_ya_tienen_total_medido():
+    filas = [{"date": "2026-10-31", "ig_total": 1000}, {"date": "2026-11-30", "ig_total": 1100}]
+    ig_mes = {"2026-09": {"ig_altas": 10, "ig_bajas": 0}, "2026-10": {"ig_altas": 30, "ig_bajas": 5},
+              "2026-11": {"ig_altas": 120, "ig_bajas": 20}}
+    m = {r["month"]: r for r in S.mensual(filas, ig_mes)}
+    assert "ig_total_est" not in m["2026-10"] and "ig_total_est" not in m["2026-11"]
+    assert m["2026-09"]["ig_total_est"] == 975, "parte del primer mes medido (oct), no del último"
+
+
 def _fetch_ok(hoy):
     return True, {c: {"2026-10-04": {"fb_total": 100, "ig_total": 50}} for c in S.MARCAS}, {}
 

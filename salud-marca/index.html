@@ -896,15 +896,19 @@ const AYUDA = {
     <li><strong>Imagen</strong>: una sola foto.</li></ul>
     <p>No incluye historias: Meta solo deja leerlas las 24 horas que duran. La historia viene completa
     desde que la cuenta empezó a publicar.</p>`],
-  ig_li: ['Likes + comentarios por publicación', `
-    <p>Promedio de likes y comentarios por publicación, por formato. Es la <strong>única métrica que
-    existe para toda la historia</strong>: guardados, compartidos y vistas solo llegan desde ago-2025.</p>
-    <p>Sirve para comparar formatos entre sí y ver si el contenido engancha más o menos que antes. Un mes
-    con pocas publicaciones se mueve mucho: léelo en tendencia.</p>
+  ig_li: ['Likes + comentarios por mes', `
+    <p><strong>Barras</strong>: likes y comentarios que juntaron las publicaciones de cada mes, apilados por
+    formato. Dicen cuánto aportó cada formato.</p>
+    <p><strong>Línea</strong>: el promedio por publicación. Dice si cada post engancha más o menos que antes:
+    un mes puede tener barras altas solo porque se publicó más.</p>
+    <p>Es la <strong>única métrica que existe para toda la historia</strong>: guardados, compartidos y vistas
+    solo llegan desde ago-2025. Un mes con pocas publicaciones se mueve mucho: léelo en tendencia.</p>
     <p><strong>Ojo</strong>: si un post se promocionó, sus likes incluyen los de la pauta.</p>`],
-  ig_vpp: ['Vistas por publicación', `
-    <p>Promedio de vistas de cada publicación según su formato, para lo publicado desde ago-2025 (antes
-    Meta no da vistas por publicación).</p>
+  ig_vpp: ['Vistas de las publicaciones por mes', `
+    <p><strong>Barras</strong>: vistas de las publicaciones de cada mes, apiladas por formato.
+    <strong>Línea</strong>: el promedio de vistas por publicación.</p>
+    <p>Solo para lo publicado desde ago-2025: antes Meta no da vistas por publicación. Son las vistas
+    que acumuló cada post, contadas en el mes en que se publicó.</p>
     <p>Incluye las vistas pagadas de los posts promocionados, así que un formato puede verse más visto
     solo porque se pautó más.</p>`],
   ig_top: ['Las publicaciones que más engancharon', `
@@ -1490,8 +1494,8 @@ function drawSeguidores(host, serie, que) {
     </div>
     <div class="charts-grid">
       <div class="panel"><h3>Seguidores totales${ayuda('ig_total')}</h3>
-        <div class="cap">Punteado: reconstruido con altas y bajas. Punto: el total de hoy.</div>
-        <div class="ch alto"><canvas id="sg-ig-total"></canvas></div>${legend([[C.rosa, 'Total de hoy'], [C.rosa + '88', 'Reconstruido']])}</div>
+        <div class="cap">Sólido: medido (se guarda a diario desde oct-2026). Punteado: reconstruido hacia atrás.</div>
+        <div class="ch alto"><canvas id="sg-ig-total"></canvas></div>${legend([[C.rosa, 'Medido'], [C.rosa + '88', 'Reconstruido']])}</div>
       <div class="panel"><h3>Altas y bajas por mes${ayuda('ig_mov')}</h3>
         <div class="cap">Quién empezó y quién dejó de seguir. La línea es el neto.</div>
         <div class="ch alto"><canvas id="sg-ig-mov"></canvas></div>${legend([[C.verde, 'Altas'], [C.rojo, 'Bajas'], [C.rosa, 'Neto']])}</div>
@@ -1527,10 +1531,13 @@ function drawSeguidores(host, serie, que) {
   const ig = (m, k) => (fila(m) || {})[k] ?? null;
   const tenue = (color, m) => m === mesActual ? color + '55' : color;
   const enCurso = k => Lig[k] === mesActual ? ['Mes en curso: todavía no termina'] : [];
+  // Punteado: meses ANTERIORES a la primera foto real (llega hasta ella para que las líneas se
+  // toquen). Sólido: el cierre medido de cada mes, que se guarda a diario desde el 5-oct-2026.
+  const primerMedido = Lig.find(m => ig(m, 'ig_total') != null);
   mkMulti('sg-ig-total', Lig, [
     { label: 'Reconstruido', color: C.rosa + '88', dash: [5, 4], puntoRadio: 0, tension: .2,
-      data: Lig.map(m => ig(m, 'ig_total_est') ?? ig(m, 'ig_total')) },
-    { label: 'Total de hoy', color: C.rosa, puntoRadio: 5, data: Lig.map(m => ig(m, 'ig_total')) },
+      data: Lig.map(m => ig(m, 'ig_total_est') ?? (m === primerMedido ? ig(m, 'ig_total') : null)) },
+    { label: 'Medido', color: C.rosa, puntoRadio: 4, tension: .2, data: Lig.map(m => ig(m, 'ig_total')) },
   ], { fmt: 'num', desdeCero: false, sinBandas: true });
   mkMulti('sg-ig-mov', Lig, [
     { type: 'bar', label: 'Altas', orden: 1, color: Lig.map(m => tenue(C.verde, m)), data: Lig.map(m => ig(m, 'ig_altas')) },
@@ -1621,12 +1628,12 @@ function bloqueContenido(serie, L, mesActual) {
       <div class="panel"><h3>Publicaciones por mes${ayuda('ig_pub')}</h3>
         <div class="cap">Cuántas salieron cada mes, por formato.</div>
         <div class="ch alto"><canvas id="sg-ig-pub"></canvas></div>${legend(FORMATOS.map(([, n, c]) => [c, n]))}</div>
-      <div class="panel"><h3>Likes + comentarios por publicación${ayuda('ig_li')}</h3>
-        <div class="cap">Promedio de cada formato. Es la métrica que existe para toda la historia.</div>
-        <div class="ch alto"><canvas id="sg-ig-li"></canvas></div>${legend(FORMATOS.map(([, n, c]) => [c, n]))}</div>
-      <div class="panel"><h3>Vistas por publicación${ayuda('ig_vpp')}</h3>
-        <div class="cap">Promedio de cada formato, desde ago-2025.</div>
-        <div class="ch alto"><canvas id="sg-ig-vpp"></canvas></div>${legend(FORMATOS.map(([, n, c]) => [c, n]))}</div>
+      <div class="panel"><h3>Likes + comentarios por mes${ayuda('ig_li')}</h3>
+        <div class="cap">Barras: total del mes por formato. Línea: promedio por publicación (eje derecho).</div>
+        <div class="ch alto"><canvas id="sg-ig-li"></canvas></div>${legend(FORMATOS.map(([, n, c]) => [c, n]).concat([[C.azul, 'Por publicación']]))}</div>
+      <div class="panel"><h3>Vistas de las publicaciones por mes${ayuda('ig_vpp')}</h3>
+        <div class="cap">Barras: vistas del mes por formato. Línea: promedio por publicación (eje derecho). Desde ago-2025.</div>
+        <div class="ch alto"><canvas id="sg-ig-vpp"></canvas></div>${legend(FORMATOS.map(([, n, c]) => [c, n]).concat([[C.azul, 'Por publicación']]))}</div>
     </div>
     <div class="flabel" style="display:flex;align-items:center;margin-top:16px">Las que más engancharon${ayuda('ig_top')}</div>
     ${topHtml || '<div class="cap">Sin publicaciones recientes.</div>'}`;
@@ -1639,14 +1646,19 @@ function dibujarContenido(serie, L, Lig) {
   mkMulti('sg-ig-pub', Lpub, FORMATOS.map(([f, n, c]) => (
     { type: 'bar', label: n, color: c, data: Lpub.map(m => fila(m)[`pub_${f}`] || 0) })),
     { fmt: 'num', apilado: true, sinBandas: true });
+  // Apiladas van los TOTALES del mes por formato (suman algo con sentido); el promedio por
+  // publicación va como línea aparte. Apilar promedios daría una altura que no significa nada.
+  const prom = (m, num, den) => { const n = sumaF([fila(m)], den); return n ? sumaF([fila(m)], num) / n : null; };
   mkMulti('sg-ig-li', Lpub, FORMATOS.map(([f, n, c]) => (
-    { label: n, color: c, puntoRadio: 1.5, tension: .25,
-      data: Lpub.map(m => fila(m)[`pub_${f}`] ? fila(m)[`li_${f}`] / fila(m)[`pub_${f}`] : null) })),
-    { fmt: 'num', sinBandas: true });
+    { type: 'bar', label: n, color: c, data: Lpub.map(m => fila(m)[`li_${f}`] || 0) })).concat([
+    { type: 'line', label: 'Por publicación', eje: 'y1', color: C.azul, puntoRadio: 1.5, tension: .25,
+      data: Lpub.map(m => prom(m, 'li', 'pub')) }]),
+    { fmt: 'num', fmtDerecha: 'num', apilado: true, sinBandas: true });
   mkMulti('sg-ig-vpp', Lig, FORMATOS.map(([f, n, c]) => (
-    { label: n, color: c, puntoRadio: 2, tension: .2,
-      data: Lig.map(m => fila(m)[`nv_${f}`] ? fila(m)[`vistas_${f}`] / fila(m)[`nv_${f}`] : null) })),
-    { fmt: 'compacto', sinBandas: true });
+    { type: 'bar', label: n, color: c, data: Lig.map(m => fila(m)[`vistas_${f}`] || 0) })).concat([
+    { type: 'line', label: 'Por publicación', eje: 'y1', color: C.azul, puntoRadio: 2, tension: .2,
+      data: Lig.map(m => prom(m, 'vistas', 'nv')) }]),
+    { fmt: 'compacto', fmtDerecha: 'compacto', apilado: true, sinBandas: true });
 }
 
 // ── Instagram · embudo: del contenido al sitio ────────────────────────────────
