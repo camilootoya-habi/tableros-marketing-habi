@@ -7,12 +7,19 @@ name: Actualizar Salud de marca (diario)
 # El panel de TV (metrics.tv) NO lo toca: lo escribe tv-diario.yml, y build.py lo conserva al
 # reescribir el archivo (build.conservar_ajenos).
 #
-# 7:41 CDMX: las métricas son mensuales, así que la hora no es crítica; minuto no redondo porque
-# GitHub descarta más los cron del minuto 0. Si un día GitHub lo salta, lo recupera el siguiente.
+# 7:41 CDMX, con respaldo a las 13:41: minuto no redondo porque GitHub descarta más los cron del
+# minuto 0, y aun así el 7-oct se saltó el de la mañana. Con la fila de tendencia diaria ya no
+# alcanza con "lo recupera el siguiente día". Correr dos veces no gasta cuota de más: Brand Lift
+# llama a Meta una sola vez por día (build._refresco_reciente).
+#
+# ⚠ Este es el ÚNICO workflow que debe correr build.py: tiene los tokens de Meta. El cron del hub
+# (update-data.yml, run_queries.py) lo corría también, sin tokens, y dejaba Brand Lift y seguidores
+# en "stale"; por eso meta.json declara "skip_hub_cron": true (7-oct-2026).
 
 on:
   schedule:
     - cron: '41 13 * * *'   # 07:41 CDMX
+    - cron: '41 19 * * *'   # 13:41 CDMX (respaldo)
   workflow_dispatch:
 
 # Mismo grupo que tv-diario.yml a propósito: los dos escriben salud-marca/data.json (una sola

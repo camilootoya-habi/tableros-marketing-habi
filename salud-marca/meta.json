@@ -4,5 +4,6 @@
   "country": "MX & CO",
   "section": "dashboard",
   "order": 20,
-  "maximum_bytes_billed": 20000000000
+  "maximum_bytes_billed": 20000000000,
+  "skip_hub_cron": true
 }
