@@ -1,0 +1,696 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🌹</text></svg>">
+<title>La Rosa de Guadalupe — Tuhabi</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<style>
+  /* Mismo sistema visual que salud-marca: tokens, header fijo, ayuda con "?" y tarjetas. */
+  :root {
+    --bg: #0f172a; --card: #1e293b; --card-hover: #263348;
+    --border: #334155; --border-strong: #4b5563; --row-border: #283548;
+    --text: #e2e8f0; --text-title: #f8fafc;
+    --text-muted: #cbd5e1; --text-muted-2: #94a3b8; --text-muted-3: #64748b;
+    --accent: #e11d48; --accent-on: #ffffff;
+    --warn-bg: #78350f; --warn-fg: #fde68a;
+  }
+  body.light {
+    --bg: #f5f7fa; --card: #ffffff; --card-hover: #f1f5f9;
+    --border: #e2e8f0; --border-strong: #cbd5e1; --row-border: #f1f5f9;
+    --text: #334155; --text-title: #0f172a;
+    --text-muted: #475569; --text-muted-2: #64748b; --text-muted-3: #94a3b8;
+    --accent: #be123c; --accent-on: #ffffff;
+    --warn-bg: #fef3c7; --warn-fg: #92400e;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { max-width: 100%; }
+  body { font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; background: var(--bg); color: var(--text); padding: 24px; transition: background .2s, color .2s; }
+  @media (max-width: 640px) { body { padding: 16px; } .tabs { margin: -16px -16px 18px !important; padding: 10px 16px !important; } }
+
+  .back-link { display: inline-flex; align-items: center; gap: 6px; padding: 0 12px; height: 37px; background: var(--card); border: 1px solid var(--border); border-radius: 6px; color: var(--text-muted-2); text-decoration: none; font-size: 13px; }
+  .back-link:hover { color: var(--accent); border-color: var(--accent); }
+  .tabs { position: sticky; top: 0; z-index: 30; display: flex; gap: 10px; align-items: center; flex-wrap: wrap; row-gap: 8px;
+    background: var(--bg); border-bottom: 1px solid var(--border); padding: 12px 24px; margin: -24px -24px 20px; }
+  .tabnav { flex: 1; display: flex; justify-content: center; gap: 7px; flex-wrap: wrap; }
+  .tab { cursor: pointer; border: 1px solid var(--border); background: var(--card); color: var(--text-muted); height: 37px;
+    border-radius: 9px; padding: 0 15px; font: inherit; font-size: 13.5px; font-weight: 600; white-space: nowrap; }
+  .tab:hover { color: var(--text); border-color: var(--border-strong); }
+  .tab.active { background: var(--accent); color: var(--accent-on); border-color: var(--accent); }
+  .theme-btn { background: var(--card); border: 1px solid var(--border); color: var(--text-muted-2); border-radius: 6px; height: 37px; padding: 0 12px; font-size: 14px; cursor: pointer; }
+  .filters { flex-basis: 100%; display: flex; justify-content: center; gap: 8px; align-items: center; flex-wrap: wrap; }
+  .filters:empty { display: none; }
+  .flabel { font-size: 10.5px; text-transform: uppercase; letter-spacing: .6px; color: var(--text-muted-3); font-weight: 700; }
+  .chip { background: var(--card); border: 1px solid var(--border); color: var(--text-muted-2); border-radius: 999px; padding: 3px 11px; font-size: 12px; cursor: pointer; font: inherit; font-size: 12px; }
+  .chip:hover { border-color: var(--accent); color: var(--text); }
+  .chip.on { background: var(--accent); border-color: var(--accent); color: var(--accent-on); font-weight: 600; }
+  .chip.off { opacity: .38; cursor: not-allowed; }
+  .chip small { opacity: .75; font-size: 10.5px; }
+
+  .header h1 { font-size: 22px; font-weight: 600; color: var(--text-title); }
+  .header h1 span { color: var(--accent); }
+  .sub { color: var(--text-muted-2); font-size: 13px; line-height: 1.6; max-width: 860px; margin: 6px 0 18px; }
+  .cobertura { font-size: 11.5px; color: var(--text-muted-3); }
+
+  .help-btn { display: inline-flex; align-items: center; justify-content: center; width: 16px; height: 16px; border-radius: 50%; background: var(--border); color: var(--text-muted-2); border: none; font-size: 11px; font-weight: 700; cursor: pointer; margin-left: 5px; vertical-align: middle; padding: 0; flex: none; }
+  .help-btn:hover { background: var(--accent); color: var(--accent-on); }
+  .help-dialog { background: var(--card); color: var(--text); border: 1px solid var(--border); border-radius: 10px; padding: 22px 26px; max-width: 560px; width: calc(100% - 32px); margin: auto; font-family: inherit; }
+  .help-dialog::backdrop { background: rgba(2, 6, 23, .55); }
+  .help-dialog h3 { color: var(--text-title); font-size: 16px; margin-bottom: 12px; }
+  .help-dialog p, .help-dialog li { font-size: 13px; line-height: 1.6; color: var(--text-muted); margin-bottom: 9px; }
+  .help-dialog ul { padding-left: 18px; }
+  .help-dialog .close-btn { margin-top: 8px; background: var(--border); color: var(--text); border: none; padding: 7px 18px; border-radius: 6px; cursor: pointer; font-size: 13px; }
+
+  .section { margin-bottom: 28px; }
+  .section > h2 { font-size: 15px; color: var(--text-title); font-weight: 700; margin-bottom: 4px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .section > p.hint { font-size: 12.5px; color: var(--text-muted-3); margin-bottom: 12px; line-height: 1.55; max-width: 820px; }
+  .badge { font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; padding: 3px 8px; border-radius: 5px; background: var(--warn-bg); color: var(--warn-fg); }
+  .aviso { background: var(--warn-bg); color: var(--warn-fg); border-radius: 8px; padding: 9px 13px; font-size: 12.5px; margin-bottom: 14px; line-height: 1.5; }
+
+  .ficha { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin: 0 0 16px; }
+  .ficha > div { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 11px 13px; min-width: 0; }
+  .ficha .k { font-size: 10.5px; text-transform: uppercase; letter-spacing: .5px; color: var(--text-muted-3); font-weight: 700; display: flex; align-items: center; }
+  .ficha .v { font-size: 19px; font-weight: 700; color: var(--text-title); margin-top: 3px; font-variant-numeric: tabular-nums; }
+  .ficha .d { font-size: 11px; color: var(--text-muted-3); margin-top: 2px; line-height: 1.4; }
+
+  .grid2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+  .cinco { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 10px; }
+  .cuatro { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
+  .grid2 > *, .cinco > *, .cuatro > * { min-width: 0; }
+  .cinco + .cuatro, .cinco + .cinco, .cuatro + .cuatro { margin-top: 10px; }
+  @media (max-width: 1300px) { .cinco { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+  @media (max-width: 1100px) { .cuatro { grid-template-columns: repeat(2, minmax(0, 1fr)); } .grid2 { grid-template-columns: 1fr; } }
+  @media (max-width: 700px) { .cinco, .cuatro { grid-template-columns: 1fr; } }
+  .panel { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 14px 15px 12px; display: flex; flex-direction: column; min-width: 0; }
+  .panel h3 { font-size: 12.5px; color: var(--text-title); font-weight: 700; margin-bottom: 2px; display: flex; align-items: center; }
+  .panel .cap { font-size: 11px; color: var(--text-muted-3); margin-bottom: 8px; }
+  .panel.mini { padding: 10px 11px 9px; }
+  .panel.mini h3 { font-size: 11.5px; }
+  .ch { position: relative; height: 220px; }
+  .ch.chico { height: 140px; }
+  .legend { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 8px; }
+  .legend span { font-size: 11px; color: var(--text-muted-2); display: inline-flex; align-items: center; gap: 5px; }
+  .legend i { width: 10px; height: 10px; border-radius: 2px; display: inline-block; }
+  .tot { font-size: 18px; font-weight: 700; color: var(--text-title); font-variant-numeric: tabular-nums; margin: 1px 0 5px; }
+
+  .delta { font-size: 11.5px; font-weight: 700; border-radius: 4px; padding: 1px 6px; white-space: nowrap; }
+  .delta.sube { color: #059669; background: rgba(52, 211, 153, .15); }
+  .delta.baja { color: #dc2626; background: rgba(248, 113, 113, .15); }
+  .delta.neutro { color: var(--text-muted-2); background: var(--row-border); }
+
+  table.t { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+  .t-wrap { overflow-x: auto; background: var(--card); border: 1px solid var(--border); border-radius: 10px; }
+  table.t th, table.t td { padding: 8px 10px; border-bottom: 1px solid var(--row-border); text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  table.t th { font-size: 11px; font-weight: 700; color: var(--text-muted-3); vertical-align: bottom; background: var(--card); }
+  table.t th:first-child, table.t td:first-child { text-align: left; }
+  table.t td { color: var(--text-muted); }
+  table.t td b { color: var(--text-title); }
+  table.t tr:last-child td { border-bottom: none; }
+  .pz { display: flex; align-items: center; gap: 9px; }
+  .pz img, .pz .sin { width: 38px; height: 38px; border-radius: 6px; object-fit: cover; background: var(--row-border); flex: none; }
+  .pz small { display: block; color: var(--text-muted-3); font-size: 10.5px; }
+  .barra-pl { display: inline-block; width: 70px; height: 7px; border-radius: 99px; background: #1877f2; overflow: hidden; vertical-align: middle; }
+  .barra-pl i { display: block; height: 100%; background: #e1306c; }
+
+  .comp { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 12px; }
+  .comp .panel h3 { margin-bottom: 4px; }
+  .comp table { width: 100%; border-collapse: collapse; font-size: 12.5px; margin-top: 6px; }
+  .comp td, .comp th { padding: 6px 4px; border-bottom: 1px solid var(--row-border); text-align: right; font-variant-numeric: tabular-nums; }
+  .comp th { font-size: 10.5px; color: var(--text-muted-3); font-weight: 700; }
+  .comp td:first-child, .comp th:first-child { text-align: left; color: var(--text-muted); }
+  .comp tr:last-child td { border-bottom: none; }
+
+  .posts { display: grid; grid-template-columns: repeat(auto-fill, minmax(175px, 1fr)); gap: 12px; }
+  .post { background: var(--card); border: 1px solid var(--border); border-radius: 10px; overflow: hidden; display: flex; flex-direction: column; min-width: 0; color: inherit; text-decoration: none; }
+  .post:hover { border-color: var(--accent); }
+  .post .img { aspect-ratio: 1; background: var(--row-border) center / cover no-repeat; position: relative; }
+  .post .red { position: absolute; top: 7px; left: 7px; color: #fff; font-size: 10.5px; font-weight: 700; border-radius: 5px; padding: 2px 7px; }
+  .post .red.ig { background: #e1306c; } .post .red.fb { background: #1877f2; }
+  .post .curso { position: absolute; bottom: 7px; left: 7px; background: rgba(0, 0, 0, .65); color: #fff; font-size: 10.5px; border-radius: 5px; padding: 2px 7px; }
+  .post .info { padding: 8px 10px 10px; font-size: 11.5px; color: var(--text-muted-2); line-height: 1.5; }
+  .post .info b { color: var(--text-title); font-size: 13px; }
+  .post .txt { color: var(--text-muted-3); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; margin-top: 3px; }
+
+  .empty-metric { background: var(--card); border: 1px dashed var(--border-strong); border-radius: 10px; padding: 24px; text-align: center; font-size: 12.5px; color: var(--text-muted-3); line-height: 1.6; }
+</style>
+<script>
+  function toggleTheme() {
+    const isLight = document.body.classList.toggle('light');
+    try { localStorage.setItem('tablero-theme', isLight ? 'light' : 'dark'); } catch (e) {}
+    document.getElementById('themeToggle').textContent = isLight ? '☀️' : '🌙';
+    if (window.rerender) window.rerender();
+  }
+</script>
+</head>
+<body>
+<nav class="tabs">
+  <a href="../" class="back-link">← Volver al hub</a>
+  <div class="tabnav" id="hojas"></div>
+  <button class="theme-btn" id="themeToggle" onclick="toggleTheme()" aria-label="Cambiar tema">☀️</button>
+  <div class="filters" id="filtros"></div>
+</nav>
+
+<div class="header">
+  <h1>🌹 La Rosa de Guadalupe — <span>Tuhabi México</span></h1>
+  <span id="cobertura" class="cobertura"></span>
+</div>
+<p class="sub">Lo que movió la acción con <strong>La Rosa de Guadalupe</strong>: las publicaciones orgánicas
+en Instagram y Facebook, los anuncios <code>Rosa_*</code> separados por el objetivo de su campaña, y cómo
+se compara todo contra lo normal de la cuenta.</p>
+
+<dialog id="ayuda" class="help-dialog"><div id="ayudaCuerpo"></div>
+  <button type="button" class="close-btn" onclick="this.closest('dialog').close()">Cerrar</button></dialog>
+
+<div id="app"><div class="empty-metric">Cargando…</div></div>
+
+<script>
+// Modo claro por defecto, como el resto del hub; oscuro solo si alguien lo eligió.
+let _tema = null;
+try { _tema = localStorage.getItem('tablero-theme'); } catch (e) {}
+if (_tema !== 'dark') document.body.classList.add('light');
+else document.getElementById('themeToggle').textContent = '🌙';
+
+const cssv = n => getComputedStyle(document.body).getPropertyValue(n).trim();
+const C = { rosa: '#e11d48', rosaClaro: '#fb7185', azul: '#6366f1', verde: '#10b981', ambar: '#f59e0b',
+            gris: '#94a3b8', fb: '#1877f2', ig: '#e1306c', cian: '#06b6d4' };
+const COLOR_OBJ = { alcance: C.azul, leads: C.rosa, interaccion: C.verde, trafico: C.cian, otro: C.gris };
+const NOMBRE_OBJ = { alcance: 'Alcance', leads: 'Leads', interaccion: 'Interacción', trafico: 'Tráfico', otro: 'Otro' };
+const ORDEN_OBJ = ['alcance', 'leads', 'interaccion'];
+
+// ── Formatos ──────────────────────────────────────────────────────────────────
+const n0 = v => v == null || !isFinite(v) ? '—' : Math.round(v).toLocaleString('es-MX');
+const fmtMil = v => v == null || !isFinite(v) ? '—' : Math.abs(v) >= 1e6 ? (v / 1e6).toLocaleString('es-MX', { maximumFractionDigits: 2 }) + ' M'
+  : Math.abs(v) >= 1e4 ? (v / 1e3).toLocaleString('es-MX', { maximumFractionDigits: 1 }) + ' mil' : n0(v);
+const usd = v => v == null || !isFinite(v) ? '—' : 'US$' + (Math.abs(v) >= 100 ? Math.round(v).toLocaleString('es-MX')
+  : v.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: Math.abs(v) < 0.1 ? 3 : 2 }));
+const pct = (v, d = 2) => v == null || !isFinite(v) ? '—' : (100 * v).toFixed(d) + '%';
+const div = (a, b) => b ? a / b : null;
+const MESES = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
+const diaMes = d => d ? `${d.slice(8, 10)} ${MESES[+d.slice(5, 7) - 1]}` : '';
+const FMT = { num: n0, compacto: n0, usd: usd, pct: v => pct(v, 2), pct1: v => pct(v, 1) };
+const FMT_EJE = { num: fmtMil, compacto: fmtMil, usd: v => usd(v), pct: v => pct(v, 1), pct1: v => pct(v, 0) };
+
+// Cambio relativo con color. `menosEsMejor`: para costos (CPM, CPL), bajar es bueno.
+function delta(a, b, menosEsMejor = false) {
+  if (a == null || b == null || !b) return '';
+  const r = a / b - 1;
+  const bueno = menosEsMejor ? r < 0 : r > 0;
+  const cls = Math.abs(r) < 0.03 ? 'neutro' : bueno ? 'sube' : 'baja';
+  return `<span class="delta ${cls}">${r >= 0 ? '+' : ''}${(100 * r).toFixed(0)}%</span>`;
+}
+
+// ── Ayuda ─────────────────────────────────────────────────────────────────────
+const AYUDA = {
+  fuentes: ['De dónde sale cada número', `
+    <p><strong>Pagado</strong>: API de Meta, cuenta de anuncios de Tuhabi México (en dólares). Entran los anuncios
+    cuyo nombre empieza con <code>Rosa</code>, de cualquier campaña. El objetivo (alcance, leads, interacción)
+    es el de la campaña que los contiene: si mañana se lanza una campaña de interacción con anuncios
+    <code>Rosa_*</code>, aparece sola.</p>
+    <p><strong>Orgánico</strong>: publicaciones de @tuhabimx y de la página de Tuhabi desde el 2-oct con 🌹,
+    "rosa" o "guadalupe" en el texto. Se corrige a mano en <code>rosa-guadalupe/config.json</code>
+    (<code>incluir</code> / <code>excluir</code>).</p>
+    <p><strong>Cuenta</strong>: los datos diarios de Instagram y Facebook que ya guarda Salud de marca.</p>
+    <p>Se actualiza dos veces al día (8:23 y 14:23 CDMX).</p>`],
+  leads: ['Leads (píxel de Meta)', `
+    <p>Los que <strong>Meta atribuye</strong> a los anuncios con el evento de lead del píxel del sitio
+    (ventana de atribución de la campaña). No son los del CRM.</p>
+    <p>No se cruzan con el CRM porque la tabla de UTM por lead (<code>deal_utm</code>) no se actualiza
+    desde el 16-sep-2026. Cuando vuelva, se puede agregar la columna de leads reales y su calidad.</p>`],
+  alcance_unico: ['Alcance único', `
+    <p>Personas distintas que vieron al menos un anuncio Rosa. No se puede sumar por día ni por anuncio
+    (la misma persona contaría varias veces): Meta lo calcula aparte, para todo el periodo.</p>
+    <p>Con un objetivo elegido es el alcance de las campañas de ese objetivo.</p>`],
+  frecuencia: ['Frecuencia', `<p>Impresiones ÷ alcance único: cuántas veces vio un anuncio Rosa, en promedio,
+    cada persona alcanzada.</p>`],
+  ctr: ['CTR al sitio', `<p>Clics en el enlace (los que llevan al sitio) ÷ impresiones. No incluye clics en el
+    perfil, en "ver más" ni reacciones.</p>`],
+  landing: ['Visitas a la landing', `<p>Clics que terminaron de cargar la página de destino (la mide el píxel).
+    Siempre son menos que los clics: el resto se fue antes de que cargara.</p>`],
+  recordacion: ['Recordación estimada', `<p>Estimación de Meta de cuántas personas recordarían el anuncio si se
+    les preguntara en 2 días. Solo existe en campañas de alcance que optimizan a recordación.</p>`],
+  thruplay: ['ThruPlays y retención', `<p><strong>3 s</strong>: reproducciones de al menos 3 segundos.
+    <strong>ThruPlay</strong>: el video completo, o 15 segundos si es más largo. Los porcentajes (25%, 50%…)
+    son reproducciones que llegaron a ese punto del video.</p>`],
+  comparativo: ['Contra los otros anuncios de la campaña', `
+    <p>Cada campaña donde corren anuncios Rosa tiene también otros anuncios. Acá se compara lo de Rosa contra
+    <strong>el resto de esa misma campaña en los mismos días</strong> (los días con inversión en Rosa):
+    misma audiencia, mismo presupuesto compartido, mismo momento.</p>
+    <p>Verde = Rosa rinde mejor (costo más bajo o tasa más alta). Ojo: con pocos días o poca inversión, las
+    diferencias pueden ser ruido.</p>`],
+  promedio: ['Contra posts normales', `
+    <p>El promedio por publicación de lo publicado en los <strong>90 días antes del 2-oct</strong> (en Instagram,
+    sin los posts que tuvieron pauta).</p>
+    <p>Un post de hoy todavía está juntando vistas: los marcados <em>en curso</em> tienen menos de 3 días y
+    su comparación todavía no es justa.</p>`],
+  cuenta: ['Efecto en la cuenta', `
+    <p>Promedio diario de cada indicador de toda la cuenta <strong>desde el 2-oct</strong> contra los
+    <strong>14 días anteriores</strong>. La línea punteada marca el arranque de lo orgánico (2-oct).</p>
+    <p>Es una comparación antes / después: dice si algo cambió, no prueba que lo haya causado la acción
+    (en el mismo periodo corre el resto de la pauta y del contenido).</p>
+    <p>Instagram tarda 1-2 días en cerrar los datos diarios: el último día puede faltar.</p>`],
+  vistas_org: ['Vistas orgánicas por día de publicación', `
+    <p>Las vistas que lleva hoy cada publicación, sumadas en el día en que se publicó. Un post del 2-oct
+    lleva una semana juntando vistas y uno de ayer, un día: por eso los días recientes se ven más bajos.</p>`],
+  orgpag: ['Orgánico y pagado, lado a lado', `
+    <p>Vistas: en lo pagado son impresiones (cada vez que se mostró un anuncio); en lo orgánico, las vistas
+    que reporta Meta por publicación. Son comparables en orden de magnitud, no al uno por uno.</p>
+    <p>Los posts orgánicos no se usaron como anuncios: los anuncios Rosa son piezas aparte.</p>`],
+  piezas: ['Piezas', `<p>Una pieza es el mismo creativo en todas sus versiones: <code>Rosa_6_Instagram_Desempleado</code>
+    y <code>Rosa_6_Desempleado</code> son la pieza 6. La barra muestra qué parte de las impresiones fue en
+    Facebook (azul) y en Instagram (rosa).</p>`],
+};
+const ayuda = k => AYUDA[k] ? `<button type="button" class="help-btn" data-ayuda="${k}" aria-label="Más información">?</button>` : '';
+
+// ── Gráficas ──────────────────────────────────────────────────────────────────
+// Líneas verticales punteadas en fechas clave (arranque de lo orgánico y de cada objetivo).
+const marcasFecha = {
+  id: 'marcasFecha',
+  afterDatasetsDraw(chart) {
+    const o = (chart.options.plugins || {}).marcasFecha || {};
+    const x = chart.scales.x, a = chart.chartArea;
+    if (!(o.indices || []).length || !x || !a) return;
+    const ctx = chart.ctx;
+    ctx.save(); ctx.strokeStyle = o.color; ctx.lineWidth = 1.5; ctx.setLineDash([4, 3]);
+    o.indices.forEach(i => { const px = x.getPixelForValue(i); ctx.beginPath(); ctx.moveTo(px, a.top); ctx.lineTo(px, a.bottom); ctx.stroke(); });
+    ctx.restore();
+  },
+};
+if (window.Chart) Chart.register(marcasFecha);
+let _charts = [];
+function destroyCharts() { _charts.forEach(c => c.destroy()); _charts = []; }
+
+function mkMulti(id, labels, datasets, o = {}) {
+  const c = document.getElementById(id); if (!c || !window.Chart) return;
+  const grid = cssv('--border'), tick = cssv('--text-muted-2');
+  const izq = o.fmt || 'num', der = o.fmtDerecha || 'num';
+  const scales = {
+    x: { stacked: !!o.apilado, ticks: { color: tick, maxTicksLimit: 8 }, grid: { display: false } },
+    y: { beginAtZero: true, stacked: !!o.apilado, ticks: { color: tick, callback: FMT_EJE[izq] }, grid: { color: grid } },
+  };
+  if (datasets.some(d => d.eje === 'y1')) {
+    scales.y1 = { position: 'right', beginAtZero: true, ticks: { color: tick, callback: FMT_EJE[der] }, grid: { drawOnChartArea: false } };
+  }
+  _charts.push(new Chart(c, {
+    data: { labels: labels.map(l => /^\d{4}-\d\d-\d\d$/.test(l) ? diaMes(l) : l), datasets: datasets.map(d => ({
+      type: d.type || 'line', label: d.label, data: d.data, yAxisID: d.eje || 'y', order: d.orden ?? 0,
+      borderColor: d.color, backgroundColor: d.fill || d.color, borderDash: d.dash || [], tension: .3,
+      pointRadius: d.type === 'bar' ? 0 : 2.5, borderWidth: d.type === 'bar' ? 0 : 2, borderRadius: 3, spanGaps: false })) },
+    options: {
+      responsive: true, maintainAspectRatio: false, interaction: { mode: 'index', intersect: false },
+      indexAxis: o.horizontal ? 'y' : 'x',
+      plugins: { legend: { display: false },
+        marcasFecha: o.marcas ? { color: cssv('--text-muted-3'), indices: o.marcas } : {},
+        tooltip: { callbacks: { label: ctx => {
+          const y = o.horizontal ? ctx.parsed.x : ctx.parsed.y;
+          if (y == null) return `${ctx.dataset.label}: sin dato`;
+          return `${ctx.dataset.label}: ${FMT[ctx.dataset.yAxisID === 'y1' ? der : izq](y)}`; } } } },
+      scales: o.horizontal ? { x: { ...scales.y, ticks: { color: tick, callback: FMT_EJE[izq] } }, y: { ticks: { color: tick }, grid: { display: false } } } : scales,
+    },
+  }));
+}
+const leyenda = items => `<div class="legend">${items.map(([t, c]) => `<span><i style="background:${c}"></i>${t}</span>`).join('')}</div>`;
+
+// ── Datos ─────────────────────────────────────────────────────────────────────
+let D = null;
+const SUMABLES = ['inversion', 'impresiones', 'clics', 'clics_link', 'landing', 'interacciones', 'reacciones', 'comentarios',
+  'compartidos', 'guardados', 'video_3s', 'leads', 'thruplay', 'p25', 'p50', 'p75', 'p100', 'recordacion'];
+function sumar(filas) {
+  const o = {}; SUMABLES.forEach(k => o[k] = 0);
+  filas.forEach(f => SUMABLES.forEach(k => o[k] += f[k] || 0));
+  return o;
+}
+function rangoDias(desde, hasta) {
+  const out = []; let d = new Date(desde + 'T12:00:00Z'); const fin = new Date(hasta + 'T12:00:00Z');
+  while (d <= fin) { out.push(d.toISOString().slice(0, 10)); d.setUTCDate(d.getUTCDate() + 1); }
+  return out;
+}
+const porDia = (filas, dias, fn) => dias.map(d => { const fs = filas.filter(f => f.d === d); return fs.length ? fn(sumar(fs)) : null; });
+const objetivosPresentes = () => ORDEN_OBJ.concat(Object.keys(NOMBRE_OBJ).filter(k => !ORDEN_OBJ.includes(k)))
+  .filter(o => ((D.pagado || {}).filas || []).some(f => f.obj === o));
+
+function estado(sec, nombre) {
+  if (!sec) return `<div class="aviso">${nombre}: sin datos.</div>`;
+  if (sec.status === 'ok') return '';
+  const cuando = sec.last_updated ? ` Último dato bueno: ${sec.last_updated.slice(0, 16).replace('T', ' ')} UTC.` : '';
+  return `<div class="aviso"><b>${nombre}: ${sec.status === 'stale' ? 'datos de la corrida anterior' : 'no se pudo leer'}.</b>
+    ${sec.reason || ''}${cuando}</div>`;
+}
+
+// ── Hojas ─────────────────────────────────────────────────────────────────────
+const HOJAS = [['resumen', 'Resumen'], ['pagado', 'Pagado'], ['organico', 'Orgánico'], ['cuenta', 'Efecto en la cuenta']];
+const params = new URLSearchParams(location.search);
+let HOJA = HOJAS.some(h => h[0] === params.get('hoja')) ? params.get('hoja') : 'resumen';
+let OBJ = params.get('obj') || 'todos';
+
+function syncURL() {
+  const p = new URLSearchParams();
+  if (HOJA !== 'resumen') p.set('hoja', HOJA);
+  if (HOJA === 'pagado' && OBJ !== 'todos') p.set('obj', OBJ);
+  history.replaceState(null, '', location.pathname + (p.toString() ? '?' + p : ''));
+}
+
+function renderHeader() {
+  document.getElementById('hojas').innerHTML = HOJAS.map(([k, t]) =>
+    `<button class="tab ${k === HOJA ? 'active' : ''}" data-hoja="${k}">${t}</button>`).join('');
+  const f = document.getElementById('filtros');
+  if (HOJA !== 'pagado') { f.innerHTML = ''; return; }
+  const hay = objetivosPresentes();
+  const chips = [['todos', 'Todos']].concat(ORDEN_OBJ.map(o => [o, NOMBRE_OBJ[o]]))
+    .concat(hay.filter(o => !ORDEN_OBJ.includes(o)).map(o => [o, NOMBRE_OBJ[o]]));
+  f.innerHTML = `<span class="flabel">Objetivo de campaña</span>` + chips.map(([k, t]) => {
+    const off = k !== 'todos' && !hay.includes(k);
+    return `<button class="chip ${k === OBJ ? 'on' : ''} ${off ? 'off' : ''}" data-obj="${k}" ${off ? 'disabled title="Todavía no hay anuncios Rosa en una campaña con este objetivo"' : ''}>${t}${off ? ' <small>sin campaña</small>' : ''}</button>`;
+  }).join('');
+}
+
+function render() {
+  destroyCharts();
+  renderHeader();
+  const app = document.getElementById('app');
+  ({ resumen: renderResumen, pagado: renderPagado, organico: renderOrganico, cuenta: renderCuenta })[HOJA](app);
+  syncURL();
+}
+window.rerender = render;
+
+// ── Resumen ───────────────────────────────────────────────────────────────────
+function renderResumen(app) {
+  const pg = D.pagado || {}, org = D.organico || {};
+  const filas = pg.filas || [], posts = org.posts || [];
+  const t = sumar(filas);
+  const ov = posts.reduce((s, p) => s + (p.vistas || 0), 0), oi = posts.reduce((s, p) => s + (p.interacciones || 0), 0);
+  const ovIG = posts.filter(p => p.red === 'ig').reduce((s, p) => s + (p.vistas || 0), 0);
+  const alc = ((pg.alcance || {}).total || {}).alcance;
+  const piezas = new Set(Object.values(pg.anuncios || {}).map(a => a.pieza));
+  const obj = objetivosPresentes();
+  const dias = filas.length ? rangoDias(D.config.inicio_pagado, filas.map(f => f.d).sort().pop()) : [];
+
+  app.innerHTML = estado(pg, 'Pagado') + estado(org, 'Orgánico') + `
+  <div class="section">
+    <h2>La acción en una línea ${ayuda('fuentes')}</h2>
+    <p class="hint">Desde el ${diaMes(D.config.inicio_organico)} (orgánico) y el ${diaMes(D.config.inicio_pagado)} (pauta),
+      hasta el último dato disponible.</p>
+    <div class="ficha">
+      <div><div class="k">Vistas totales ${ayuda('orgpag')}</div><div class="v">${fmtMil(t.impresiones + ov)}</div>
+        <div class="d">${fmtMil(t.impresiones)} impresiones pagadas + ${fmtMil(ov)} vistas orgánicas</div></div>
+      <div><div class="k">Alcance pagado ${ayuda('alcance_unico')}</div><div class="v">${fmtMil(alc)}</div>
+        <div class="d">personas distintas · frecuencia ${(div(((pg.alcance || {}).total || {}).impresiones, alc) || 0).toFixed(2)}</div></div>
+      <div><div class="k">Interacciones</div><div class="v">${fmtMil(t.interacciones + oi)}</div>
+        <div class="d">${fmtMil(t.interacciones)} pagadas (incluye reproducciones) + ${n0(oi)} orgánicas</div></div>
+      <div><div class="k">Clics al sitio ${ayuda('ctr')}</div><div class="v">${n0(t.clics_link)}</div>
+        <div class="d">de la pauta · ${n0(t.landing)} visitas a la landing ${ayuda('landing')}</div></div>
+      <div><div class="k">Leads (píxel Meta) ${ayuda('leads')}</div><div class="v">${n0(t.leads)}</div>
+        <div class="d">${usd(div(t.inversion, t.leads))} por lead</div></div>
+      <div><div class="k">Inversión</div><div class="v">${usd(t.inversion)}</div>
+        <div class="d">${obj.map(o => `${NOMBRE_OBJ[o]} ${usd(sumar(filas.filter(f => f.obj === o)).inversion)}`).join(' · ')}</div></div>
+      <div><div class="k">Piezas</div><div class="v">${piezas.size} <small style="font-size:12px;font-weight:500">pagadas</small></div>
+        <div class="d">${Object.keys(pg.anuncios || {}).length} anuncios · ${posts.length} posts orgánicos
+          (${posts.filter(p => p.red === 'ig').length} IG, ${posts.filter(p => p.red === 'fb').length} FB)</div></div>
+    </div>
+  </div>
+  <div class="section">
+    <h2>Día a día</h2>
+    <div class="grid2">
+      <div class="panel"><h3>Impresiones pagadas por objetivo, e inversión</h3>
+        <div class="cap">Columnas apiladas: impresiones de cada objetivo. Línea: inversión del día (eje derecho).</div>
+        <div class="ch"><canvas id="r_imp"></canvas></div>
+        ${leyenda(obj.map(o => [NOMBRE_OBJ[o], COLOR_OBJ[o]]).concat([['Inversión (US$)', cssv('--text-muted-2')]]))}</div>
+      <div class="panel"><h3>Vistas orgánicas por día de publicación ${ayuda('vistas_org')}</h3>
+        <div class="cap">Lo que lleva hoy cada post, en el día en que se publicó.</div>
+        <div class="ch"><canvas id="r_org"></canvas></div>
+        ${leyenda([['Instagram', C.ig], ['Facebook', C.fb]])}</div>
+    </div>
+  </div>
+  <div class="section">
+    <h2>Orgánico y pagado, lado a lado ${ayuda('orgpag')}</h2>
+    <div class="t-wrap"><table class="t">
+      <tr><th></th><th>Vistas / impresiones</th><th>Reproducciones 3 s</th><th>Interacciones</th><th>Compartidos</th><th>Guardados</th><th>Inversión</th></tr>
+      ${filaLado('Instagram orgánico', posts.filter(p => p.red === 'ig'))}
+      ${filaLado('Facebook orgánico', posts.filter(p => p.red === 'fb'))}
+      ${obj.map(o => { const s = sumar(filas.filter(f => f.obj === o)); return `<tr><td><b>Pauta · ${NOMBRE_OBJ[o]}</b></td><td>${n0(s.impresiones)}</td><td>${n0(s.video_3s)}</td><td>${n0(s.interacciones)}</td><td>${n0(s.compartidos)}</td><td>${n0(s.guardados)}</td><td>${usd(s.inversion)}</td></tr>`; }).join('')}
+    </table></div>
+  </div>`;
+
+  const dImp = obj.map(o => ({ type: 'bar', label: NOMBRE_OBJ[o], color: COLOR_OBJ[o], orden: 2,
+    data: porDia(filas.filter(f => f.obj === o), dias, s => s.impresiones) }));
+  mkMulti('r_imp', dias, dImp.concat([{ label: 'Inversión', eje: 'y1', color: cssv('--text-muted-2'), data: porDia(filas, dias, s => s.inversion) }]),
+          { apilado: true, fmtDerecha: 'usd' });
+  if (posts.length) {
+    const hoy = posts.map(p => p.fecha).concat(dias).sort().pop();
+    const dOrg = rangoDias(D.config.inicio_organico, hoy);
+    const v = red => dOrg.map(d => posts.filter(p => p.red === red && p.fecha === d).reduce((s, p) => s + (p.vistas || 0), 0) || null);
+    mkMulti('r_org', dOrg, [{ type: 'bar', label: 'Instagram', color: C.ig, data: v('ig') }, { type: 'bar', label: 'Facebook', color: C.fb, data: v('fb') }], { apilado: true });
+  }
+}
+function filaLado(nombre, ps) {
+  const s = k => ps.reduce((a, p) => a + (p[k] || 0), 0);
+  return `<tr><td><b>${nombre}</b> <small style="color:var(--text-muted-3)">${ps.length} posts</small></td><td>${n0(s('vistas'))}</td>
+    <td>${n0(s('vistas_video')) === '0' ? '—' : n0(s('vistas_video'))}</td><td>${n0(s('interacciones'))}</td><td>${n0(s('compartidos'))}</td>
+    <td>${ps.some(p => p.guardados != null) ? n0(s('guardados')) : '—'}</td><td>—</td></tr>`;
+}
+
+// ── Pagado ────────────────────────────────────────────────────────────────────
+function renderPagado(app) {
+  const pg = D.pagado || {};
+  if (!pg.filas) { app.innerHTML = estado(pg, 'Pagado'); return; }
+  const filas = pg.filas.filter(f => OBJ === 'todos' || f.obj === OBJ);
+  const A = pg.anuncios || {};
+  const t = sumar(filas);
+  const camps = Object.values((pg.alcance || {}).campanas || {}).filter(c => OBJ === 'todos' || c.obj === OBJ);
+  const alc = OBJ === 'todos' ? ((pg.alcance || {}).total || {}).alcance : camps.reduce((s, c) => s + c.alcance, 0);
+  const desde = filas.length ? filas.map(f => f.d).sort()[0] : D.config.inicio_pagado;
+  const dias = filas.length ? rangoDias(desde, filas.map(f => f.d).sort().pop()) : [];
+  const esAlc = OBJ === 'alcance', esLeads = OBJ === 'leads';
+
+  const fichas = [
+    ['Inversión', usd(t.inversion), `${dias.length} días`],
+    ['Impresiones', fmtMil(t.impresiones), `CPM ${usd(div(t.inversion * 1000, t.impresiones))}`],
+    [`Alcance único ${ayuda('alcance_unico')}`, fmtMil(alc), `frecuencia ${(div(t.impresiones, alc) || 0).toFixed(2)} ${ayuda('frecuencia')}`],
+    [`Clics al sitio ${ayuda('ctr')}`, n0(t.clics_link), `CTR ${pct(div(t.clics_link, t.impresiones))} · ${usd(div(t.inversion, t.clics_link))} c/u`],
+    [`Visitas a la landing ${ayuda('landing')}`, n0(t.landing), `${pct(div(t.landing, t.clics_link), 0)} de los clics · ${usd(div(t.inversion, t.landing))} c/u`],
+    [`Leads (píxel Meta) ${ayuda('leads')}`, n0(t.leads), `CPL ${usd(div(t.inversion, t.leads))} · ${pct(div(t.leads, t.landing), 1)} de las visitas`],
+    [`ThruPlays ${ayuda('thruplay')}`, fmtMil(t.thruplay), `${usd(div(t.inversion, t.thruplay))} c/u · ${pct(div(t.thruplay, t.impresiones), 1)} de impresiones`],
+    [`Recordación estimada ${ayuda('recordacion')}`, n0(t.recordacion), t.recordacion ? `${usd(div(sumar(filas.filter(f => f.obj === 'alcance')).inversion, t.recordacion))} por persona (inversión de alcance)` : 'solo campañas de alcance'],
+  ];
+  const comp = (pg.comparativo || []).filter(c => OBJ === 'todos' || c.obj === OBJ);
+
+  app.innerHTML = estado(pg, 'Pagado') + `
+  <div class="section">
+    <h2>${OBJ === 'todos' ? 'Toda la pauta Rosa' : 'Objetivo: ' + NOMBRE_OBJ[OBJ]} ${ayuda('fuentes')}</h2>
+    <p class="hint">${camps.length} campaña${camps.length === 1 ? '' : 's'} · ${new Set(filas.map(f => f.ad)).size} anuncios · desde el ${diaMes(desde)}.
+      ${esAlc ? 'Una campaña de alcance se juzga por CPM, alcance y recordación, no por leads.' : esLeads ? 'Una campaña de leads se juzga por costo por lead y por visita a la landing.' : ''}</p>
+    <div class="ficha">${fichas.map(([k, v, d]) => `<div><div class="k">${k}</div><div class="v">${v}</div><div class="d">${d}</div></div>`).join('')}</div>
+  </div>
+  <div class="section">
+    <h2>Día a día</h2>
+    <p class="hint">Arriba los valores del día (columnas); abajo las tasas y costos (líneas).</p>
+    <div class="cinco">
+      ${['inversion:Inversión', 'impresiones:Impresiones', 'clics_link:Clics al sitio', 'landing:Visitas a la landing', 'leads:Leads (píxel)']
+        .map(s => { const [k, n] = s.split(':'); return `<div class="panel mini"><h3>${n}</h3><div class="tot">${k === 'inversion' ? usd(t[k]) : n0(t[k])}</div><div class="ch chico"><canvas id="p_${k}"></canvas></div></div>`; }).join('')}
+    </div>
+    <div class="cuatro">
+      ${['cpm:CPM', 'ctr:CTR al sitio', 'tasa_landing:Visitas a la landing ÷ clics', 'cpl:Costo por lead']
+        .map(s => { const [k, n] = s.split(':'); return `<div class="panel mini"><h3>${n}</h3><div class="ch chico"><canvas id="p_${k}"></canvas></div></div>`; }).join('')}
+    </div>
+  </div>
+  <div class="section">
+    <h2>Contra los otros anuncios de la campaña ${ayuda('comparativo')}</h2>
+    <p class="hint">Misma campaña, mismos días: ¿los anuncios Rosa rinden mejor o peor que el resto?</p>
+    ${comp.length ? `<div class="comp">${comp.map(panelComparativo).join('')}</div>` : '<div class="empty-metric">Sin campañas para comparar.</div>'}
+  </div>
+  <div class="section">
+    <h2>Piezas ${ayuda('piezas')}</h2>
+    <p class="hint">Ordenadas por inversión. Cada pieza junta sus versiones de Facebook e Instagram.</p>
+    ${tablaPiezas(filas, A, pg.plataforma || [])}
+  </div>
+  <div class="section">
+    <h2>Retención del video ${ayuda('thruplay')}</h2>
+    <div class="grid2">
+      <div class="panel"><h3>Cuántos llegan a cada punto del video</h3><div class="cap">Reproducciones, de 3 segundos al final.</div>
+        <div class="ch"><canvas id="p_ret"></canvas></div></div>
+      <div class="panel"><h3>Impresiones por plataforma</h3><div class="cap">Dónde se mostraron los anuncios.</div>
+        <div class="ch"><canvas id="p_plat"></canvas></div></div>
+    </div>
+  </div>`;
+
+  const v = k => porDia(filas, dias, s => s[k] || 0);
+  const color = OBJ === 'todos' ? C.rosa : COLOR_OBJ[OBJ];
+  ['inversion', 'impresiones', 'clics_link', 'landing', 'leads'].forEach(k =>
+    mkMulti('p_' + k, dias, [{ type: 'bar', label: k === 'inversion' ? 'Inversión' : k, color, data: v(k) }], { fmt: k === 'inversion' ? 'usd' : 'num' }));
+  mkMulti('p_cpm', dias, [{ label: 'CPM', color, data: porDia(filas, dias, s => div(s.inversion * 1000, s.impresiones)) }], { fmt: 'usd' });
+  mkMulti('p_ctr', dias, [{ label: 'CTR', color, data: porDia(filas, dias, s => div(s.clics_link, s.impresiones)) }], { fmt: 'pct' });
+  mkMulti('p_tasa_landing', dias, [{ label: 'Landing ÷ clics', color, data: porDia(filas, dias, s => div(s.landing, s.clics_link)) }], { fmt: 'pct1' });
+  mkMulti('p_cpl', dias, [{ label: 'CPL', color, data: porDia(filas, dias, s => div(s.inversion, s.leads)) }], { fmt: 'usd' });
+  const ret = [['3 s', t.video_3s], ['25%', t.p25], ['50%', t.p50], ['75%', t.p75], ['100%', t.p100], ['ThruPlay', t.thruplay]];
+  mkMulti('p_ret', ret.map(r => r[0]), [{ type: 'bar', label: 'Reproducciones', color, data: ret.map(r => r[1]) }]);
+  const ads = new Set(filas.map(f => f.ad));
+  const pl = ['facebook', 'instagram', 'otras'].map(p => (pg.plataforma || []).filter(x => x.plat === p && ads.has(x.ad)).reduce((s, x) => s + (x.impresiones || 0), 0));
+  mkMulti('p_plat', ['Facebook', 'Instagram', 'Otras (Audience Network, Threads)'], [{ type: 'bar', label: 'Impresiones', color: [C.fb, C.ig, C.gris], data: pl }], { horizontal: true });
+}
+
+function panelComparativo(c) {
+  const r = c.rosa, o = c.otros;
+  const filas = [
+    ['CPM', div(r.inversion * 1000, r.impresiones), div(o.inversion * 1000, o.impresiones), usd, true],
+    ['CTR al sitio', div(r.clics_link, r.impresiones), div(o.clics_link, o.impresiones), v => pct(v), false],
+    ['Costo por clic al sitio', div(r.inversion, r.clics_link), div(o.inversion, o.clics_link), usd, true],
+    ['Costo por visita a la landing', div(r.inversion, r.landing), div(o.inversion, o.landing), usd, true],
+    ['Costo por lead (píxel)', div(r.inversion, r.leads), div(o.inversion, o.leads), usd, true],
+  ];
+  if (c.obj === 'alcance') filas.push(['Costo por recordación', div(r.inversion, r.recordacion), div(o.inversion, o.recordacion), usd, true]);
+  filas.push(['Costo por ThruPlay', div(r.inversion, r.thruplay), div(o.inversion, o.thruplay), usd, true]);
+  return `<div class="panel"><h3><span class="delta neutro" style="margin-right:6px;background:${COLOR_OBJ[c.obj]};color:#fff">${NOMBRE_OBJ[c.obj]}</span>${c.campana}</h3>
+    <div class="cap">${diaMes(c.desde)} – ${diaMes(c.hasta)} · Rosa ${usd(r.inversion)} (${pct(div(r.inversion, r.inversion + (o.inversion || 0)), 0)} de la campaña) · otros ${usd(o.inversion)}</div>
+    <table><tr><th></th><th>Rosa</th><th>Otros anuncios</th><th>Rosa vs otros</th></tr>
+    ${filas.filter(f => f[1] != null || f[2] != null).map(([n, a, b, f, menos]) => `<tr><td>${n}</td><td><b>${f(a)}</b></td><td>${f(b)}</td><td>${delta(a, b, menos)}</td></tr>`).join('')}
+    </table></div>`;
+}
+
+function tablaPiezas(filas, A, plat) {
+  const grupos = {};
+  filas.forEach(f => { const a = A[f.ad] || {}; const k = a.pieza || f.ad; (grupos[k] = grupos[k] || { filas: [], ads: new Set(), objs: new Set() }); grupos[k].filas.push(f); grupos[k].ads.add(f.ad); grupos[k].objs.add(f.obj); });
+  const rows = Object.entries(grupos).map(([k, g]) => ({ k, g, s: sumar(g.filas) })).sort((a, b) => b.s.inversion - a.s.inversion);
+  if (!rows.length) return '<div class="empty-metric">Sin anuncios con este objetivo.</div>';
+  const nombre = k => k.replace(/^Rosa_?/, '').replace(/_/g, ' ').replace(/^(\d) /, '$1 · ') || k;
+  return `<div class="t-wrap"><table class="t">
+    <tr><th>Pieza</th><th>Objetivo</th><th>Inversión</th><th>Impresiones</th><th>FB / IG</th><th>CPM</th><th>CTR al sitio</th><th>Landing</th><th>Leads</th><th>CPL</th><th>ThruPlay ÷ impr.</th></tr>
+    ${rows.map(({ k, g, s }) => {
+      const mini = [...g.ads].find(i => (A[i] || {}).mini);
+      const pf = plat.filter(x => g.ads.has(x.ad));
+      const fb = pf.filter(x => x.plat === 'facebook').reduce((a, x) => a + (x.impresiones || 0), 0);
+      const ig = pf.filter(x => x.plat === 'instagram').reduce((a, x) => a + (x.impresiones || 0), 0);
+      const activos = [...g.ads].filter(i => (A[i] || {}).estado === 'ACTIVE').length;
+      return `<tr><td><div class="pz">${mini ? `<img src="miniaturas/${mini}.jpg" alt="" loading="lazy">` : '<span class="sin"></span>'}
+        <div><b>${nombre(k)}</b><small>${g.ads.size} anuncio${g.ads.size === 1 ? '' : 's'}${activos ? ` · ${activos} activo${activos === 1 ? '' : 's'}` : ' · en pausa'}</small></div></div></td>
+        <td>${[...g.objs].map(o => NOMBRE_OBJ[o]).join(', ')}</td><td><b>${usd(s.inversion)}</b></td><td>${n0(s.impresiones)}</td>
+        <td title="Facebook ${n0(fb)} · Instagram ${n0(ig)}"><span class="barra-pl"><i style="width:${fb + ig ? 100 * ig / (fb + ig) : 0}%;margin-left:auto"></i></span> ${fb + ig ? pct(ig / (fb + ig), 0) : '—'} IG</td>
+        <td>${usd(div(s.inversion * 1000, s.impresiones))}</td><td>${pct(div(s.clics_link, s.impresiones))}</td><td>${n0(s.landing)}</td>
+        <td>${n0(s.leads)}</td><td>${usd(div(s.inversion, s.leads))}</td><td>${pct(div(s.thruplay, s.impresiones), 1)}</td></tr>`;
+    }).join('')}
+  </table></div>`;
+}
+
+// ── Orgánico ──────────────────────────────────────────────────────────────────
+function renderOrganico(app) {
+  const org = D.organico || {};
+  if (!org.posts) { app.innerHTML = estado(org, 'Orgánico'); return; }
+  const posts = org.posts, prom = org.promedio || {};
+  const hoy = (D.generated_at || '').slice(0, 10);
+  const edad = p => Math.round((new Date(hoy) - new Date(p.fecha)) / 864e5);
+  const red = r => posts.filter(p => p.red === r);
+  const s = (ps, k) => ps.reduce((a, p) => a + (p[k] || 0), 0);
+  const promRed = (r, k) => { const ps = red(r).filter(p => edad(p) >= 3 && p[k] != null); return ps.length ? s(ps, k) / ps.length : null; };
+  const tarjetaRed = (r, nombre) => {
+    const pr = prom[r] || {}, ps = red(r);
+    return `<div><div class="k">${nombre}</div><div class="v">${ps.length} posts · ${fmtMil(s(ps, 'vistas'))} vistas</div>
+      <div class="d">Promedio por post (con 3+ días): ${n0(promRed(r, 'vistas'))} vistas ${delta(promRed(r, 'vistas'), pr.vistas)} ·
+        ${n0(promRed(r, 'interacciones'))} interacciones ${delta(promRed(r, 'interacciones'), pr.interacciones)}<br>
+        Normal (${pr.n || 0} posts, 90 días antes): ${n0(pr.vistas)} vistas · ${n0(pr.interacciones)} interacciones</div></div>`;
+  };
+  const historia = D.historia || {};
+  const diasHist = [...new Set(Object.values(historia).flatMap(h => Object.keys(h)))].sort();
+
+  app.innerHTML = estado(org, 'Orgánico') + `
+  <div class="section">
+    <h2>Publicaciones de la acción ${ayuda('fuentes')}</h2>
+    <p class="hint">Desde el ${diaMes(D.config.inicio_organico)}, con 🌹, "rosa" o "guadalupe" en el texto. Las vistas y las
+      interacciones siguen creciendo los primeros días; los posts con menos de 3 días no entran al promedio. ${ayuda('promedio')}</p>
+    <div class="ficha">
+      ${tarjetaRed('ig', 'Instagram · @tuhabimx')}
+      ${tarjetaRed('fb', 'Facebook · Tuhabi')}
+      <div><div class="k">Alcance (Instagram)</div><div class="v">${fmtMil(s(red('ig'), 'alcance'))}</div>
+        <div class="d">sumado por post: una persona puede contar en varios</div></div>
+      <div><div class="k">Compartidos y guardados</div><div class="v">${n0(s(posts, 'compartidos'))} · ${n0(s(red('ig'), 'guardados'))}</div>
+        <div class="d">compartidos (IG + FB) · guardados (IG)</div></div>
+    </div>
+  </div>
+  <div class="section">
+    <h2>Cada publicación ${ayuda('promedio')}</h2>
+    <p class="hint">El porcentaje compara las vistas del post contra el promedio de los posts normales de su red. Clic para abrirlo.</p>
+    <div class="posts">${posts.map(p => {
+      const pr = (prom[p.red] || {}).vistas;
+      return `<a class="post" href="${p.link || '#'}" target="_blank" rel="noopener">
+        <div class="img" style="${p.mini ? `background-image:url('miniaturas/${p.id}.jpg')` : ''}">
+          <span class="red ${p.red}">${p.red === 'ig' ? 'Instagram' : 'Facebook'}</span>${edad(p) < 3 ? '<span class="curso">en curso</span>' : ''}</div>
+        <div class="info"><b>${n0(p.vistas)}</b> vistas ${delta(p.vistas, pr)}<br>
+          ${p.alcance != null ? `${n0(p.alcance)} de alcance · ` : ''}${n0(p.interacciones)} interacciones${p.seg_promedio ? ` · ${p.seg_promedio} s promedio` : ''}<br>
+          ${diaMes(p.fecha)} · hace ${edad(p)} día${edad(p) === 1 ? '' : 's'}
+          <div class="txt">${(p.texto || '').replace(/</g, '&lt;')}</div></div></a>`;
+    }).join('')}</div>
+  </div>
+  <div class="section">
+    <h2>Vistas por publicación</h2>
+    <div class="grid2">
+      <div class="panel"><h3>Vistas de cada post contra el promedio normal</h3>
+        <div class="cap">Barras: vistas del post. Líneas: promedio de los posts normales de su red.</div>
+        <div class="ch"><canvas id="o_vs"></canvas></div>${leyenda([['Instagram', C.ig], ['Facebook', C.fb]])}</div>
+      <div class="panel"><h3>Cómo crecen las vistas</h3>
+        <div class="cap">Vistas acumuladas de todos los posts, una foto por día desde que existe el tablero.</div>
+        ${diasHist.length > 1 ? '<div class="ch"><canvas id="o_hist"></canvas></div>' : '<div class="empty-metric">Se guarda una foto por día desde que existe este tablero; con dos días ya se dibuja.</div>'}</div>
+    </div>
+  </div>`;
+
+  const ord = [...posts].sort((a, b) => a.fecha.localeCompare(b.fecha) || a.red.localeCompare(b.red));
+  mkMulti('o_vs', ord.map(p => `${diaMes(p.fecha)} ${p.red.toUpperCase()}`), [
+    { type: 'bar', label: 'Vistas', color: ord.map(p => p.red === 'ig' ? C.ig : C.fb), data: ord.map(p => p.vistas ?? null), orden: 2 },
+    { label: 'Promedio IG', color: C.ig, dash: [4, 3], data: ord.map(p => p.red === 'ig' ? (prom.ig || {}).vistas : null) },
+    { label: 'Promedio FB', color: C.fb, dash: [4, 3], data: ord.map(p => p.red === 'fb' ? (prom.fb || {}).vistas : null) },
+  ]);
+  if (diasHist.length > 1) {
+    const tot = r => diasHist.map(d => posts.filter(p => p.red === r).reduce((a, p) => a + (((historia[p.id] || {})[d] || {}).vistas || 0), 0));
+    mkMulti('o_hist', diasHist, [{ label: 'Instagram', color: C.ig, data: tot('ig') }, { label: 'Facebook', color: C.fb, data: tot('fb') }]);
+  }
+}
+
+// ── Efecto en la cuenta ───────────────────────────────────────────────────────
+const IND_CUENTA = [
+  ['ig_perfil_d', 'Instagram · visitas al perfil'], ['ig_clics_d', 'Instagram · clics al sitio'],
+  ['ig_altas_d', 'Instagram · seguidores nuevos'], ['ig_inter_d', 'Instagram · interacciones'],
+  ['fb_visitas', 'Facebook · visitas a la página'], ['fb_altas', 'Facebook · seguidores nuevos'],
+  ['ig_vistas_d', 'Instagram · vistas'], ['fb_vistas', 'Facebook · vistas'],
+];
+function renderCuenta(app) {
+  const c = D.cuenta || {};
+  if (!c.dias) { app.innerHTML = estado(c, 'Cuenta'); return; }
+  const iIni = c.dias.indexOf(c.despues[0]);
+  app.innerHTML = estado(c, 'Cuenta') + `
+  <div class="section">
+    <h2>Toda la cuenta: antes y desde la acción ${ayuda('cuenta')}</h2>
+    <p class="hint">Promedio por día del ${diaMes(c.despues[0])} en adelante contra el ${diaMes(c.antes[0])}–${diaMes(c.antes[1])}.
+      Es la cuenta entera (no solo los posts de la Rosa): sirve para ver si la acción movió el perfil, la página y los seguidores.</p>
+    <div class="cuatro">${IND_CUENTA.map(([k, n]) => {
+      const p = (c.periodos || {})[k] || {};
+      return `<div class="panel mini"><h3>${n}</h3>
+        <div class="tot">${n0((p.despues || {}).prom)} <small style="font-size:11.5px;font-weight:500;color:var(--text-muted-2)">/día</small> ${delta((p.despues || {}).prom, (p.antes || {}).prom)}</div>
+        <div class="cap">antes: ${n0((p.antes || {}).prom)}/día · ${(p.despues || {}).dias || 0} días medidos desde el ${diaMes(c.despues[0])}</div>
+        <div class="ch chico"><canvas id="c_${k}"></canvas></div></div>`;
+    }).join('')}</div>
+  </div>`;
+  IND_CUENTA.forEach(([k, n]) => {
+    const serie = (c.serie || {})[k] || [];
+    mkMulti('c_' + k, c.dias, [{ type: 'bar', label: n, data: serie,
+      color: c.dias.map((d, i) => i >= iIni ? C.rosa : cssv('--border-strong')) }], { marcas: iIni >= 0 ? [iIni] : [] });
+  });
+}
+
+// ── Arranque ──────────────────────────────────────────────────────────────────
+document.addEventListener('click', e => {
+  const h = e.target.closest('.help-btn[data-ayuda]');
+  if (h) { e.preventDefault(); const [t, b] = AYUDA[h.dataset.ayuda]; document.getElementById('ayudaCuerpo').innerHTML = `<h3>${t}</h3>${b}`; document.getElementById('ayuda').showModal(); return; }
+  const t = e.target.closest('.tab[data-hoja]');
+  if (t) { HOJA = t.dataset.hoja; render(); window.scrollTo(0, 0); return; }
+  const o = e.target.closest('.chip[data-obj]');
+  if (o && !o.disabled) { OBJ = o.dataset.obj; render(); }
+});
+
+fetch('data.json', { cache: 'no-store' }).then(r => r.json()).then(d => {
+  D = d;
+  if (OBJ !== 'todos' && !objetivosPresentes().includes(OBJ)) OBJ = 'todos';
+  const ultimo = ((D.pagado || {}).filas || []).map(f => f.d).sort().pop();
+  document.getElementById('cobertura').textContent =
+    `Actualizado ${(D.generated_at || '').slice(0, 16).replace('T', ' ')} UTC${ultimo ? ' · pauta hasta el ' + diaMes(ultimo) : ''}`;
+  render();
+}).catch(e => { document.getElementById('app').innerHTML = `<div class="empty-metric">No se pudo leer data.json: ${e}</div>`; });
+</script>
+</body>
+</html>

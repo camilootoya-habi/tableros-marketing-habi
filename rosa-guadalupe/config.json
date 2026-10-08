@@ -1,0 +1,10 @@
+{
+  "_nota": "Qué cuenta como parte de la acción. incluir/excluir: ids de posts (IG media id o FB post id) para corregir la regla automática. incluir gana a todo; excluir gana a la regla.",
+  "inicio_organico": "2026-10-02",
+  "inicio_pagado": "2026-10-02",
+  "patron": "rosa|guadalupe|🌹",
+  "incluir": [],
+  "excluir": [],
+  "prefijo_ads": "Rosa",
+  "cuenta_ads": "act_205661715114408"
+}

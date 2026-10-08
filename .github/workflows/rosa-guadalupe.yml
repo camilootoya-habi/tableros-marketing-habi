@@ -1,0 +1,59 @@
+name: Actualizar La Rosa de Guadalupe (diario)
+
+# Corre rosa-guadalupe/build.py: anuncios Rosa_* (API de Meta, ~6 llamadas a la cuenta de Tuhabi MX),
+# posts orgánicos de la acción y el efecto en la cuenta (lee salud-marca/social_cache.json, así que
+# corre DESPUÉS de salud-marca.yml: 7:41 → 8:23 y 13:41 → 14:23 CDMX).
+#
+# ⚠ Es el único workflow que debe correr este build.py: tiene el token de Meta. meta.json declara
+# "skip_hub_cron": true para que el cron del hub (update-data.yml) no lo corra sin tokens.
+
+on:
+  schedule:
+    - cron: '23 14 * * *'   # 08:23 CDMX
+    - cron: '23 20 * * *'   # 14:23 CDMX (respaldo y segunda foto del día)
+  workflow_dispatch:
+
+concurrency:
+  group: rosa-guadalupe-data
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref_name }}
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Instalar pytest y Pillow
+        run: python -m pip install --quiet pytest pillow
+
+      - name: Tests
+        run: python -m pytest rosa-guadalupe/tests/ -q
+
+      - name: Construir data.json
+        env:
+          # Token del system user "AgenteCreativo" (el mismo de salud-marca).
+          META_SYSTEM_USER_TOKEN: ${{ secrets.META_CREATIVO_TOKEN }}
+        run: cd rosa-guadalupe && python3 build.py
+
+      - name: Commitear
+        run: |
+          git config user.name  'github-actions[bot]'
+          git config user.email 'github-actions[bot]@users.noreply.github.com'
+          git add rosa-guadalupe/data.json rosa-guadalupe/cache.json
+          git add -A rosa-guadalupe/miniaturas
+          git diff --cached --quiet && echo "sin cambios" && exit 0
+          git commit -m "data(rosa-guadalupe): refresh $(date -u +%Y-%m-%dT%H:%MZ)"
+          for i in 1 2 3 4 5; do
+            if git push origin HEAD:${{ github.ref_name }}; then echo "push OK"; exit 0; fi
+            git pull --rebase --autostash origin ${{ github.ref_name }} || { git rebase --abort; exit 1; }
+            sleep $((i * 5))
+          done
+          exit 1
