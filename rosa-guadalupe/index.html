@@ -291,12 +291,24 @@ const AYUDA = {
   vistas_org: ['Vistas orgánicas por día de publicación', `
     <p>Las vistas que lleva hoy cada publicación, sumadas en el día en que se publicó. Un post del 2-oct
     lleva una semana juntando vistas y uno de ayer, un día: por eso los días recientes se ven más bajos.</p>`],
-  vistas_dia: ['Vistas por día', `
-    <p>Las vistas diarias de <strong>toda la cuenta</strong> (todo el contenido de ese día, no solo la Rosa),
-    tal como las reporta Meta. Meta no da las vistas por día de cada publicación: solo el acumulado de cada una.</p>
-    <p>Para ver cuánto de eso es Rosa, la gráfica de al lado guarda una foto diaria del acumulado de los posts
-    de la acción.</p>
-    <p>Los últimos 1-2 días de Instagram pueden faltar: Meta tarda en cerrarlos.</p>`],
+  impacto_org: ['Impacto orgánico', `
+    <p>Lo que Meta llama "vistas de la cuenta" incluye los <strong>anuncios</strong> de todas las campañas, y en
+    Tuhabi son ~99%. Aquí se separan:</p>
+    <ul><li><strong>Instagram</strong>: Meta desglosa cada día por formato (Reels, Posts, Historias, Carrusel y
+    "AD"). Orgánico = todo menos AD.</li>
+    <li><strong>Facebook</strong>: las vistas de la página vienen marcadas como de anuncio o no
+    (<code>is_from_ads</code>). El alcance y las interacciones de la página no se pueden separar, por eso no están.</li></ul>
+    <p>La comparación es contra los 14 días anteriores al 2-oct. Instagram cierra el día con 1-2 días de atraso.</p>`],
+  aporte_rosa: ['Aporte de la Rosa', `
+    <p>Las vistas de por vida de los posts de la Rosa ÷ las vistas orgánicas de toda la cuenta desde el 2-oct.</p>
+    <p>Es aproximado: el total de un post incluye sus vistas de hoy, que la cuenta todavía no cierra; por eso puede
+    pasarse un poco (se topa en 100%).</p>
+    <p>En el <strong>acumulado</strong>, la línea de la Rosa usa la foto diaria de cada post desde que existe este
+    tablero; los días anteriores quedan vacíos porque Meta no da las vistas por día de cada publicación. El último
+    punto es el total de hoy.</p>`],
+  alcance_formato: ['Alcance orgánico (suma por formato)', `
+    <p>Cuentas distintas que vieron un Reel, un Post, una Historia o un Carrusel ese día, <strong>sumadas por formato</strong>:
+    si alguien vio un Reel y una Historia cuenta dos veces. Meta no da el alcance orgánico sin duplicar.</p>`],
   orgpag: ['Orgánico y pagado, lado a lado', `
     <p>Vistas: en lo pagado son impresiones (cada vez que se mostró un anuncio); en lo orgánico, las vistas
     que reporta Meta por publicación. Son comparables en orden de magnitud, no al uno por uno.</p>
@@ -706,39 +718,137 @@ function renderOrganico(app) {
           <div class="txt">${(p.texto || '').replace(/</g, '&lt;')}</div></div></a>`;
     }).join('') || '<div class="empty-metric">Sin publicaciones.</div>'}</div>`).join('')}
   </div>
+  ${impactoOrganico(posts)}`;
+  graficasImpacto(posts);
+}
+
+// ── Impacto orgánico: la cuenta orgánica total (sin anuncios) y lo que aportó la Rosa ──────────
+const OC = () => D.organico_cuenta || {};
+const serieOC = (red, k) => ((OC()[red] || {})[k]) || [];
+function promOC(red, k, a, b) {
+  const v = [];
+  (OC().dias || []).forEach((d, i) => { const x = serieOC(red, k)[i]; if (d >= a && d <= b && x != null) v.push(x); });
+  if (!v.length) return null;
+  const total = v.reduce((s, x) => s + x, 0);
+  return { prom: total / v.length, dias: v.length, total };
+}
+const sumaPosts = (ps, k) => ps.reduce((a, p) => a + (p[k] || 0), 0);
+const vistasOrgPost = p => p.vistas_org != null ? p.vistas_org : (p.vistas || 0);
+function fichaDelta(titulo, despues, antes, extra = '') {
+  return `<div><div class="k">${titulo}</div><div class="v">${n0(despues)} <small style="font-size:12px;font-weight:500">/día</small> ${delta(despues, antes)}</div>
+    <div class="d">antes: ${n0(antes)}/día${extra}</div></div>`;
+}
+function fichaAporte(titulo, rosa, total, cola) {
+  const p = total ? Math.min(1, rosa / total) : null;
+  return `<div><div class="k">${titulo} ${ayuda('aporte_rosa')}</div><div class="v">${p == null ? '—' : pct(p, 0)}</div>
+    <div class="d">${fmtMil(rosa)} de ${fmtMil(total)} ${cola}</div></div>`;
+}
+
+function impactoOrganico(posts) {
+  const oc = OC();
+  if (!oc.dias) return `<div class="section"><h2>Impacto orgánico</h2>${estado(oc, 'Orgánico de la cuenta')}</div>`;
+  const [a0, a1] = oc.antes, d0 = oc.despues[0], d1 = oc.dias[oc.dias.length - 1];
+  const P = (red, k) => [promOC(red, k, d0, d1), promOC(red, k, a0, a1)];
+  const prom = (D.organico || {}).promedio || {};
+  const ig = posts.filter(p => p.red === 'ig'), fb = posts.filter(p => p.red === 'fb');
+  const [igV, igVa] = P('ig', 'vistas_org'), [igA, igAa] = P('ig', 'alcance_org'), [igI, igIa] = P('ig', 'inter_org');
+  const [fbV, fbVa] = P('fb', 'vistas_org'), [fbVid, fbVida] = P('fb', 'video_org');
+  const igAds = (promOC('ig', 'vistas_ads', d0, d1) || {}).total, fbAds = (promOC('fb', 'vistas_ads', d0, d1) || {}).total;
+  const pctAds = (ads, org) => ads + org ? ads / (ads + org) : null;
+  const vRosaIG = sumaPosts(ig, 'vistas'), vRosaFB = fb.reduce((s, p) => s + vistasOrgPost(p), 0);
+  const hoy = (D.generated_at || '').slice(0, 10), maduros = fb.filter(p => (new Date(hoy) - new Date(p.fecha)) / 864e5 >= 3);
+  const fbInterPost = maduros.length ? sumaPosts(maduros, 'interacciones') / maduros.length : null;
+  return `
   <div class="section">
-    <h2>Vistas por día</h2>
-    <div class="grid2">
-      <div class="panel"><h3>Vistas por día · toda la cuenta ${ayuda('vistas_dia')}</h3>
-        <div class="cap">Instagram y Facebook, cada uno en su eje. La línea punteada vertical es el arranque (2-oct).</div>
-        <div class="ch"><canvas id="o_dia"></canvas></div>${leyenda([['Instagram (eje izq.)', C.ig], ['Facebook (eje der.)', C.fb]])}</div>
-      <div class="panel"><h3>Cómo crecen las vistas</h3>
-        <div class="cap">Vistas acumuladas de todos los posts, una foto por día desde que existe el tablero.</div>
-        ${diasHist.length > 1 ? '<div class="ch"><canvas id="o_hist"></canvas></div>' : '<div class="empty-metric">Se guarda una foto por día desde que existe este tablero; con dos días ya se dibuja.</div>'}</div>
+    <h2>Impacto orgánico ${ayuda('impacto_org')}</h2>
+    <p class="hint">Toda la cuenta, <strong>solo lo orgánico</strong>, del ${diaMes(d0)} al ${diaMes(d1)} contra los 14 días anteriores
+      (${diaMes(a0)}–${diaMes(a1)}), y cuánto de eso fueron los posts de la Rosa.</p>
+    <div class="aviso">Ojo: de las vistas que Meta reporta para la cuenta, el <b>${pct(pctAds(igAds, (igV || {}).total || 0), 1)}</b> en Instagram y el
+      <b>${pct(pctAds(fbAds, (fbV || {}).total || 0), 1)}</b> en Facebook son <b>anuncios</b> (de todas las campañas). Aquí se quitan.</div>
+
+    <div class="red-h"><i style="background:${C.ig}"></i>Instagram · @tuhabimx <small>orgánico de la cuenta</small></div>
+    <div class="ficha">
+      ${fichaDelta('Vistas orgánicas', (igV || {}).prom, (igVa || {}).prom)}
+      ${fichaAporte('Aporte de la Rosa a las vistas', vRosaIG, (igV || {}).total, `vistas orgánicas desde el ${diaMes(d0)}`)}
+      ${fichaDelta(`Alcance orgánico ${ayuda('alcance_formato')}`, (igA || {}).prom, (igAa || {}).prom, ' · suma por formato')}
+      ${fichaDelta('Interacciones orgánicas', (igI || {}).prom, (igIa || {}).prom)}
+      ${fichaAporte('Aporte de la Rosa a las interacciones', sumaPosts(ig, 'interacciones'), (igI || {}).total, 'interacciones orgánicas')}
+    </div>
+    <div class="cuatro">
+      <div class="panel mini"><h3>Vistas orgánicas por día</h3><div class="cap">Por formato</div><div class="ch chico"><canvas id="oi_vistas"></canvas></div>
+        ${leyenda([['Reels', C.ig], ['Posts', C.ambar], ['Historias', C.azul], ['Carrusel', C.verde]])}</div>
+      <div class="panel mini"><h3>Alcance orgánico por día ${ayuda('alcance_formato')}</h3><div class="cap">Cuentas alcanzadas, suma por formato</div><div class="ch chico"><canvas id="oi_alcance"></canvas></div></div>
+      <div class="panel mini"><h3>Interacciones orgánicas por día</h3><div class="cap">Likes, comentarios, guardados, compartidos…</div><div class="ch chico"><canvas id="oi_inter"></canvas></div></div>
+      <div class="panel mini"><h3>Acumulado desde el ${diaMes(d0)} ${ayuda('aporte_rosa')}</h3><div class="cap">Vistas orgánicas de la cuenta y de los posts Rosa</div><div class="ch chico"><canvas id="oi_acum"></canvas></div>
+        ${leyenda([['Cuenta orgánica', cssv('--text-muted-2')], ['Posts Rosa', C.rosa]])}</div>
+    </div>
+
+    <div class="red-h"><i style="background:${C.fb}"></i>Facebook · Tuhabi <small>orgánico de la página</small></div>
+    <div class="ficha">
+      ${fichaDelta('Vistas orgánicas', (fbV || {}).prom, (fbVa || {}).prom)}
+      ${fichaAporte('Aporte de la Rosa a las vistas', vRosaFB, (fbV || {}).total, `vistas orgánicas desde el ${diaMes(d0)}`)}
+      ${fichaDelta('Reproducciones de video orgánicas', (fbVid || {}).prom, (fbVida || {}).prom)}
+      <div><div class="k">Interacciones por post Rosa <small>(3+ días)</small></div><div class="v">${n0(fbInterPost)} ${delta(fbInterPost, (prom.fb || {}).interacciones)}</div>
+        <div class="d">normal: ${n0((prom.fb || {}).interacciones)} por post. Meta no da interacciones orgánicas diarias de la página.</div></div>
+    </div>
+    <div class="cuatro">
+      <div class="panel mini"><h3>Vistas orgánicas por día</h3><div class="cap">Sin anuncios (is_from_ads = 0)</div><div class="ch chico"><canvas id="of_vistas"></canvas></div></div>
+      <div class="panel mini"><h3>Reproducciones de video orgánicas</h3><div class="cap">3 segundos o más, por día</div><div class="ch chico"><canvas id="of_video"></canvas></div></div>
+      <div class="panel mini"><h3>Acumulado desde el ${diaMes(d0)} ${ayuda('aporte_rosa')}</h3><div class="cap">Vistas orgánicas de la página y de los posts Rosa</div><div class="ch chico"><canvas id="of_acum"></canvas></div>
+        ${leyenda([['Página orgánica', cssv('--text-muted-2')], ['Posts Rosa', C.rosa]])}</div>
+      <div class="panel mini"><h3>Lo orgánico, % de las vistas</h3><div class="cap">El resto son anuncios de todas las campañas</div><div class="ch chico"><canvas id="of_peso"></canvas></div></div>
     </div>
   </div>`;
+}
 
-  const cu = D.cuenta || {};
-  if (cu.dias) {
-    const i0 = Math.max(0, cu.dias.indexOf(cu.antes[0])), dd = cu.dias.slice(i0);
-    const ser = k => ((cu.serie || {})[k] || []).slice(i0);
-    mkMulti('o_dia', dd, [{ label: 'Instagram', color: C.ig, data: ser('ig_vistas_d') },
-                          { label: 'Facebook', color: C.fb, eje: 'y1', data: ser('fb_vistas') }],
-            { marcas: [dd.indexOf(cu.despues[0])].filter(i => i >= 0) });
-  }
-  if (diasHist.length > 1) {
-    const tot = r => diasHist.map(d => posts.filter(p => p.red === r).reduce((a, p) => a + (((historia[p.id] || {})[d] || {}).vistas || 0), 0));
-    mkMulti('o_hist', diasHist, [{ label: 'Instagram', color: C.ig, data: tot('ig') }, { label: 'Facebook', color: C.fb, data: tot('fb') }]);
-  }
+// Acumulado de la Rosa: Meta solo da el total de por vida de cada post. Donde hay foto diaria
+// (`historia`) se usa; el último día siempre lleva el total de hoy. Sin foto, el día queda vacío.
+function acumRosa(posts, red, dias) {
+  const ps = posts.filter(p => p.red === red), H = D.historia || {};
+  const vista = (p, snap) => red === 'fb' && p.vistas_org != null && p.vistas ? (snap.vistas || 0) * p.vistas_org / p.vistas : (snap.vistas || 0);
+  return dias.map((d, i) => {
+    if (i === dias.length - 1) return ps.reduce((s, p) => s + (red === 'fb' ? vistasOrgPost(p) : (p.vistas || 0)), 0);
+    const con = ps.filter(p => (H[p.id] || {})[d]);
+    return con.length ? con.reduce((s, p) => s + vista(p, H[p.id][d]), 0) : null;
+  });
+}
+
+function graficasImpacto(posts) {
+  const oc = OC();
+  if (!oc.dias) return;
+  const dias = oc.dias, iIni = dias.indexOf(oc.despues[0]);
+  const marcas = iIni >= 0 ? [iIni] : [];
+  const gris = cssv('--border-strong');
+  const col = c => dias.map((d, i) => i >= iIni ? c : gris);
+  mkMulti('oi_vistas', dias, [['vistas_reel', 'Reels', C.ig], ['vistas_post', 'Posts', C.ambar], ['vistas_story', 'Historias', C.azul], ['vistas_carrusel', 'Carrusel', C.verde]]
+    .map(([k, n, c]) => ({ type: 'bar', label: n, color: c, data: serieOC('ig', k) })), { apilado: true, marcas });
+  mkMulti('oi_alcance', dias, [{ type: 'bar', label: 'Alcance orgánico', color: col(C.ig), data: serieOC('ig', 'alcance_org') }], { marcas });
+  mkMulti('oi_inter', dias, [{ type: 'bar', label: 'Interacciones orgánicas', color: col(C.ig), data: serieOC('ig', 'inter_org') }], { marcas });
+  mkMulti('of_vistas', dias, [{ type: 'bar', label: 'Vistas orgánicas', color: col(C.fb), data: serieOC('fb', 'vistas_org') }], { marcas });
+  mkMulti('of_video', dias, [{ type: 'bar', label: 'Reproducciones orgánicas', color: col(C.fb), data: serieOC('fb', 'video_org') }], { marcas });
+  mkMulti('of_peso', dias, [{ label: 'Orgánico', color: C.fb, data: dias.map((d, i) => { const o = serieOC('fb', 'vistas_org')[i], a = serieOC('fb', 'vistas_ads')[i]; return o != null && a != null && o + a ? o / (o + a) : null; }) }], { fmt: 'pct', marcas });
+  const dd = dias.slice(iIni);
+  const acumCuenta = red => { let s = 0; return serieOC(red, 'vistas_org').slice(iIni).map(v => (s += v || 0)); };
+  [['oi_acum', 'ig'], ['of_acum', 'fb']].forEach(([id, red]) => mkMulti(id, dd, [
+    { label: red === 'ig' ? 'Cuenta orgánica' : 'Página orgánica', color: cssv('--text-muted-2'), data: acumCuenta(red) },
+    { label: 'Posts Rosa', color: C.rosa, data: acumRosa(posts, red, dd) }]));
 }
 
 // ── Efecto en la cuenta ───────────────────────────────────────────────────────
 const IND_CUENTA = [
   ['ig_perfil_d', 'Instagram · visitas al perfil'], ['ig_clics_d', 'Instagram · clics al sitio'],
-  ['ig_altas_d', 'Instagram · seguidores nuevos'], ['ig_inter_d', 'Instagram · interacciones'],
+  ['ig_altas_d', 'Instagram · seguidores nuevos'], ['oc:ig:inter_org', 'Instagram · interacciones orgánicas'],
   ['fb_visitas', 'Facebook · visitas a la página'], ['fb_altas', 'Facebook · seguidores nuevos'],
-  ['ig_vistas_d', 'Instagram · vistas'], ['fb_vistas', 'Facebook · vistas'],
+  ['oc:ig:vistas_org', 'Instagram · vistas orgánicas'], ['oc:fb:vistas_org', 'Facebook · vistas orgánicas'],
 ];
+// Antes/después de un indicador: de `cuenta` (salud-marca) o, con prefijo `oc:`, de lo orgánico.
+function periodoCuenta(c, k) {
+  if (!k.startsWith('oc:')) return (c.periodos || {})[k] || {};
+  const [, red, m] = k.split(':'), oc = OC();
+  if (!oc.dias) return {};
+  return { antes: promOC(red, m, oc.antes[0], oc.antes[1]), despues: promOC(red, m, oc.despues[0], oc.dias[oc.dias.length - 1]) };
+}
+
 function renderCuenta(app) {
   const c = D.cuenta || {};
   if (!c.dias) { app.innerHTML = estado(c, 'Cuenta'); return; }
@@ -749,17 +859,21 @@ function renderCuenta(app) {
     <p class="hint">Promedio por día del ${diaMes(c.despues[0])} en adelante contra el ${diaMes(c.antes[0])}–${diaMes(c.antes[1])}.
       Es la cuenta entera (no solo los posts de la Rosa): sirve para ver si la acción movió el perfil, la página y los seguidores.</p>
     <div class="cuatro">${IND_CUENTA.map(([k, n]) => {
-      const p = (c.periodos || {})[k] || {};
+      const p = periodoCuenta(c, k);
       return `<div class="panel mini"><h3>${n}</h3>
         <div class="tot">${n0((p.despues || {}).prom)} <small style="font-size:11.5px;font-weight:500;color:var(--text-muted-2)">/día</small> ${delta((p.despues || {}).prom, (p.antes || {}).prom)}</div>
         <div class="cap">antes: ${n0((p.antes || {}).prom)}/día · ${(p.despues || {}).dias || 0} días medidos desde el ${diaMes(c.despues[0])}</div>
-        <div class="ch chico"><canvas id="c_${k}"></canvas></div></div>`;
+        <div class="ch chico"><canvas id="c_${k.replace(/:/g, '_')}"></canvas></div></div>`;
     }).join('')}</div>
+    <p class="hint" style="margin-top:10px">Visitas al perfil, clics al sitio y seguidores nuevos incluyen lo que trae la pauta: Meta no los separa.
+      Vistas e interacciones son solo orgánicas.</p>
   </div>`;
   IND_CUENTA.forEach(([k, n]) => {
-    const serie = (c.serie || {})[k] || [];
-    mkMulti('c_' + k, c.dias, [{ type: 'bar', label: n, data: serie,
-      color: c.dias.map((d, i) => i >= iIni ? C.rosa : cssv('--border-strong')) }], { marcas: iIni >= 0 ? [iIni] : [] });
+    let dias = c.dias, serie = (c.serie || {})[k] || [];
+    if (k.startsWith('oc:')) { const [, red, m] = k.split(':'); dias = OC().dias || []; serie = serieOC(red, m); }
+    const i0 = dias.indexOf(c.despues[0]);
+    mkMulti('c_' + k.replace(/:/g, '_'), dias, [{ type: 'bar', label: n, data: serie,
+      color: dias.map((d, i) => i >= i0 ? C.rosa : cssv('--border-strong')) }], { marcas: i0 >= 0 ? [i0] : [] });
   });
 }
 

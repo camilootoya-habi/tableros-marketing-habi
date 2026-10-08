@@ -121,3 +121,37 @@ def test_miniaturas_borra_las_que_salen_con_su_grande(tmp_path):
         open(os.path.join(B.MINIATURAS, f), "wb").write(b"x")
     con = B.miniaturas(["queda"], {})
     assert sorted(os.listdir(B.MINIATURAS)) == ["queda.jpg"] and con == {"queda"}
+
+
+def test_ig_dia_separa_anuncios_y_pide_el_dia_correcto(monkeypatch):
+    pedidos = []
+
+    def falso(path, **p):
+        pedidos.append((p["since"], p["until"]))
+        res = lambda tipos: {"breakdowns": [{"results": [{"dimension_values": [k], "value": v} for k, v in tipos.items()]}]}
+        return {"data": [{"name": "views", "total_value": res({"AD": 1000, "REEL": 30, "STORY": 5, "PROFILE_PIC": 1})},
+                         {"name": "reach", "total_value": res({"AD": 800, "REEL": 20})},
+                         {"name": "total_interactions", "total_value": res({"AD": 9, "REEL": 4})}]}
+    monkeypatch.setattr(B, "_get", falso)
+    v = B.ig_dia("2026-10-05", "tok")
+    assert v["vistas_org"] == 36 and v["vistas_ads"] == 1000 and v["vistas_reel"] == 30 and v["vistas_story"] == 5
+    assert v["alcance_org"] == 20 and v["inter_org"] == 4
+    # El día 5 de Meta se pide con la ventana [6-oct, 7-oct) en UTC.
+    assert pedidos == [(B.SOCIAL._ts(B.datetime.date(2026, 10, 6)), B.SOCIAL._ts(B.datetime.date(2026, 10, 7)))]
+
+
+def test_dias_ig_a_pedir_solo_faltantes_y_recientes():
+    guardados = {f"2026-10-0{d}": {} for d in range(1, 7)}
+    assert B.dias_ig_a_pedir(guardados, "2026-09-30", "2026-10-08") == ["2026-09-30", "2026-10-05", "2026-10-06", "2026-10-07"]
+
+
+def test_fb_serie_con_desglose_de_anuncios():
+    vals = [{"end_time": "2026-10-06T07:00:00+0000", "is_from_ads": "0", "value": 3},
+            {"end_time": "2026-10-06T07:00:00+0000", "is_from_ads": "1", "value": 900}]
+    assert B.fb_serie(vals, "is_from_ads") == {"2026-10-05": {"0": 3, "1": 900}}
+
+
+def test_organico_cuenta_caida_sale_error_sin_tumbar_el_resto():
+    d = B.build(hoy="2026-10-07", ahora="2026-10-07T12:00:00Z")
+    assert d["organico_cuenta"]["status"] == "error" and "token" in d["organico_cuenta"]["reason"]
+    assert set(d) >= {"pagado", "organico", "cuenta"}
