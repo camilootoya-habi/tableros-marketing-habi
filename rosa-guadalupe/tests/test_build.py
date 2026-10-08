@@ -129,20 +129,38 @@ def test_ig_dia_separa_anuncios_y_pide_el_dia_correcto(monkeypatch):
     def falso(path, **p):
         pedidos.append((p["since"], p["until"]))
         res = lambda tipos: {"breakdowns": [{"results": [{"dimension_values": [k], "value": v} for k, v in tipos.items()]}]}
+        if p["metric"] == "follows_and_unfollows":
+            return {"data": [{"name": "follows_and_unfollows", "total_value": res({"FOLLOWER": 33, "NON_FOLLOWER": 9})}]}
         return {"data": [{"name": "views", "total_value": res({"AD": 1000, "REEL": 30, "STORY": 5, "PROFILE_PIC": 1})},
+                         {"name": "likes", "total_value": res({"AD": 90, "REEL": 48, "STORY": 5})},
                          {"name": "reach", "total_value": res({"AD": 800, "REEL": 20})},
                          {"name": "total_interactions", "total_value": res({"AD": 9, "REEL": 4})}]}
     monkeypatch.setattr(B, "_get", falso)
     v = B.ig_dia("2026-10-05", "tok")
     assert v["vistas_org"] == 36 and v["vistas_ads"] == 1000 and v["vistas_reel"] == 30 and v["vistas_story"] == 5
     assert v["alcance_org"] == 20 and v["inter_org"] == 4
-    # El día 5 de Meta se pide con la ventana [6-oct, 7-oct) en UTC.
-    assert pedidos == [(B.SOCIAL._ts(B.datetime.date(2026, 10, 6)), B.SOCIAL._ts(B.datetime.date(2026, 10, 7)))]
+    assert (v["likes_org"], v["likes_ads"], v["likes_reel"]) == (53, 90, 48)
+    assert (v["altas"], v["bajas"]) == (33, 9)
+    # El día 5 de Meta se pide con la ventana [6-oct, 7-oct) en UTC (las dos llamadas).
+    ventana = (B.SOCIAL._ts(B.datetime.date(2026, 10, 6)), B.SOCIAL._ts(B.datetime.date(2026, 10, 7)))
+    assert pedidos == [ventana, ventana]
 
 
-def test_dias_ig_a_pedir_solo_faltantes_y_recientes():
-    guardados = {f"2026-10-0{d}": {} for d in range(1, 7)}
-    assert B.dias_ig_a_pedir(guardados, "2026-09-30", "2026-10-08") == ["2026-09-30", "2026-10-05", "2026-10-06", "2026-10-07"]
+def test_dias_ig_a_pedir_solo_faltantes_viejos_y_recientes():
+    guardados = {f"2026-10-0{d}": {"altas": 1} for d in range(1, 7)}
+    guardados["2026-10-02"] = {"vistas_org": 5}   # de la versión anterior: sin altas → se repide
+    assert B.dias_ig_a_pedir(guardados, "2026-09-30", "2026-10-07") == \
+        ["2026-09-30", "2026-10-02", "2026-10-05", "2026-10-06", "2026-10-07"]
+
+
+def test_ultimo_cerrado_respeta_el_corte_de_las_7_utc():
+    utc = B.datetime.timezone.utc
+    assert B.ultimo_cerrado(B.datetime.datetime(2026, 10, 8, 2, 0, tzinfo=utc)) == "2026-10-06"
+    assert B.ultimo_cerrado(B.datetime.datetime(2026, 10, 8, 8, 0, tzinfo=utc)) == "2026-10-07"
+
+
+def test_tono_de_reacciones():
+    assert B.tono({"like": 10, "love": 2, "haha": 1, "sorry": 3, "anger": 1}) == (13, 4)
 
 
 def test_fb_serie_con_desglose_de_anuncios():
@@ -155,3 +173,13 @@ def test_organico_cuenta_caida_sale_error_sin_tumbar_el_resto():
     d = B.build(hoy="2026-10-07", ahora="2026-10-07T12:00:00Z")
     assert d["organico_cuenta"]["status"] == "error" and "token" in d["organico_cuenta"]["reason"]
     assert set(d) >= {"pagado", "organico", "cuenta"}
+
+
+def test_fb_serie_altas_pagadas_y_reacciones_por_tipo():
+    vals = [{"end_time": "2026-10-06T07:00:00+0000", "value": {"total": 29, "paid": 16, "unpaid": 13}}]
+    assert B.fb_serie(vals) == {"2026-10-05": {"total": 29, "paid": 16, "unpaid": 13}}
+
+
+def test_posiciones_suman_lo_mismo_que_el_total():
+    filas = [{"inversion": 1.5, "impresiones": 10, "pos": "feed"}, {"inversion": 2.25, "impresiones": 30, "pos": "instagram_reels"}]
+    assert B.sumar(filas) == {"inversion": 3.75, "impresiones": 40}

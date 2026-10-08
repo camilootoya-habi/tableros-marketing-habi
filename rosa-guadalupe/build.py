@@ -50,7 +50,8 @@ ACCIONES = {"link_click": "clics_link", "landing_page_view": "landing", "post_en
             "post_reaction": "reacciones", "comment": "comentarios", "post": "compartidos",
             "onsite_conversion.post_save": "guardados", "video_view": "video_3s",
             "offsite_conversion.fb_pixel_lead": "leads", "offsite_conversion.fb_pixel_purchase": "compras",
-            "offsite_conversion.fb_pixel_complete_registration": "registros"}
+            "offsite_conversion.fb_pixel_complete_registration": "registros",
+            "onsite_conversion.post_unlike": "unlikes"}
 # Atribución por vista (vio el anuncio, no le dio clic, y convirtió en 1 día): se separa porque es la
 # parte más discutible de lo que Meta se atribuye.
 POR_VISTA = {"leads": "leads_vista", "compras": "compras_vista"}
@@ -214,13 +215,16 @@ def pagado(cfg, hoy):
                     action_attribution_windows=VENTANAS, **base)
     crudas = [f for f in crudas if (f.get("ad_name") or "").lower().startswith(pref.lower())]
     filas = [_fila(f) for f in crudas]
-    # 2. Por plataforma (Facebook / Instagram / otras), total por anuncio.
+    # 2. Por plataforma y posición (Reels, Historias, Feed…), total por anuncio. La vista por
+    # plataforma se arma sumando posiciones.
     plat = []
-    for f in _todas(f"{act}/insights", level="ad", fields="ad_id,ad_name,spend,impressions,clicks,inline_link_clicks,actions",
-                    breakdowns="publisher_platform", **base):
+    for f in _todas(f"{act}/insights", level="ad", breakdowns="publisher_platform,platform_position",
+                    fields="ad_id,ad_name,spend,impressions,clicks,inline_link_clicks,actions,estimated_ad_recallers,"
+                           "video_thruplay_watched_actions", action_attribution_windows=VENTANAS, **base):
         if (f.get("ad_name") or "").lower().startswith(pref.lower()):
             p = f.get("publisher_platform")
-            plat.append(dict(metricas_fila(f), ad=f.get("ad_id"), plat=p if p in ("facebook", "instagram") else "otras"))
+            plat.append(dict(metricas_fila(f), ad=f.get("ad_id"), plat=p if p in ("facebook", "instagram") else "otras",
+                             red=p, pos=f.get("platform_position")))
     # 3 y 4. Alcance ÚNICO (no se puede sumar por día ni por anuncio): por campaña y total.
     alcance = {"total": {}, "campanas": {}}
     for f in _get(f"{act}/insights", level="campaign", fields="campaign_id,objective,reach,impressions", **base).get("data") or []:
@@ -384,6 +388,7 @@ def organico(cfg):
             p.update(_insights(p["id"], FB_METRICAS, ptok))
             p["interacciones"] = p.get("reacciones", 0) + p.get("comentarios", 0) + p.get("compartidos", 0)
             p.update(_fb_post_ads(p["id"], ptok))
+            p.update(_fb_reacciones(p["id"], ptok))
         p["texto"] = p.pop("texto_completo").strip().split("\n")[0][:160]
         out.append(p)
     return sorted(out, key=lambda p: p["fecha"], reverse=True), imagenes
@@ -403,6 +408,28 @@ def _fb_post_ads(post_id, token):
             if k and isinstance(v.get("value"), (int, float)):
                 out[k] = out.get(k, 0) + v["value"]
     return out
+
+
+# Reacciones de Facebook: negativas = me entristece y me enoja (decisión de Camilo, 8-oct). En IG no
+# existen tipos de reacción.
+NEGATIVAS = {"sorry", "anger"}
+
+
+def _fb_reacciones(post_id, token):
+    """{r_like, r_love, ...} de por vida de un post de FB."""
+    try:
+        pl = _get(f"{post_id}/insights", reintentos=0, metric="post_reactions_by_type_total", access_token=token)
+    except RuntimeError as e:
+        print(f"WARN reacciones {post_id}: {e}")
+        return {}
+    v = (((pl.get("data") or [{}])[0].get("values") or [{}])[0]).get("value") or {}
+    return {f"r_{k}": n for k, n in v.items() if isinstance(n, (int, float))} if isinstance(v, dict) else {}
+
+
+def tono(reacciones):
+    """{tipo: n} → (positivas, negativas)."""
+    pos = sum(n for k, n in reacciones.items() if k not in NEGATIVAS)
+    return pos, sum(n for k, n in reacciones.items() if k in NEGATIVAS)
 
 
 def promedio_previo(social, inicio, dias=90):
@@ -452,7 +479,10 @@ def cuenta(social, inicio, hoy, dias_antes=14, dias_serie=35):
 # FB: la serie diaria de vistas con `is_from_ads` en una llamada; el alcance y las interacciones de la
 # página ignoran ese desglose, así que de FB no hay alcance ni interacciones orgánicas diarias.
 FORMATOS_IG = {"REEL": "reel", "POST": "post", "STORY": "story", "CAROUSEL_CONTAINER": "carrusel"}
-IG_DIA = {"views": "vistas", "reach": "alcance", "total_interactions": "inter"}
+IG_DIA = {"views": "vistas", "reach": "alcance", "total_interactions": "inter", "likes": "likes",
+          "comments": "comentarios", "shares": "compartidos", "saves": "guardados"}
+# Si un día del caché no tiene este campo es de una versión anterior y se vuelve a pedir.
+IG_CAMPO_VERSION = "altas"
 DIAS_IG_RECIENTES = 3   # Meta corrige los días recientes con uno o dos días de atraso
 
 
@@ -463,10 +493,20 @@ def ig_dia(fecha, token):
     # ventana: para el día D se pide [D+1, D+2) en UTC. Con [D, D+1) devuelve el día ANTERIOR
     # (verificado el 8-oct contra la serie diaria de `reach`: 225,252 es el 4-oct, 205,223 el 5-oct).
     d = datetime.date.fromisoformat(fecha) + datetime.timedelta(days=1)
-    pl = _get(f"{IG_ID}/insights", metric=",".join(IG_DIA), period="day", metric_type="total_value",
-              breakdown="media_product_type", since=SOCIAL._ts(d), until=SOCIAL._ts(d + datetime.timedelta(days=1)),
-              access_token=token)
+    ventana = dict(period="day", metric_type="total_value", since=SOCIAL._ts(d),
+                   until=SOCIAL._ts(d + datetime.timedelta(days=1)), access_token=token)
+    pl = _get(f"{IG_ID}/insights", metric=",".join(IG_DIA), breakdown="media_product_type", **ventana)
     out = {}
+    # Altas y bajas: Meta no las separa entre pauta y orgánico.
+    seg = _get(f"{IG_ID}/insights", metric="follows_and_unfollows", breakdown="follow_type", **ventana)
+    for m in seg.get("data") or []:
+        for bd in (m.get("total_value") or {}).get("breakdowns") or []:
+            for x in bd.get("results") or []:
+                k = {"FOLLOWER": "altas", "NON_FOLLOWER": "bajas"}.get(x["dimension_values"][0])
+                if k:
+                    out[k] = x.get("value") or 0
+    out.setdefault("altas", 0)
+    out.setdefault("bajas", 0)
     for m in pl.get("data") or []:
         base = IG_DIA.get(m.get("name"))
         if not base:
@@ -485,15 +525,21 @@ def ig_dia(fecha, token):
     return out
 
 
-def dias_ig_a_pedir(guardados, desde, hoy):
-    """Los días que faltan en el caché entre `desde` y ayer, más los últimos días recientes."""
-    ayer = datetime.date.fromisoformat(hoy) - datetime.timedelta(days=1)
+def ultimo_cerrado(ahora_utc=None):
+    """El último día que Meta ya cerró: el día D cierra a las 07:00 UTC de D+1."""
+    ahora_utc = ahora_utc or datetime.datetime.now(datetime.timezone.utc)
+    return ((ahora_utc - datetime.timedelta(hours=7)).date() - datetime.timedelta(days=1)).isoformat()
+
+
+def dias_ig_a_pedir(guardados, desde, hasta):
+    """Los días entre `desde` y `hasta` que faltan en el caché (o son de una versión anterior), más
+    los últimos días recientes."""
     todos, d = [], datetime.date.fromisoformat(desde)
-    while d <= ayer:
+    while d <= datetime.date.fromisoformat(hasta):
         todos.append(d.isoformat())
         d += datetime.timedelta(days=1)
     recientes = set(todos[-DIAS_IG_RECIENTES:])
-    return [f for f in todos if f not in guardados or f in recientes]
+    return [f for f in todos if f not in guardados or IG_CAMPO_VERSION not in guardados[f] or f in recientes]
 
 
 def fb_serie(valores, clave_bd=None):
@@ -508,13 +554,14 @@ def fb_serie(valores, clave_bd=None):
     return out
 
 
-def organico_cuenta(cfg, hoy, cache, dias_antes=14):
+def organico_cuenta(cfg, hoy, cache, dias_antes=14, ahora_utc=None, social=None):
     ini = datetime.date.fromisoformat(cfg["inicio_organico"])
     desde = (ini - datetime.timedelta(days=dias_antes)).isoformat()
+    hasta = min(ultimo_cerrado(ahora_utc), hoy)
     tok = _token()
     # IG, día por día con caché.
     guardados = cache.setdefault("ig_dia", {})
-    for f in dias_ig_a_pedir(guardados, desde, hoy):
+    for f in dias_ig_a_pedir(guardados, desde, hasta):
         v = ig_dia(f, tok)
         if v.get("vistas_org") or v.get("vistas_ads"):   # un día sin datos todavía no llegó
             guardados[f] = v
@@ -531,18 +578,32 @@ def organico_cuenta(cfg, hoy, cache, dias_antes=14):
     pl = _get(f"{PAGE_ID}/insights", metric="page_video_views_organic,page_video_views_paid", period="day",
               since=a, until=b, access_token=ptok)
     fb_video = {d["name"]: fb_serie(d.get("values")) for d in pl.get("data") or []}
+    # Seguidores: altas pagadas/orgánicas, bajas, total y reacciones por tipo (una llamada).
+    pl = _get(f"{PAGE_ID}/insights", metric="page_fan_adds_by_paid_non_paid_unique,page_daily_unfollows_unique,"
+              "page_follows,page_actions_post_reactions_total", period="day", since=a, until=b, access_token=ptok)
+    fb_seg = {d["name"]: fb_serie(d.get("values")) for d in pl.get("data") or []}
+    altas = fb_seg.get("page_fan_adds_by_paid_non_paid_unique") or {}
+    reac = fb_seg.get("page_actions_post_reactions_total") or {}
 
-    dias = sorted(d for d in set(guardados) | set(fb_vistas) if desde <= d <= hoy)
+    dias = sorted(d for d in set(guardados) | set(fb_vistas) if desde <= d <= hasta)
     ig = {k: [guardados.get(d, {}).get(k) for d in dias] for k in sorted({k for v in guardados.values() for k in v})}
     fb = {"vistas_org": [fb_vistas.get(d, {}).get("0") for d in dias],
           "vistas_ads": [fb_vistas.get(d, {}).get("1") for d in dias],
           "video_org": [(fb_video.get("page_video_views_organic") or {}).get(d) for d in dias],
-          "video_ads": [(fb_video.get("page_video_views_paid") or {}).get(d) for d in dias]}
-    # Meta devuelve el día en curso a medias: se descarta hoy.
-    if dias and dias[-1] >= hoy:
-        dias, ig, fb = dias[:-1], {k: v[:-1] for k, v in ig.items()}, {k: v[:-1] for k, v in fb.items()}
+          "video_ads": [(fb_video.get("page_video_views_paid") or {}).get(d) for d in dias],
+          "altas_pag": [(altas.get(d) or {}).get("paid") if isinstance(altas.get(d), dict) else None for d in dias],
+          "altas_org": [(altas.get(d) or {}).get("unpaid") if isinstance(altas.get(d), dict) else None for d in dias],
+          "bajas": [(fb_seg.get("page_daily_unfollows_unique") or {}).get(d) for d in dias],
+          "seguidores": [(fb_seg.get("page_follows") or {}).get(d) for d in dias]}
+    for tipo in sorted({k for v in reac.values() if isinstance(v, dict) for k in v}):
+        fb[f"r_{tipo}"] = [(reac.get(d) or {}).get(tipo, 0) if isinstance(reac.get(d), dict) else None for d in dias]
+    fb["r_pos"] = [None if not isinstance(reac.get(d), dict) else tono(reac[d])[0] for d in dias]
+    fb["r_neg"] = [None if not isinstance(reac.get(d), dict) else tono(reac[d])[1] for d in dias]
+    # Seguidores de IG: la foto diaria que guarda salud-marca (`ig_total`, sin corrimiento de día).
+    datos = ((social or {}).get("datos") or {}).get("MX") or {}
+    ig["seguidores"] = [(datos.get(d) or {}).get("ig_total") for d in dias]
     antes = (desde, (ini - datetime.timedelta(days=1)).isoformat())
-    return {"dias": dias, "ig": ig, "fb": fb, "antes": antes, "despues": (cfg["inicio_organico"], hoy)}
+    return {"dias": dias, "ig": ig, "fb": fb, "antes": antes, "despues": (cfg["inicio_organico"], hasta)}
 
 
 def miniaturas(ids, imagenes, grandes=(), chica=240, grande=720):
@@ -618,7 +679,7 @@ def build(hoy=None, ahora=None):
         return {"posts": posts, "promedio": promedio_previo(social, cfg["inicio_organico"])}
 
     def _organico_cuenta():
-        return organico_cuenta(cfg, hoy, cache)
+        return organico_cuenta(cfg, hoy, cache, social=social)
 
     def _cuenta():
         if not social:

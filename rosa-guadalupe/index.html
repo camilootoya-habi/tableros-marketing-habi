@@ -149,6 +149,26 @@
   .red-h small { font-weight: 500; color: var(--text-muted-3); font-size: 12px; }
   .opt { font-size: 11.5px; line-height: 1.5; color: var(--text-muted); margin-top: 3px; }
   .opt b { color: var(--text-title); }
+  .tipo-camp { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin-bottom: 14px; }
+  @media (max-width: 900px) { .tipo-camp { grid-template-columns: 1fr; } }
+  .tipo-camp > div { background: var(--card); border: 1px solid var(--border); border-top: 4px solid var(--c); border-radius: 10px; padding: 12px 14px; min-width: 0; }
+  .tipo-camp .k { font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: .6px; color: var(--c); }
+  .tipo-camp .v { font-size: 22px; font-weight: 800; color: var(--text-title); margin: 3px 0; font-variant-numeric: tabular-nums; }
+  .tipo-camp .v small { font-size: 12px; font-weight: 600; color: var(--text-muted-2); }
+  .tipo-camp .d { font-size: 12px; color: var(--text-muted); line-height: 1.55; }
+  .tipo-camp .off { opacity: .55; }
+  .barra-pct { display: inline-block; width: 90px; height: 8px; border-radius: 99px; background: var(--row-border); overflow: hidden; vertical-align: middle; margin-right: 6px; }
+  .barra-pct i { display: block; height: 100%; background: var(--accent); }
+  .lado { display: flex; height: 9px; border-radius: 99px; overflow: hidden; background: var(--row-border); min-width: 120px; }
+  .lado i:first-child { background: var(--accent); } .lado i:last-child { background: #0ea5e9; }
+  td.mejor b, td.mejor { color: #059669 !important; font-weight: 700; } td.peor { color: #dc2626 !important; }
+  .bloque { border-top: 2px solid var(--accent); padding-top: 10px; margin: 26px 0 12px; }
+  .bloque-h { font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: 1.3px; color: var(--accent); display: flex; align-items: center; }
+  .bloque-p { font-size: 12.5px; color: var(--text-muted-2); margin-top: 3px; line-height: 1.5; max-width: 860px; }
+  .tres { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+  .tres > * { min-width: 0; }
+  @media (max-width: 1000px) { .tres { grid-template-columns: 1fr; } }
+  .tres + .red-h, .cuatro + .red-h { margin-top: 18px; }
   .empty-metric { background: var(--card); border: 1px dashed var(--border-strong); border-radius: 10px; padding: 24px; text-align: center; font-size: 12.5px; color: var(--text-muted-3); line-height: 1.6; }
 </style>
 <script>
@@ -291,6 +311,42 @@ const AYUDA = {
   vistas_org: ['Vistas orgánicas por día de publicación', `
     <p>Las vistas que lleva hoy cada publicación, sumadas en el día en que se publicó. Un post del 2-oct
     lleva una semana juntando vistas y uno de ayer, un día: por eso los días recientes se ven más bajos.</p>`],
+  posiciones: ['Plataforma y posición', `
+    <p>Las dos campañas usan <strong>ubicaciones automáticas (Advantage+)</strong>: Meta decide en qué plataforma y
+    posición mostrar cada anuncio según lo que optimiza la campaña.</p>
+    <ul><li><strong>Alcance</strong> (recordación): busca impresiones baratas con probabilidad de recuerdo, y se va a
+    Reels e Historias de Instagram.</li>
+    <li><strong>Leads</strong> (valor de Purchase): va donde predice conversiones, que en Tuhabi es Facebook.</li></ul>
+    <p>El <code>_Facebook</code> / <code>_Instagram</code> del nombre del anuncio <strong>no</strong> decide dónde
+    corre: el 8-oct los <code>_Facebook</code> de alcance habían corrido 79% en Instagram. Para forzarlo hay que
+    separar conjuntos con ubicaciones manuales.</p>
+    <p>Verde: el mejor costo de la columna entre las posiciones con al menos 5% de la inversión; rojo, el peor.</p>`],
+  tipos_campana: ['Los tres tipos de campaña', `
+    <p>Cada tipo se juzga por lo que optimiza, no por lo mismo:</p>
+    <ul><li><strong>Alcance</strong>: personas que recuerdan el anuncio (estimación de Meta) y su costo.</li>
+    <li><strong>Leads</strong>: el evento Purchase del píxel, que es lo que optimiza la campaña, y su costo.</li>
+    <li><strong>Interacción</strong>: interacciones con la publicación y su costo (todavía no hay campaña).</li></ul>`],
+  pago_org: ['Pago contra orgánico', `
+    <p>Solo la Rosa: los anuncios <code>Rosa_*</code> contra los posts orgánicos de la acción.</p>
+    <ul><li><strong>Vistas</strong>: impresiones en lo pago; vistas por post en lo orgánico (en Facebook, solo las orgánicas).</li>
+    <li><strong>Interacciones</strong>: reacciones + comentarios + compartidos + guardados. En lo pago, Meta llama
+    "interacción" también a cada reproducción de video; aquí no se cuentan, para comparar lo mismo.</li>
+    <li><strong>Alcance</strong>: único en lo pago; en lo orgánico es la suma por post de Instagram (Facebook no lo da).</li></ul>`],
+  efecto_pago: ['Efecto pago', `
+    <p>Toda la pauta de la cuenta (todas las campañas de Tuhabi), tal como la separa Meta: vistas e interacciones
+    marcadas como de anuncio, y en Facebook las altas de seguidores atribuidas a anuncios.</p>
+    <p>Encima, qué parte fue de los anuncios Rosa: sus impresiones ÷ las vistas de anuncios de la cuenta (es
+    aproximado: impresión y vista no son exactamente lo mismo).</p>`],
+  seguidores: ['Seguidores, altas y bajas', `
+    <p><strong>Altas</strong>: cuentas que empezaron a seguir ese día. <strong>Bajas</strong>: las que dejaron de seguir.
+    Facebook separa las altas que vinieron de anuncios de las orgánicas; Instagram no.</p>
+    <p>El total de seguidores de Instagram sale de la foto diaria de Salud de marca.</p>`],
+  reacciones: ['Reacciones positivas y negativas', `
+    <p>Solo existen en Facebook. <strong>Negativas</strong>: Me entristece y Me enoja. <strong>Positivas</strong>: el resto
+    (Me gusta, Me encanta, Me importa, Me divierte, Me asombra).</p>
+    <p>Las de la página mezclan pauta y orgánico (Meta no las separa). En los anuncios Rosa la señal negativa es
+    <strong>"ya no me gusta"</strong>: quien había reaccionado y lo quitó.</p>
+    <p>Meta retiró las métricas de "ocultar" y "reportar".</p>`],
   impacto_org: ['Impacto orgánico', `
     <p>Lo que Meta llama "vistas de la cuenta" incluye los <strong>anuncios</strong> de todas las campañas, y en
     Tuhabi son ~99%. Aquí se separan:</p>
@@ -372,7 +428,7 @@ const leyenda = items => `<div class="legend">${items.map(([t, c]) => `<span><i 
 let D = null;
 const SUMABLES = ['inversion', 'impresiones', 'clics', 'clics_link', 'landing', 'interacciones', 'reacciones', 'comentarios',
   'compartidos', 'guardados', 'video_3s', 'leads', 'thruplay', 'p25', 'p50', 'p75', 'p100', 'recordacion',
-  'compras', 'compras_vista', 'leads_vista', 'valor_compras', 'registros'];
+  'compras', 'compras_vista', 'leads_vista', 'valor_compras', 'registros', 'unlikes'];
 function sumar(filas) {
   const o = {}; SUMABLES.forEach(k => o[k] = 0);
   filas.forEach(f => SUMABLES.forEach(k => o[k] += f[k] || 0));
@@ -431,82 +487,88 @@ function render() {
 }
 window.rerender = render;
 
-// ── Resumen ───────────────────────────────────────────────────────────────────
+// ── Resumen (solo la Rosa) ────────────────────────────────────────────────────
+const TIPOS = [['alcance', 'recordacion', 'personas que recuerdan', 'por recordación'],
+               ['leads', 'compras', 'eventos Purchase', 'por Purchase'],
+               ['interaccion', 'interacciones', 'interacciones', 'por interacción']];
+const interSinVideo = s => (s.reacciones || 0) + (s.comentarios || 0) + (s.compartidos || 0) + (s.guardados || 0);
+
 function renderResumen(app) {
   const pg = D.pagado || {}, org = D.organico || {};
-  const filas = pg.filas || [], posts = org.posts || [];
+  const filas = pg.filas || [], posts = org.posts || [], A = pg.anuncios || {};
   const t = sumar(filas);
-  const ov = posts.reduce((s, p) => s + (p.vistas || 0), 0), oi = posts.reduce((s, p) => s + (p.interacciones || 0), 0);
-  const ovIG = posts.filter(p => p.red === 'ig').reduce((s, p) => s + (p.vistas || 0), 0);
-  const alc = ((pg.alcance || {}).total || {}).alcance;
-  const piezas = new Set(Object.values(pg.anuncios || {}).map(a => a.pieza));
-  const obj = objetivosPresentes();
-  const dias = filas.length ? rangoDias(D.config.inicio_pagado, filas.map(f => f.d).sort().pop()) : [];
+  const hoy = (D.generated_at || '').slice(0, 10);
+  const diasAccion = Math.round((new Date(hoy) - new Date(D.config.inicio_organico)) / 864e5) + 1;
+  const piezas = new Set(Object.values(A).map(a => a.pieza));
+  const activos = Object.values(A).filter(a => a.estado === 'ACTIVE').length;
+  const ig = posts.filter(p => p.red === 'ig'), fb = posts.filter(p => p.red === 'fb');
+  const dias = rangoDias(D.config.inicio_organico, [hoy, ...filas.map(f => f.d)].sort().pop());
+  const s = (ps, k) => ps.reduce((a, p) => a + (p[k] || 0), 0);
+  const vistaOrg = p => p.red === 'fb' && p.vistas_org != null ? p.vistas_org : (p.vistas || 0);
+
+  // Pago contra orgánico: [indicador, pago, orgánico, nota]
+  const lado = [
+    ['Vistas', t.impresiones, posts.reduce((a, p) => a + vistaOrg(p), 0), 'impresiones · vistas por post'],
+    ['Alcance', ((pg.alcance || {}).total || {}).alcance, s(ig, 'alcance'), 'único · suma por post de IG'],
+    ['Interacciones', interSinVideo(t), s(posts, 'interacciones'), 'sin contar reproducciones'],
+    ['Reacciones y likes', t.reacciones, s(ig, 'likes') + s(fb, 'reacciones'), ''],
+    ['Comentarios', t.comentarios, s(posts, 'comentarios'), ''],
+    ['Compartidos', t.compartidos, s(posts, 'compartidos'), ''],
+    ['Guardados', t.guardados, s(ig, 'guardados'), 'solo IG en lo orgánico'],
+    ['Clics', t.clics_link, s(fb, 'clics'), 'al sitio · en el post (FB)'],
+    ['Reproducciones de video', t.video_3s, s(fb, 'vistas_video'), '3 s o más · FB orgánico'],
+  ];
 
   app.innerHTML = estado(pg, 'Pagado') + estado(org, 'Orgánico') + `
   <div class="section">
-    <h2>La acción en una línea ${ayuda('fuentes')}</h2>
-    <p class="hint">Desde el ${diaMes(D.config.inicio_organico)} (orgánico) y el ${diaMes(D.config.inicio_pagado)} (pauta),
-      hasta el último dato disponible.</p>
+    <h2>La Rosa de Guadalupe en una línea ${ayuda('fuentes')}</h2>
+    <p class="hint">Solo la acción: los posts orgánicos con la Rosa y los anuncios <code>Rosa_*</code>, desde el ${diaMes(D.config.inicio_organico)}.</p>
     <div class="ficha">
-      <div><div class="k">Vistas totales ${ayuda('orgpag')}</div><div class="v">${fmtMil(t.impresiones + ov)}</div>
-        <div class="d">${fmtMil(t.impresiones)} impresiones pagadas + ${fmtMil(ov)} vistas orgánicas</div></div>
-      <div><div class="k">Alcance pagado ${ayuda('alcance_unico')}</div><div class="v">${fmtMil(alc)}</div>
-        <div class="d">personas distintas · frecuencia ${(div(((pg.alcance || {}).total || {}).impresiones, alc) || 0).toFixed(2)}</div></div>
-      <div><div class="k">Interacciones</div><div class="v">${fmtMil(t.interacciones + oi)}</div>
-        <div class="d">${fmtMil(t.interacciones)} pagadas (incluye reproducciones) + ${n0(oi)} orgánicas</div></div>
-      <div><div class="k">Clics al sitio ${ayuda('ctr')}</div><div class="v">${n0(t.clics_link)}</div>
-        <div class="d">de la pauta · ${n0(t.landing)} visitas a la landing ${ayuda('landing')}</div></div>
-      <div><div class="k">Evento Lead (píxel) ${ayuda('leads')}</div><div class="v">${n0(t.leads)}</div>
-        <div class="d">se dispara en el ${pct(div(t.leads, t.landing), 0)} de las visitas: no son leads del CRM</div></div>
-      <div><div class="k">Evento Purchase (píxel) ${ayuda('compras')}</div><div class="v">${n0(t.compras)}</div>
-        <div class="d">el que optimiza la campaña de leads · ${usd(div(t.inversion, t.compras))} c/u</div></div>
-      <div><div class="k">Inversión</div><div class="v">${usd(t.inversion)}</div>
-        <div class="d">${obj.map(o => `${NOMBRE_OBJ[o]} ${usd(sumar(filas.filter(f => f.obj === o)).inversion)}`).join(' · ')}</div></div>
-      <div><div class="k">Piezas</div><div class="v">${piezas.size} <small style="font-size:12px;font-weight:500">pagadas</small></div>
-        <div class="d">${Object.keys(pg.anuncios || {}).length} anuncios · ${posts.length} posts orgánicos
-          (${posts.filter(p => p.red === 'ig').length} IG, ${posts.filter(p => p.red === 'fb').length} FB)</div></div>
+      <div><div class="k">Días de acción</div><div class="v">${diasAccion}</div><div class="d">desde el ${diaMes(D.config.inicio_organico)}</div></div>
+      <div><div class="k">Publicaciones orgánicas</div><div class="v">${posts.length}</div><div class="d">${ig.length} en Instagram · ${fb.length} en Facebook</div></div>
+      <div><div class="k">Piezas pagadas</div><div class="v">${piezas.size}</div><div class="d">${Object.keys(A).length} anuncios · ${activos} activos hoy</div></div>
+      <div><div class="k">Inversión</div><div class="v">${usd(t.inversion)}</div><div class="d">${usd(div(t.inversion, dias.length))} por día en promedio</div></div>
+      <div><div class="k">Vistas totales</div><div class="v">${fmtMil(lado[0][1] + lado[0][2])}</div><div class="d">${pct(div(lado[0][2], lado[0][1] + lado[0][2]), 1)} orgánicas</div></div>
+      <div><div class="k">Interacciones totales</div><div class="v">${n0(lado[2][1] + lado[2][2])}</div><div class="d">${pct(div(lado[2][2], lado[2][1] + lado[2][2]), 0)} orgánicas</div></div>
     </div>
   </div>
   <div class="section">
-    <h2>Día a día</h2>
+    <h2>Inversión por tipo de campaña ${ayuda('tipos_campana')}</h2>
+    <div class="tipo-camp">${TIPOS.map(([o, k, nombre, porQue]) => {
+      const sf = sumar(filas.filter(f => f.obj === o));
+      const hay = filas.some(f => f.obj === o);
+      return `<div style="--c:${COLOR_OBJ[o]}" class="${hay ? '' : 'off'}"><div class="k">${NOMBRE_OBJ[o]}</div>
+        ${hay ? `<div class="v">${usd(sf.inversion)} <small>${pct(div(sf.inversion, t.inversion), 0)} del total</small></div>
+          <div class="d"><b>${n0(o === 'interaccion' ? interSinVideo(sf) : sf[k])}</b> ${nombre} · ${usd(div(sf.inversion, o === 'interaccion' ? interSinVideo(sf) : sf[k]))} ${porQue}<br>
+          ${fmtMil(sf.impresiones)} impresiones · CPM ${usd(div(sf.inversion * 1000, sf.impresiones))} · ${n0(sf.clics_link)} clics al sitio</div>`
+        : '<div class="v">—</div><div class="d">Todavía no hay una campaña de este tipo con anuncios Rosa. Cuando exista, aparece aquí sola.</div>'}</div>`;
+    }).join('')}</div>
     <div class="grid2">
-      <div class="panel"><h3>Impresiones pagadas por objetivo, e inversión</h3>
-        <div class="cap">Columnas apiladas: impresiones de cada objetivo. Línea: inversión del día (eje derecho).</div>
-        <div class="ch"><canvas id="r_imp"></canvas></div>
-        ${leyenda(obj.map(o => [NOMBRE_OBJ[o], COLOR_OBJ[o]]).concat([['Inversión (US$)', cssv('--text-muted-2')]]))}</div>
-      <div class="panel"><h3>Vistas orgánicas por día de publicación ${ayuda('vistas_org')}</h3>
-        <div class="cap">Lo que lleva hoy cada post, en el día en que se publicó.</div>
-        <div class="ch"><canvas id="r_org"></canvas></div>
-        ${leyenda([['Instagram', C.ig], ['Facebook', C.fb]])}</div>
+      <div class="panel"><h3>Inversión por día, por tipo de campaña</h3><div class="cap">US$ por día</div>
+        <div class="ch"><canvas id="r_inv"></canvas></div>${leyenda(TIPOS.filter(([o]) => filas.some(f => f.obj === o)).map(([o]) => [NOMBRE_OBJ[o], COLOR_OBJ[o]]))}</div>
+      <div class="panel"><h3>Publicaciones por día</h3><div class="cap">Columnas: posts orgánicos publicados. Línea: anuncios Rosa con inversión ese día (eje derecho).</div>
+        <div class="ch"><canvas id="r_pubs"></canvas></div>${leyenda([['Instagram', C.ig], ['Facebook', C.fb], ['Anuncios activos', C.rosa]])}</div>
     </div>
   </div>
   <div class="section">
-    <h2>Orgánico y pagado, lado a lado ${ayuda('orgpag')}</h2>
+    <h2>Pago contra orgánico ${ayuda('pago_org')}</h2>
+    <p class="hint">Los indicadores principales de la Rosa, lado a lado. La barra muestra qué parte es pago (rosa) y qué parte orgánico (azul).</p>
     <div class="t-wrap"><table class="t">
-      <tr><th></th><th>Vistas / impresiones</th><th>Reproducciones 3 s</th><th>Interacciones</th><th>Compartidos</th><th>Guardados</th><th>Inversión</th></tr>
-      ${filaLado('Instagram orgánico', posts.filter(p => p.red === 'ig'))}
-      ${filaLado('Facebook orgánico', posts.filter(p => p.red === 'fb'))}
-      ${obj.map(o => { const s = sumar(filas.filter(f => f.obj === o)); return `<tr><td><b>Pauta · ${NOMBRE_OBJ[o]}</b></td><td>${n0(s.impresiones)}</td><td>${n0(s.video_3s)}</td><td>${n0(s.interacciones)}</td><td>${n0(s.compartidos)}</td><td>${n0(s.guardados)}</td><td>${usd(s.inversion)}</td></tr>`; }).join('')}
+      <tr><th>Indicador</th><th>Pago</th><th>Orgánico</th><th>Total</th><th style="text-align:left">Pago · orgánico</th><th style="text-align:left">Nota</th></tr>
+      ${lado.map(([n, p, o, nota]) => { const tot = (p || 0) + (o || 0); return `<tr><td><b>${n}</b></td><td>${n0(p)}</td><td>${n0(o)}</td><td><b>${n0(tot)}</b></td>
+        <td><div class="lado"><i style="width:${tot ? 100 * (p || 0) / tot : 0}%"></i><i style="width:${tot ? 100 * (o || 0) / tot : 0}%"></i></div></td>
+        <td style="text-align:left;color:var(--text-muted-3)">${nota}</td></tr>`; }).join('')}
+      <tr><td><b>Inversión</b></td><td>${usd(t.inversion)}</td><td>—</td><td><b>${usd(t.inversion)}</b></td><td></td><td style="text-align:left;color:var(--text-muted-3)">ThruPlays pagados: ${n0(t.thruplay)}</td></tr>
     </table></div>
   </div>`;
 
-  const dImp = obj.map(o => ({ type: 'bar', label: NOMBRE_OBJ[o], color: COLOR_OBJ[o], orden: 2,
-    data: porDia(filas.filter(f => f.obj === o), dias, s => s.impresiones) }));
-  mkMulti('r_imp', dias, dImp.concat([{ label: 'Inversión', eje: 'y1', color: cssv('--text-muted-2'), data: porDia(filas, dias, s => s.inversion) }]),
-          { apilado: true, fmtDerecha: 'usd' });
-  if (posts.length) {
-    const hoy = posts.map(p => p.fecha).concat(dias).sort().pop();
-    const dOrg = rangoDias(D.config.inicio_organico, hoy);
-    const v = red => dOrg.map(d => posts.filter(p => p.red === red && p.fecha === d).reduce((s, p) => s + (p.vistas || 0), 0) || null);
-    mkMulti('r_org', dOrg, [{ type: 'bar', label: 'Instagram', color: C.ig, data: v('ig') }, { type: 'bar', label: 'Facebook', color: C.fb, data: v('fb') }], { apilado: true });
-  }
-}
-function filaLado(nombre, ps) {
-  const s = k => ps.reduce((a, p) => a + (p[k] || 0), 0);
-  return `<tr><td><b>${nombre}</b> <small style="color:var(--text-muted-3)">${ps.length} posts</small></td><td>${n0(s('vistas'))}</td>
-    <td>${n0(s('vistas_video')) === '0' ? '—' : n0(s('vistas_video'))}</td><td>${n0(s('interacciones'))}</td><td>${n0(s('compartidos'))}</td>
-    <td>${ps.some(p => p.guardados != null) ? n0(s('guardados')) : '—'}</td><td>—</td></tr>`;
+  mkMulti('r_inv', dias, TIPOS.filter(([o]) => filas.some(f => f.obj === o)).map(([o]) =>
+    ({ type: 'bar', label: NOMBRE_OBJ[o], color: COLOR_OBJ[o], data: porDia(filas.filter(f => f.obj === o), dias, x => x.inversion) })), { apilado: true, fmt: 'usd' });
+  const pubs = r => dias.map(d => posts.filter(p => p.red === r && p.fecha === d).length || null);
+  const activosDia = dias.map(d => new Set(filas.filter(f => f.d === d && f.inversion).map(f => f.ad)).size || null);
+  mkMulti('r_pubs', dias, [{ type: 'bar', label: 'Instagram', color: C.ig, data: pubs('ig'), orden: 2 },
+                           { type: 'bar', label: 'Facebook', color: C.fb, data: pubs('fb'), orden: 2 },
+                           { label: 'Anuncios activos', color: C.rosa, eje: 'y1', data: activosDia }], { apilado: true });
 }
 
 // ── Pagado ────────────────────────────────────────────────────────────────────
@@ -560,6 +622,11 @@ function renderPagado(app) {
     ${comp.length ? `<div class="comp">${comp.map(panelComparativo).join('')}</div>` : '<div class="empty-metric">Sin campañas para comparar.</div>'}
   </div>
   <div class="section">
+    <h2>Dónde se mostró: plataforma y posición ${ayuda('posiciones')}</h2>
+    <p class="hint">Meta reparte solo (ubicaciones automáticas). Así se fue la inversión de los anuncios Rosa${OBJ === 'todos' ? '' : ' de ' + NOMBRE_OBJ[OBJ].toLowerCase()}.</p>
+    ${tablaPosiciones(filas, pg.plataforma || [])}
+  </div>
+  <div class="section">
     <h2>Piezas ${ayuda('piezas')}</h2>
     <p class="hint">Ordenadas por inversión. Cada pieza junta sus versiones de Facebook e Instagram.</p>
     ${tablaPiezas(filas, A, pg.plataforma || [])}
@@ -569,8 +636,8 @@ function renderPagado(app) {
     <div class="grid2">
       <div class="panel"><h3>Cuántos llegan a cada punto del video</h3><div class="cap">Reproducciones, de 3 segundos al final.</div>
         <div class="ch"><canvas id="p_ret"></canvas></div></div>
-      <div class="panel"><h3>Impresiones por plataforma</h3><div class="cap">Dónde se mostraron los anuncios.</div>
-        <div class="ch"><canvas id="p_plat"></canvas></div></div>
+      <div class="panel"><h3>Reparto de la inversión por posición</h3><div class="cap">Cada columna es un tipo de campaña (100% = su inversión).</div>
+        <div class="ch"><canvas id="p_plat"></canvas></div><div id="p_plat_ley"></div></div>
     </div>
   </div>`;
 
@@ -584,12 +651,59 @@ function renderPagado(app) {
   mkMulti('p_cpl', dias, [{ label: 'CPL', color, data: porDia(filas, dias, s => div(s.inversion, s.leads)) }], { fmt: 'usd' });
   const ret = [['3 s', t.video_3s], ['25%', t.p25], ['50%', t.p50], ['75%', t.p75], ['100%', t.p100], ['ThruPlay', t.thruplay]];
   mkMulti('p_ret', ret.map(r => r[0]), [{ type: 'bar', label: 'Reproducciones', color, data: ret.map(r => r[1]) }]);
-  const ads = new Set(filas.map(f => f.ad));
-  const pl = ['facebook', 'instagram', 'otras'].map(p => (pg.plataforma || []).filter(x => x.plat === p && ads.has(x.ad)).reduce((s, x) => s + (x.impresiones || 0), 0));
-  mkMulti('p_plat', ['Facebook', 'Instagram', 'Otras (Audience Network, Threads)'], [{ type: 'bar', label: 'Impresiones', color: [C.fb, C.ig, C.gris], data: pl }], { horizontal: true });
+  // Reparto por posición, una columna por tipo de campaña. Las posiciones chicas (<3%) van juntas.
+  const objs = objetivosPresentes().filter(o => OBJ === 'todos' || o === OBJ);
+  const filasPos = (pg.plataforma || []).filter(x => objs.includes((pg.anuncios[x.ad] || {}).obj));
+  const totObj = o => sumar(filasPos.filter(x => (pg.anuncios[x.ad] || {}).obj === o)).inversion;
+  const grandes = [...new Set(filasPos.map(nombrePos))].filter(n => objs.some(o => div(sumar(filasPos.filter(x => nombrePos(x) === n && (pg.anuncios[x.ad] || {}).obj === o)).inversion, totObj(o)) >= .03));
+  const series = grandes.concat(['Otras posiciones']);
+  const PAL = [C.ig, C.rosaClaro, C.fb, C.azul, C.cian, C.verde, C.ambar, '#a855f7', '#64748b', C.gris];
+  mkMulti('p_plat', objs.map(o => NOMBRE_OBJ[o]), series.map((n, i) => ({ type: 'bar', label: n, color: PAL[i % PAL.length],
+    data: objs.map(o => div(sumar(filasPos.filter(x => (pg.anuncios[x.ad] || {}).obj === o && (n === 'Otras posiciones' ? !grandes.includes(nombrePos(x)) : nombrePos(x) === n))).inversion, totObj(o))) })),
+    { apilado: true, fmt: 'pct1' });
+  document.getElementById('p_plat_ley').innerHTML = leyenda(series.map((n, i) => [n, PAL[i % PAL.length]]));
 }
 
 // Una ficha que dice, por campaña, a qué optimiza Meta y con qué atribución.
+const RED_NOMBRE = { instagram: 'Instagram', facebook: 'Facebook', audience_network: 'Audience Network', threads: 'Threads', messenger: 'Messenger' };
+const POS_NOMBRE = { instagram_reels: 'Reels', instagram_stories: 'Historias', feed: 'Feed', instagram_search: 'Búsqueda',
+  instagram_explore: 'Explorar', facebook_reels: 'Reels', facebook_reels_overlay: 'Reels (overlay)', facebook_stories: 'Historias',
+  instream_video: 'Video in-stream', marketplace: 'Marketplace', right_hand_column: 'Columna derecha', search: 'Búsqueda',
+  facebook_profile_feed: 'Feed de perfil', facebook_notification: 'Notificaciones', an_classic: 'Audience Network', threads_feed: 'Feed', video_feeds: 'Feed de videos' };
+const nombrePos = x => `${RED_NOMBRE[x.red] || x.red} · ${POS_NOMBRE[x.pos] || (x.pos || '').replace(/_/g, ' ')}`;
+
+function tablaPosiciones(filas, plat) {
+  const ads = new Set(filas.map(f => f.ad));
+  const grupos = {};
+  plat.filter(x => ads.has(x.ad)).forEach(x => { const k = nombrePos(x); (grupos[k] = grupos[k] || { red: x.red, filas: [] }).filas.push(x); });
+  const tot = sumar(plat.filter(x => ads.has(x.ad)));
+  const rows = Object.entries(grupos).map(([k, g]) => ({ k, red: g.red, s: sumar(g.filas) })).filter(r => r.s.inversion >= 0.5 || r.s.impresiones >= 500)
+    .sort((a, b) => b.s.inversion - a.s.inversion);
+  if (!rows.length) return '<div class="empty-metric">Sin datos por posición.</div>';
+  // Mejor y peor costo por columna, solo entre posiciones con ≥5% de la inversión.
+  const relevantes = rows.filter(r => div(r.s.inversion, tot.inversion) >= .05);
+  const cols = { cpm: r => div(r.s.inversion * 1000, r.s.impresiones), cpr: r => div(r.s.inversion, r.s.recordacion),
+                 cpc: r => div(r.s.inversion, r.s.compras), cpl: r => div(r.s.inversion, r.s.clics_link) };
+  const extremos = {};
+  Object.entries(cols).forEach(([c, f]) => { const v = relevantes.map(f).filter(x => x != null); if (v.length > 1) extremos[c] = [Math.min(...v), Math.max(...v)]; });
+  const marca = (c, v) => v == null || !extremos[c] ? '' : v === extremos[c][0] ? 'mejor' : v === extremos[c][1] ? 'peor' : '';
+  const celda = (c, r, fmt) => { const v = cols[c](r); return `<td class="${marca(c, v)}">${fmt(v)}</td>`; };
+  const color = r => r.red === 'instagram' ? C.ig : r.red === 'facebook' ? C.fb : C.gris;
+  return `<div class="t-wrap"><table class="t">
+    <tr><th>Plataforma · posición</th><th>Inversión</th><th style="text-align:left">% de la inversión</th><th>Impresiones</th><th>CPM</th><th>CTR al sitio</th><th>Costo x clic</th>
+      <th>Landing</th><th>Evento Lead</th><th>Purchase</th><th>Costo x Purchase</th><th>Recordación</th><th>Costo x recordación</th><th>ThruPlay ÷ impr.</th></tr>
+    ${rows.map(r => `<tr><td><span style="display:inline-block;width:9px;height:9px;border-radius:50%;background:${color(r)};margin-right:6px"></span><b>${r.k}</b></td>
+      <td><b>${usd(r.s.inversion)}</b></td>
+      <td style="text-align:left"><span class="barra-pct"><i style="width:${100 * (div(r.s.inversion, tot.inversion) || 0)}%;background:${color(r)}"></i></span>${pct(div(r.s.inversion, tot.inversion), 0)}</td>
+      <td>${n0(r.s.impresiones)}</td>${celda('cpm', r, usd)}<td>${pct(div(r.s.clics_link, r.s.impresiones))}</td>${celda('cpl', r, usd)}
+      <td>${n0(r.s.landing)}</td><td>${n0(r.s.leads)}</td><td>${r.s.compras ? n0(r.s.compras) : '—'}</td>${celda('cpc', r, usd)}
+      <td>${r.s.recordacion ? n0(r.s.recordacion) : '—'}</td>${celda('cpr', r, usd)}<td>${pct(div(r.s.thruplay, r.s.impresiones), 1)}</td></tr>`).join('')}
+    <tr><td><b>Total</b></td><td><b>${usd(tot.inversion)}</b></td><td></td><td><b>${n0(tot.impresiones)}</b></td><td>${usd(div(tot.inversion * 1000, tot.impresiones))}</td>
+      <td>${pct(div(tot.clics_link, tot.impresiones))}</td><td>${usd(div(tot.inversion, tot.clics_link))}</td><td>${n0(tot.landing)}</td><td>${n0(tot.leads)}</td>
+      <td>${n0(tot.compras)}</td><td>${usd(div(tot.inversion, tot.compras))}</td><td>${n0(tot.recordacion)}</td><td>${usd(div(tot.inversion, tot.recordacion))}</td><td>${pct(div(tot.thruplay, tot.impresiones), 1)}</td></tr>
+  </table></div>`;
+}
+
 function fichaOptimiza(pg, obj) {
   const camps = Object.entries(pg.optimizacion || {}).filter(([cid]) => {
     const o = ((pg.alcance || {}).campanas || {})[cid] || {};
@@ -834,47 +948,141 @@ function graficasImpacto(posts) {
     { label: 'Posts Rosa', color: C.rosa, data: acumRosa(posts, red, dd) }]));
 }
 
-// ── Efecto en la cuenta ───────────────────────────────────────────────────────
-const IND_CUENTA = [
-  ['ig_perfil_d', 'Instagram · visitas al perfil'], ['ig_clics_d', 'Instagram · clics al sitio'],
-  ['ig_altas_d', 'Instagram · seguidores nuevos'], ['oc:ig:inter_org', 'Instagram · interacciones orgánicas'],
-  ['fb_visitas', 'Facebook · visitas a la página'], ['fb_altas', 'Facebook · seguidores nuevos'],
-  ['oc:ig:vistas_org', 'Instagram · vistas orgánicas'], ['oc:fb:vistas_org', 'Facebook · vistas orgánicas'],
-];
-// Antes/después de un indicador: de `cuenta` (salud-marca) o, con prefijo `oc:`, de lo orgánico.
-function periodoCuenta(c, k) {
-  if (!k.startsWith('oc:')) return (c.periodos || {})[k] || {};
-  const [, red, m] = k.split(':'), oc = OC();
-  if (!oc.dias) return {};
-  return { antes: promOC(red, m, oc.antes[0], oc.antes[1]), despues: promOC(red, m, oc.despues[0], oc.dias[oc.dias.length - 1]) };
+// ── Efecto en la cuenta: orgánico, pago, seguidores y reacciones ─────────────────────────────
+// Todo sale de `organico_cuenta` (días cerrados por Meta, ventana corregida). Cada panel: promedio por
+// día desde el 2-oct contra los 14 días anteriores, y su gráfica con la línea del arranque.
+let _pend = [];
+function sumaDia(red, keys, signo = []) {
+  return (OC().dias || []).map((d, i) => {
+    const vals = keys.map(k => serieOC(red, k)[i]);
+    return vals.every(v => v == null) ? null : vals.reduce((a, v, j) => a + (v || 0) * (signo[j] || 1), 0);
+  });
+}
+function promSerie(serie, a, b) {
+  const v = []; (OC().dias || []).forEach((d, i) => { if (d >= a && d <= b && serie[i] != null) v.push(serie[i]); });
+  return v.length ? v.reduce((s, x) => s + x, 0) / v.length : null;
+}
+// Un panel con su promedio antes/después. `capas`: [[clave, nombre, color, signo]] (signo -1 = abajo del cero).
+function panelOC(id, titulo, red, capas, o = {}) {
+  const oc = OC();
+  const total = sumaDia(red, capas.map(c => c[0]), capas.map(c => c[3] || 1));
+  const desp = promSerie(total, oc.despues[0], oc.dias[oc.dias.length - 1]), ant = promSerie(total, oc.antes[0], oc.antes[1]);
+  _pend.push(() => {
+    const iIni = oc.dias.indexOf(oc.despues[0]);
+    mkMulti(id, oc.dias, capas.map(([k, n, c, sg]) => ({ type: o.linea ? 'line' : 'bar', label: n, color: c,
+      data: serieOC(red, k).map(v => v == null ? null : v * (sg || 1)) })), { apilado: !o.linea && capas.length > 1, marcas: iIni >= 0 ? [iIni] : [], fmt: o.fmt });
+  });
+  return `<div class="panel mini"><h3>${titulo}</h3>
+    ${o.sinTot ? '' : `<div class="tot">${n0(desp)} <small style="font-size:11.5px;font-weight:500;color:var(--text-muted-2)">/día</small> ${delta(desp, ant, o.menosEsMejor)}</div>`}
+    <div class="cap">${o.cap || `antes: ${n0(ant)}/día`}</div><div class="ch chico"><canvas id="${id}"></canvas></div>
+    ${capas.length > 1 ? leyenda(capas.map(c => [c[1], c[2]])) : ''}</div>`;
 }
 
 function renderCuenta(app) {
-  const c = D.cuenta || {};
-  if (!c.dias) { app.innerHTML = estado(c, 'Cuenta'); return; }
-  const iIni = c.dias.indexOf(c.despues[0]);
-  app.innerHTML = estado(c, 'Cuenta') + `
+  const oc = OC();
+  if (!oc.dias) { app.innerHTML = estado(oc, 'Orgánico de la cuenta'); return; }
+  _pend = [];
+  const pg = D.pagado || {};
+  const [a0, a1] = oc.antes, d0 = oc.despues[0], d1 = oc.dias[oc.dias.length - 1];
+  const tot = (red, k) => (promOC(red, k, d0, d1) || {}).total || 0;
+  // Parte Rosa de la pauta: impresiones de los anuncios Rosa en cada red, mismos días.
+  const rosaImp = red => (pg.plataforma || []).filter(x => x.red === red).reduce((s, x) => s + (x.impresiones || 0), 0);
+  const filasRosa = (pg.filas || []).filter(f => f.d >= d0 && f.d <= d1);
+  const R = sumar(filasRosa);
+  const sig = red => serieOC(red, 'seguidores');
+  // Neto = altas − bajas desde el arranque (la foto diaria del total no siempre llega tan atrás).
+  const netoSeg = red => {
+    const alt = red === 'ig' ? sumaDia('ig', ['altas']) : sumaDia('fb', ['altas_pag', 'altas_org']), baj = serieOC(red, 'bajas');
+    let s = 0, hay = false;
+    oc.dias.forEach((d, i) => { if (d >= d0 && alt[i] != null) { s += alt[i] - (baj[i] || 0); hay = true; } });
+    return hay ? s : null;
+  };
+  const negPct = (a, b) => { const p = promSerie(sumaDia('fb', ['r_pos']), a, b), n = promSerie(sumaDia('fb', ['r_neg']), a, b); return p + n ? n / (p + n) : null; };
+  const fbPosts = ((D.organico || {}).posts || []).filter(p => p.red === 'fb');
+  const tiposR = ['like', 'love', 'care', 'haha', 'wow', 'sorry', 'anger'];
+  const NOMBRE_R = { like: 'Me gusta', love: 'Me encanta', care: 'Me importa', haha: 'Me divierte', wow: 'Me asombra', sorry: 'Me entristece', anger: 'Me enoja' };
+  const rosaR = tiposR.map(k => fbPosts.reduce((s, p) => s + (p['r_' + k] || 0), 0));
+
+  app.innerHTML = estado(oc, 'Orgánico de la cuenta') + `
   <div class="section">
-    <h2>Toda la cuenta: antes y desde la acción ${ayuda('cuenta')}</h2>
-    <p class="hint">Promedio por día del ${diaMes(c.despues[0])} en adelante contra el ${diaMes(c.antes[0])}–${diaMes(c.antes[1])}.
-      Es la cuenta entera (no solo los posts de la Rosa): sirve para ver si la acción movió el perfil, la página y los seguidores.</p>
-    <div class="cuatro">${IND_CUENTA.map(([k, n]) => {
-      const p = periodoCuenta(c, k);
-      return `<div class="panel mini"><h3>${n}</h3>
-        <div class="tot">${n0((p.despues || {}).prom)} <small style="font-size:11.5px;font-weight:500;color:var(--text-muted-2)">/día</small> ${delta((p.despues || {}).prom, (p.antes || {}).prom)}</div>
-        <div class="cap">antes: ${n0((p.antes || {}).prom)}/día · ${(p.despues || {}).dias || 0} días medidos desde el ${diaMes(c.despues[0])}</div>
-        <div class="ch chico"><canvas id="c_${k.replace(/:/g, '_')}"></canvas></div></div>`;
-    }).join('')}</div>
-    <p class="hint" style="margin-top:10px">Visitas al perfil, clics al sitio y seguidores nuevos incluyen lo que trae la pauta: Meta no los separa.
-      Vistas e interacciones son solo orgánicas.</p>
+    <h2>Efecto en la cuenta ${ayuda('cuenta')}</h2>
+    <p class="hint">Toda la cuenta de Tuhabi, promedio por día del ${diaMes(d0)} al ${diaMes(d1)} contra el ${diaMes(a0)}–${diaMes(a1)}.
+      Lo orgánico y lo pago van por separado; en gris los días antes de la acción, la línea punteada es el arranque.</p>
+
+    <div class="bloque"><div class="bloque-h">Efecto orgánico ${ayuda('impacto_org')}</div>
+      <div class="bloque-p">Lo que la cuenta movió sin anuncios.</div></div>
+    <div class="red-h"><i style="background:${C.ig}"></i>Instagram</div>
+    <div class="cuatro">
+      ${panelOC('e_ig_v', 'Vistas orgánicas', 'ig', [['vistas_org', 'Vistas', C.ig]])}
+      ${panelOC('e_ig_a', `Alcance orgánico ${ayuda('alcance_formato')}`, 'ig', [['alcance_org', 'Alcance', C.ig]])}
+      ${panelOC('e_ig_i', 'Interacciones orgánicas', 'ig', [['likes_org', 'Likes', C.ig], ['comentarios_org', 'Comentarios', C.ambar], ['compartidos_org', 'Compartidos', C.azul], ['guardados_org', 'Guardados', C.verde]])}
+      ${panelOC('e_ig_c', 'Compartidos y guardados', 'ig', [['compartidos_org', 'Compartidos', C.azul], ['guardados_org', 'Guardados', C.verde]])}
+    </div>
+    <div class="red-h"><i style="background:${C.fb}"></i>Facebook</div>
+    <div class="tres">
+      ${panelOC('e_fb_v', 'Vistas orgánicas', 'fb', [['vistas_org', 'Vistas', C.fb]])}
+      ${panelOC('e_fb_vid', 'Reproducciones de video orgánicas', 'fb', [['video_org', 'Reproducciones', C.fb]])}
+      ${panelOC('e_fb_alt', 'Seguidores nuevos orgánicos', 'fb', [['altas_org', 'Altas orgánicas', C.fb]])}
+    </div>
+
+    <div class="bloque"><div class="bloque-h">Efecto pago ${ayuda('efecto_pago')}</div>
+      <div class="bloque-p">Toda la pauta de la cuenta (todas las campañas). Los anuncios Rosa fueron
+        <b>${pct(div(rosaImp('instagram'), tot('ig', 'vistas_ads')), 1)}</b> de las vistas de anuncios en Instagram y
+        <b>${pct(div(rosaImp('facebook'), tot('fb', 'vistas_ads')), 1)}</b> en Facebook desde el ${diaMes(d0)}.</div></div>
+    <div class="red-h"><i style="background:${C.ig}"></i>Instagram</div>
+    <div class="tres">
+      ${panelOC('p_ig_v', 'Vistas de anuncios', 'ig', [['vistas_ads', 'Vistas', C.ig]])}
+      ${panelOC('p_ig_i', 'Interacciones con anuncios', 'ig', [['likes_ads', 'Likes', C.ig], ['comentarios_ads', 'Comentarios', C.ambar], ['compartidos_ads', 'Compartidos', C.azul], ['guardados_ads', 'Guardados', C.verde]])}
+      ${panelOC('p_ig_a', 'Alcance de anuncios', 'ig', [['alcance_ads', 'Alcance', C.ig]])}
+    </div>
+    <div class="red-h"><i style="background:${C.fb}"></i>Facebook</div>
+    <div class="tres">
+      ${panelOC('p_fb_v', 'Vistas de anuncios', 'fb', [['vistas_ads', 'Vistas', C.fb]])}
+      ${panelOC('p_fb_vid', 'Reproducciones de video pagadas', 'fb', [['video_ads', 'Reproducciones', C.fb]])}
+      ${panelOC('p_fb_alt', 'Seguidores nuevos por anuncios', 'fb', [['altas_pag', 'Altas pagadas', C.fb]])}
+    </div>
+    <div class="red-h"><i style="background:${C.rosa}"></i>Anuncios Rosa <small>del ${diaMes(d0)} al ${diaMes(d1)}</small></div>
+    <div class="ficha">
+      <div><div class="k">Reacciones</div><div class="v">${n0(R.reacciones)}</div><div class="d">${n0(R.comentarios)} comentarios</div></div>
+      <div><div class="k">Compartidos</div><div class="v">${n0(R.compartidos)}</div><div class="d">${n0(R.guardados)} guardados</div></div>
+      <div><div class="k">"Ya no me gusta" ${ayuda('reacciones')}</div><div class="v">${n0(R.unlikes)}</div><div class="d">${pct(div(R.unlikes, R.reacciones), 0)} de las reacciones</div></div>
+      <div><div class="k">Interacciones por mil impresiones</div><div class="v">${(div(interSinVideo(R) * 1000, R.impresiones) || 0).toFixed(2)}</div><div class="d">reacciones + comentarios + compartidos + guardados</div></div>
+    </div>
+
+    <div class="bloque"><div class="bloque-h">Seguidores ${ayuda('seguidores')}</div>
+      <div class="bloque-p">Altas arriba del cero, bajas abajo. Facebook separa las altas que trajeron los anuncios; Instagram no.</div></div>
+    <div class="ficha">
+      <div><div class="k">Instagram · neto (altas − bajas) desde el ${diaMes(d0)}</div><div class="v">${netoSeg('ig') == null ? '—' : (netoSeg('ig') >= 0 ? '+' : '') + n0(netoSeg('ig'))}</div>
+        <div class="d">${n0([...sig('ig')].reverse().find(v => v != null))} seguidores hoy</div></div>
+      <div><div class="k">Facebook · neto (altas − bajas) desde el ${diaMes(d0)}</div><div class="v">${netoSeg('fb') == null ? '—' : (netoSeg('fb') >= 0 ? '+' : '') + n0(netoSeg('fb'))}</div>
+        <div class="d">${n0([...sig('fb')].reverse().find(v => v != null))} seguidores hoy</div></div>
+    </div>
+    <div class="cuatro">
+      ${panelOC('s_ig_ab', 'Instagram · altas y bajas', 'ig', [['altas', 'Altas', C.ig], ['bajas', 'Bajas', C.gris, -1]], { cap: `altas ${n0(promSerie(serieOC('ig', 'altas'), d0, d1))}/día · bajas ${n0(promSerie(serieOC('ig', 'bajas'), d0, d1))}/día (neto por día arriba)` })}
+      ${panelOC('s_ig_t', 'Instagram · seguidores', 'ig', [['seguidores', 'Seguidores', C.ig]], { linea: true, sinTot: true, cap: 'total por día' })}
+      ${panelOC('s_fb_ab', 'Facebook · altas y bajas', 'fb', [['altas_pag', 'Altas pagadas', C.rosa], ['altas_org', 'Altas orgánicas', C.fb], ['bajas', 'Bajas', C.gris, -1]], { cap: `bajas ${n0(promSerie(serieOC('fb', 'bajas'), d0, d1))}/día (neto por día arriba)` })}
+      ${panelOC('s_fb_t', 'Facebook · seguidores', 'fb', [['seguidores', 'Seguidores', C.fb]], { linea: true, sinTot: true, cap: 'total por día' })}
+    </div>
+
+    <div class="bloque"><div class="bloque-h">Reacciones positivas y negativas ${ayuda('reacciones')}</div>
+      <div class="bloque-p">Solo Facebook (Instagram no tiene tipos de reacción). Las de la página mezclan pauta y orgánico.</div></div>
+    <div class="ficha">
+      <div><div class="k">% negativas en la página</div><div class="v">${pct(negPct(d0, d1), 2)} ${delta(negPct(d0, d1), negPct(a0, a1), true)}</div><div class="d">antes: ${pct(negPct(a0, a1), 2)}</div></div>
+      <div><div class="k">Posts Rosa · negativas</div><div class="v">${n0(rosaR[5] + rosaR[6])}</div><div class="d">de ${n0(rosaR.reduce((a, b) => a + b, 0))} reacciones en ${fbPosts.length} posts</div></div>
+    </div>
+    <div class="tres">
+      ${panelOC('r_fb_pn', 'Página · positivas y negativas por día', 'fb', [['r_pos', 'Positivas', C.verde], ['r_neg', 'Negativas', '#dc2626', -1]], { cap: 'negativas abajo del cero' })}
+      <div class="panel mini"><h3>Posts Rosa · reacciones por tipo</h3><div class="cap">De por vida, ${fbPosts.length} posts de Facebook</div><div class="ch chico"><canvas id="r_rosa_tipo"></canvas></div></div>
+      <div class="panel mini"><h3>Anuncios Rosa · reacciones y "ya no me gusta"</h3><div class="cap">Por día</div><div class="ch chico"><canvas id="r_ads"></canvas></div>
+        ${leyenda([['Reacciones', C.verde], ['Ya no me gusta', '#dc2626']])}</div>
+    </div>
   </div>`;
-  IND_CUENTA.forEach(([k, n]) => {
-    let dias = c.dias, serie = (c.serie || {})[k] || [];
-    if (k.startsWith('oc:')) { const [, red, m] = k.split(':'); dias = OC().dias || []; serie = serieOC(red, m); }
-    const i0 = dias.indexOf(c.despues[0]);
-    mkMulti('c_' + k.replace(/:/g, '_'), dias, [{ type: 'bar', label: n, data: serie,
-      color: dias.map((d, i) => i >= i0 ? C.rosa : cssv('--border-strong')) }], { marcas: i0 >= 0 ? [i0] : [] });
-  });
+  _pend.forEach(f => f());
+  mkMulti('r_rosa_tipo', tiposR.map(k => NOMBRE_R[k]), [{ type: 'bar', label: 'Reacciones', data: rosaR,
+    color: tiposR.map(k => ['sorry', 'anger'].includes(k) ? '#dc2626' : C.verde) }]);
+  const diasR = rangoDias(D.config.inicio_pagado, (pg.filas || []).map(f => f.d).sort().pop() || d1);
+  mkMulti('r_ads', diasR, [{ type: 'bar', label: 'Reacciones', color: C.verde, data: porDia(pg.filas || [], diasR, s => s.reacciones) },
+                            { type: 'bar', label: 'Ya no me gusta', color: '#dc2626', data: porDia(pg.filas || [], diasR, s => -(s.unlikes || 0)) }], { apilado: true });
 }
 
 // ── Arranque ──────────────────────────────────────────────────────────────────
