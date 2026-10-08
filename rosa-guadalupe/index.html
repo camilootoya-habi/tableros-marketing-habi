@@ -169,6 +169,17 @@
   .tres > * { min-width: 0; }
   @media (max-width: 1000px) { .tres { grid-template-columns: 1fr; } }
   .tres + .red-h, .cuatro + .red-h { margin-top: 18px; }
+  .coms { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 10px; }
+  .com { background: var(--card); border: 1px solid var(--border); border-left: 4px solid var(--c); border-radius: 9px; padding: 10px 12px; min-width: 0; display: flex; flex-direction: column; gap: 6px; }
+  .com.pend { border-color: var(--border); border-left-color: #f59e0b; }
+  .com .meta { display: flex; flex-wrap: wrap; gap: 5px; align-items: center; font-size: 11px; color: var(--text-muted-3); }
+  .com .tag { font-size: 10.5px; font-weight: 700; border-radius: 4px; padding: 1px 6px; color: #fff; }
+  .com .tag.gris { background: var(--row-border); color: var(--text-muted-2); }
+  .com .tag.ok { background: rgba(16, 185, 129, .15); color: #059669; }
+  .com .tag.no { background: rgba(245, 158, 11, .18); color: #b45309; }
+  .com .txt { font-size: 13px; color: var(--text-title); line-height: 1.5; white-space: pre-wrap; overflow-wrap: anywhere; }
+  .com .pie { display: flex; justify-content: space-between; gap: 8px; font-size: 11.5px; color: var(--text-muted-2); }
+  .com .pie a { color: var(--accent); font-weight: 600; text-decoration: none; }
   .empty-metric { background: var(--card); border: 1px dashed var(--border-strong); border-radius: 10px; padding: 24px; text-align: center; font-size: 12.5px; color: var(--text-muted-3); line-height: 1.6; }
 </style>
 <script>
@@ -365,6 +376,12 @@ const AYUDA = {
   alcance_formato: ['Alcance orgánico (suma por formato)', `
     <p>Cuentas distintas que vieron un Reel, un Post, una Historia o un Carrusel ese día, <strong>sumadas por formato</strong>:
     si alguien vio un Reel y una Historia cuenta dos veces. Meta no da el alcance orgánico sin duplicar.</p>`],
+  comentarios: ['Comentarios', `
+    <p>Los comentarios de la audiencia en los posts orgánicos de la Rosa y en los posts que hay detrás de cada anuncio
+    <code>Rosa_*</code>, tal como los publica Meta. Varios anuncios comparten post: cada comentario cuenta una vez.</p>
+    <p><strong>Respondido</strong>: Tuhabi contestó en el hilo de ese comentario. Los comentarios de la propia cuenta
+    no se cuentan.</p>
+    <p>En los anuncios de Instagram Meta no entrega el usuario. Se actualiza con el resto del tablero.</p>`],
   orgpag: ['Orgánico y pagado, lado a lado', `
     <p>Vistas: en lo pagado son impresiones (cada vez que se mostró un anuncio); en lo orgánico, las vistas
     que reporta Meta por publicación. Son comparables en orden de magnitud, no al uno por uno.</p>
@@ -452,15 +469,17 @@ function estado(sec, nombre) {
 }
 
 // ── Hojas ─────────────────────────────────────────────────────────────────────
-const HOJAS = [['resumen', 'Resumen'], ['pagado', 'Pagado'], ['organico', 'Orgánico'], ['cuenta', 'Efecto en la cuenta']];
+const HOJAS = [['resumen', 'Resumen'], ['pagado', 'Pagado'], ['organico', 'Orgánico'], ['comentarios', 'Comentarios'], ['cuenta', 'Efecto en la cuenta']];
 const params = new URLSearchParams(location.search);
 let HOJA = HOJAS.some(h => h[0] === params.get('hoja')) ? params.get('hoja') : 'resumen';
 let OBJ = params.get('obj') || 'todos';
+let F_CANAL = params.get('canal') || 'todos', F_RED = params.get('red') || 'todas', F_PEND = params.get('pend') === '1';
 
 function syncURL() {
   const p = new URLSearchParams();
   if (HOJA !== 'resumen') p.set('hoja', HOJA);
   if (HOJA === 'pagado' && OBJ !== 'todos') p.set('obj', OBJ);
+  if (HOJA === 'comentarios') { if (F_CANAL !== 'todos') p.set('canal', F_CANAL); if (F_RED !== 'todas') p.set('red', F_RED); if (F_PEND) p.set('pend', '1'); }
   history.replaceState(null, '', location.pathname + (p.toString() ? '?' + p : ''));
 }
 
@@ -468,6 +487,14 @@ function renderHeader() {
   document.getElementById('hojas').innerHTML = HOJAS.map(([k, t]) =>
     `<button class="tab ${k === HOJA ? 'active' : ''}" data-hoja="${k}">${t}</button>`).join('');
   const f = document.getElementById('filtros');
+  if (HOJA === 'comentarios') {
+    const grupo = (nombre, attr, val, ops) => `<span class="flabel">${nombre}</span>` +
+      ops.map(([k, t]) => `<button class="chip ${k === val ? 'on' : ''}" data-${attr}="${k}">${t}</button>`).join('');
+    f.innerHTML = grupo('Canal', 'canal', F_CANAL, [['todos', 'Todos'], ['organico', 'Orgánico'], ['pago', 'Pago']]) +
+      '<span style="width:14px"></span>' + grupo('Red', 'red', F_RED, [['todas', 'Todas'], ['ig', 'Instagram'], ['fb', 'Facebook']]) +
+      `<span style="width:14px"></span><button class="chip ${F_PEND ? 'on' : ''}" data-pend="1">Solo sin respuesta de Tuhabi</button>`;
+    return;
+  }
   if (HOJA !== 'pagado') { f.innerHTML = ''; return; }
   const hay = objetivosPresentes();
   const chips = [['todos', 'Todos']].concat(ORDEN_OBJ.map(o => [o, NOMBRE_OBJ[o]]))
@@ -482,7 +509,7 @@ function render() {
   destroyCharts();
   renderHeader();
   const app = document.getElementById('app');
-  ({ resumen: renderResumen, pagado: renderPagado, organico: renderOrganico, cuenta: renderCuenta })[HOJA](app);
+  ({ resumen: renderResumen, pagado: renderPagado, organico: renderOrganico, comentarios: renderComentarios, cuenta: renderCuenta })[HOJA](app);
   syncURL();
 }
 window.rerender = render;
@@ -948,6 +975,64 @@ function graficasImpacto(posts) {
     { label: 'Posts Rosa', color: C.rosa, data: acumRosa(posts, red, dd) }]));
 }
 
+// ── Comentarios ───────────────────────────────────────────────────────────────
+const esc = s => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+function renderComentarios(app) {
+  const sec = D.comentarios || {};
+  if (!sec.lista) { app.innerHTML = estado(sec, 'Comentarios'); return; }
+  const todos = sec.lista;
+  const lista = todos.filter(c => (F_CANAL === 'todos' || c.canal === F_CANAL) && (F_RED === 'todas' || c.red === F_RED) && (!F_PEND || !c.respondido));
+  const n = f => todos.filter(f).length;
+  const sinResp = n(c => !c.respondido);
+  const nombrePieza = k => (k || '').replace(/^Rosa_?/, '').replace(/_/g, ' ').replace(/^(\d) /, '$1 · ');
+  // Por pieza (pago) y por post (orgánico)
+  const grupos = {};
+  todos.forEach(c => {
+    const keys = c.canal === 'pago' ? (c.piezas.length ? c.piezas.map(nombrePieza) : ['Sin pieza']) : [`Post orgánico ${c.red.toUpperCase()} · ${diaMes(c.fecha)}`];
+    const k = c.canal === 'pago' ? keys.join(' / ') : `Orgánico · ${c.red === 'ig' ? 'Instagram' : 'Facebook'}`;
+    const g = grupos[k] = grupos[k] || { canal: c.canal, total: 0, ig: 0, fb: 0, sin: 0, likes: 0 };
+    g.total++; g[c.red]++; g.likes += c.likes || 0; if (!c.respondido) g.sin++;
+  });
+  const filasG = Object.entries(grupos).sort((a, b) => b[1].total - a[1].total);
+  const dias = rangoDias(D.config.inicio_organico, (D.generated_at || '').slice(0, 10));
+
+  app.innerHTML = estado(sec, 'Comentarios') + `
+  <div class="section">
+    <h2>Lo que dice la gente ${ayuda('comentarios')}</h2>
+    <p class="hint">Comentarios de la audiencia en los posts orgánicos de la Rosa y en los anuncios Rosa, tal como están en Meta.</p>
+    <div class="ficha">
+      <div><div class="k">Comentarios</div><div class="v">${n0(todos.length)}</div><div class="d">en ${new Set(todos.map(c => c.post)).size} publicaciones</div></div>
+      <div><div class="k">Orgánico · pago</div><div class="v">${n(c => c.canal === 'organico')} · ${n(c => c.canal === 'pago')}</div><div class="d">${pct(div(n(c => c.canal === 'pago'), todos.length), 0)} en anuncios</div></div>
+      <div><div class="k">Instagram · Facebook</div><div class="v">${n(c => c.red === 'ig')} · ${n(c => c.red === 'fb')}</div><div class="d">comentarios por red</div></div>
+      <div><div class="k">Sin respuesta de Tuhabi</div><div class="v" style="color:#b45309">${n0(sinResp)}</div><div class="d">${pct(div(sinResp, todos.length), 0)} del total · ${n(c => c.canal === 'pago' && !c.respondido)} en anuncios</div></div>
+    </div>
+    <div class="grid2">
+      <div class="panel"><h3>Comentarios por día</h3><div class="cap">Por la fecha del comentario</div><div class="ch"><canvas id="cm_dia"></canvas></div>
+        ${leyenda([['Orgánico', C.verde], ['Pago', C.rosa]])}</div>
+      <div class="t-wrap" style="align-self:start"><table class="t">
+        <tr><th>Pieza o canal</th><th>Comentarios</th><th>IG</th><th>FB</th><th>Likes</th><th>Sin respuesta</th></tr>
+        ${filasG.map(([k, g]) => `<tr><td><span class="delta neutro" style="background:${g.canal === 'pago' ? C.rosa : C.verde};color:#fff;margin-right:6px">${g.canal === 'pago' ? 'Pago' : 'Orgánico'}</span><b>${esc(k)}</b></td>
+          <td><b>${g.total}</b></td><td>${g.ig || '—'}</td><td>${g.fb || '—'}</td><td>${g.likes || '—'}</td><td>${g.sin ? `<b style="color:#b45309">${g.sin}</b>` : '—'}</td></tr>`).join('')}
+      </table></div>
+    </div>
+  </div>
+  <div class="section">
+    <h2>Todos los comentarios <small style="font-weight:500;color:var(--text-muted-3);font-size:12px">${lista.length} con los filtros de arriba · del más reciente al más viejo</small></h2>
+    ${lista.length ? `<div class="coms">${lista.map(c => `<div class="com ${c.respondido ? '' : 'pend'}" style="--c:${c.canal === 'pago' ? C.rosa : C.verde}">
+      <div class="meta"><span class="tag" style="background:${c.red === 'ig' ? C.ig : C.fb}">${c.red === 'ig' ? 'Instagram' : 'Facebook'}</span>
+        <span class="tag" style="background:${c.canal === 'pago' ? C.rosa : C.verde}">${c.canal === 'pago' ? 'Pago' : 'Orgánico'}</span>
+        ${c.piezas.length ? `<span class="tag gris">${esc(c.piezas.map(nombrePieza).join(' / '))}</span>` : ''}
+        <span class="tag ${c.respondido ? 'ok' : 'no'}">${c.respondido ? '✓ Respondido' : 'Sin respuesta'}</span></div>
+      <div class="txt">${esc(c.texto) || '<i style="color:var(--text-muted-3)">(sin texto: sticker o imagen)</i>'}</div>
+      <div class="pie"><span>${c.autor ? esc(c.autor) + ' · ' : ''}${diaMes(c.fecha)}${c.likes ? ` · ${c.likes} ♥` : ''}${c.respuestas ? ` · ${c.respuestas} respuesta${c.respuestas === 1 ? '' : 's'}` : ''}</span>
+        ${c.link ? `<a href="${esc(c.link)}" target="_blank" rel="noopener">Ver en Meta ↗</a>` : ''}</div></div>`).join('')}</div>`
+      : '<div class="empty-metric">No hay comentarios con estos filtros.</div>'}
+  </div>`;
+  const porDiaC = canal => dias.map(d => todos.filter(c => c.canal === canal && c.fecha === d).length || null);
+  mkMulti('cm_dia', dias, [{ type: 'bar', label: 'Orgánico', color: C.verde, data: porDiaC('organico') },
+                           { type: 'bar', label: 'Pago', color: C.rosa, data: porDiaC('pago') }], { apilado: true });
+}
+
 // ── Efecto en la cuenta: orgánico, pago, seguidores y reacciones ─────────────────────────────
 // Todo sale de `organico_cuenta` (días cerrados por Meta, ventana corregida). Cada panel: promedio por
 // día desde el 2-oct contra los 14 días anteriores, y su gráfica con la línea del arranque.
@@ -1093,6 +1178,13 @@ document.addEventListener('click', e => {
   if (pz) { abrirPieza(pz.dataset.pieza); return; }
   const t = e.target.closest('.tab[data-hoja]');
   if (t) { HOJA = t.dataset.hoja; render(); window.scrollTo(0, 0); return; }
+  const fc = e.target.closest('.chip[data-canal], .chip[data-red], .chip[data-pend]');
+  if (fc) {
+    if (fc.dataset.canal) F_CANAL = fc.dataset.canal;
+    else if (fc.dataset.red) F_RED = fc.dataset.red;
+    else F_PEND = !F_PEND;
+    render(); return;
+  }
   const o = e.target.closest('.chip[data-obj]');
   if (o && !o.disabled) { OBJ = o.dataset.obj; render(); }
 });

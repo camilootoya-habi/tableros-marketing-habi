@@ -183,3 +183,31 @@ def test_fb_serie_altas_pagadas_y_reacciones_por_tipo():
 def test_posiciones_suman_lo_mismo_que_el_total():
     filas = [{"inversion": 1.5, "impresiones": 10, "pos": "feed"}, {"inversion": 2.25, "impresiones": 30, "pos": "instagram_reels"}]
     assert B.sumar(filas) == {"inversion": 3.75, "impresiones": 40}
+
+
+def test_posts_con_comentarios_sin_repetir_post():
+    posts = [{"id": "ig1", "red": "ig", "link": "L1"}]
+    anuncios = {"a1": {"pieza": "Rosa_2_Queretaro", "obj": "leads", "post_fb": "P_1", "post_ig": "ig1"},
+                "a2": {"pieza": "Rosa_2_Queretaro", "obj": "alcance", "post_fb": "P_1"}}
+    v = B.posts_con_comentarios(posts, anuncios)
+    assert set(v) == {("ig", "ig1"), ("fb", "P_1")}
+    assert v[("ig", "ig1")]["canal"] == "organico"          # un post orgánico usado en un anuncio sigue siendo orgánico
+    assert v[("fb", "P_1")]["canal"] == "pago" and v[("fb", "P_1")]["objs"] == {"leads", "alcance"}
+
+
+def test_comentarios_fb_marca_respuesta_y_quita_los_de_la_pagina(monkeypatch):
+    datos = [{"id": "1", "message": "¿Cómo vendo?", "created_time": "2026-10-07T10:00:00+0000", "from": {"id": "u", "name": "Ana"},
+              "comments": {"data": [{"from": {"id": B.PAGE_ID}}]}},
+             {"id": "2", "message": "Pésimos", "created_time": "2026-10-07T11:00:00+0000"},
+             {"id": "3", "message": "Gracias, Ana", "from": {"id": B.PAGE_ID}}]
+    monkeypatch.setattr(B, "_todas", lambda path, **p: datos)
+    cs = B.comentarios_fb("P_1", "tok")
+    assert [(c["id"], c["respondido"], c["autor"]) for c in cs] == [("1", True, "Ana"), ("2", False, None)]
+
+
+def test_comentarios_ig_respondido_por_la_cuenta(monkeypatch):
+    datos = [{"id": "1", "text": "jajaja", "username": "x", "replies": {"data": [{"username": "tuhabimx"}]}},
+             {"id": "2", "text": "Gracias", "username": "tuhabimx"}]
+    monkeypatch.setattr(B, "_todas", lambda path, **p: datos)
+    cs = B.comentarios_ig("m1", "tok", "tuhabimx")
+    assert [(c["id"], c["respondido"]) for c in cs] == [("1", True)]

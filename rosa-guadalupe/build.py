@@ -254,7 +254,7 @@ def pagado(cfg, hoy):
     anuncios, imagenes = {}, {}
     for a in _todas(f"{act}/ads", fields="id,name,effective_status,created_time,campaign_id,preview_shareable_link,"
                                          "creative{thumbnail_url,instagram_permalink_url,object_type,"
-                                         "effective_instagram_media_id,video_id,image_url}",
+                                         "effective_instagram_media_id,effective_object_story_id,video_id,image_url}",
                     filtering=filtro, limit=100):
         if not (a.get("name") or "").lower().startswith(pref.lower()):
             continue
@@ -262,7 +262,8 @@ def pagado(cfg, hoy):
         anuncios[a["id"]] = {"nombre": a["name"], "pieza": pieza(a["name"]), "estado": a.get("effective_status"),
                              "creado": (a.get("created_time") or "")[:10], "campana_id": a.get("campaign_id"),
                              "preview": a.get("preview_shareable_link"), "ig": cr.get("instagram_permalink_url"),
-                             "tipo": cr.get("object_type")}
+                             "tipo": cr.get("object_type"), "post_fb": cr.get("effective_object_story_id"),
+                             "post_ig": cr.get("effective_instagram_media_id")}
         imagenes[a["id"]] = lambda cr=cr: imagen_creativo(cr)
     for f in filas:   # anuncios con datos que ya no salen en la lista (borrados)
         a = next((x for x in crudas if x.get("ad_id") == f["ad"]), {})
@@ -606,6 +607,88 @@ def organico_cuenta(cfg, hoy, cache, dias_antes=14, ahora_utc=None, social=None)
     return {"dias": dias, "ig": ig, "fb": fb, "antes": antes, "despues": (cfg["inicio_organico"], hasta)}
 
 
+# ── comentarios ───────────────────────────────────────────────────────────────
+# Los de los posts orgánicos Rosa y los de los posts detrás de cada anuncio Rosa. Varios anuncios
+# comparten post (p. ej. Rosa_2_FB_Queretaro y Rosa_2_Facebook_Queretaro): se lee cada post UNA vez.
+# Sin clasificación ni edición del texto (decisión de Camilo, 8-oct): se publican tal como los da Meta.
+IG_COMENT = "id,text,timestamp,like_count,username,replies{username,timestamp}"
+FB_COMENT = "id,message,created_time,like_count,from{id,name},comments{from{id},created_time}"
+
+
+def _ig_usuario(token):
+    try:
+        return _get(IG_ID, reintentos=0, fields="username", access_token=token).get("username")
+    except RuntimeError:
+        return None
+
+
+def comentarios_ig(media_id, token, propio):
+    """Comentarios de una publicación de IG. `respondido`: Tuhabi contestó en el hilo."""
+    out = []
+    for c in _todas(f"{media_id}/comments", fields=IG_COMENT, limit=100, access_token=token):
+        if propio and c.get("username") == propio:
+            continue   # un comentario de la propia cuenta no es de la audiencia
+        resp = (c.get("replies") or {}).get("data") or []
+        out.append({"id": c["id"], "red": "ig", "fecha": (c.get("timestamp") or "")[:10], "hora": c.get("timestamp"),
+                    "texto": c.get("text") or "", "likes": c.get("like_count") or 0, "autor": c.get("username"),
+                    "respuestas": len(resp), "respondido": bool(propio) and any(r.get("username") == propio for r in resp)})
+    return out
+
+
+def comentarios_fb(post_id, token):
+    out = []
+    for c in _todas(f"{post_id}/comments", fields=FB_COMENT, filter="toplevel", limit=100, access_token=token):
+        if ((c.get("from") or {}).get("id")) == PAGE_ID:
+            continue
+        resp = (c.get("comments") or {}).get("data") or []
+        out.append({"id": c["id"], "red": "fb", "fecha": (c.get("created_time") or "")[:10], "hora": c.get("created_time"),
+                    "texto": c.get("message") or "", "likes": c.get("like_count") or 0, "autor": (c.get("from") or {}).get("name"),
+                    "respuestas": len(resp), "respondido": any(((r.get("from") or {}).get("id")) == PAGE_ID for r in resp)})
+    return out
+
+
+def posts_con_comentarios(posts, anuncios):
+    """[(red, post_id, canal, link, piezas, objetivos)] sin repetir post. Un post orgánico que
+    también se usa en un anuncio cuenta como orgánico."""
+    vistos = {}
+    for p in posts:
+        vistos[(p["red"], p["id"])] = {"canal": "organico", "link": p.get("link"), "piezas": set(), "objs": set(), "texto": p.get("texto")}
+    for a in anuncios.values():
+        for red, pid in (("fb", a.get("post_fb")), ("ig", a.get("post_ig"))):
+            if not pid:
+                continue
+            v = vistos.setdefault((red, pid), {"canal": "pago", "piezas": set(), "objs": set(),
+                                               "link": a.get("ig") if red == "ig" else f"https://www.facebook.com/{pid}"})
+            v["piezas"].add(a.get("pieza"))
+            if a.get("obj"):
+                v["objs"].add(a["obj"])
+    return vistos
+
+
+def comentarios(posts, anuncios):
+    tok = _token()
+    ok, err, paginas = SOCIAL._token_paginas()
+    if not ok:
+        raise RuntimeError(f"tokens de página: {err}")
+    ptok = (paginas.get(PAGE_ID) or {}).get("access_token")
+    propio = _ig_usuario(tok)
+    lista, fallas = [], 0
+    for (red, pid), v in posts_con_comentarios(posts, anuncios).items():
+        try:
+            cs = comentarios_ig(pid, tok, propio) if red == "ig" else comentarios_fb(pid, ptok)
+        except RuntimeError as e:
+            fallas += 1
+            print(f"WARN comentarios {red} {pid}: {e}")
+            continue
+        for c in cs:
+            c.update(post=pid, canal=v["canal"], link=v["link"], piezas=sorted(x for x in v["piezas"] if x),
+                     objs=sorted(v["objs"]))
+            lista.append(c)
+    if fallas and not lista:
+        raise RuntimeError(f"no se pudo leer ningún post ({fallas} fallas)")
+    return {"lista": sorted(lista, key=lambda c: c.get("hora") or "", reverse=True), "fallas": fallas}
+
+
 def miniaturas(ids, imagenes, grandes=(), chica=240, grande=720):
     """`{id}.jpg` chica para todo y `{id}_g.jpg` grande para los anuncios (vista previa). Baja solo lo
     que falta y borra lo que ya no está. Devuelve los ids con miniatura."""
@@ -692,6 +775,12 @@ def build(hoy=None, ahora=None):
         if out[nombre]["status"] == "ok":
             cache[nombre] = out[nombre]
 
+    # Comentarios: dependen de los posts y anuncios de arriba (los del caché si esas fuentes fallaron).
+    out["comentarios"], _ = _seccion("comentarios", lambda: comentarios(out["organico"].get("posts") or [],
+                                                                        out["pagado"].get("anuncios") or {}), cache, ahora)
+    if out["comentarios"]["status"] == "ok":
+        cache["comentarios"] = out["comentarios"]
+
     # Miniaturas de anuncios y posts (una carpeta; se borran las que ya no salen).
     ids = [{"id": i} for i in (out["pagado"].get("anuncios") or {})] + \
           [{"id": p["id"]} for p in (out["organico"].get("posts") or [])]
@@ -715,3 +804,4 @@ if __name__ == "__main__":
     print(f"orgánico: {d['organico']['status']} · {len(d['organico'].get('posts') or [])} posts")
     print(f"orgánico de la cuenta: {d['organico_cuenta']['status']} · {len(d['organico_cuenta'].get('dias') or [])} días")
     print(f"cuenta: {d['cuenta']['status']}")
+    print(f"comentarios: {d['comentarios']['status']} · {len(d['comentarios'].get('lista') or [])}")
