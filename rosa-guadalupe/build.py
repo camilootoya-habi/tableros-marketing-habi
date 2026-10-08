@@ -5,7 +5,7 @@ desde el caché):
 
 1. **Pagado** — API de Meta, cuenta Tuhabi MX (USD). Los anuncios se reconocen por el NOMBRE
    (`Rosa_*`) y el filtro va del lado de Meta: nunca se recorren todos los anuncios de la cuenta,
-   que el 6-oct-2026 se quedó sin cuota por hacerlo. Son 6 llamadas por corrida (ver `pagado()`).
+   que el 6-oct-2026 se quedó sin cuota por hacerlo. Son 7 llamadas por corrida (ver `pagado()`).
    El objetivo se lee de la campaña, así que una campaña nueva (p. ej. de interacción) con
    anuncios `Rosa_*` aparece sola en el tablero.
    Los leads son los que reporta el píxel de Meta, no los del CRM: la tabla de UTM por lead
@@ -19,11 +19,13 @@ desde el caché):
 Uso: `META_SYSTEM_USER_TOKEN=... python3 build.py`
 """
 import datetime
+import io
 import json
 import os
 import re
 import sys
 import time
+from urllib.request import urlopen
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 SALUD = os.path.join(os.path.dirname(HERE), "salud-marca")
@@ -47,13 +49,25 @@ OBJETIVOS = {"OUTCOME_AWARENESS": "alcance", "OUTCOME_SALES": "leads", "OUTCOME_
 ACCIONES = {"link_click": "clics_link", "landing_page_view": "landing", "post_engagement": "interacciones",
             "post_reaction": "reacciones", "comment": "comentarios", "post": "compartidos",
             "onsite_conversion.post_save": "guardados", "video_view": "video_3s",
-            "offsite_conversion.fb_pixel_lead": "leads"}
+            "offsite_conversion.fb_pixel_lead": "leads", "offsite_conversion.fb_pixel_purchase": "compras",
+            "offsite_conversion.fb_pixel_complete_registration": "registros"}
+# Atribución por vista (vio el anuncio, no le dio clic, y convirtió en 1 día): se separa porque es la
+# parte más discutible de lo que Meta se atribuye.
+POR_VISTA = {"leads": "leads_vista", "compras": "compras_vista"}
 VIDEO = {"video_thruplay_watched_actions": "thruplay", "video_p25_watched_actions": "p25",
          "video_p50_watched_actions": "p50", "video_p75_watched_actions": "p75",
          "video_p100_watched_actions": "p100"}
-SUMABLES = ("inversion", "impresiones", "clics", *ACCIONES.values(), *VIDEO.values(), "recordacion")
+SUMABLES = ("inversion", "impresiones", "clics", *ACCIONES.values(), *VIDEO.values(), "recordacion",
+            *POR_VISTA.values(), "valor_compras")
+VENTANAS = json.dumps(["7d_click", "1d_view"])
+# Lo que optimiza Meta en cada conjunto: optimization_goal → texto del tablero.
+OPTIMIZA = {"AD_RECALL_LIFT": "Recordación del anuncio", "REACH": "Alcance", "IMPRESSIONS": "Impresiones",
+            "VALUE": "Valor de la conversión", "OFFSITE_CONVERSIONS": "Conversiones en el sitio",
+            "LEAD_GENERATION": "Leads (formulario de Meta)", "LINK_CLICKS": "Clics en el enlace",
+            "LANDING_PAGE_VIEWS": "Visitas a la landing", "POST_ENGAGEMENT": "Interacción con la publicación",
+            "THRUPLAY": "ThruPlays"}
 CAMPOS_AD = ("campaign_id,campaign_name,objective,adset_name,ad_id,ad_name,spend,impressions,reach,"
-             "clicks,inline_link_clicks,actions,estimated_ad_recallers," + ",".join(VIDEO))
+             "clicks,inline_link_clicks,actions,action_values,estimated_ad_recallers," + ",".join(VIDEO))
 LIMITE = (4, 17, 32, 613, 80000, 80004)   # códigos de Meta de "demasiadas llamadas"
 
 
@@ -133,7 +147,13 @@ def metricas_fila(f):
     m["recordacion"] = _num(f.get("estimated_ad_recallers"))
     for a in f.get("actions") or []:
         if a.get("action_type") in ACCIONES:
-            m[ACCIONES[a["action_type"]]] = _num(a.get("value"))
+            nombre = ACCIONES[a["action_type"]]
+            m[nombre] = _num(a.get("value"))
+            if nombre in POR_VISTA:
+                m[POR_VISTA[nombre]] = _num(a.get("1d_view"))
+    for a in f.get("action_values") or []:
+        if a.get("action_type") == "offsite_conversion.fb_pixel_purchase":
+            m["valor_compras"] = _num(a.get("value"))
     # Sin el evento de píxel explícito, "lead" es el mismo número (verificado el 7-oct: 407 = 407).
     if not m["leads"]:
         m["leads"] = sum(_num(a.get("value")) for a in f.get("actions") or [] if a.get("action_type") == "lead")
@@ -141,7 +161,7 @@ def metricas_fila(f):
         m["clics_link"] = _num(f.get("inline_link_clicks"))
     for campo, nombre in VIDEO.items():
         m[nombre] = sum(_num(a.get("value")) for a in f.get(campo) or [])
-    return {k: round(v, 2) if k == "inversion" else int(v) for k, v in m.items() if v}
+    return {k: round(v, 2) if k in ("inversion", "valor_compras") else int(v) for k, v in m.items() if v}
 
 
 def sumar(filas):
@@ -150,8 +170,9 @@ def sumar(filas):
         for k in SUMABLES:
             if f.get(k):
                 out[k] = out.get(k, 0) + f[k]
-    if "inversion" in out:
-        out["inversion"] = round(out["inversion"], 2)
+    for k in ("inversion", "valor_compras"):
+        if k in out:
+            out[k] = round(out[k], 2)
     return out
 
 
@@ -182,14 +203,15 @@ def _fila(f, extra=None):
 
 
 def pagado(cfg, hoy):
-    """6 llamadas a la cuenta, todas filtradas por nombre o por campaña."""
+    """7 llamadas a la cuenta, todas filtradas por nombre o por campaña."""
     act, pref = cfg["cuenta_ads"], cfg["prefijo_ads"]
     tr = json.dumps({"since": cfg["inicio_pagado"], "until": hoy})
     filtro = json.dumps([{"field": "ad.name", "operator": "CONTAIN", "value": pref}])
     base = {"time_range": tr, "filtering": filtro, "limit": 500}
 
     # 1. Diario por anuncio: la base de casi todo.
-    crudas = _todas(f"{act}/insights", level="ad", fields=CAMPOS_AD, time_increment=1, **base)
+    crudas = _todas(f"{act}/insights", level="ad", fields=CAMPOS_AD, time_increment=1,
+                    action_attribution_windows=VENTANAS, **base)
     crudas = [f for f in crudas if (f.get("ad_name") or "").lower().startswith(pref.lower())]
     filas = [_fila(f) for f in crudas]
     # 2. Por plataforma (Facebook / Instagram / otras), total por anuncio.
@@ -212,18 +234,32 @@ def pagado(cfg, hoy):
     if cids:
         filtro_c = json.dumps([{"field": "campaign.id", "operator": "IN", "value": cids}])
         for f in _todas(f"{act}/insights", level="campaign", time_increment=1, time_range=tr, filtering=filtro_c, limit=500,
-                        fields="campaign_id,campaign_name,objective,spend,impressions,clicks,inline_link_clicks,actions,"
+                        action_attribution_windows=VENTANAS,
+                        fields="campaign_id,campaign_name,objective,spend,impressions,clicks,inline_link_clicks,actions,action_values,"
                                "estimated_ad_recallers,video_thruplay_watched_actions"):
             filas_camp.append(_fila(f))
-    # 6. Los anuncios: estado, fecha y miniatura del creativo.
+    # 6. Los conjuntos de esas campañas: a qué evento optimiza Meta y con qué atribución.
+    optimizacion = {}
+    if cids:
+        for s in _todas(f"{act}/adsets", fields="campaign_id,name,optimization_goal,promoted_object,attribution_spec,effective_status",
+                        filtering=json.dumps([{"field": "campaign.id", "operator": "IN", "value": cids}]), limit=100):
+            optimizacion.setdefault(s["campaign_id"], []).append(optimizacion_de(s))
+    # 7. Los anuncios: estado, fecha, vista previa y creativo. La imagen NO sale de `thumbnail_url`:
+    # Meta la da a 64 px pida el tamaño que se pida (verificado el 8-oct). Sale de la publicación de
+    # Instagram del creativo (1080 px) o de la portada del video, y solo se pide si falta en el repo.
     anuncios, imagenes = {}, {}
-    for a in _todas(f"{act}/ads", fields="id,name,effective_status,created_time,campaign_id,creative{thumbnail_url}",
-                    thumbnail_width=240, thumbnail_height=240, filtering=filtro, limit=100):
+    for a in _todas(f"{act}/ads", fields="id,name,effective_status,created_time,campaign_id,preview_shareable_link,"
+                                         "creative{thumbnail_url,instagram_permalink_url,object_type,"
+                                         "effective_instagram_media_id,video_id,image_url}",
+                    filtering=filtro, limit=100):
         if not (a.get("name") or "").lower().startswith(pref.lower()):
             continue
+        cr = a.get("creative") or {}
         anuncios[a["id"]] = {"nombre": a["name"], "pieza": pieza(a["name"]), "estado": a.get("effective_status"),
-                             "creado": (a.get("created_time") or "")[:10], "campana_id": a.get("campaign_id")}
-        imagenes[a["id"]] = (a.get("creative") or {}).get("thumbnail_url")
+                             "creado": (a.get("created_time") or "")[:10], "campana_id": a.get("campaign_id"),
+                             "preview": a.get("preview_shareable_link"), "ig": cr.get("instagram_permalink_url"),
+                             "tipo": cr.get("object_type")}
+        imagenes[a["id"]] = lambda cr=cr: imagen_creativo(cr)
     for f in filas:   # anuncios con datos que ya no salen en la lista (borrados)
         a = next((x for x in crudas if x.get("ad_id") == f["ad"]), {})
         anuncios.setdefault(f["ad"], {"nombre": a.get("ad_name"), "pieza": pieza(a.get("ad_name")),
@@ -232,7 +268,50 @@ def pagado(cfg, hoy):
         a["obj"] = next((f["obj"] for f in filas if f["ad"] == i), None) or \
             (alcance["campanas"].get(a.get("campana_id")) or {}).get("obj")
     return {"filas": filas, "plataforma": plat, "alcance": alcance, "anuncios": anuncios,
-            "comparativo": comparativo(filas, filas_camp)}, imagenes
+            "optimizacion": optimizacion, "comparativo": comparativo(filas, filas_camp)}, imagenes
+
+
+def imagen_creativo(cr):
+    """URL de la imagen grande de un creativo: su post de Instagram, la portada del video, la imagen
+    del anuncio o, si no hay otra, la miniatura de 64 px."""
+    if cr.get("effective_instagram_media_id"):
+        try:
+            m = _get(cr["effective_instagram_media_id"], reintentos=0, fields="thumbnail_url,media_url,media_type")
+            u = m.get("thumbnail_url") if m.get("media_type") == "VIDEO" else m.get("media_url") or m.get("thumbnail_url")
+            if u:
+                return u
+        except RuntimeError as e:
+            print(f"WARN imagen IG {cr['effective_instagram_media_id']}: {e}")
+    if cr.get("video_id"):
+        try:
+            v = _get(cr["video_id"], reintentos=0, fields="thumbnails{uri,width,is_preferred}")
+            ths = sorted((v.get("thumbnails") or {}).get("data") or [], key=lambda x: (not x.get("is_preferred"), -(x.get("width") or 0)))
+            if ths:
+                return ths[0]["uri"]
+        except RuntimeError as e:
+            print(f"WARN portada video {cr['video_id']}: {e}")
+    return cr.get("image_url") or cr.get("thumbnail_url")
+
+
+def _chica(ruta, minimo=100):
+    """¿La imagen guardada es una miniatura de 64 px de las que da Meta? Entonces se vuelve a bajar."""
+    try:
+        from PIL import Image
+        return max(Image.open(ruta).size) < minimo
+    except Exception:  # noqa: BLE001 — sin Pillow o archivo roto: no se fuerza nada
+        return False
+
+
+def optimizacion_de(s):
+    """Un conjunto de anuncios → {meta, evento, atribucion, estado} en palabras."""
+    po = s.get("promoted_object") or {}
+    ventanas = []
+    for a in s.get("attribution_spec") or []:
+        tipo = {"CLICK_THROUGH": "clic", "VIEW_THROUGH": "vista", "ENGAGED_VIDEO_VIEW": "video visto"}.get(a.get("event_type"), a.get("event_type"))
+        ventanas.append(f"{a.get('window_days')} día{'' if a.get('window_days') == 1 else 's'} {tipo}")
+    return {"conjunto": s.get("name"), "meta": OPTIMIZA.get(s.get("optimization_goal"), s.get("optimization_goal")),
+            "goal": s.get("optimization_goal"), "evento": po.get("custom_event_type"),
+            "atribucion": " + ".join(ventanas), "estado": s.get("effective_status")}
 
 
 # ── orgánico ──────────────────────────────────────────────────────────────────
@@ -349,6 +428,41 @@ def cuenta(social, inicio, hoy, dias_antes=14, dias_serie=35):
     return {"dias": dias, "serie": serie, "periodos": periodos, "antes": antes, "despues": (inicio, hoy)}
 
 
+def miniaturas(ids, imagenes, grandes=(), chica=240, grande=720):
+    """`{id}.jpg` chica para todo y `{id}_g.jpg` grande para los anuncios (vista previa). Baja solo lo
+    que falta y borra lo que ya no está. Devuelve los ids con miniatura."""
+    os.makedirs(MINIATURAS, exist_ok=True)
+    quedan = set(ids)
+    for f in os.listdir(MINIATURAS):
+        if f.endswith(".jpg") and f[:-4].removesuffix("_g") not in quedan:
+            os.remove(os.path.join(MINIATURAS, f))
+    con = set()
+    for i in quedan:
+        rutas = [(os.path.join(MINIATURAS, f"{i}.jpg"), chica)]
+        if i in grandes:
+            rutas.append((os.path.join(MINIATURAS, f"{i}_g.jpg"), grande))
+        falta = any(not os.path.exists(r) or (lado > 100 and _chica(r)) for r, lado in rutas)
+        if falta and imagenes.get(i):
+            try:
+                url = imagenes[i]() if callable(imagenes[i]) else imagenes[i]
+                if not url:
+                    raise RuntimeError("sin imagen")
+                crudo = urlopen(url, timeout=30).read()
+                for ruta, lado in rutas:
+                    try:
+                        from PIL import Image
+                        im = Image.open(io.BytesIO(crudo)).convert("RGB")
+                        im.thumbnail((lado, lado))
+                        im.save(ruta, "JPEG", quality=80)
+                    except ImportError:
+                        open(ruta, "wb").write(crudo)
+            except Exception as e:  # noqa: BLE001
+                print(f"WARN miniatura {i}: {e}")
+        if os.path.exists(rutas[0][0]):
+            con.add(i)
+    return con
+
+
 # ── armado ────────────────────────────────────────────────────────────────────
 def _seccion(nombre, fn, cache, ahora):
     """Corre una fuente; si falla, devuelve la del caché como 'stale' con la razón."""
@@ -400,7 +514,8 @@ def build(hoy=None, ahora=None):
     # Miniaturas de anuncios y posts (una carpeta; se borran las que ya no salen).
     ids = [{"id": i} for i in (out["pagado"].get("anuncios") or {})] + \
           [{"id": p["id"]} for p in (out["organico"].get("posts") or [])]
-    con = IGP.miniaturas([ids], imagenes, carpeta=MINIATURAS) if ids else set()
+    grandes = set(out["pagado"].get("anuncios") or {})
+    con = miniaturas([p["id"] for p in ids], imagenes, grandes) if ids else set()
     for i, a in (out["pagado"].get("anuncios") or {}).items():
         a["mini"] = i in con
     for p in out["organico"].get("posts") or []:

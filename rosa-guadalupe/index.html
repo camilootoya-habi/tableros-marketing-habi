@@ -132,6 +132,23 @@
   .post .info b { color: var(--text-title); font-size: 13px; }
   .post .txt { color: var(--text-muted-3); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; margin-top: 3px; }
 
+  .pz img { cursor: zoom-in; transition: transform .12s; }
+  .pz img:hover { transform: scale(1.08); }
+  .vista { max-width: 760px; padding: 18px; }
+  .vista-cuerpo { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); gap: 18px; align-items: start; }
+  @media (max-width: 640px) { .vista-cuerpo { grid-template-columns: 1fr; } }
+  .vista-cuerpo img { width: 100%; border-radius: 8px; background: var(--row-border); display: block; }
+  .vista-cuerpo h3 { margin-bottom: 4px; }
+  .vista-cuerpo .cap { font-size: 12px; color: var(--text-muted-3); margin-bottom: 10px; line-height: 1.5; }
+  .vista-cuerpo ul { list-style: none; padding: 0; margin: 0; }
+  .vista-cuerpo li { font-size: 12.5px; padding: 7px 0; border-bottom: 1px solid var(--row-border); color: var(--text-muted); line-height: 1.5; }
+  .vista-cuerpo li a { color: var(--accent); font-weight: 600; text-decoration: none; margin-right: 10px; }
+  .vista-cuerpo li a:hover { text-decoration: underline; }
+  .red-h { display: flex; align-items: center; gap: 8px; font-size: 13.5px; font-weight: 700; color: var(--text-title); margin: 16px 0 9px; }
+  .red-h i { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+  .red-h small { font-weight: 500; color: var(--text-muted-3); font-size: 12px; }
+  .opt { font-size: 11.5px; line-height: 1.5; color: var(--text-muted); margin-top: 3px; }
+  .opt b { color: var(--text-title); }
   .empty-metric { background: var(--card); border: 1px dashed var(--border-strong); border-radius: 10px; padding: 24px; text-align: center; font-size: 12.5px; color: var(--text-muted-3); line-height: 1.6; }
 </style>
 <script>
@@ -160,6 +177,9 @@ en Instagram y Facebook, los anuncios <code>Rosa_*</code> separados por el objet
 se compara todo contra lo normal de la cuenta.</p>
 
 <dialog id="ayuda" class="help-dialog"><div id="ayudaCuerpo"></div>
+  <button type="button" class="close-btn" onclick="this.closest('dialog').close()">Cerrar</button></dialog>
+
+<dialog id="vista" class="help-dialog vista"><div id="vistaCuerpo"></div>
   <button type="button" class="close-btn" onclick="this.closest('dialog').close()">Cerrar</button></dialog>
 
 <div id="app"><div class="empty-metric">Cargando…</div></div>
@@ -212,11 +232,30 @@ const AYUDA = {
     (<code>incluir</code> / <code>excluir</code>).</p>
     <p><strong>Cuenta</strong>: los datos diarios de Instagram y Facebook que ya guarda Salud de marca.</p>
     <p>Se actualiza dos veces al día (8:23 y 14:23 CDMX).</p>`],
-  leads: ['Leads (píxel de Meta)', `
-    <p>Los que <strong>Meta atribuye</strong> a los anuncios con el evento de lead del píxel del sitio
-    (ventana de atribución de la campaña). No son los del CRM.</p>
-    <p>No se cruzan con el CRM porque la tabla de UTM por lead (<code>deal_utm</code>) no se actualiza
-    desde el 16-sep-2026. Cuando vuelva, se puede agregar la columna de leads reales y su calidad.</p>`],
+  leads: ['Evento "Lead" del píxel: por qué se ve inflado', `
+    <p>Es el evento <code>Lead</code> del píxel de Meta en el sitio, contado con la atribución de la campaña
+    (7 días después del clic + 1 día después de ver el anuncio). <strong>No son leads del CRM.</strong></p>
+    <p>Se ve inflado porque <strong>se dispara en casi todas las visitas a la landing</strong> (~90%): una tasa
+    así no es la de un formulario completo, sino la de un paso temprano del flujo (empezar el formulario o
+    cargar la página del cotizador). Por eso un "CPL" de ~US$2 no se compara con el CPL del CRM.</p>
+    <p>Lo que Meta sí optimiza en la campaña de leads es el evento <strong>Purchase</strong> del píxel (ver
+    "Optimiza a"): ése es el evento de valor, y es mucho más chico.</p>
+    <p>Para tener leads reales falta la tabla de UTM por lead (<code>deal_utm</code>), que no se actualiza
+    desde el 16-sep-2026.</p>`],
+  optimiza: ['A qué optimiza Meta cada campaña', `
+    <p>Es lo que el algoritmo de Meta busca al decidir a quién mostrarle el anuncio, configurado en cada
+    conjunto de anuncios:</p>
+    <ul><li><strong>Recordación del anuncio</strong> (alcance): busca a la gente con más probabilidad de
+    recordar el anuncio. No busca clics ni leads, así que juzgarla por CPL no tiene sentido.</li>
+    <li><strong>Valor de la conversión · Purchase</strong> (leads): busca a quien dispare el evento
+    <code>Purchase</code> del píxel con el mayor valor. Es el evento que la campaña trata como resultado.</li></ul>
+    <p><strong>Atribución</strong>: cuánto tiempo después del clic (o de solo ver el anuncio) Meta se
+    atribuye una conversión.</p>`],
+  compras: ['Evento "Purchase" del píxel', `
+    <p>El evento que optimiza la campaña de leads (con su valor). En Tuhabi no es una compra de casa: es el
+    evento de valor que el sitio dispara más adelante en el flujo. El valor es el que el píxel le asigna.</p>
+    <p>"Por vista" son los que Meta se atribuye a gente que vio el anuncio sin darle clic: es la parte más
+    discutible.</p>`],
   alcance_unico: ['Alcance único', `
     <p>Personas distintas que vieron al menos un anuncio Rosa. No se puede sumar por día ni por anuncio
     (la misma persona contaría varias veces): Meta lo calcula aparte, para todo el periodo.</p>
@@ -252,6 +291,12 @@ const AYUDA = {
   vistas_org: ['Vistas orgánicas por día de publicación', `
     <p>Las vistas que lleva hoy cada publicación, sumadas en el día en que se publicó. Un post del 2-oct
     lleva una semana juntando vistas y uno de ayer, un día: por eso los días recientes se ven más bajos.</p>`],
+  vistas_dia: ['Vistas por día', `
+    <p>Las vistas diarias de <strong>toda la cuenta</strong> (todo el contenido de ese día, no solo la Rosa),
+    tal como las reporta Meta. Meta no da las vistas por día de cada publicación: solo el acumulado de cada una.</p>
+    <p>Para ver cuánto de eso es Rosa, la gráfica de al lado guarda una foto diaria del acumulado de los posts
+    de la acción.</p>
+    <p>Los últimos 1-2 días de Instagram pueden faltar: Meta tarda en cerrarlos.</p>`],
   orgpag: ['Orgánico y pagado, lado a lado', `
     <p>Vistas: en lo pagado son impresiones (cada vez que se mostró un anuncio); en lo orgánico, las vistas
     que reporta Meta por publicación. Son comparables en orden de magnitud, no al uno por uno.</p>
@@ -314,7 +359,8 @@ const leyenda = items => `<div class="legend">${items.map(([t, c]) => `<span><i 
 // ── Datos ─────────────────────────────────────────────────────────────────────
 let D = null;
 const SUMABLES = ['inversion', 'impresiones', 'clics', 'clics_link', 'landing', 'interacciones', 'reacciones', 'comentarios',
-  'compartidos', 'guardados', 'video_3s', 'leads', 'thruplay', 'p25', 'p50', 'p75', 'p100', 'recordacion'];
+  'compartidos', 'guardados', 'video_3s', 'leads', 'thruplay', 'p25', 'p50', 'p75', 'p100', 'recordacion',
+  'compras', 'compras_vista', 'leads_vista', 'valor_compras', 'registros'];
 function sumar(filas) {
   const o = {}; SUMABLES.forEach(k => o[k] = 0);
   filas.forEach(f => SUMABLES.forEach(k => o[k] += f[k] || 0));
@@ -399,8 +445,10 @@ function renderResumen(app) {
         <div class="d">${fmtMil(t.interacciones)} pagadas (incluye reproducciones) + ${n0(oi)} orgánicas</div></div>
       <div><div class="k">Clics al sitio ${ayuda('ctr')}</div><div class="v">${n0(t.clics_link)}</div>
         <div class="d">de la pauta · ${n0(t.landing)} visitas a la landing ${ayuda('landing')}</div></div>
-      <div><div class="k">Leads (píxel Meta) ${ayuda('leads')}</div><div class="v">${n0(t.leads)}</div>
-        <div class="d">${usd(div(t.inversion, t.leads))} por lead</div></div>
+      <div><div class="k">Evento Lead (píxel) ${ayuda('leads')}</div><div class="v">${n0(t.leads)}</div>
+        <div class="d">se dispara en el ${pct(div(t.leads, t.landing), 0)} de las visitas: no son leads del CRM</div></div>
+      <div><div class="k">Evento Purchase (píxel) ${ayuda('compras')}</div><div class="v">${n0(t.compras)}</div>
+        <div class="d">el que optimiza la campaña de leads · ${usd(div(t.inversion, t.compras))} c/u</div></div>
       <div><div class="k">Inversión</div><div class="v">${usd(t.inversion)}</div>
         <div class="d">${obj.map(o => `${NOMBRE_OBJ[o]} ${usd(sumar(filas.filter(f => f.obj === o)).inversion)}`).join(' · ')}</div></div>
       <div><div class="k">Piezas</div><div class="v">${piezas.size} <small style="font-size:12px;font-weight:500">pagadas</small></div>
@@ -468,7 +516,8 @@ function renderPagado(app) {
     [`Alcance único ${ayuda('alcance_unico')}`, fmtMil(alc), `frecuencia ${(div(t.impresiones, alc) || 0).toFixed(2)} ${ayuda('frecuencia')}`],
     [`Clics al sitio ${ayuda('ctr')}`, n0(t.clics_link), `CTR ${pct(div(t.clics_link, t.impresiones))} · ${usd(div(t.inversion, t.clics_link))} c/u`],
     [`Visitas a la landing ${ayuda('landing')}`, n0(t.landing), `${pct(div(t.landing, t.clics_link), 0)} de los clics · ${usd(div(t.inversion, t.landing))} c/u`],
-    [`Leads (píxel Meta) ${ayuda('leads')}`, n0(t.leads), `CPL ${usd(div(t.inversion, t.leads))} · ${pct(div(t.leads, t.landing), 1)} de las visitas`],
+    [`Evento Lead (píxel) ${ayuda('leads')}`, n0(t.leads), `${n0(t.leads - t.leads_vista)} por clic · ${n0(t.leads_vista)} por vista · ${pct(div(t.leads, t.landing), 0)} de las visitas · ${usd(div(t.inversion, t.leads))} c/u`],
+    [`Evento Purchase (píxel) ${ayuda('compras')}`, n0(t.compras), t.compras ? `${n0(t.compras - t.compras_vista)} por clic · ${n0(t.compras_vista)} por vista · ${usd(div(t.inversion, t.compras))} c/u · valor ${usd(t.valor_compras)}` : 'sin compras atribuidas'],
     [`ThruPlays ${ayuda('thruplay')}`, fmtMil(t.thruplay), `${usd(div(t.inversion, t.thruplay))} c/u · ${pct(div(t.thruplay, t.impresiones), 1)} de impresiones`],
     [`Recordación estimada ${ayuda('recordacion')}`, n0(t.recordacion), t.recordacion ? `${usd(div(sumar(filas.filter(f => f.obj === 'alcance')).inversion, t.recordacion))} por persona (inversión de alcance)` : 'solo campañas de alcance'],
   ];
@@ -479,17 +528,17 @@ function renderPagado(app) {
     <h2>${OBJ === 'todos' ? 'Toda la pauta Rosa' : 'Objetivo: ' + NOMBRE_OBJ[OBJ]} ${ayuda('fuentes')}</h2>
     <p class="hint">${camps.length} campaña${camps.length === 1 ? '' : 's'} · ${new Set(filas.map(f => f.ad)).size} anuncios · desde el ${diaMes(desde)}.
       ${esAlc ? 'Una campaña de alcance se juzga por CPM, alcance y recordación, no por leads.' : esLeads ? 'Una campaña de leads se juzga por costo por lead y por visita a la landing.' : ''}</p>
-    <div class="ficha">${fichas.map(([k, v, d]) => `<div><div class="k">${k}</div><div class="v">${v}</div><div class="d">${d}</div></div>`).join('')}</div>
+    <div class="ficha">${fichaOptimiza(pg, OBJ)}${fichas.map(([k, v, d]) => `<div><div class="k">${k}</div><div class="v">${v}</div><div class="d">${d}</div></div>`).join('')}</div>
   </div>
   <div class="section">
     <h2>Día a día</h2>
     <p class="hint">Arriba los valores del día (columnas); abajo las tasas y costos (líneas).</p>
     <div class="cinco">
-      ${['inversion:Inversión', 'impresiones:Impresiones', 'clics_link:Clics al sitio', 'landing:Visitas a la landing', 'leads:Leads (píxel)']
+      ${['inversion:Inversión', 'impresiones:Impresiones', 'clics_link:Clics al sitio', 'landing:Visitas a la landing', 'leads:Evento Lead (píxel)']
         .map(s => { const [k, n] = s.split(':'); return `<div class="panel mini"><h3>${n}</h3><div class="tot">${k === 'inversion' ? usd(t[k]) : n0(t[k])}</div><div class="ch chico"><canvas id="p_${k}"></canvas></div></div>`; }).join('')}
     </div>
     <div class="cuatro">
-      ${['cpm:CPM', 'ctr:CTR al sitio', 'tasa_landing:Visitas a la landing ÷ clics', 'cpl:Costo por lead']
+      ${['cpm:CPM', 'ctr:CTR al sitio', 'tasa_landing:Visitas a la landing ÷ clics', 'cpl:Costo por evento Lead']
         .map(s => { const [k, n] = s.split(':'); return `<div class="panel mini"><h3>${n}</h3><div class="ch chico"><canvas id="p_${k}"></canvas></div></div>`; }).join('')}
     </div>
   </div>
@@ -528,6 +577,23 @@ function renderPagado(app) {
   mkMulti('p_plat', ['Facebook', 'Instagram', 'Otras (Audience Network, Threads)'], [{ type: 'bar', label: 'Impresiones', color: [C.fb, C.ig, C.gris], data: pl }], { horizontal: true });
 }
 
+// Una ficha que dice, por campaña, a qué optimiza Meta y con qué atribución.
+function fichaOptimiza(pg, obj) {
+  const camps = Object.entries(pg.optimizacion || {}).filter(([cid]) => {
+    const o = ((pg.alcance || {}).campanas || {})[cid] || {};
+    return obj === 'todos' || o.obj === obj;
+  });
+  if (!camps.length) return '';
+  const nombreCamp = cid => ((pg.comparativo || []).find(c => c.campana_id === cid) || {}).campana || cid;
+  return `<div style="grid-column: span 2"><div class="k">Optimiza a ${ayuda('optimiza')}</div>
+    ${camps.map(([cid, sets]) => {
+      const obj = (((pg.alcance || {}).campanas || {})[cid] || {}).obj;
+      const unicos = [...new Map(sets.map(s => [`${s.meta}|${s.evento}|${s.atribucion}`, s])).values()];
+      return `<div class="opt"><b>${NOMBRE_OBJ[obj] || ''}:</b> ${unicos.map(s => `${s.meta}${s.evento ? ' · evento <b>' + s.evento.charAt(0) + s.evento.slice(1).toLowerCase() + '</b>' : ''} · atribución ${s.atribucion}`).join('; ')}
+        <br><span style="color:var(--text-muted-3)">${nombreCamp(cid)}</span></div>`;
+    }).join('')}</div>`;
+}
+
 function panelComparativo(c) {
   const r = c.rosa, o = c.otros;
   const filas = [
@@ -535,7 +601,8 @@ function panelComparativo(c) {
     ['CTR al sitio', div(r.clics_link, r.impresiones), div(o.clics_link, o.impresiones), v => pct(v), false],
     ['Costo por clic al sitio', div(r.inversion, r.clics_link), div(o.inversion, o.clics_link), usd, true],
     ['Costo por visita a la landing', div(r.inversion, r.landing), div(o.inversion, o.landing), usd, true],
-    ['Costo por lead (píxel)', div(r.inversion, r.leads), div(o.inversion, o.leads), usd, true],
+    ['Costo por evento Lead', div(r.inversion, r.leads), div(o.inversion, o.leads), usd, true],
+    ['Costo por evento Purchase', div(r.inversion, r.compras), div(o.inversion, o.compras), usd, true],
   ];
   if (c.obj === 'alcance') filas.push(['Costo por recordación', div(r.inversion, r.recordacion), div(o.inversion, o.recordacion), usd, true]);
   filas.push(['Costo por ThruPlay', div(r.inversion, r.thruplay), div(o.inversion, o.thruplay), usd, true]);
@@ -553,21 +620,40 @@ function tablaPiezas(filas, A, plat) {
   if (!rows.length) return '<div class="empty-metric">Sin anuncios con este objetivo.</div>';
   const nombre = k => k.replace(/^Rosa_?/, '').replace(/_/g, ' ').replace(/^(\d) /, '$1 · ') || k;
   return `<div class="t-wrap"><table class="t">
-    <tr><th>Pieza</th><th>Objetivo</th><th>Inversión</th><th>Impresiones</th><th>FB / IG</th><th>CPM</th><th>CTR al sitio</th><th>Landing</th><th>Leads</th><th>CPL</th><th>ThruPlay ÷ impr.</th></tr>
+    <tr><th>Pieza</th><th>Objetivo</th><th>Inversión</th><th>Impresiones</th><th>FB / IG</th><th>CPM</th><th>CTR al sitio</th><th>Landing</th><th>Evento Lead</th><th>Costo x Lead</th><th>Purchase</th><th>ThruPlay ÷ impr.</th></tr>
     ${rows.map(({ k, g, s }) => {
       const mini = [...g.ads].find(i => (A[i] || {}).mini);
       const pf = plat.filter(x => g.ads.has(x.ad));
       const fb = pf.filter(x => x.plat === 'facebook').reduce((a, x) => a + (x.impresiones || 0), 0);
       const ig = pf.filter(x => x.plat === 'instagram').reduce((a, x) => a + (x.impresiones || 0), 0);
       const activos = [...g.ads].filter(i => (A[i] || {}).estado === 'ACTIVE').length;
-      return `<tr><td><div class="pz">${mini ? `<img src="miniaturas/${mini}.jpg" alt="" loading="lazy">` : '<span class="sin"></span>'}
+      return `<tr><td><div class="pz">${mini ? `<img src="miniaturas/${mini}.jpg" alt="Ver la pieza" loading="lazy" data-pieza="${k}" title="Clic para ver la pieza">` : '<span class="sin"></span>'}
         <div><b>${nombre(k)}</b><small>${g.ads.size} anuncio${g.ads.size === 1 ? '' : 's'}${activos ? ` · ${activos} activo${activos === 1 ? '' : 's'}` : ' · en pausa'}</small></div></div></td>
         <td>${[...g.objs].map(o => NOMBRE_OBJ[o]).join(', ')}</td><td><b>${usd(s.inversion)}</b></td><td>${n0(s.impresiones)}</td>
         <td title="Facebook ${n0(fb)} · Instagram ${n0(ig)}"><span class="barra-pl"><i style="width:${fb + ig ? 100 * ig / (fb + ig) : 0}%;margin-left:auto"></i></span> ${fb + ig ? pct(ig / (fb + ig), 0) : '—'} IG</td>
         <td>${usd(div(s.inversion * 1000, s.impresiones))}</td><td>${pct(div(s.clics_link, s.impresiones))}</td><td>${n0(s.landing)}</td>
-        <td>${n0(s.leads)}</td><td>${usd(div(s.inversion, s.leads))}</td><td>${pct(div(s.thruplay, s.impresiones), 1)}</td></tr>`;
+        <td>${n0(s.leads)}</td><td>${usd(div(s.inversion, s.leads))}</td><td>${s.compras ? n0(s.compras) : '—'}</td><td>${pct(div(s.thruplay, s.impresiones), 1)}</td></tr>`;
     }).join('')}
   </table></div>`;
+}
+
+// Vista previa de una pieza: la imagen grande y cada versión con sus links.
+function abrirPieza(k) {
+  const pg = D.pagado || {}, A = pg.anuncios || {};
+  const ads = Object.entries(A).filter(([, a]) => a.pieza === k);
+  if (!ads.length) return;
+  const [id0] = ads.find(([, a]) => a.mini) || ads[0];
+  const s = sumar((pg.filas || []).filter(f => ads.some(([i]) => i === f.ad)));
+  const nombre = k.replace(/^Rosa_?/, '').replace(/_/g, ' ').replace(/^(\d) /, '$1 · ');
+  document.getElementById('vistaCuerpo').innerHTML = `<div class="vista-cuerpo">
+    <img src="miniaturas/${id0}_g.jpg" onerror="this.onerror=null;this.src='miniaturas/${id0}.jpg'" alt="${nombre}">
+    <div><h3>${nombre}</h3>
+      <div class="cap">${usd(s.inversion)} invertidos · ${n0(s.impresiones)} impresiones · ${n0(s.clics_link)} clics al sitio.
+        ${(A[id0] || {}).tipo === 'VIDEO' ? 'Es un video: la imagen es la portada; ábrelo para verlo.' : ''}</div>
+      <ul>${ads.map(([i, a]) => `<li><b>${a.nombre}</b><br>${NOMBRE_OBJ[a.obj] || ''} · ${a.estado === 'ACTIVE' ? 'activo' : (a.estado || '').toLowerCase()} · creado ${diaMes(a.creado)}<br>
+        ${a.preview ? `<a href="${a.preview}" target="_blank" rel="noopener">Vista previa del anuncio ↗</a>` : ''}
+        ${a.ig ? `<a href="${a.ig}" target="_blank" rel="noopener">Ver en Instagram ↗</a>` : ''}</li>`).join('')}</ul></div></div>`;
+  document.getElementById('vista').showModal();
 }
 
 // ── Orgánico ──────────────────────────────────────────────────────────────────
@@ -607,7 +693,9 @@ function renderOrganico(app) {
   <div class="section">
     <h2>Cada publicación ${ayuda('promedio')}</h2>
     <p class="hint">El porcentaje compara las vistas del post contra el promedio de los posts normales de su red. Clic para abrirlo.</p>
-    <div class="posts">${posts.map(p => {
+    ${[['ig', 'Instagram · @tuhabimx', C.ig], ['fb', 'Facebook · Tuhabi', C.fb]].map(([r, nombre, col]) => `
+    <div class="red-h"><i style="background:${col}"></i>${nombre} <small>${red(r).length} publicaciones · ${fmtMil(s(red(r), 'vistas'))} vistas · normal: ${n0((prom[r] || {}).vistas)} vistas por post</small></div>
+    <div class="posts">${red(r).map(p => {
       const pr = (prom[p.red] || {}).vistas;
       return `<a class="post" href="${p.link || '#'}" target="_blank" rel="noopener">
         <div class="img" style="${p.mini ? `background-image:url('miniaturas/${p.id}.jpg')` : ''}">
@@ -616,26 +704,28 @@ function renderOrganico(app) {
           ${p.alcance != null ? `${n0(p.alcance)} de alcance · ` : ''}${n0(p.interacciones)} interacciones${p.seg_promedio ? ` · ${p.seg_promedio} s promedio` : ''}<br>
           ${diaMes(p.fecha)} · hace ${edad(p)} día${edad(p) === 1 ? '' : 's'}
           <div class="txt">${(p.texto || '').replace(/</g, '&lt;')}</div></div></a>`;
-    }).join('')}</div>
+    }).join('') || '<div class="empty-metric">Sin publicaciones.</div>'}</div>`).join('')}
   </div>
   <div class="section">
-    <h2>Vistas por publicación</h2>
+    <h2>Vistas por día</h2>
     <div class="grid2">
-      <div class="panel"><h3>Vistas de cada post contra el promedio normal</h3>
-        <div class="cap">Barras: vistas del post. Líneas: promedio de los posts normales de su red.</div>
-        <div class="ch"><canvas id="o_vs"></canvas></div>${leyenda([['Instagram', C.ig], ['Facebook', C.fb]])}</div>
+      <div class="panel"><h3>Vistas por día · toda la cuenta ${ayuda('vistas_dia')}</h3>
+        <div class="cap">Instagram y Facebook, cada uno en su eje. La línea punteada vertical es el arranque (2-oct).</div>
+        <div class="ch"><canvas id="o_dia"></canvas></div>${leyenda([['Instagram (eje izq.)', C.ig], ['Facebook (eje der.)', C.fb]])}</div>
       <div class="panel"><h3>Cómo crecen las vistas</h3>
         <div class="cap">Vistas acumuladas de todos los posts, una foto por día desde que existe el tablero.</div>
         ${diasHist.length > 1 ? '<div class="ch"><canvas id="o_hist"></canvas></div>' : '<div class="empty-metric">Se guarda una foto por día desde que existe este tablero; con dos días ya se dibuja.</div>'}</div>
     </div>
   </div>`;
 
-  const ord = [...posts].sort((a, b) => a.fecha.localeCompare(b.fecha) || a.red.localeCompare(b.red));
-  mkMulti('o_vs', ord.map(p => `${diaMes(p.fecha)} ${p.red.toUpperCase()}`), [
-    { type: 'bar', label: 'Vistas', color: ord.map(p => p.red === 'ig' ? C.ig : C.fb), data: ord.map(p => p.vistas ?? null), orden: 2 },
-    { label: 'Promedio IG', color: C.ig, dash: [4, 3], data: ord.map(p => p.red === 'ig' ? (prom.ig || {}).vistas : null) },
-    { label: 'Promedio FB', color: C.fb, dash: [4, 3], data: ord.map(p => p.red === 'fb' ? (prom.fb || {}).vistas : null) },
-  ]);
+  const cu = D.cuenta || {};
+  if (cu.dias) {
+    const i0 = Math.max(0, cu.dias.indexOf(cu.antes[0])), dd = cu.dias.slice(i0);
+    const ser = k => ((cu.serie || {})[k] || []).slice(i0);
+    mkMulti('o_dia', dd, [{ label: 'Instagram', color: C.ig, data: ser('ig_vistas_d') },
+                          { label: 'Facebook', color: C.fb, eje: 'y1', data: ser('fb_vistas') }],
+            { marcas: [dd.indexOf(cu.despues[0])].filter(i => i >= 0) });
+  }
   if (diasHist.length > 1) {
     const tot = r => diasHist.map(d => posts.filter(p => p.red === r).reduce((a, p) => a + (((historia[p.id] || {})[d] || {}).vistas || 0), 0));
     mkMulti('o_hist', diasHist, [{ label: 'Instagram', color: C.ig, data: tot('ig') }, { label: 'Facebook', color: C.fb, data: tot('fb') }]);
@@ -677,6 +767,8 @@ function renderCuenta(app) {
 document.addEventListener('click', e => {
   const h = e.target.closest('.help-btn[data-ayuda]');
   if (h) { e.preventDefault(); const [t, b] = AYUDA[h.dataset.ayuda]; document.getElementById('ayudaCuerpo').innerHTML = `<h3>${t}</h3>${b}`; document.getElementById('ayuda').showModal(); return; }
+  const pz = e.target.closest('img[data-pieza]');
+  if (pz) { abrirPieza(pz.dataset.pieza); return; }
   const t = e.target.closest('.tab[data-hoja]');
   if (t) { HOJA = t.dataset.hoja; render(); window.scrollTo(0, 0); return; }
   const o = e.target.closest('.chip[data-obj]');

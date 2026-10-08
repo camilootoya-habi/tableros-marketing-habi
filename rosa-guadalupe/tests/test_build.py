@@ -97,3 +97,27 @@ def test_fuente_caida_sale_stale_desde_el_cache():
     d = B.build(hoy="2026-10-07", ahora="2026-10-07T12:00:00Z")
     assert d["pagado"]["status"] == "stale" and d["pagado"]["filas"] == [{"d": "2026-10-06"}]
     assert d["cuenta"]["status"] == "error"   # tampoco hay social_cache
+
+
+def test_metricas_fila_separa_vista_y_valor_de_compras():
+    f = {"spend": "10", "actions": [{"action_type": "offsite_conversion.fb_pixel_lead", "value": "408", "1d_view": "21", "7d_click": "387"},
+                                    {"action_type": "offsite_conversion.fb_pixel_purchase", "value": "8", "1d_view": "3"}],
+         "action_values": [{"action_type": "offsite_conversion.fb_pixel_purchase", "value": "1400.5"}]}
+    m = B.metricas_fila(f)
+    assert (m["leads"], m["leads_vista"], m["compras"], m["compras_vista"], m["valor_compras"]) == (408, 21, 8, 3, 1400.5)
+
+
+def test_optimizacion_de_en_palabras():
+    o = B.optimizacion_de({"name": "x", "optimization_goal": "VALUE", "promoted_object": {"custom_event_type": "PURCHASE"},
+                           "attribution_spec": [{"event_type": "CLICK_THROUGH", "window_days": 7}, {"event_type": "VIEW_THROUGH", "window_days": 1}]})
+    assert o["meta"] == "Valor de la conversión" and o["evento"] == "PURCHASE"
+    assert o["atribucion"] == "7 días clic + 1 día vista"
+
+
+def test_miniaturas_borra_las_que_salen_con_su_grande(tmp_path):
+    import os
+    os.makedirs(B.MINIATURAS)
+    for f in ("viejo.jpg", "viejo_g.jpg", "queda.jpg"):
+        open(os.path.join(B.MINIATURAS, f), "wb").write(b"x")
+    con = B.miniaturas(["queda"], {})
+    assert sorted(os.listdir(B.MINIATURAS)) == ["queda.jpg"] and con == {"queda"}
