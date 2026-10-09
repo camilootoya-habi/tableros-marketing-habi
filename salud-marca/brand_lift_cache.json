@@ -15858,51 +15858,351 @@
       "end_time": "2026-11-01T06:59:59+0000",
       "experiment_id": "2180867435791813",
       "question": null,
-      "exposed": 0.2486021661018,
-      "control": 0.24507585913175,
-      "lift": 0.0035263069700443,
-      "ci_lower": -0.073219623720043,
-      "ci_upper": 0.083047547900979,
-      "responders_test": 137,
-      "responders_control": 124,
-      "confidence": 0.515,
-      "spend": 18115.92,
+      "exposed": 0.27398966633773,
+      "control": 0.21339510495695,
+      "lift": 0.060594561380786,
+      "ci_lower": -0.0058017195526045,
+      "ci_upper": 0.12287758738171,
+      "responders_test": 206,
+      "responders_control": 176,
+      "confidence": 0.925,
+      "spend": 30923.46,
       "benchmark_region": 0.011551536021414,
       "benchmark_vertical": -0.01113156622628,
-      "incremental": 8382.6381925942,
-      "cost_per_incremental": 2.1611239306505,
-      "cpi_region": 0.094337763469953,
+      "incremental": 202037.41628388,
+      "cost_per_incremental": 0.15305808482796,
+      "cpi_region": 0.092088501207156,
       "cpi_vertical": null,
-      "impressions": 5211548,
-      "frequency": 2.1923310555568,
-      "reached": 2377172,
+      "impressions": 8463460,
+      "frequency": 2.538339956512,
+      "reached": 3334250,
       "is_winner": null,
       "top_ads": [
         {
           "id": "120241048511550238",
-          "share": 0.14166048425915
+          "share": 0.12653791005276
         },
         {
           "id": "120249585127390238",
-          "share": 0.083659565730032
+          "share": 0.079584884744463
         },
         {
           "id": "120239212435770238",
-          "share": 0.071892567421362
+          "share": 0.069353817457684
         },
         {
           "id": "120249371588700238",
-          "share": 0.067124385623253
+          "share": 0.066395222268142
         },
         {
-          "id": "120238690462140238",
-          "share": 0.051494486617296
+          "id": "120235252222090238",
+          "share": 0.050936085418643
+        }
+      ]
+    },
+    {
+      "country": "MX",
+      "month": "2026-10",
+      "study_id": "1779807870020431",
+      "study_name": "HABI MX - Continuous Brand Lift (Oct 2026-Oct 2026)",
+      "end_time": "2026-11-01T06:59:59+0000",
+      "experiment_id": "1402830721280487",
+      "question": null,
+      "exposed": 0.34786544500566,
+      "control": 0.21392914923178,
+      "lift": 0.13393629577388,
+      "ci_lower": 0.035560069539568,
+      "ci_upper": 0.19914434615727,
+      "responders_test": 158,
+      "responders_control": 146,
+      "confidence": 0.995,
+      "spend": 30923.46,
+      "benchmark_region": 0.053937923880812,
+      "benchmark_vertical": 0.068139818017583,
+      "incremental": 446577.09418406,
+      "cost_per_incremental": 0.069245513042938,
+      "cpi_region": 0.077954304233162,
+      "cpi_vertical": 0.29065918415633,
+      "impressions": 8463460,
+      "frequency": 2.538339956512,
+      "reached": 3334250,
+      "is_winner": null,
+      "top_ads": [
+        {
+          "id": "120241048511550238",
+          "share": 0.12653791005276
+        },
+        {
+          "id": "120249585127390238",
+          "share": 0.079584884744463
+        },
+        {
+          "id": "120239212435770238",
+          "share": 0.069353817457684
+        },
+        {
+          "id": "120249371588700238",
+          "share": 0.066395222268142
+        },
+        {
+          "id": "120235252222090238",
+          "share": 0.050936085418643
+        }
+      ]
+    },
+    {
+      "country": "MX",
+      "month": "2026-10",
+      "study_id": "1779807870020431",
+      "study_name": "HABI MX - Continuous Brand Lift (Oct 2026-Oct 2026)",
+      "end_time": "2026-11-01T06:59:59+0000",
+      "experiment_id": "1453306916715452",
+      "question": null,
+      "exposed": 0.29880453602097,
+      "control": 0.17300952744966,
+      "lift": 0.12579500857131,
+      "ci_lower": 0.041165581408725,
+      "ci_upper": 0.18925308467174,
+      "responders_test": 164,
+      "responders_control": 136,
+      "confidence": 0.995,
+      "spend": 30923.46,
+      "benchmark_region": 0.017049741500528,
+      "benchmark_vertical": 0.028916839063593,
+      "incremental": 419432.00732889,
+      "cost_per_incremental": 0.073726991406623,
+      "cpi_region": 0.12776632050547,
+      "cpi_vertical": 0.29768560357055,
+      "impressions": 8463460,
+      "frequency": 2.538339956512,
+      "reached": 3334250,
+      "is_winner": null,
+      "top_ads": [
+        {
+          "id": "120241048511550238",
+          "share": 0.12653791005276
+        },
+        {
+          "id": "120249585127390238",
+          "share": 0.079584884744463
+        },
+        {
+          "id": "120239212435770238",
+          "share": 0.069353817457684
+        },
+        {
+          "id": "120249371588700238",
+          "share": 0.066395222268142
+        },
+        {
+          "id": "120235252222090238",
+          "share": 0.050936085418643
+        }
+      ]
+    },
+    {
+      "country": "CO",
+      "month": "2026-09",
+      "study_id": "2364577177671049",
+      "study_name": "Habi: Continuous Brand Lift (Sep 2026-Oct 2026)",
+      "end_time": "2026-10-29T01:00:15+0000",
+      "experiment_id": "1109677721736755",
+      "question": null,
+      "exposed": 0.40922371387561,
+      "control": 0.38000198920742,
+      "lift": 0.029221724668196,
+      "ci_lower": -0.068368007450314,
+      "ci_upper": 0.11969426753131,
+      "responders_test": 190,
+      "responders_control": 97,
+      "confidence": 0.7,
+      "spend": 14045.32,
+      "benchmark_region": 0.017049741500528,
+      "benchmark_vertical": 0.028916839063593,
+      "incremental": 66590.261621812,
+      "cost_per_incremental": 0.21092153203674,
+      "cpi_region": 0.12776632050547,
+      "cpi_vertical": 0.29768560357055,
+      "impressions": 5904555,
+      "frequency": 2.5910887913031,
+      "reached": 2278793,
+      "is_winner": null,
+      "top_ads": [
+        {
+          "id": "120242407778640716",
+          "share": 0.076394129859626
+        },
+        {
+          "id": "120249742176890716",
+          "share": 0.063250961886237
+        },
+        {
+          "id": "120249741615050716",
+          "share": 0.042310890745102
+        },
+        {
+          "id": "120244924097950716",
+          "share": 0.039762710995549
+        },
+        {
+          "id": "120242915243250716",
+          "share": 0.038832863900573
+        }
+      ]
+    },
+    {
+      "country": "CO",
+      "month": "2026-09",
+      "study_id": "2364577177671049",
+      "study_name": "Habi: Continuous Brand Lift (Sep 2026-Oct 2026)",
+      "end_time": "2026-10-29T01:00:15+0000",
+      "experiment_id": "1297829740085834",
+      "question": null,
+      "exposed": 0.18628362981437,
+      "control": 0.20136080778512,
+      "lift": -0.01507717797075,
+      "ci_lower": -0.094435898488635,
+      "ci_upper": 0.06002122789907,
+      "responders_test": 170,
+      "responders_control": 93,
+      "confidence": 0.33,
+      "spend": 14045.32,
+      "benchmark_region": 0.019258387287941,
+      "benchmark_vertical": 0.010410706595459,
+      "incremental": -34357.767619499,
+      "cost_per_incremental": -0.40879605903234,
+      "cpi_region": 0.09421647275822,
+      "cpi_vertical": 0.21667854445892,
+      "impressions": 5904555,
+      "frequency": 2.5910887913031,
+      "reached": 2278793,
+      "is_winner": null,
+      "top_ads": [
+        {
+          "id": "120242407778640716",
+          "share": 0.076394129859626
+        },
+        {
+          "id": "120249742176890716",
+          "share": 0.063250961886237
+        },
+        {
+          "id": "120249741615050716",
+          "share": 0.042310890745102
+        },
+        {
+          "id": "120244924097950716",
+          "share": 0.039762710995549
+        },
+        {
+          "id": "120242915243250716",
+          "share": 0.038832863900573
+        }
+      ]
+    },
+    {
+      "country": "CO",
+      "month": "2026-09",
+      "study_id": "2364577177671049",
+      "study_name": "Habi: Continuous Brand Lift (Sep 2026-Oct 2026)",
+      "end_time": "2026-10-29T01:00:15+0000",
+      "experiment_id": "1485280630027705",
+      "question": null,
+      "exposed": 0.37671724294826,
+      "control": 0.28360085545238,
+      "lift": 0.093116387495877,
+      "ci_lower": 0.013501813190763,
+      "ci_upper": 0.18269172343385,
+      "responders_test": 196,
+      "responders_control": 121,
+      "confidence": 0.97,
+      "spend": 14045.32,
+      "benchmark_region": 0.053937923880812,
+      "benchmark_vertical": 0.068139818017583,
+      "incremental": 212192.97201089,
+      "cost_per_incremental": 0.066191259149144,
+      "cpi_region": 0.077954304233162,
+      "cpi_vertical": 0.29065918415633,
+      "impressions": 5904555,
+      "frequency": 2.5910887913031,
+      "reached": 2278793,
+      "is_winner": null,
+      "top_ads": [
+        {
+          "id": "120242407778640716",
+          "share": 0.076394129859626
+        },
+        {
+          "id": "120249742176890716",
+          "share": 0.063250961886237
+        },
+        {
+          "id": "120249741615050716",
+          "share": 0.042310890745102
+        },
+        {
+          "id": "120244924097950716",
+          "share": 0.039762710995549
+        },
+        {
+          "id": "120242915243250716",
+          "share": 0.038832863900573
+        }
+      ]
+    },
+    {
+      "country": "CO",
+      "month": "2026-09",
+      "study_id": "2364577177671049",
+      "study_name": "Habi: Continuous Brand Lift (Sep 2026-Oct 2026)",
+      "end_time": "2026-10-29T01:00:15+0000",
+      "experiment_id": "1841774996833397",
+      "question": null,
+      "exposed": 0.34159259543602,
+      "control": 0.48789574448195,
+      "lift": -0.14630314904593,
+      "ci_lower": -0.25534532126927,
+      "ci_upper": -0.0011131545656273,
+      "responders_test": 279,
+      "responders_control": 43,
+      "confidence": 0.045,
+      "spend": 14045.32,
+      "benchmark_region": 0.011551536021414,
+      "benchmark_vertical": -0.01113156622628,
+      "incremental": -333394.59192382,
+      "cost_per_incremental": -0.042128217854263,
+      "cpi_region": 0.092088501207156,
+      "cpi_vertical": null,
+      "impressions": 5904555,
+      "frequency": 2.5910887913031,
+      "reached": 2278793,
+      "is_winner": null,
+      "top_ads": [
+        {
+          "id": "120242407778640716",
+          "share": 0.076394129859626
+        },
+        {
+          "id": "120249742176890716",
+          "share": 0.063250961886237
+        },
+        {
+          "id": "120249741615050716",
+          "share": 0.042310890745102
+        },
+        {
+          "id": "120244924097950716",
+          "share": 0.039762710995549
+        },
+        {
+          "id": "120242915243250716",
+          "share": 0.038832863900573
         }
       ]
     }
   ],
   "last_refresh": {
-    "MX": "2026-10-08T16:49:05Z",
-    "CO": "2026-10-08T16:49:05Z"
+    "MX": "2026-10-09T23:27:55Z",
+    "CO": "2026-10-09T23:27:55Z"
   }
 }
