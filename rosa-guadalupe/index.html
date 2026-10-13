@@ -550,6 +550,9 @@ function reporteComite(pg, t, vistasOrg, posts) {
   const tm = (D.total_mx || {}).filas || [], porPlat = {};
   tm.forEach(f => { porPlat[f.plat] = (porPlat[f.plat] || 0) + f.inversion; });
   const invMX = Object.values(porPlat).reduce((a, v) => a + v, 0), invMeta = porPlat.Meta || 0;
+  // El % compara los MISMOS días: BigQuery llega hasta ayer y Meta trae hoy parcial.
+  const hastaMX = (D.total_mx || {}).hasta;
+  const invRosaMX = hastaMX ? sumar((pg.filas || []).concat((D.boost || {}).filas || []).filter(f => f.d <= hastaMX)).inversion || 0 : invRosa;
   const cta = ((D.cuentas_meta || {}).cuentas || {})['act_205661715114408'] || {};
   const alcRosa = ((pg.alcance || {}).total || {}).alcance;
   const comp = o => (pg.comparativo || []).find(c => c.obj === o);
@@ -595,7 +598,7 @@ function reporteComite(pg, t, vistasOrg, posts) {
     <div class="ficha">
       <div><div class="k">Inversión Rosa</div><div class="v">${usd(invRosa)}</div><div class="d">${usd(t.inversion)} en anuncios Rosa_ · ${nBoost ? `${usd(tb.inversion)} en boost de ${nBoost} publicacion${nBoost === 1 ? '' : 'es'} orgánica${nBoost === 1 ? '' : 's'}` : 'sin boost de publicaciones orgánicas'}</div></div>
       <div><div class="k">Inversión total Habi MX</div><div class="v">${invMX ? usd(invMX) : '—'}</div><div class="d">${Object.entries(porPlat).sort((a, b) => b[1] - a[1]).map(([p, v]) => `${p} ${usd(v)}`).join(' · ') || 'sin dato de BigQuery'}</div></div>
-      <div><div class="k">La Rosa sobre el total</div><div class="v">${pct(div(invRosa, invMX), 1)}</div><div class="d">${pct(div(invRosa, invMeta), 1)} de lo invertido en Meta</div></div>
+      <div><div class="k">La Rosa sobre el total</div><div class="v">${pct(div(invRosaMX, invMX), 1)}</div><div class="d">${pct(div(invRosaMX, invMeta), 1)} de lo invertido en Meta · ${usd(invRosaMX)} de la Rosa hasta el ${diaMes(hastaMX)}, mismos días del total</div></div>
     </div>
     <h3>3. Por qué no escaló en leads ${ayuda('comite_leads')}</h3>
     <p>${fraseRoas}</p>${tablaRoas}
