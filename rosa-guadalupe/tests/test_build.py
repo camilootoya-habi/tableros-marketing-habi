@@ -211,3 +211,38 @@ def test_comentarios_ig_respondido_por_la_cuenta(monkeypatch):
     monkeypatch.setattr(B, "_todas", lambda path, **p: datos)
     cs = B.comentarios_ig("m1", "tok", "tuhabimx")
     assert [(c["id"], c["respondido"]) for c in cs] == [("1", True)]
+
+
+def test_es_boost_por_post_de_fb_o_de_ig():
+    ids = {"123_456", "17890001"}
+    assert B.es_boost({"effective_object_story_id": "123_456"}, ids) == "123_456"
+    assert B.es_boost({"effective_object_story_id": "123_999", "effective_instagram_media_id": "17890001"}, ids) == "17890001"
+    assert B.es_boost({"effective_object_story_id": "123_999"}, ids) is None
+    assert B.es_boost(None, ids) is None
+
+
+def test_boosts_cruza_posts_rosa_y_no_duplica_los_rosa(monkeypatch):
+    llamadas = []
+
+    def falso_get(path, reintentos=2, **p):
+        llamadas.append((path, p))
+        if path == "":
+            return {"9": {"name": "Publicación de Instagram", "creative": {"effective_instagram_media_id": "17890001"}},
+                    "8": {"name": "Otro anuncio", "creative": {"effective_object_story_id": "123_999"}}}
+        if "ad.id" in p.get("filtering", ""):
+            return {"data": [{"date_start": "2026-10-05", "ad_id": "9", "campaign_id": "c", "objective": "OUTCOME_ENGAGEMENT",
+                              "spend": "10.5", "impressions": "1000"}]}
+        return {"data": [{"ad_id": "9"}, {"ad_id": "8"}, {"ad_id": "1"}]}
+
+    monkeypatch.setattr(B, "_get", falso_get)
+    r = B.boosts(CFG, "2026-10-12", [{"id": "17890001"}], ya={"1": {}})
+    assert list(r["anuncios"]) == ["9"] and r["anuncios"]["9"]["post"] == "17890001"
+    assert r["filas"][0]["inversion"] == 10.5 and r["filas"][0]["obj"] == "interaccion"
+    ids_pedidos = next(p["ids"] for path, p in llamadas if path == "")
+    assert "1" not in ids_pedidos.split(",")   # el Rosa_ que ya cuenta la hoja no se vuelve a pedir
+
+
+def test_contexto_caido_no_tumba_el_resto():
+    d = B.build(hoy="2026-10-07", ahora="2026-10-07T12:00:00Z")
+    assert d["total_mx"]["status"] == "error" and "bq" in d["total_mx"]["reason"]
+    assert d["cuentas_meta"]["status"] == "error" and d["boost"]["status"] == "error"

@@ -263,6 +263,27 @@ const AYUDA = {
     (<code>incluir</code> / <code>excluir</code>).</p>
     <p><strong>Cuenta</strong>: los datos diarios de Instagram y Facebook que ya guarda Salud de marca.</p>
     <p>Se actualiza dos veces al día (8:23 y 14:23 CDMX).</p>`],
+  comite: ['De dónde salen los números del reporte', `
+    <p><strong>Inversión total Habi MX</strong>: BigQuery, <code>resumen_inversiones_mkt_mx</code>, en dólares, todas las
+    plataformas y canales (incluida performance). Es la misma fuente del OKR de marketing. Llega hasta ayer.</p>
+    <p><strong>Inversión Rosa</strong>: anuncios <code>Rosa_*</code> más el <strong>boost</strong> de publicaciones orgánicas de
+    la Rosa: anuncios de cualquier nombre cuyo creativo es uno de esos posts (los boosts desde la app no se llaman "Rosa").</p>
+    <p><strong>Personas alcanzadas</strong>: únicas, según Meta, en el periodo. El total es el de la cuenta de anuncios de
+    Tuhabi MX entera (en dólares); la de pesos no tuvo entrega. Las personas no se pueden sumar entre días ni entre
+    cuentas.</p>`],
+  comite_leads: ['Por qué la Rosa no escaló en la campaña de leads', `
+    <p>La campaña de leads optimiza <strong>valor de conversión</strong> (ROAS) sobre el evento Purchase del píxel. Con
+    Advantage+, Meta reparte el presupuesto entre los anuncios según cuánto y qué tan barato convierte cada uno: nadie
+    le asigna a mano un monto a la Rosa.</p>
+    <p>La comparación es contra el resto de anuncios de la <strong>misma campaña</strong> en los <strong>mismos días</strong>.
+    Con pocos días y pocos Purchase, una diferencia chica puede ser ruido; una grande y sostenida, no.</p>`],
+  trends: ['Cómo leer Google Trends', `
+    <p>Google Trends no da volumen de búsquedas: da un <strong>índice relativo</strong>. 100 es el punto con más búsquedas
+    del periodo elegido y el resto está en proporción a ése. Llegar a 100 significa "el mayor interés del año", no "pocas
+    búsquedas" ni "muchas".</p>
+    <p>Por eso lo que importa es la distancia contra la línea base, y cuánto tarda en volver a ella.</p>
+    <p>Google Trends no tiene API oficial: estos valores se leen a mano de la gráfica (aproximados) y viven en
+    <code>rosa-guadalupe/config.json</code>.</p>`],
   leads: ['Evento "Lead" del píxel: por qué se ve inflado', `
     <p>Es el evento <code>Lead</code> del píxel de Meta en el sitio, contado con la atribución de la campaña
     (7 días después del clic + 1 día después de ver el anuncio). <strong>No son leads del CRM.</strong></p>
@@ -520,6 +541,78 @@ const TIPOS = [['alcance', 'recordacion', 'personas que recuerdan', 'por recorda
                ['interaccion', 'interacciones', 'interacciones', 'por interacción']];
 const interSinVideo = s => (s.reacciones || 0) + (s.comentarios || 0) + (s.compartidos || 0) + (s.guardados || 0);
 
+// ── Reporte para el comité (arriba del Resumen) ───────────────────────────────
+// Responde: cuánto pesó la Rosa en la inversión de Habi MX, a quién llegó, por qué no escaló en leads,
+// qué pasa con los comentarios y cómo leer Google Trends. Todo sale del data.json salvo Trends (config).
+function reporteComite(pg, t, vistasOrg, posts) {
+  const tb = sumar((D.boost || {}).filas || []), nBoost = Object.keys((D.boost || {}).anuncios || {}).length;
+  const invRosa = (t.inversion || 0) + (tb.inversion || 0);
+  const tm = (D.total_mx || {}).filas || [], porPlat = {};
+  tm.forEach(f => { porPlat[f.plat] = (porPlat[f.plat] || 0) + f.inversion; });
+  const invMX = Object.values(porPlat).reduce((a, v) => a + v, 0), invMeta = porPlat.Meta || 0;
+  const cta = ((D.cuentas_meta || {}).cuentas || {})['act_205661715114408'] || {};
+  const alcRosa = ((pg.alcance || {}).total || {}).alcance;
+  const comp = o => (pg.comparativo || []).find(c => c.obj === o);
+  const roas = comp('leads'), alc = comp('alcance');
+  const com = ((D.comentarios || {}).lista || []), resp = com.filter(c => c.respondido).length;
+  const tr = (D.config || {}).trends;
+
+  // Rosa contra el resto de la campaña de leads (mismos días). [indicador, rosa, otros, formato, menosEsMejor]
+  let tablaRoas = '<div class="empty-metric">Todavía no hay anuncios Rosa en la campaña de leads.</div>', fraseRoas = '';
+  if (roas) {
+    const r = roas.rosa, o = roas.otros, share = div(r.inversion, r.inversion + (o.inversion || 0));
+    const cpR = div(r.inversion, r.compras), cpO = div(o.inversion, o.compras);
+    const cvR = div(r.compras, r.landing), cvO = div(o.compras, o.landing);
+    const filas = [['% de la inversión de la campaña', share, 1 - share, v => pct(v, 0), null],
+                   ['Costo por Purchase (evento que optimiza)', cpR, cpO, usd, true],
+                   ['Conversión: visita a la landing → Purchase', cvR, cvO, v => pct(v, 1), false],
+                   ['Costo por evento Lead del píxel', div(r.inversion, r.leads), div(o.inversion, o.leads), usd, true],
+                   ['Costo por visita a la landing', div(r.inversion, r.landing), div(o.inversion, o.landing), usd, true]];
+    tablaRoas = `<div class="t-wrap"><table class="t"><tr><th></th><th>Piezas Rosa</th><th>Resto de la campaña</th><th>Rosa vs resto</th></tr>
+      ${filas.map(([n, a, b, f, menos]) => `<tr><td style="text-align:left"><b>${n}</b></td><td>${f(a)}</td><td>${f(b)}</td><td>${menos == null ? '' : delta(a, b, menos)}</td></tr>`).join('')}
+    </table></div>`;
+    fraseRoas = `Del ${diaMes(roas.desde)} al ${diaMes(roas.hasta)}, en la campaña de leads (optimiza valor de conversión: ROAS), cada Purchase con piezas Rosa
+      costó <b>${usd(cpR)}</b> contra <b>${usd(cpO)}</b> del resto, y convirtió <b>${pct(cvR, 1)}</b> de las visitas contra <b>${pct(cvO, 1)}</b>.
+      Meta reparte el presupuesto de la campaña hacia lo que convierte más barato: por eso la Rosa se quedó con <b>${pct(share, 0)}</b>.`;
+  }
+  const fraseAlc = alc ? (() => {
+    const r = alc.rosa, o = alc.otros, rr = div(r.inversion, r.recordacion), ro = div(o.inversion, o.recordacion);
+    return `En la campaña de alcance la Rosa <b>sí rinde</b>: cada persona que recuerda el anuncio costó ${usd(rr)} contra ${usd(ro)} de las otras piezas.
+      Pero alcance e interacción casi no traen leads (${n0(r.leads || 0)} eventos Lead con piezas Rosa en alcance), así que su inversión se mantuvo baja a propósito.`;
+  })() : '';
+
+  return `<div class="section comite">
+    <h2>Para el comité: qué logró la Rosa y por qué no le dimos más presupuesto ${ayuda('comite')}</h2>
+    <p class="hint">Del ${diaMes(D.config.inicio_pagado)} al ${diaMes((D.total_mx || {}).hasta || (D.generated_at || '').slice(0, 10))}. Inversión en US$.</p>
+    <h3>1. Impacto</h3>
+    <div class="ficha">
+      <div><div class="k">Personas alcanzadas con pauta Rosa</div><div class="v">${fmtMil(alcRosa)}</div><div class="d">únicas · ${pct(div(alcRosa, cta.alcance), 0)} de las ${fmtMil(cta.alcance)} que tocó toda la cuenta de Meta MX</div></div>
+      <div><div class="k">Impresiones pagadas</div><div class="v">${fmtMil(t.impresiones)}</div><div class="d">frecuencia ${(div(t.impresiones, alcRosa) || 0).toFixed(1)} por persona</div></div>
+      <div><div class="k">Vistas orgánicas</div><div class="v">${fmtMil(vistasOrg)}</div><div class="d">${posts.length} publicaciones Rosa en IG y FB, sin costo de pauta</div></div>
+      <div><div class="k">Eventos Lead · Purchase</div><div class="v">${n0(t.leads)} · ${n0(t.compras)}</div><div class="d">del píxel de Meta, no leads del CRM ${ayuda('fuentes')}</div></div>
+    </div>
+    <h3>2. Cuánto pesó la Rosa en la inversión</h3>
+    <div class="ficha">
+      <div><div class="k">Inversión Rosa</div><div class="v">${usd(invRosa)}</div><div class="d">${usd(t.inversion)} en anuncios Rosa_ · ${nBoost ? `${usd(tb.inversion)} en boost de ${nBoost} publicacion${nBoost === 1 ? '' : 'es'} orgánica${nBoost === 1 ? '' : 's'}` : 'sin boost de publicaciones orgánicas'}</div></div>
+      <div><div class="k">Inversión total Habi MX</div><div class="v">${invMX ? usd(invMX) : '—'}</div><div class="d">${Object.entries(porPlat).sort((a, b) => b[1] - a[1]).map(([p, v]) => `${p} ${usd(v)}`).join(' · ') || 'sin dato de BigQuery'}</div></div>
+      <div><div class="k">La Rosa sobre el total</div><div class="v">${pct(div(invRosa, invMX), 1)}</div><div class="d">${pct(div(invRosa, invMeta), 1)} de lo invertido en Meta</div></div>
+    </div>
+    <h3>3. Por qué no escaló en leads ${ayuda('comite_leads')}</h3>
+    <p>${fraseRoas}</p>${tablaRoas}
+    ${fraseAlc ? `<p>${fraseAlc}</p>` : ''}
+    <div class="grid2">
+      <div class="panel"><h3>4. Comentarios</h3>
+        <p><b>${n0(com.length)}</b> comentarios en publicaciones y anuncios Rosa: <b>${n0(resp)}</b> respondidos (${pct(div(resp, com.length), 0)}), <b>${n0(com.length - resp)}</b> sin respuesta.</p>
+        <p>Pasan por el conducto regular con SAC: los muy negativos se ocultan y el resto se responde. <a href="?hoja=comentarios&pend=1">Ver los pendientes →</a></p></div>
+      <div class="panel"><h3>5. Búsquedas de "${tr ? tr.termino : 'tuhabi'}" (Google Trends) ${ayuda('trends')}</h3>
+        ${tr ? `<p>El índice va de 0 a 100 y <b>100 es la semana con más búsquedas del año</b>, no un volumen. La base de los últimos 12 meses está en ~${tr.base}:
+          el pico fue <b>~${(tr.pico / tr.base).toFixed(0)} veces lo normal</b>, la semana de mayor interés del año. Después volvió a ~${tr.despues.join(', ~')}.</p>
+          <p>Es lo esperable en un evento puntual: sostener el interés pediría inversión continua, que en leads salió cara (punto 3).</p>
+          <p class="hint">${tr.geo} · leído a mano el ${diaMes(tr.leido)} · <a href="${tr.link}" target="_blank" rel="noopener">abrir en Google Trends</a></p>` : '<p>Sin datos.</p>'}</div>
+    </div>
+  </div>`;
+}
+
 function renderResumen(app) {
   const pg = D.pagado || {}, org = D.organico || {};
   const filas = pg.filas || [], posts = org.posts || [], A = pg.anuncios || {};
@@ -546,7 +639,8 @@ function renderResumen(app) {
     ['Reproducciones de video', t.video_3s, s(fb, 'vistas_video'), '3 s o más · FB orgánico'],
   ];
 
-  app.innerHTML = estado(pg, 'Pagado') + estado(org, 'Orgánico') + `
+  app.innerHTML = estado(pg, 'Pagado') + estado(org, 'Orgánico') + estado(D.total_mx, 'Inversión total MX') +
+    estado(D.boost, 'Boost de publicaciones') + reporteComite(pg, t, lado[0][2], posts) + `
   <div class="section">
     <h2>La Rosa de Guadalupe en una línea ${ayuda('fuentes')}</h2>
     <p class="hint">Solo la acción: los posts orgánicos con la Rosa y los anuncios <code>Rosa_*</code>, desde el ${diaMes(D.config.inicio_organico)}.</p>
@@ -772,8 +866,18 @@ function tablaPiezas(filas, A, plat) {
   const rows = Object.entries(grupos).map(([k, g]) => ({ k, g, s: sumar(g.filas) })).sort((a, b) => b.s.inversion - a.s.inversion);
   if (!rows.length) return '<div class="empty-metric">Sin anuncios con este objetivo.</div>';
   const nombre = k => k.replace(/^Rosa_?/, '').replace(/_/g, ' ').replace(/^(\d) /, '$1 · ') || k;
+  // Costo por el evento al que optimiza la campaña (TIPOS): Purchase en la de leads (ROAS),
+  // recordación en alcance, interacciones en interacción. Una pieza en dos campañas lleva uno por objetivo.
+  const costoOpt = g => TIPOS.filter(([o]) => g.objs.has(o)).map(([o, ev, , por]) => {
+    const s = sumar(g.filas.filter(f => f.obj === o)), c = div(s.inversion, s[ev]);
+    if (!s[ev]) return `— <small>sin eventos ${por.replace(/^por /, 'de ')}</small>`;
+    if (s.inversion < 1) return `— <small>inversión mínima ${por.replace(/^por /, 'en ')}</small>`;
+    // Bajo un centavo (las interacciones) se lee mejor por cada 1.000.
+    const mil = { recordacion: 'por 1.000 recordaciones', compras: 'por 1.000 Purchase', interacciones: 'por 1.000 interacciones' };
+    return c < 0.01 ? `${usd(c * 1000)} <small>${mil[ev]}</small>` : `${usd(c)} <small>${por}</small>`;
+  }).join('<br>') || '—';
   return `<div class="t-wrap"><table class="t">
-    <tr><th>Pieza</th><th>Objetivo</th><th>Inversión</th><th>Impresiones</th><th>FB / IG</th><th>CPM</th><th>CTR al sitio</th><th>Landing</th><th>Evento Lead</th><th>Costo x Lead</th><th>Purchase</th><th>ThruPlay ÷ impr.</th></tr>
+    <tr><th>Pieza</th><th>Objetivo</th><th>Inversión</th><th>Impresiones</th><th>FB / IG</th><th>CPM</th><th>CTR al sitio</th><th>Landing</th><th>Evento Lead</th><th>Costo x Lead</th><th>Purchase</th><th>Costo x evento de optimización ${ayuda('optimiza')}</th><th>ThruPlay ÷ impr.</th></tr>
     ${rows.map(({ k, g, s }) => {
       const mini = [...g.ads].find(i => (A[i] || {}).mini);
       const pf = plat.filter(x => g.ads.has(x.ad));
@@ -785,7 +889,7 @@ function tablaPiezas(filas, A, plat) {
         <td>${[...g.objs].map(o => NOMBRE_OBJ[o]).join(', ')}</td><td><b>${usd(s.inversion)}</b></td><td>${n0(s.impresiones)}</td>
         <td title="Facebook ${n0(fb)} · Instagram ${n0(ig)}"><span class="barra-pl"><i style="width:${fb + ig ? 100 * ig / (fb + ig) : 0}%;margin-left:auto"></i></span> ${fb + ig ? pct(ig / (fb + ig), 0) : '—'} IG</td>
         <td>${usd(div(s.inversion * 1000, s.impresiones))}</td><td>${pct(div(s.clics_link, s.impresiones))}</td><td>${n0(s.landing)}</td>
-        <td>${n0(s.leads)}</td><td>${usd(div(s.inversion, s.leads))}</td><td>${s.compras ? n0(s.compras) : '—'}</td><td>${pct(div(s.thruplay, s.impresiones), 1)}</td></tr>`;
+        <td>${n0(s.leads)}</td><td>${usd(div(s.inversion, s.leads))}</td><td>${s.compras ? n0(s.compras) : '—'}</td><td>${costoOpt(g)}</td><td>${pct(div(s.thruplay, s.impresiones), 1)}</td></tr>`;
     }).join('')}
   </table></div>`;
 }

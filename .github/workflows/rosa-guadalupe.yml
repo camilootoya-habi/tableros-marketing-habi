@@ -37,6 +37,18 @@ jobs:
       - name: Tests
         run: python -m pytest rosa-guadalupe/tests/ -q
 
+      # BigQuery: inversión total de Habi MX para el reporte del comité (query_inversion_mx.sql).
+      # Si falla, esa sección sale 'stale' del caché y el resto del tablero se actualiza igual.
+      - uses: google-github-actions/setup-gcloud@v2
+
+      - name: Autenticar contra GCP
+        run: |
+          echo '${{ secrets.GCP_CREDENTIALS }}' > /tmp/adc.json
+          # Factura en sellers-main-prod (GCP_PROJECT apunta a un papyrus-* sin bigquery.jobs.create).
+          gcloud config set project sellers-main-prod
+          echo "CLOUDSDK_AUTH_CREDENTIAL_FILE_OVERRIDE=/tmp/adc.json" >> $GITHUB_ENV
+          echo "GOOGLE_APPLICATION_CREDENTIALS=/tmp/adc.json" >> $GITHUB_ENV
+
       - name: Construir data.json
         env:
           # Token del system user "AgenteCreativo" (el mismo de salud-marca).

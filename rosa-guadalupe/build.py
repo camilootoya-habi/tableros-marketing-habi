@@ -724,6 +724,76 @@ def miniaturas(ids, imagenes, grandes=(), chica=240, grande=720):
     return con
 
 
+# ── contexto para el reporte del comité ────────────────────────────────────────
+# Cuentas de Meta MX: la de USD (donde vive la Rosa) y la de MXN. Las personas de dos cuentas no se
+# pueden deduplicar entre sí, así que el alcance se reporta por cuenta.
+CUENTAS_MX = {"act_205661715114408": "Habi Mexico Sellers (USD)", "act_1719704135983664": "Habi Mexico Sellers (MXN)"}
+QUERY_INVERSION = os.path.join(HERE, "query_inversion_mx.sql")
+
+
+def inversion_mx(cfg):
+    """Inversión total de pauta de Habi MX por día y plataforma (BigQuery, USD)."""
+    import shutil
+    import subprocess
+    with open(QUERY_INVERSION, encoding="utf-8") as f:
+        # Sin comentarios y en una línea: va como argumento. Por stdin, el bq de Windows se cae con los acentos.
+        sql = " ".join(l.split("--")[0].strip() for l in f if l.split("--")[0].strip())
+    # shutil.which: en Windows `bq` es `bq.cmd` y subprocess no lo encuentra por nombre.
+    r = subprocess.run([shutil.which("bq") or "bq", "--project_id=sellers-main-prod", "query", "--use_legacy_sql=false", "--format=json",
+                        "--max_rows=5000", "--maximum_bytes_billed=5000000000",
+                        f"--parameter=desde:STRING:{cfg['inicio_pagado']}", sql],
+                       capture_output=True, text=True, timeout=300)
+    if r.returncode:
+        raise RuntimeError(f"bq rc={r.returncode}: {(r.stderr or r.stdout).strip()[:250]}")
+    filas = [{"d": x["d"], "plat": x["plataforma"], "inversion": round(_num(x["inversion"]), 2)} for x in json.loads(r.stdout or "[]")]
+    if not filas:
+        raise RuntimeError("la tabla de inversiones no devolvió filas")
+    return {"filas": filas, "hasta": max(f["d"] for f in filas)}
+
+
+def cuentas_meta(cfg, hoy):
+    """Alcance, impresiones e inversión de CADA cuenta de Meta MX en el periodo, sin filtro de nombre."""
+    tr = json.dumps({"since": cfg["inicio_pagado"], "until": hoy})
+    out = {}
+    for act, nombre in CUENTAS_MX.items():
+        f = (_get(f"{act}/insights", level="account", fields="reach,impressions,spend,account_currency", time_range=tr).get("data") or [{}])[0]
+        out[act] = {"nombre": nombre, "alcance": int(_num(f.get("reach"))), "impresiones": int(_num(f.get("impressions"))),
+                    "inversion": round(_num(f.get("spend")), 2), "moneda": f.get("account_currency")}
+    return {"cuentas": out}
+
+
+def es_boost(creativo, ids_posts):
+    """Un anuncio es boost de un post de la Rosa si su creativo ES esa publicación (FB o IG)."""
+    cr = creativo or {}
+    return next((p for p in (cr.get("effective_object_story_id"), cr.get("effective_instagram_media_id")) if p and p in ids_posts), None)
+
+
+def boosts(cfg, hoy, posts, ya):
+    """Anuncios de CUALQUIER nombre que promocionan un post orgánico de la Rosa (los boosts desde la app no
+    se llaman 'Rosa…'). `ya`: ids de anuncios Rosa_ que ya cuenta la hoja Pagado, para no duplicar."""
+    act, ids_posts = cfg["cuenta_ads"], {p["id"] for p in posts}
+    tr = json.dumps({"since": cfg["inicio_pagado"], "until": hoy})
+    # 1. Todos los anuncios con entrega en el periodo (una llamada).
+    con_entrega = {f["ad_id"] for f in _todas(f"{act}/insights", level="ad", fields="ad_id", time_range=tr, limit=500)} - set(ya)
+    # 2. Su creativo, de a 50 ids por llamada.
+    anuncios, lista = {}, sorted(con_entrega)
+    for i in range(0, len(lista), 50):
+        pl = _get("", ids=",".join(lista[i:i + 50]),
+                  fields="name,effective_status,created_time,campaign_id,creative{effective_object_story_id,effective_instagram_media_id}")
+        for aid, a in pl.items():
+            post = es_boost(a.get("creative"), ids_posts)
+            if post:
+                anuncios[aid] = {"nombre": a.get("name"), "estado": a.get("effective_status"), "creado": (a.get("created_time") or "")[:10],
+                                 "campana_id": a.get("campaign_id"), "post": post}
+    # 3. Diario de los que sí son boost.
+    filas = []
+    if anuncios:
+        filtro = json.dumps([{"field": "ad.id", "operator": "IN", "value": sorted(anuncios)}])
+        filas = [_fila(f) for f in _todas(f"{act}/insights", level="ad", fields=CAMPOS_AD, time_increment=1, time_range=tr,
+                                          filtering=filtro, action_attribution_windows=VENTANAS, limit=500)]
+    return {"filas": filas, "anuncios": anuncios}
+
+
 # ── armado ────────────────────────────────────────────────────────────────────
 def _seccion(nombre, fn, cache, ahora):
     """Corre una fuente; si falla, devuelve la del caché como 'stale' con la razón."""
@@ -769,8 +839,16 @@ def build(hoy=None, ahora=None):
             raise RuntimeError("no se pudo leer salud-marca/social_cache.json")
         return cuenta(social, cfg["inicio_organico"], hoy)
 
-    out = {"generated_at": ahora, "config": {k: cfg.get(k) for k in ("inicio_organico", "inicio_pagado", "patron", "prefijo_ads")}}
+    out = {"generated_at": ahora, "config": {k: cfg.get(k) for k in ("inicio_organico", "inicio_pagado", "patron", "prefijo_ads", "trends")}}
     for nombre, fn in (("pagado", _pagado), ("organico", _organico), ("organico_cuenta", _organico_cuenta), ("cuenta", _cuenta)):
+        out[nombre], _ = _seccion(nombre, fn, cache, ahora)
+        if out[nombre]["status"] == "ok":
+            cache[nombre] = out[nombre]
+
+    # Contexto del reporte del comité: inversión total de Habi MX, cuentas de Meta y boosts de posts Rosa.
+    contexto = (("total_mx", lambda: inversion_mx(cfg)), ("cuentas_meta", lambda: cuentas_meta(cfg, hoy)),
+                ("boost", lambda: boosts(cfg, hoy, out["organico"].get("posts") or [], out["pagado"].get("anuncios") or {})))
+    for nombre, fn in contexto:
         out[nombre], _ = _seccion(nombre, fn, cache, ahora)
         if out[nombre]["status"] == "ok":
             cache[nombre] = out[nombre]

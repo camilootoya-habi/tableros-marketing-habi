@@ -6,5 +6,15 @@
   "incluir": [],
   "excluir": [],
   "prefijo_ads": "Rosa",
-  "cuenta_ads": "act_205661715114408"
+  "cuenta_ads": "act_205661715114408",
+  "trends": {
+    "_nota": "Google Trends no tiene API oficial: valores leídos A MANO de la gráfica (aprox.). Actualizar 'leido' al cambiarlos.",
+    "termino": "tuhabi",
+    "geo": "México, últimos 12 meses",
+    "base": 25,
+    "pico": 100,
+    "despues": [35, 26, 25],
+    "leido": "2026-10-13",
+    "link": "https://trends.google.es/trends/explore?geo=MX&q=tuhabi&hl=es"
+  }
 }

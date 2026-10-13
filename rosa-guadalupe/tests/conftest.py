@@ -24,3 +24,7 @@ def sin_red_ni_archivos(tmp_path, monkeypatch):
     cfg = tmp_path / "config.json"
     cfg.write_text(pathlib.Path(B.CONFIG).read_text(encoding="utf-8"), encoding="utf-8")
     monkeypatch.setattr(B, "CONFIG", str(cfg))
+    # Tampoco BigQuery: la inversión total de MX sale de `bq`, que no debe correr en los tests.
+    def _sin_bq(cfg):
+        raise RuntimeError("bq deshabilitado en tests")
+    monkeypatch.setattr(B, "inversion_mx", _sin_bq)
