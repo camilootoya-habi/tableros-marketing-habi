@@ -15858,45 +15858,45 @@
       "end_time": "2026-11-01T06:59:59+0000",
       "experiment_id": "2180867435791813",
       "question": null,
-      "exposed": 0.25567326214267,
-      "control": 0.26626433735295,
-      "lift": -0.010591075210284,
-      "ci_lower": -0.06599076410742,
-      "ci_upper": 0.047988915014852,
-      "responders_test": 347,
-      "responders_control": 315,
-      "confidence": 0.39,
-      "spend": 60369.6,
-      "benchmark_region": 0.011319783831101,
+      "exposed": 0.25953621947209,
+      "control": 0.26898679195209,
+      "lift": -0.0094505724800004,
+      "ci_lower": -0.063887348109001,
+      "ci_upper": 0.049820672653337,
+      "responders_test": 379,
+      "responders_control": 339,
+      "confidence": 0.36,
+      "spend": 66214.47,
+      "benchmark_region": 0.01116422905235,
       "benchmark_vertical": -0.0095110960123363,
-      "incremental": -51636.14113215,
-      "cost_per_incremental": -1.1691346153365,
-      "cpi_region": 0.092919187805054,
+      "incremental": -48678.528511472,
+      "cost_per_incremental": -1.3602397612408,
+      "cpi_region": 0.091976180147455,
       "cpi_vertical": null,
-      "impressions": 15393476,
-      "frequency": 3.1573517789885,
-      "reached": 4875439,
+      "impressions": 16824834,
+      "frequency": 3.2664157698091,
+      "reached": 5150855,
       "is_winner": null,
       "top_ads": [
         {
           "id": "120241048511550238",
-          "share": 0.10904163685034
+          "share": 0.10792927890233
         },
         {
           "id": "120249585127390238",
-          "share": 0.077782195012059
+          "share": 0.076395688132821
         },
         {
           "id": "120239212435770238",
-          "share": 0.059046771885187
+          "share": 0.058140010786162
         },
         {
           "id": "120249371588700238",
-          "share": 0.055459867217938
+          "share": 0.054141640037291
         },
         {
           "id": "120238690462140238",
-          "share": 0.041449173093743
+          "share": 0.042031296180427
         }
       ]
     },
@@ -15908,45 +15908,45 @@
       "end_time": "2026-11-01T06:59:59+0000",
       "experiment_id": "1402830721280487",
       "question": null,
-      "exposed": 0.34876554333889,
-      "control": 0.19160010993621,
-      "lift": 0.15716543340268,
-      "ci_lower": 0.09428693632808,
-      "ci_upper": 0.21640075296635,
-      "responders_test": 265,
-      "responders_control": 254,
+      "exposed": 0.3473081028686,
+      "control": 0.18628845410078,
+      "lift": 0.16101964876782,
+      "ci_lower": 0.10212248609304,
+      "ci_upper": 0.21743354894171,
+      "responders_test": 280,
+      "responders_control": 270,
       "confidence": 1,
-      "spend": 60369.6,
-      "benchmark_region": 0.053301569027289,
-      "benchmark_vertical": 0.066973712178519,
-      "incremental": 766250.48346332,
-      "cost_per_incremental": 0.078785725168016,
-      "cpi_region": 0.077782466257648,
-      "cpi_vertical": 0.28786494761928,
-      "impressions": 15393476,
-      "frequency": 3.1573517789885,
-      "reached": 4875439,
+      "spend": 66214.47,
+      "benchmark_region": 0.053217531318217,
+      "benchmark_vertical": 0.067051126760875,
+      "incremental": 829388.86295396,
+      "cost_per_incremental": 0.079835253350485,
+      "cpi_region": 0.079139496609868,
+      "cpi_vertical": 0.2891689007167,
+      "impressions": 16824834,
+      "frequency": 3.2664157698091,
+      "reached": 5150855,
       "is_winner": null,
       "top_ads": [
         {
           "id": "120241048511550238",
-          "share": 0.10904163685034
+          "share": 0.10792927890233
         },
         {
           "id": "120249585127390238",
-          "share": 0.077782195012059
+          "share": 0.076395688132821
         },
         {
           "id": "120239212435770238",
-          "share": 0.059046771885187
+          "share": 0.058140010786162
         },
         {
           "id": "120249371588700238",
-          "share": 0.055459867217938
+          "share": 0.054141640037291
         },
         {
           "id": "120238690462140238",
-          "share": 0.041449173093743
+          "share": 0.042031296180427
         }
       ]
     },
@@ -15958,45 +15958,45 @@
       "end_time": "2026-11-01T06:59:59+0000",
       "experiment_id": "1453306916715452",
       "question": null,
-      "exposed": 0.28241502736507,
-      "control": 0.1720772504977,
-      "lift": 0.11033777686738,
-      "ci_lower": 0.045581066238227,
-      "ci_upper": 0.16219617309713,
-      "responders_test": 263,
-      "responders_control": 246,
-      "confidence": 0.995,
-      "spend": 60369.6,
-      "benchmark_region": 0.017020910011994,
-      "benchmark_vertical": 0.028539079980546,
-      "incremental": 537945.1005125,
-      "cost_per_incremental": 0.11222260402128,
-      "cpi_region": 0.12529313129596,
-      "cpi_vertical": 0.29768560357055,
-      "impressions": 15393476,
-      "frequency": 3.1573517789885,
-      "reached": 4875439,
+      "exposed": 0.29189678313622,
+      "control": 0.16938462166477,
+      "lift": 0.12251216147144,
+      "ci_lower": 0.060922982765445,
+      "ci_upper": 0.17261687850146,
+      "responders_test": 278,
+      "responders_control": 267,
+      "confidence": 1,
+      "spend": 66214.47,
+      "benchmark_region": 0.017292910632263,
+      "benchmark_vertical": 0.028916839063593,
+      "incremental": 631042.37947598,
+      "cost_per_incremental": 0.10492872135622,
+      "cpi_region": 0.12797941279771,
+      "cpi_vertical": 0.28669214223183,
+      "impressions": 16824834,
+      "frequency": 3.2664157698091,
+      "reached": 5150855,
       "is_winner": null,
       "top_ads": [
         {
           "id": "120241048511550238",
-          "share": 0.10904163685034
+          "share": 0.10792927890233
         },
         {
           "id": "120249585127390238",
-          "share": 0.077782195012059
+          "share": 0.076395688132821
         },
         {
           "id": "120239212435770238",
-          "share": 0.059046771885187
+          "share": 0.058140010786162
         },
         {
           "id": "120249371588700238",
-          "share": 0.055459867217938
+          "share": 0.054141640037291
         },
         {
           "id": "120238690462140238",
-          "share": 0.041449173093743
+          "share": 0.042031296180427
         }
       ]
     },
@@ -16008,45 +16008,45 @@
       "end_time": "2026-10-29T01:00:15+0000",
       "experiment_id": "1109677721736755",
       "question": null,
-      "exposed": 0.42147554558249,
-      "control": 0.33820465525184,
-      "lift": 0.083270890330656,
-      "ci_lower": 0.017757050319412,
-      "ci_upper": 0.15957466555443,
-      "responders_test": 281,
-      "responders_control": 165,
-      "confidence": 0.98,
-      "spend": 21886.93,
-      "benchmark_region": 0.017020910011994,
-      "benchmark_vertical": 0.028539079980546,
-      "incremental": 261007.27640446,
-      "cost_per_incremental": 0.083855631542179,
-      "cpi_region": 0.12529313129596,
-      "cpi_vertical": 0.29768560357055,
-      "impressions": 9456855,
-      "frequency": 3.0170834561624,
-      "reached": 3134436,
+      "exposed": 0.40635380989871,
+      "control": 0.31670498222295,
+      "lift": 0.089648827675762,
+      "ci_lower": 0.015835073387101,
+      "ci_upper": 0.14974850837202,
+      "responders_test": 302,
+      "responders_control": 184,
+      "confidence": 0.985,
+      "spend": 23432.11,
+      "benchmark_region": 0.017292910632263,
+      "benchmark_vertical": 0.028916839063593,
+      "incremental": 297340.50797289,
+      "cost_per_incremental": 0.078805643266528,
+      "cpi_region": 0.12797941279771,
+      "cpi_vertical": 0.28669214223183,
+      "impressions": 10270199,
+      "frequency": 3.0964879512169,
+      "reached": 3316725,
       "is_winner": null,
       "top_ads": [
         {
           "id": "120242407778640716",
-          "share": 0.068370484119975
+          "share": 0.06736823956528
         },
         {
           "id": "120249742176890716",
-          "share": 0.057447983796723
+          "share": 0.058144571700969
         },
         {
           "id": "120244924097950716",
-          "share": 0.045475084902268
+          "share": 0.045918186625105
         },
         {
           "id": "120249741615050716",
-          "share": 0.043626493071436
+          "share": 0.044386954482546
         },
         {
           "id": "120249098026630716",
-          "share": 0.042887695990255
+          "share": 0.043582929578258
         }
       ]
     },
@@ -16058,45 +16058,45 @@
       "end_time": "2026-10-29T01:00:15+0000",
       "experiment_id": "1297829740085834",
       "question": null,
-      "exposed": 0.18175860968951,
-      "control": 0.22052874746006,
-      "lift": -0.038770137770551,
-      "ci_lower": -0.1028416748557,
-      "ci_upper": 0.026612891785738,
-      "responders_test": 270,
-      "responders_control": 166,
-      "confidence": 0.15,
-      "spend": 21886.93,
-      "benchmark_region": 0.019148160677221,
+      "exposed": 0.17777177818503,
+      "control": 0.22793428812606,
+      "lift": -0.050162509941034,
+      "ci_lower": -0.11043871690736,
+      "ci_upper": 0.012091400936943,
+      "responders_test": 293,
+      "responders_control": 186,
+      "confidence": 0.115,
+      "spend": 23432.11,
+      "benchmark_region": 0.01994858614235,
       "benchmark_vertical": 0.010410706595459,
-      "incremental": -121522.51555297,
-      "cost_per_incremental": -0.18010596555219,
-      "cpi_region": 0.09422664414677,
+      "incremental": -166375.25078418,
+      "cost_per_incremental": -0.14083891618229,
+      "cpi_region": 0.094454299299388,
       "cpi_vertical": 0.24991568722405,
-      "impressions": 9456855,
-      "frequency": 3.0170834561624,
-      "reached": 3134436,
+      "impressions": 10270199,
+      "frequency": 3.0964879512169,
+      "reached": 3316725,
       "is_winner": null,
       "top_ads": [
         {
           "id": "120242407778640716",
-          "share": 0.068370484119975
+          "share": 0.06736823956528
         },
         {
           "id": "120249742176890716",
-          "share": 0.057447983796723
+          "share": 0.058144571700969
         },
         {
           "id": "120244924097950716",
-          "share": 0.045475084902268
+          "share": 0.045918186625105
         },
         {
           "id": "120249741615050716",
-          "share": 0.043626493071436
+          "share": 0.044386954482546
         },
         {
           "id": "120249098026630716",
-          "share": 0.042887695990255
+          "share": 0.043582929578258
         }
       ]
     },
@@ -16108,45 +16108,45 @@
       "end_time": "2026-10-29T01:00:15+0000",
       "experiment_id": "1485280630027705",
       "question": null,
-      "exposed": 0.39066186208604,
-      "control": 0.28086392305856,
-      "lift": 0.10979793902748,
-      "ci_lower": 0.040685628956742,
-      "ci_upper": 0.16644264400673,
-      "responders_test": 281,
-      "responders_control": 213,
-      "confidence": 0.99,
-      "spend": 21886.93,
-      "benchmark_region": 0.053301569027289,
-      "benchmark_vertical": 0.066973712178519,
-      "incremental": 344154.61281354,
-      "cost_per_incremental": 0.063596212821527,
-      "cpi_region": 0.077782466257648,
-      "cpi_vertical": 0.28786494761928,
-      "impressions": 9456855,
-      "frequency": 3.0170834561624,
-      "reached": 3134436,
+      "exposed": 0.38702779175218,
+      "control": 0.29105584488242,
+      "lift": 0.095971946869759,
+      "ci_lower": 0.031735965162871,
+      "ci_upper": 0.15517249494413,
+      "responders_test": 296,
+      "responders_control": 238,
+      "confidence": 1,
+      "spend": 23432.11,
+      "benchmark_region": 0.053217531318217,
+      "benchmark_vertical": 0.067051126760875,
+      "incremental": 318312.5554816,
+      "cost_per_incremental": 0.073613527322375,
+      "cpi_region": 0.079139496609868,
+      "cpi_vertical": 0.2891689007167,
+      "impressions": 10270199,
+      "frequency": 3.0964879512169,
+      "reached": 3316725,
       "is_winner": null,
       "top_ads": [
         {
           "id": "120242407778640716",
-          "share": 0.068370484119975
+          "share": 0.06736823956528
         },
         {
           "id": "120249742176890716",
-          "share": 0.057447983796723
+          "share": 0.058144571700969
         },
         {
           "id": "120244924097950716",
-          "share": 0.045475084902268
+          "share": 0.045918186625105
         },
         {
           "id": "120249741615050716",
-          "share": 0.043626493071436
+          "share": 0.044386954482546
         },
         {
           "id": "120249098026630716",
-          "share": 0.042887695990255
+          "share": 0.043582929578258
         }
       ]
     },
@@ -16158,51 +16158,51 @@
       "end_time": "2026-10-29T01:00:15+0000",
       "experiment_id": "1841774996833397",
       "question": null,
-      "exposed": 0.37357975686471,
-      "control": 0.39443891419233,
-      "lift": -0.02085915732762,
-      "ci_lower": -0.093568904129607,
-      "ci_upper": 0.048942178786772,
-      "responders_test": 486,
-      "responders_control": 200,
-      "confidence": 0.31,
-      "spend": 21886.93,
-      "benchmark_region": 0.011319783831101,
+      "exposed": 0.36958028702209,
+      "control": 0.39682370130864,
+      "lift": -0.027243414286554,
+      "ci_lower": -0.09131077636606,
+      "ci_upper": 0.036375666275275,
+      "responders_test": 527,
+      "responders_control": 218,
+      "confidence": 0.245,
+      "spend": 23432.11,
+      "benchmark_region": 0.01116422905235,
       "benchmark_vertical": -0.0095110960123363,
-      "incremental": -65381.693657355,
-      "cost_per_incremental": -0.33475624101606,
-      "cpi_region": 0.092919187805054,
+      "incremental": -90358.913249572,
+      "cost_per_incremental": -0.25932261862513,
+      "cpi_region": 0.091976180147455,
       "cpi_vertical": null,
-      "impressions": 9456855,
-      "frequency": 3.0170834561624,
-      "reached": 3134436,
+      "impressions": 10270199,
+      "frequency": 3.0964879512169,
+      "reached": 3316725,
       "is_winner": null,
       "top_ads": [
         {
           "id": "120242407778640716",
-          "share": 0.068370484119975
+          "share": 0.06736823956528
         },
         {
           "id": "120249742176890716",
-          "share": 0.057447983796723
+          "share": 0.058144571700969
         },
         {
           "id": "120244924097950716",
-          "share": 0.045475084902268
+          "share": 0.045918186625105
         },
         {
           "id": "120249741615050716",
-          "share": 0.043626493071436
+          "share": 0.044386954482546
         },
         {
           "id": "120249098026630716",
-          "share": 0.042887695990255
+          "share": 0.043582929578258
         }
       ]
     }
   ],
   "last_refresh": {
-    "MX": "2026-10-14T22:35:36Z",
-    "CO": "2026-10-14T22:35:36Z"
+    "MX": "2026-10-15T22:40:06Z",
+    "CO": "2026-10-15T22:40:06Z"
   }
 }
