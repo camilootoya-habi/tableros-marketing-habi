@@ -25721,25 +25721,50 @@
     "fb_altas_org": 7,
     "fb_altas_pag": 6,
     "fb_bajas": 2,
-    "fb_inter": 5912,
+    "fb_inter": 5913,
     "fb_r_anger": 1,
     "fb_r_like": 452,
     "fb_r_love": 7,
     "fb_total": 34353,
-    "fb_video": 59151,
-    "fb_video_pag": 59013,
+    "fb_video": 59152,
+    "fb_video_pag": 59014,
     "fb_visitas": 574,
-    "fb_vistas": 795145,
+    "fb_vistas": 795320,
     "ig_altas_d": 68,
     "ig_bajas_d": 20,
     "ig_clics_d": 56,
     "ig_inter_d": 259,
+    "ig_nuevos": 73,
     "ig_perfil_d": 366,
     "ig_total": 79436,
-    "ig_vistas_d": 294212
+    "ig_vistas_d": 294215
    },
    "2026-10-20": {
-    "ig_total": 79478
+    "fb_alcance28": 5074358,
+    "fb_altas": 11,
+    "fb_altas_org": 4,
+    "fb_altas_pag": 7,
+    "fb_bajas": 2,
+    "fb_inter": 4715,
+    "fb_r_anger": 9,
+    "fb_r_haha": 3,
+    "fb_r_like": 493,
+    "fb_r_love": 7,
+    "fb_total": 34362,
+    "fb_video": 57389,
+    "fb_video_pag": 57252,
+    "fb_visitas": 419,
+    "fb_vistas": 785258,
+    "ig_altas_d": 73,
+    "ig_bajas_d": 17,
+    "ig_clics_d": 58,
+    "ig_inter_d": 396,
+    "ig_perfil_d": 580,
+    "ig_total": 79478,
+    "ig_vistas_d": 332519
+   },
+   "2026-10-21": {
+    "ig_total": 79562
    }
   },
   "MX": {
@@ -51505,7 +51530,7 @@
     "fb_r_love": 17,
     "fb_r_sorry": 1,
     "fb_r_wow": 3,
-    "fb_total": 43835,
+    "fb_total": 43841,
     "fb_video": 146336,
     "fb_video_pag": 145953,
     "fb_visitas": 1340,
@@ -51530,7 +51555,7 @@
     "fb_r_like": 974,
     "fb_r_love": 12,
     "fb_r_wow": 4,
-    "fb_total": 43853,
+    "fb_total": 43859,
     "fb_video": 140525,
     "fb_video_pag": 140158,
     "fb_visitas": 1309,
@@ -51555,7 +51580,7 @@
     "fb_r_like": 681,
     "fb_r_love": 12,
     "fb_r_wow": 2,
-    "fb_total": 43867,
+    "fb_total": 43873,
     "fb_video": 102204,
     "fb_video_pag": 101966,
     "fb_visitas": 854,
@@ -51580,7 +51605,7 @@
     "fb_r_like": 915,
     "fb_r_love": 14,
     "fb_r_wow": 2,
-    "fb_total": 43881,
+    "fb_total": 43887,
     "fb_video": 127943,
     "fb_video_pag": 127685,
     "fb_visitas": 918,
@@ -51605,7 +51630,7 @@
     "fb_r_like": 1610,
     "fb_r_love": 34,
     "fb_r_wow": 4,
-    "fb_total": 43907,
+    "fb_total": 43913,
     "fb_video": 221233,
     "fb_video_pag": 220728,
     "fb_visitas": 1535,
@@ -51631,7 +51656,7 @@
     "fb_r_love": 23,
     "fb_r_sorry": 3,
     "fb_r_wow": 1,
-    "fb_total": 43927,
+    "fb_total": 43933,
     "fb_video": 202382,
     "fb_video_pag": 202105,
     "fb_visitas": 1375,
@@ -51656,7 +51681,7 @@
     "fb_r_like": 1140,
     "fb_r_love": 17,
     "fb_r_sorry": 1,
-    "fb_total": 43945,
+    "fb_total": 43951,
     "fb_video": 181885,
     "fb_video_pag": 181625,
     "fb_visitas": 1199,
@@ -51682,7 +51707,7 @@
     "fb_r_love": 49,
     "fb_r_sorry": 2,
     "fb_r_wow": 5,
-    "fb_total": 43979,
+    "fb_total": 43985,
     "fb_video": 263007,
     "fb_video_pag": 262554,
     "fb_visitas": 1679,
@@ -51708,7 +51733,7 @@
     "fb_r_love": 24,
     "fb_r_sorry": 3,
     "fb_r_wow": 2,
-    "fb_total": 43999,
+    "fb_total": 44005,
     "fb_video": 141368,
     "fb_video_pag": 141030,
     "fb_visitas": 1073,
@@ -51732,7 +51757,7 @@
     "fb_r_haha": 6,
     "fb_r_like": 471,
     "fb_r_love": 8,
-    "fb_total": 44009,
+    "fb_total": 44015,
     "fb_video": 83421,
     "fb_video_pag": 83144,
     "fb_visitas": 713,
@@ -51757,7 +51782,7 @@
     "fb_r_like": 519,
     "fb_r_love": 9,
     "fb_r_wow": 1,
-    "fb_total": 44028,
+    "fb_total": 44034,
     "fb_video": 97219,
     "fb_video_pag": 96935,
     "fb_visitas": 675,
@@ -51782,7 +51807,7 @@
     "fb_r_like": 1073,
     "fb_r_love": 36,
     "fb_r_wow": 4,
-    "fb_total": 44053,
+    "fb_total": 44059,
     "fb_video": 168264,
     "fb_video_pag": 167669,
     "fb_visitas": 1521,
@@ -51809,7 +51834,7 @@
     "fb_r_love": 56,
     "fb_r_sorry": 2,
     "fb_r_wow": 4,
-    "fb_total": 44073,
+    "fb_total": 44079,
     "fb_video": 162490,
     "fb_video_pag": 161247,
     "fb_visitas": 1389,
@@ -51836,7 +51861,7 @@
     "fb_r_love": 30,
     "fb_r_sorry": 3,
     "fb_r_wow": 3,
-    "fb_total": 44094,
+    "fb_total": 44100,
     "fb_video": 154056,
     "fb_video_pag": 153227,
     "fb_visitas": 1313,
@@ -51863,7 +51888,7 @@
     "fb_r_love": 37,
     "fb_r_sorry": 1,
     "fb_r_wow": 2,
-    "fb_total": 44115,
+    "fb_total": 44121,
     "fb_video": 219665,
     "fb_video_pag": 219073,
     "fb_visitas": 1173,
@@ -51890,7 +51915,7 @@
     "fb_r_love": 31,
     "fb_r_sorry": 2,
     "fb_r_wow": 6,
-    "fb_total": 44140,
+    "fb_total": 44146,
     "fb_video": 225580,
     "fb_video_pag": 224791,
     "fb_visitas": 1230,
@@ -51916,7 +51941,7 @@
     "fb_r_like": 934,
     "fb_r_love": 38,
     "fb_r_wow": 3,
-    "fb_total": 44156,
+    "fb_total": 44162,
     "fb_video": 175009,
     "fb_video_pag": 174196,
     "fb_visitas": 868,
@@ -51943,7 +51968,7 @@
     "fb_r_love": 32,
     "fb_r_sorry": 1,
     "fb_r_wow": 3,
-    "fb_total": 44176,
+    "fb_total": 44182,
     "fb_video": 196679,
     "fb_video_pag": 196116,
     "fb_visitas": 1006,
@@ -51970,7 +51995,7 @@
     "fb_r_love": 28,
     "fb_r_sorry": 1,
     "fb_r_wow": 4,
-    "fb_total": 44193,
+    "fb_total": 44199,
     "fb_video": 208597,
     "fb_video_pag": 208149,
     "fb_visitas": 1160,
@@ -51995,7 +52020,7 @@
     "fb_r_love": 19,
     "fb_r_sorry": 2,
     "fb_r_wow": 4,
-    "fb_total": 44218,
+    "fb_total": 44224,
     "fb_video": 204288,
     "fb_video_pag": 203761,
     "fb_visitas": 1232,
@@ -52021,7 +52046,7 @@
     "fb_r_like": 1098,
     "fb_r_love": 18,
     "fb_r_wow": 5,
-    "fb_total": 44247,
+    "fb_total": 44253,
     "fb_video": 186538,
     "fb_video_pag": 186135,
     "fb_visitas": 1298,
@@ -52048,7 +52073,7 @@
     "fb_r_love": 27,
     "fb_r_sorry": 1,
     "fb_r_wow": 3,
-    "fb_total": 44266,
+    "fb_total": 44272,
     "fb_video": 190742,
     "fb_video_pag": 190452,
     "fb_visitas": 1262,
@@ -52075,7 +52100,7 @@
     "fb_r_love": 16,
     "fb_r_sorry": 2,
     "fb_r_wow": 3,
-    "fb_total": 44290,
+    "fb_total": 44296,
     "fb_video": 152716,
     "fb_video_pag": 152370,
     "fb_visitas": 1028,
@@ -52102,11 +52127,11 @@
     "fb_r_love": 8,
     "fb_r_sorry": 1,
     "fb_r_wow": 2,
-    "fb_total": 44302,
-    "fb_video": 118471,
+    "fb_total": 44308,
+    "fb_video": 118472,
     "fb_video_pag": 117502,
     "fb_visitas": 613,
-    "fb_vistas": 803917,
+    "fb_vistas": 803918,
     "ig_altas_d": 18,
     "ig_bajas_d": 6,
     "ig_clics_d": 4,
@@ -52129,11 +52154,11 @@
     "fb_r_love": 16,
     "fb_r_sorry": 2,
     "fb_r_wow": 1,
-    "fb_total": 44326,
+    "fb_total": 44332,
     "fb_video": 127733,
     "fb_video_pag": 126257,
     "fb_visitas": 712,
-    "fb_vistas": 933502,
+    "fb_vistas": 933510,
     "ig_altas_d": 28,
     "ig_bajas_d": 9,
     "ig_clics_d": 7,
@@ -52156,21 +52181,48 @@
     "fb_r_love": 20,
     "fb_r_sorry": 2,
     "fb_r_wow": 1,
-    "fb_total": 44357,
-    "fb_video": 197523,
-    "fb_video_pag": 195532,
+    "fb_total": 44363,
+    "fb_video": 197561,
+    "fb_video_pag": 195568,
     "fb_visitas": 1268,
-    "fb_vistas": 1546699,
+    "fb_vistas": 1547044,
     "ig_altas_d": 32,
     "ig_bajas_d": 11,
     "ig_clics_d": 9,
     "ig_inter_d": 245,
+    "ig_nuevos": 38,
     "ig_perfil_d": 286,
     "ig_total": 27084,
-    "ig_vistas_d": 619317
+    "ig_vistas_d": 619354
    },
    "2026-10-20": {
-    "ig_total": 27113
+    "fb_alcance28": 8003825,
+    "fb_altas": 35,
+    "fb_altas_org": 24,
+    "fb_altas_pag": 11,
+    "fb_bajas": 2,
+    "fb_inter": 13298,
+    "fb_r_anger": 9,
+    "fb_r_haha": 10,
+    "fb_r_like": 1290,
+    "fb_r_love": 36,
+    "fb_r_sorry": 2,
+    "fb_r_wow": 5,
+    "fb_total": 44396,
+    "fb_video": 183214,
+    "fb_video_pag": 180886,
+    "fb_visitas": 1181,
+    "fb_vistas": 1574710,
+    "ig_altas_d": 38,
+    "ig_bajas_d": 7,
+    "ig_clics_d": 6,
+    "ig_inter_d": 210,
+    "ig_perfil_d": 230,
+    "ig_total": 27113,
+    "ig_vistas_d": 527866
+   },
+   "2026-10-21": {
+    "ig_total": 27143
    }
   },
   "PCOM": {
@@ -74668,7 +74720,7 @@
     "fb_bajas": 5,
     "fb_inter": 226,
     "fb_r_like": 1,
-    "fb_total": 46358,
+    "fb_total": 46360,
     "fb_video": 3,
     "fb_video_pag": 0,
     "fb_visitas": 70,
@@ -74689,7 +74741,7 @@
     "fb_bajas": 1,
     "fb_inter": 215,
     "fb_r_like": 2,
-    "fb_total": 46358,
+    "fb_total": 46360,
     "fb_video": 1,
     "fb_video_pag": 0,
     "fb_visitas": 33,
@@ -74710,7 +74762,7 @@
     "fb_bajas": 2,
     "fb_inter": 279,
     "fb_r_like": 3,
-    "fb_total": 46356,
+    "fb_total": 46358,
     "fb_video": 2,
     "fb_video_pag": 0,
     "fb_visitas": 17,
@@ -74732,7 +74784,7 @@
     "fb_inter": 271,
     "fb_r_like": 4,
     "fb_r_wow": 1,
-    "fb_total": 46357,
+    "fb_total": 46359,
     "fb_video": 9,
     "fb_video_pag": 0,
     "fb_visitas": 65,
@@ -74753,7 +74805,7 @@
     "fb_bajas": 4,
     "fb_inter": 283,
     "fb_r_like": 3,
-    "fb_total": 46356,
+    "fb_total": 46358,
     "fb_video": 8,
     "fb_video_pag": 0,
     "fb_visitas": 81,
@@ -74774,7 +74826,7 @@
     "fb_bajas": 1,
     "fb_inter": 287,
     "fb_r_like": 4,
-    "fb_total": 46358,
+    "fb_total": 46360,
     "fb_video": 3,
     "fb_video_pag": 0,
     "fb_visitas": 67,
@@ -74795,7 +74847,7 @@
     "fb_bajas": 1,
     "fb_inter": 242,
     "fb_r_like": 1,
-    "fb_total": 46360,
+    "fb_total": 46362,
     "fb_video": 6,
     "fb_video_pag": 0,
     "fb_visitas": 72,
@@ -74816,7 +74868,7 @@
     "fb_bajas": 0,
     "fb_inter": 250,
     "fb_r_like": 2,
-    "fb_total": 46361,
+    "fb_total": 46363,
     "fb_video": 7,
     "fb_video_pag": 0,
     "fb_visitas": 96,
@@ -74837,7 +74889,7 @@
     "fb_bajas": 1,
     "fb_inter": 297,
     "fb_r_like": 1,
-    "fb_total": 46363,
+    "fb_total": 46365,
     "fb_video": 1,
     "fb_video_pag": 0,
     "fb_visitas": 68,
@@ -74858,7 +74910,7 @@
     "fb_bajas": 2,
     "fb_inter": 217,
     "fb_r_like": 2,
-    "fb_total": 46363,
+    "fb_total": 46365,
     "fb_video": 8,
     "fb_video_pag": 0,
     "fb_visitas": 81,
@@ -74879,7 +74931,7 @@
     "fb_bajas": 2,
     "fb_inter": 441,
     "fb_r_like": 1,
-    "fb_total": 46362,
+    "fb_total": 46364,
     "fb_video": 7,
     "fb_video_pag": 0,
     "fb_visitas": 58,
@@ -74900,7 +74952,7 @@
     "fb_bajas": 3,
     "fb_inter": 356,
     "fb_r_like": 3,
-    "fb_total": 46363,
+    "fb_total": 46365,
     "fb_video": 6,
     "fb_video_pag": 0,
     "fb_visitas": 71,
@@ -74923,7 +74975,7 @@
     "fb_inter": 274,
     "fb_r_like": 2,
     "fb_r_love": 1,
-    "fb_total": 46369,
+    "fb_total": 46371,
     "fb_video": 8,
     "fb_video_pag": 0,
     "fb_visitas": 78,
@@ -74945,7 +74997,7 @@
     "fb_bajas": 1,
     "fb_inter": 252,
     "fb_r_like": 4,
-    "fb_total": 46370,
+    "fb_total": 46372,
     "fb_video": 0,
     "fb_video_pag": 0,
     "fb_visitas": 27,
@@ -74966,7 +75018,7 @@
     "fb_altas_pag": 0,
     "fb_bajas": 1,
     "fb_inter": 196,
-    "fb_total": 46369,
+    "fb_total": 46371,
     "fb_video": 4,
     "fb_video_pag": 0,
     "fb_visitas": 51,
@@ -74988,7 +75040,7 @@
     "fb_bajas": 0,
     "fb_inter": 200,
     "fb_r_like": 2,
-    "fb_total": 46369,
+    "fb_total": 46371,
     "fb_video": 2,
     "fb_video_pag": 0,
     "fb_visitas": 41,
@@ -75010,7 +75062,7 @@
     "fb_bajas": 1,
     "fb_inter": 238,
     "fb_r_like": 1,
-    "fb_total": 46370,
+    "fb_total": 46372,
     "fb_video": 3,
     "fb_video_pag": 0,
     "fb_visitas": 63,
@@ -75032,7 +75084,7 @@
     "fb_bajas": 1,
     "fb_inter": 293,
     "fb_r_like": 2,
-    "fb_total": 46372,
+    "fb_total": 46374,
     "fb_video": 7,
     "fb_video_pag": 0,
     "fb_visitas": 59,
@@ -75054,7 +75106,7 @@
     "fb_bajas": 0,
     "fb_inter": 321,
     "fb_r_like": 2,
-    "fb_total": 46375,
+    "fb_total": 46377,
     "fb_video": 7,
     "fb_video_pag": 0,
     "fb_visitas": 86,
@@ -75075,7 +75127,7 @@
     "fb_bajas": 0,
     "fb_inter": 232,
     "fb_r_like": 1,
-    "fb_total": 46377,
+    "fb_total": 46379,
     "fb_video": 3,
     "fb_video_pag": 0,
     "fb_visitas": 89,
@@ -75097,7 +75149,7 @@
     "fb_bajas": 1,
     "fb_inter": 220,
     "fb_r_like": 2,
-    "fb_total": 46381,
+    "fb_total": 46383,
     "fb_video": 4,
     "fb_video_pag": 0,
     "fb_visitas": 70,
@@ -75119,7 +75171,7 @@
     "fb_bajas": 1,
     "fb_inter": 204,
     "fb_r_like": 2,
-    "fb_total": 46383,
+    "fb_total": 46385,
     "fb_video": 5,
     "fb_video_pag": 0,
     "fb_visitas": 53,
@@ -75141,7 +75193,7 @@
     "fb_bajas": 0,
     "fb_inter": 229,
     "fb_r_like": 1,
-    "fb_total": 46385,
+    "fb_total": 46387,
     "fb_video": 4,
     "fb_video_pag": 0,
     "fb_visitas": 42,
@@ -75163,7 +75215,7 @@
     "fb_bajas": 0,
     "fb_inter": 295,
     "fb_r_like": 3,
-    "fb_total": 46387,
+    "fb_total": 46389,
     "fb_video": 3,
     "fb_video_pag": 0,
     "fb_visitas": 41,
@@ -75185,7 +75237,7 @@
     "fb_bajas": 4,
     "fb_inter": 327,
     "fb_r_like": 1,
-    "fb_total": 46388,
+    "fb_total": 46390,
     "fb_video": 10,
     "fb_video_pag": 0,
     "fb_visitas": 74,
@@ -75206,21 +75258,43 @@
     "fb_altas_pag": 0,
     "fb_bajas": 2,
     "fb_inter": 281,
-    "fb_total": 46387,
+    "fb_total": 46389,
     "fb_video": 8,
     "fb_video_pag": 0,
     "fb_visitas": 71,
-    "fb_vistas": 49510,
+    "fb_vistas": 49518,
     "ig_altas_d": 1,
     "ig_bajas_d": 2,
     "ig_clics_d": 0,
     "ig_inter_d": 3,
+    "ig_nuevos": 3,
     "ig_perfil_d": 16,
     "ig_total": 4303,
     "ig_vistas_d": 5196
    },
    "2026-10-20": {
-    "ig_total": 4304
+    "fb_alcance28": 169482,
+    "fb_altas": 1,
+    "fb_altas_org": 1,
+    "fb_altas_pag": 0,
+    "fb_bajas": 1,
+    "fb_inter": 263,
+    "fb_r_like": 2,
+    "fb_total": 46389,
+    "fb_video": 4,
+    "fb_video_pag": 0,
+    "fb_visitas": 75,
+    "fb_vistas": 43469,
+    "ig_altas_d": 3,
+    "ig_bajas_d": 0,
+    "ig_clics_d": 4,
+    "ig_inter_d": 0,
+    "ig_perfil_d": 21,
+    "ig_total": 4304,
+    "ig_vistas_d": 4843
+   },
+   "2026-10-21": {
+    "ig_total": 4305
    }
   }
  },
@@ -75433,7 +75507,7 @@
     "link": "https://www.facebook.com/1795622498856828/posts/1032753116434394?substory_index=1032753116434394",
     "reacciones": 0,
     "texto": "",
-    "vistas": 961,
+    "vistas": 984,
     "vistas_video": 0
    },
    "120470019348648_1033827171346257": {
@@ -77752,7 +77826,7 @@
    "120470019348648_1746903247062087": {
     "clics": 13,
     "comentarios": 2,
-    "compartidos": 0,
+    "compartidos": 1,
     "fecha": "2026-08-24",
     "formato": "foto",
     "link": "https://www.facebook.com/1795622498856828/posts/1746903247062087",
@@ -77788,8 +77862,8 @@
     "link": "https://www.facebook.com/reel/1785021789173853/",
     "reacciones": 3,
     "texto": "El agente inmobiliario del futuro no trabaja solo 🤖",
-    "vistas": 1405,
-    "vistas_video": 4
+    "vistas": 1413,
+    "vistas_video": 6
    },
    "120470019348648_177971763598473": {
     "comentarios": 0,
@@ -77818,7 +77892,7 @@
     "link": "https://www.facebook.com/1795622498856828/posts/1799644221787989",
     "reacciones": 0,
     "texto": "El asesor que invierte, crece dos veces. Conoces el mercado inmobiliario mejor que nadie, ¿por qué no usar ese conocimiento para construir t",
-    "vistas": 670,
+    "vistas": 699,
     "vistas_video": 0
    },
    "120470019348648_1799836348435443": {
@@ -77830,7 +77904,7 @@
     "link": "https://www.facebook.com/1795622498856828/posts/1799836348435443",
     "reacciones": 0,
     "texto": "¿Tus campañas en Meta realmente te están trayendo clientes que sí compran? 🚀",
-    "vistas": 660,
+    "vistas": 692,
     "vistas_video": 0
    },
    "120470019348648_1804154194670325": {
@@ -77842,7 +77916,7 @@
     "link": "https://www.facebook.com/1795622498856828/posts/1804154194670325",
     "reacciones": 0,
     "texto": "¡Un edificio de 195 departamentos vendido en 48 horas por WhatsApp! 🏢📲⚡",
-    "vistas": 479,
+    "vistas": 512,
     "vistas_video": 0
    },
    "120470019348648_1806948861057525": {
@@ -77854,7 +77928,7 @@
     "link": "https://www.facebook.com/1795622498856828/posts/1806948861057525",
     "reacciones": 0,
     "texto": "Hoy te presentamos a Camilo Olarte, fundador de LOKL. Su propuesta para el Edificio Coltejer, desarrollada con Inteligencia Artificial, fue ",
-    "vistas": 356,
+    "vistas": 405,
     "vistas_video": 0
    },
    "120470019348648_181097403285909": {
@@ -77867,7 +77941,7 @@
     "texto": ""
    },
    "120470019348648_1812696120482799": {
-    "clics": 2,
+    "clics": 8,
     "comentarios": 0,
     "compartidos": 1,
     "fecha": "2026-10-20",
@@ -77875,7 +77949,31 @@
     "link": "https://www.facebook.com/1795622498856828/posts/1812696120482799",
     "reacciones": 1,
     "texto": "11 sesiones clave para transformar tu negocio inmobiliario en un solo lugar. 🚀✨   Conoce la agenda oficial del Salón Inspira en Habi Next Co",
-    "vistas": 60,
+    "vistas": 225,
+    "vistas_video": 0
+   },
+   "120470019348648_1812808370471574": {
+    "clics": 0,
+    "comentarios": 0,
+    "compartidos": 0,
+    "fecha": "2026-10-20",
+    "formato": "video",
+    "link": "https://www.facebook.com/reel/1439647491472719/",
+    "reacciones": 0,
+    "texto": "Red Habi: Conectando el ecosistema inmobiliario. 🏠⚡ ¡Así se está viviendo la experiencia de la red inmobiliaria más grande del país en Habi ",
+    "vistas": 207,
+    "vistas_video": 0
+   },
+   "120470019348648_1812888910463520": {
+    "clics": 0,
+    "comentarios": 0,
+    "compartidos": 0,
+    "fecha": "2026-10-21",
+    "formato": "video",
+    "link": "https://www.facebook.com/reel/2540704276426781/",
+    "reacciones": 0,
+    "texto": "¡Qué jornada tan increíble vivimos en Habi Next Colombia! 🚀💜 ",
+    "vistas": 199,
     "vistas_video": 0
    },
    "120470019348648_182078449854471": {
@@ -78085,7 +78183,7 @@
     "link": "https://www.facebook.com/1795622498856828/posts/2200909193822577?substory_index=2200909193822577",
     "reacciones": 0,
     "texto": "",
-    "vistas": 972,
+    "vistas": 997,
     "vistas_video": 0
    },
    "120470019348648_220718112657171": {
@@ -87958,7 +88056,7 @@
     "fecha": "2026-07-11",
     "formato": "video",
     "link": "https://www.facebook.com/reel/1697142818286305/",
-    "reacciones": 29,
+    "reacciones": 30,
     "texto": "Si tu casa cumple con estos requisitos, ¡ya estás del otro lado! 😉",
     "vistas": 6392,
     "vistas_video": 14
@@ -88252,7 +88350,7 @@
     "fecha": "2026-08-25",
     "formato": "video",
     "link": "https://www.facebook.com/reel/1561043475701113/",
-    "reacciones": 9,
+    "reacciones": 10,
     "texto": "Vender una casa suele sonar a meses de trámites, visitas y espera. ¡Con Tuhabi esto es rápido y sencillo!",
     "vistas": 2469,
     "vistas_video": 10
@@ -88353,7 +88451,7 @@
     "link": "https://www.facebook.com/1420228510305294/posts/1393598539634958",
     "reacciones": 6,
     "texto": "Anunciamos en las calles lo que ya sabemos hacer bien: ayudarte a vender tu casa fácil, rápido y seguro.",
-    "vistas": 3132,
+    "vistas": 3135,
     "vistas_video": 0
    },
    "101289638870959_139541898379066": {
@@ -88374,7 +88472,7 @@
     "link": "https://www.facebook.com/reel/1496407338913811/",
     "reacciones": 14,
     "texto": "Vender tu casa no tiene que sentirse como un salto al vacío. Y tampoco tienes que hacerlo de una sola manera.",
-    "vistas": 2806,
+    "vistas": 2809,
     "vistas_video": 0
    },
    "101289638870959_140153454984577": {
@@ -88395,8 +88493,8 @@
     "link": "https://www.facebook.com/reel/2096920787877339/",
     "reacciones": 7,
     "texto": "Este 15 de septiembre hay más de una independencia que celebrar. 🇲🇽🏠",
-    "vistas": 1783,
-    "vistas_video": 1
+    "vistas": 1785,
+    "vistas_video": 0
    },
    "101289638870959_1403020985359380": {
     "clics": 7,
@@ -88407,7 +88505,7 @@
     "link": "https://www.facebook.com/reel/2135947687055428/",
     "reacciones": 8,
     "texto": "Toda casa mexicana guarda sus propias costumbres. 🏠😅 Y cuando toca vender, lo único que debe quedarse atrás son las paredes, no los recuerdo",
-    "vistas": 2547,
+    "vistas": 2551,
     "vistas_video": 0
    },
    "101289638870959_1404723431855802": {
@@ -88419,7 +88517,7 @@
     "link": "https://www.facebook.com/1420228510305294/posts/1404723431855802",
     "reacciones": 6,
     "texto": "¿Llevas meses tratando de vender tu casa y nada?",
-    "vistas": 2542,
+    "vistas": 2546,
     "vistas_video": 0
    },
    "101289638870959_1406623034999175": {
@@ -88431,8 +88529,8 @@
     "link": "https://www.facebook.com/reel/3506997756146263/",
     "reacciones": 13,
     "texto": "¿Y esta rosa? 🌹👀 Ni nosotros sabemos bien qué está pasando...",
-    "vistas": 2149,
-    "vistas_video": 1
+    "vistas": 2154,
+    "vistas_video": 0
    },
    "101289638870959_1408165314844947": {
     "clics": 9,
@@ -88443,8 +88541,8 @@
     "link": "https://www.facebook.com/reel/1343211754332297/",
     "reacciones": 10,
     "texto": "Cuando alguien conoce tu colonia de verdad, no necesita adivinar lo que vale tu casa. Ya lo sabe.",
-    "vistas": 1611,
-    "vistas_video": 2
+    "vistas": 1613,
+    "vistas_video": 0
    },
    "101289638870959_140983721568217": {
     "comentarios": 0,
@@ -88464,8 +88562,8 @@
     "link": "https://www.facebook.com/reel/1744894073454507/",
     "reacciones": 11,
     "texto": "No todos buscamos lo mismo en una casa, pero todos buscamos un lugar así. 🏡",
-    "vistas": 1196,
-    "vistas_video": 3
+    "vistas": 1199,
+    "vistas_video": 1
    },
    "101289638870959_141687261497863": {
     "comentarios": 0,
@@ -88483,22 +88581,22 @@
     "fecha": "2026-10-02",
     "formato": "video",
     "link": "https://www.facebook.com/reel/1068295229363707/",
-    "reacciones": 19,
+    "reacciones": 20,
     "texto": "A Mariana le urgía vender su casa para no perder la de sus sueños. 🏠  Tuhabi le compró rápido y el milagro se hizo realidad. ✨",
-    "vistas": 3686,
-    "vistas_video": 55
+    "vistas": 3911,
+    "vistas_video": 5
    },
    "101289638870959_1419865603674918": {
-    "clics": 2364,
-    "comentarios": 2,
+    "clics": 2550,
+    "comentarios": 1,
     "compartidos": 4,
     "fecha": "2026-10-05",
     "formato": "video",
     "link": "https://www.facebook.com/reel/2327877071304597/",
-    "reacciones": 170,
+    "reacciones": 177,
     "texto": "Le dieron el trabajo en Querétaro… pero la casa todavía tenía hipoteca. 🏠",
-    "vistas": 78265,
-    "vistas_video": 3798
+    "vistas": 84090,
+    "vistas_video": 5627
    },
    "101289638870959_1420084910319654": {
     "clics": 127,
@@ -88509,20 +88607,20 @@
     "link": "https://www.facebook.com/reel/2289452838328890/",
     "reacciones": 40,
     "texto": "A veces los hijos llegan a enseñarnos que los sueños sí se cumplen. 🏠",
-    "vistas": 6870,
-    "vistas_video": 388
+    "vistas": 7607,
+    "vistas_video": 1065
    },
    "101289638870959_1420796856915126": {
-    "clics": 885,
-    "comentarios": 2,
+    "clics": 1020,
+    "comentarios": 0,
     "compartidos": 4,
     "fecha": "2026-10-06",
     "formato": "video",
     "link": "https://www.facebook.com/reel/29781701011419781/",
-    "reacciones": 130,
+    "reacciones": 161,
     "texto": "Hay casas que nos dan los mejores años de la vida, y hay etapas que piden un hogar a nuestra medida. 🏠",
-    "vistas": 990098,
-    "vistas_video": 5118
+    "vistas": 1147038,
+    "vistas_video": 4367
    },
    "101289638870959_1420887633572715": {
     "clics": 15,
@@ -88533,8 +88631,8 @@
     "link": "https://www.facebook.com/reel/1065961449763834/",
     "reacciones": 13,
     "texto": "Vender tu casa también puede ser rápido, seguro y sin sustos. 🏠",
-    "vistas": 2485,
-    "vistas_video": 11
+    "vistas": 2809,
+    "vistas_video": 7
    },
    "101289638870959_1420916586903153": {
     "clics": 15,
@@ -88545,8 +88643,8 @@
     "link": "https://www.facebook.com/reel/1419115287066486/",
     "reacciones": 9,
     "texto": "Los nuevos comienzos también se construyen en familia. 🛞 En Tuhabi compramos tu casa aunque todavía tenga crédito hipotecario o bancario. ",
-    "vistas": 2537,
-    "vistas_video": 20
+    "vistas": 3130,
+    "vistas_video": 8
    },
    "101289638870959_1421000290228116": {
     "clics": 10,
@@ -88555,10 +88653,10 @@
     "fecha": "2026-10-07",
     "formato": "video",
     "link": "https://www.facebook.com/reel/1472437948277119/",
-    "reacciones": 9,
+    "reacciones": 10,
     "texto": "¿Vendes tu casa? Hazlo con nuestra red de brokers, la más grande del país, o te la compramos de inmediato. Tú decides.",
-    "vistas": 1493,
-    "vistas_video": 9
+    "vistas": 1737,
+    "vistas_video": 7
    },
    "101289638870959_1421018586892953": {
     "clics": 6,
@@ -88569,8 +88667,8 @@
     "link": "https://www.facebook.com/reel/1396510295985709/",
     "reacciones": 12,
     "texto": "¿Necesitas vender tu casa? En Tuhabi tú eliges: recibe una oferta directa para vender en 10 días o conecta con nuestra red de más de 4,000 b",
-    "vistas": 1116,
-    "vistas_video": 7
+    "vistas": 1145,
+    "vistas_video": 5
    },
    "101289638870959_1421809650147180": {
     "clics": 3,
@@ -88581,20 +88679,20 @@
     "link": "https://www.facebook.com/reel/3188429134685786/",
     "reacciones": 8,
     "texto": "Los mejores consejos se comparten entre amigas. 🌹",
-    "vistas": 744,
-    "vistas_video": 0
+    "vistas": 759,
+    "vistas_video": 1
    },
    "101289638870959_1421823630145782": {
-    "clics": 25823,
-    "comentarios": 8,
-    "compartidos": 22,
+    "clics": 27535,
+    "comentarios": 7,
+    "compartidos": 24,
     "fecha": "2026-10-07",
     "formato": "video",
     "link": "https://www.facebook.com/reel/4192678954361419/",
-    "reacciones": 1558,
+    "reacciones": 1654,
     "texto": "A veces la señal aparece justo cuando más la necesitas... ✨",
-    "vistas": 773731,
-    "vistas_video": 40945
+    "vistas": 840798,
+    "vistas_video": 43576
    },
    "101289638870959_1421845700143575": {
     "clics": 0,
@@ -88605,8 +88703,8 @@
     "link": "https://www.facebook.com/reel/3629704073863098/",
     "reacciones": 5,
     "texto": "Un nuevo comienzo puede empezar con unos cuantos clics. 💻",
-    "vistas": 797,
-    "vistas_video": 2
+    "vistas": 809,
+    "vistas_video": 0
    },
    "101289638870959_1421856290142516": {
     "clics": 9,
@@ -88617,8 +88715,8 @@
     "link": "https://www.facebook.com/reel/1558943099606643/",
     "reacciones": 11,
     "texto": "Vender tu casa también es cumplir un sueño, y en Tuhabi te acompañamos desde la primera visita. 🏠",
-    "vistas": 1151,
-    "vistas_video": 10
+    "vistas": 1173,
+    "vistas_video": 3
    },
    "101289638870959_1421876113473867": {
     "clics": 3,
@@ -88629,7 +88727,7 @@
     "link": "https://www.facebook.com/reel/2547289085748368/",
     "reacciones": 8,
     "texto": "Los nuevos comienzos también acercan a las familias. 🌹",
-    "vistas": 1034,
+    "vistas": 1050,
     "vistas_video": 3
    },
    "101289638870959_1421879776806834": {
@@ -88641,8 +88739,8 @@
     "link": "https://www.facebook.com/reel/28778085295149565/",
     "reacciones": 5,
     "texto": "Cuando la vida cambia de golpe, también llegan nuevas oportunidades. 🌹✨",
-    "vistas": 921,
-    "vistas_video": 7
+    "vistas": 942,
+    "vistas_video": 2
    },
    "101289638870959_1421966893464789": {
     "clics": 3,
@@ -88653,8 +88751,8 @@
     "link": "https://www.facebook.com/reel/1854186292414310/",
     "reacciones": 5,
     "texto": "Un nuevo comienzo puede empezar con unos cuantos clics. 💻",
-    "vistas": 812,
-    "vistas_video": 10
+    "vistas": 839,
+    "vistas_video": 4
    },
    "101289638870959_1422837243377754": {
     "clics": 3,
@@ -88665,8 +88763,8 @@
     "link": "https://www.facebook.com/reel/4413423232321464/",
     "reacciones": 9,
     "texto": "A veces la decisión más difícil es la que tomamos por nosotras mismas. 🏠 Cinthia eligió empezar de nuevo en Guadalajara, y Tuhabi le ayudó a",
-    "vistas": 1661,
-    "vistas_video": 20
+    "vistas": 1708,
+    "vistas_video": 6
    },
    "101289638870959_1422849020043243": {
     "clics": 5,
@@ -88677,20 +88775,20 @@
     "link": "https://www.facebook.com/reel/2200814507509367/",
     "reacciones": 8,
     "texto": "Hay casas que guardan recuerdos, y hay decisiones que los honran. ☕ Sofía y Daniel vendieron la casa de sus papás y la convirtieron en un nu",
-    "vistas": 1328,
-    "vistas_video": 20
+    "vistas": 1369,
+    "vistas_video": 2
    },
    "101289638870959_1423519539976191": {
     "clics": 8,
-    "comentarios": 4,
+    "comentarios": 5,
     "compartidos": 1,
     "fecha": "2026-10-09",
     "formato": "video",
     "link": "https://www.facebook.com/reel/1607901334116524/",
     "reacciones": 11,
     "texto": "Según datos del INEGI, 1 de cada 4 casas en México no tiene escrituras. ¿La tuya es una de ellas? 🏠 ",
-    "vistas": 1577,
-    "vistas_video": 23
+    "vistas": 1630,
+    "vistas_video": 7
    },
    "101289638870959_142360158097240": {
     "comentarios": 0,
@@ -88708,10 +88806,10 @@
     "fecha": "2026-10-12",
     "formato": "video",
     "link": "https://www.facebook.com/reel/1143454275006214/",
-    "reacciones": 5,
+    "reacciones": 6,
     "texto": "Vender una casa es de las decisiones más grandes que tomamos, y la confianza pesa tanto como el precio. 🤝 ",
-    "vistas": 813,
-    "vistas_video": 19
+    "vistas": 878,
+    "vistas_video": 8
    },
    "101289638870959_1428530076141804": {
     "clics": 3,
@@ -88722,8 +88820,8 @@
     "link": "https://www.facebook.com/reel/2281307259103512/",
     "reacciones": 3,
     "texto": "Hay historias que se cuentan con las luces apagadas... y otras que se viven al intentar vender una casa. 👻🏚️",
-    "vistas": 450,
-    "vistas_video": 18
+    "vistas": 514,
+    "vistas_video": 8
    },
    "101289638870959_1430467152614763": {
     "clics": 4,
@@ -88734,8 +88832,8 @@
     "link": "https://www.facebook.com/reel/1408097667967358/",
     "reacciones": 3,
     "texto": "Aprendiste algo nuevo hoy, ¿verdad? 🦄",
-    "vistas": 381,
-    "vistas_video": 36
+    "vistas": 456,
+    "vistas_video": 17
    },
    "101289638870959_143060141360575": {
     "comentarios": 0,
@@ -88753,9 +88851,21 @@
     "fecha": "2026-10-19",
     "formato": "video",
     "link": "https://www.facebook.com/reel/1669747211337966/",
-    "reacciones": 2,
+    "reacciones": 4,
     "texto": "Tu propio camino en el mundo inmobiliario puede empezar hoy. 🔑 ",
-    "vistas": 223,
+    "vistas": 344,
+    "vistas_video": 0
+   },
+   "101289638870959_1435242898803855": {
+    "clics": 0,
+    "comentarios": 0,
+    "compartidos": 0,
+    "fecha": "2026-10-21",
+    "formato": "video",
+    "link": "https://www.facebook.com/reel/1171500562205378/",
+    "reacciones": 1,
+    "texto": "Hay historias que se cuentan con las luces apagadas... y otras que se viven al intentar vender una casa. 👻🏚️",
+    "vistas": 48,
     "vistas_video": 0
    },
    "101289638870959_144392021227387": {
@@ -132068,516 +132178,516 @@
   "CO": {
    "2026-10": {
     "ciudad": {
-     "Armenia, Quindio": 271,
-     "Barranquilla, Atlantico": 4895,
-     "Bello, Antioquia": 1544,
-     "Bogotá, Distrito Especial": 27141,
-     "Bucaramanga, Santander": 595,
-     "Cajicá, Cundinamarca": 465,
-     "Cartagena, Bolivar": 1412,
-     "Chía, Cundinamarca": 900,
-     "Cúcuta, Norte de Santander": 261,
-     "Dosquebradas, Risaralda": 261,
-     "Envigado, Antioquia": 1513,
-     "Facatativá, Cundinamarca": 213,
-     "Floridablanca, Santander": 275,
-     "Funza, Cundinamarca": 232,
-     "Fusagasuga, Cundinamarca": 216,
-     "Ibagué, Tolima": 407,
-     "Itagüí, Antioquia": 671,
-     "Jamundí, Valle del Cauca": 523,
-     "La Ceja, Antioquia": 173,
-     "La Estrella, Antioquia": 303,
-     "La Playa, Atlantico": 373,
-     "Las Palmas, Antioquia": 187,
-     "Madrid, Comunidad de Madrid": 187,
-     "Madrid, Cundinamarca": 372,
-     "Manizales, Caldas": 321,
-     "Medellín, Antioquia": 8188,
-     "Mexico City, Distrito Federal": 278,
+     "Armenia, Quindio": 283,
+     "Barranquilla, Atlantico": 5145,
+     "Bello, Antioquia": 1623,
+     "Bogotá, Distrito Especial": 27406,
+     "Bucaramanga, Santander": 616,
+     "Cajicá, Cundinamarca": 475,
+     "Cartagena, Bolivar": 1413,
+     "Chía, Cundinamarca": 922,
+     "Cúcuta, Norte de Santander": 251,
+     "Dosquebradas, Risaralda": 263,
+     "Envigado, Antioquia": 1434,
+     "Facatativá, Cundinamarca": 193,
+     "Floridablanca, Santander": 261,
+     "Funza, Cundinamarca": 228,
+     "Fusagasuga, Cundinamarca": 229,
+     "Ibagué, Tolima": 406,
+     "Itagüí, Antioquia": 659,
+     "Jamundí, Valle del Cauca": 525,
+     "La Ceja, Antioquia": 166,
+     "La Estrella, Antioquia": 293,
+     "La Playa, Atlantico": 378,
+     "Madrid, Comunidad de Madrid": 200,
+     "Madrid, Cundinamarca": 377,
+     "Manizales, Caldas": 335,
+     "Medellín, Antioquia": 8374,
+     "Mexico City, Distrito Federal": 276,
      "Montería, Cordoba": 322,
-     "Mosquera, Cundinamarca": 394,
-     "New York, New York": 155,
-     "Palmira, Valle del Cauca": 291,
-     "Pereira, Risaralda": 453,
-     "Rionegro, Antioquia": 652,
-     "Sabaneta, Antioquia": 856,
-     "Santa Marta, Magdalena": 346,
-     "Santiago de Cali, Valle del Cauca": 5591,
-     "Sincelejo, Sucre": 157,
-     "Soacha, Cundinamarca": 1146,
-     "Soledad, Atlantico": 451,
-     "Tocancipá, Cundinamarca": 165,
-     "Tunja, Boyaca": 164,
-     "Valledupar, Cesar": 336,
-     "Villavicencio, Meta": 305,
-     "Yumbo, Valle del Cauca": 205,
-     "Zipaquirá, Cundinamarca": 364
+     "Mosquera, Cundinamarca": 412,
+     "New York, New York": 166,
+     "Palmira, Valle del Cauca": 301,
+     "Pereira, Risaralda": 451,
+     "Popayán, Cauca": 157,
+     "Rionegro, Antioquia": 689,
+     "Sabaneta, Antioquia": 879,
+     "Santa Marta, Magdalena": 359,
+     "Santiago de Cali, Valle del Cauca": 5765,
+     "Sincelejo, Sucre": 158,
+     "Soacha, Cundinamarca": 1156,
+     "Soledad, Atlantico": 446,
+     "Tocancipá, Cundinamarca": 227,
+     "Tunja, Boyaca": 178,
+     "Valledupar, Cesar": 332,
+     "Villavicencio, Meta": 318,
+     "Yumbo, Valle del Cauca": 225,
+     "Zipaquirá, Cundinamarca": 363
     },
     "edad": {
-     "13-17": 53,
-     "18-24": 1077,
-     "25-34": 18331,
-     "35-44": 29328,
-     "45-54": 17298,
-     "55-64": 8176,
-     "65+": 3740
+     "13-17": 47,
+     "18-24": 1070,
+     "25-34": 18338,
+     "35-44": 29721,
+     "45-54": 17644,
+     "55-64": 8437,
+     "65+": 3905
     },
     "edad_alcance": {
-     "13-17": 44,
-     "18-24": 73889,
-     "25-34": 334466,
-     "35-44": 319026,
-     "45-54": 167080,
-     "55-64": 91101,
-     "65+": 53999
+     "13-17": 59,
+     "18-24": 89172,
+     "25-34": 390168,
+     "35-44": 364666,
+     "45-54": 191646,
+     "55-64": 103761,
+     "65+": 62018
     },
     "edad_interaccion": {
      "13-17": 1,
-     "18-24": 96,
-     "25-34": 1018,
-     "35-44": 1266,
-     "45-54": 906,
-     "55-64": 751,
-     "65+": 555
+     "18-24": 113,
+     "25-34": 1023,
+     "35-44": 1292,
+     "45-54": 916,
+     "55-64": 741,
+     "65+": 535
     },
     "fb_ciudad": {
-     "Armenia, Colombia": 161,
-     "Barranquilla, Colombia": 1232,
-     "Bello, Colombia": 263,
-     "Bogotá, Colombia": 13623,
-     "Bucaramanga, Santander, Colombia": 284,
+     "Armenia, Colombia": 160,
+     "Barranquilla, Colombia": 1231,
+     "Bello, Colombia": 266,
+     "Bogotá, Colombia": 13613,
+     "Bucaramanga, Santander, Colombia": 288,
      "Cajicá, Colombia": 99,
-     "Cali, Colombia": 1698,
-     "Cartagena de Indias, Colombia": 505,
-     "Chía, Colombia": 375,
-     "Ciudad de México, México": 148,
-     "Copacabana, Colombia": 63,
+     "Cali, Colombia": 1699,
+     "Cartagena de Indias, Colombia": 500,
+     "Chía, Colombia": 387,
+     "Ciudad de México, México": 149,
+     "Copacabana, Colombia": 62,
      "Cúcuta, Colombia": 148,
-     "Dosquebradas, Colombia": 102,
-     "Envigado, Colombia": 188,
-     "Facatativá, Colombia": 159,
+     "Dosquebradas, Colombia": 100,
+     "Envigado, Colombia": 185,
+     "Facatativá, Colombia": 156,
      "Floridablanca, Santander, Colombia": 61,
-     "Funza, Colombia": 237,
+     "Funza, Colombia": 235,
      "Fusagasugá, Colombia": 80,
-     "Ibagué, Colombia": 224,
-     "Itagüí, Colombia": 190,
-     "Jamundí, Colombia": 76,
-     "La Estrella, Colombia": 66,
+     "Ibagué, Colombia": 222,
+     "Itagüí, Colombia": 194,
+     "Jamundí, Colombia": 75,
+     "La Estrella, Colombia": 69,
      "Lima, Perú": 49,
      "Madrid, Colombia": 214,
      "Madrid, España": 60,
-     "Manizales, Colombia": 142,
-     "Medellín, Colombia": 2762,
+     "Manizales, Colombia": 144,
+     "Medellín, Colombia": 2758,
      "Montería, Colombia": 59,
-     "Mosquera, Colombia": 275,
-     "Neiva, Huila, Colombia": 91,
-     "Nueva York, Estados Unidos": 49,
+     "Mosquera, Colombia": 274,
+     "Neiva, Huila, Colombia": 92,
      "Palmira, Colombia": 117,
      "Pasto, Colombia": 81,
-     "Pereira, Colombia": 187,
-     "Popayán, Colombia": 86,
+     "Pereira, Colombia": 190,
+     "Popayán, Colombia": 87,
      "Rionegro, Colombia": 124,
-     "Sabaneta, Colombia": 114,
+     "Sabaneta, Colombia": 115,
      "Santa Marta, Colombia": 108,
-     "Soacha, Colombia": 1017,
+     "Soacha, Colombia": 1026,
      "Sogamoso, Colombia": 50,
-     "Soledad, Colombia": 245,
-     "Tunja, Colombia": 92,
+     "Soledad, Colombia": 246,
+     "Tunja, Colombia": 93,
      "Valledupar, Colombia": 60,
      "Villavicencio, Meta, Colombia": 198,
-     "Zipaquirá, Colombia": 221
+     "Yopal, Colombia": 49,
+     "Zipaquirá, Colombia": 219
     },
     "genero": {
-     "F": 40585,
-     "M": 27614,
-     "U": 9804
+     "F": 41215,
+     "M": 28037,
+     "U": 9910
     },
     "pais": {
-     "AE": 38,
-     "AR": 113,
-     "AU": 193,
+     "AE": 36,
+     "AR": 119,
+     "AU": 195,
      "AW": 9,
-     "BE": 14,
+     "BE": 15,
      "BO": 21,
-     "BR": 104,
-     "CA": 369,
-     "CH": 22,
-     "CL": 144,
+     "BR": 103,
+     "CA": 361,
+     "CH": 23,
+     "CL": 151,
      "CN": 17,
-     "CO": 71609,
+     "CO": 72666,
      "CR": 43,
-     "DE": 78,
+     "DE": 75,
      "DK": 8,
-     "DO": 45,
-     "EC": 96,
-     "ES": 1097,
-     "FR": 71,
-     "GB": 69,
-     "GT": 26,
-     "HN": 15,
-     "IL": 10,
+     "DO": 49,
+     "EC": 101,
+     "ES": 1129,
+     "FR": 72,
+     "GB": 74,
+     "GT": 28,
+     "HN": 14,
+     "IL": 11,
      "IN": 21,
      "IT": 76,
      "JP": 8,
-     "MA": 25,
+     "MA": 26,
      "MT": 37,
-     "MX": 580,
+     "MX": 577,
      "NG": 17,
-     "NL": 20,
+     "NL": 17,
      "NZ": 16,
      "PA": 150,
-     "PE": 157,
-     "PL": 23,
+     "PE": 162,
+     "PL": 22,
      "PR": 16,
-     "PT": 29,
+     "PT": 30,
      "PY": 20,
      "RU": 8,
      "SA": 10,
-     "SE": 13,
+     "SE": 14,
      "SV": 14,
-     "US": 2039,
-     "UY": 13,
-     "VE": 352
+     "US": 2071,
+     "UY": 12,
+     "VE": 363
     }
    }
   },
   "MX": {
    "2026-10": {
     "ciudad": {
-     "Aguascalientes, Aguascalientes": 118,
-     "Apodaca, Nuevo León": 308,
-     "Bogotá, Distrito Especial": 281,
-     "Cancún, Quintana Roo": 157,
-     "Coacalco, State of Mexico": 133,
-     "Colonia Vista Hermosa, State of Mexico": 282,
-     "Corregidora, Querétaro Arteaga": 193,
-     "Cuautitlán Izcalli, State of Mexico": 269,
-     "Cuernavaca, Morelos": 117,
-     "Ecatepec de Morelos, State of Mexico": 459,
-     "El Marques, Querétaro Arteaga": 353,
-     "Garcia, Nuevo León": 226,
-     "General Escobedo, Nuevo León": 221,
-     "Guadalajara, Jalisco": 889,
-     "Guadalupe, Nuevo León": 345,
-     "Juriquilla, Querétaro Arteaga": 141,
-     "León, Guanajuato": 467,
-     "López Mateos, State of Mexico": 355,
-     "Metepec, State of Mexico": 182,
-     "Mexico City, Distrito Federal": 7368,
-     "Monterrey, Nuevo León": 1079,
+     "Aguascalientes, Aguascalientes": 112,
+     "Apodaca, Nuevo León": 320,
+     "Bogotá, Distrito Especial": 284,
+     "Cancún, Quintana Roo": 156,
+     "Coacalco, State of Mexico": 130,
+     "Colonia Vista Hermosa, State of Mexico": 279,
+     "Corregidora, Querétaro Arteaga": 202,
+     "Cuautitlán Izcalli, State of Mexico": 261,
+     "Cuautitlán, State of Mexico": 73,
+     "Cuernavaca, Morelos": 123,
+     "Ecatepec de Morelos, State of Mexico": 453,
+     "El Marques, Querétaro Arteaga": 357,
+     "Garcia, Nuevo León": 212,
+     "General Escobedo, Nuevo León": 222,
+     "Guadalajara, Jalisco": 921,
+     "Guadalupe, Nuevo León": 360,
+     "Juriquilla, Querétaro Arteaga": 146,
+     "León, Guanajuato": 481,
+     "López Mateos, State of Mexico": 361,
+     "Metepec, State of Mexico": 189,
+     "Mexico City, Distrito Federal": 7486,
+     "Monterrey, Nuevo León": 1105,
      "Morelia, Michoacán de Ocampo": 75,
-     "Mérida, Yucatán": 112,
-     "Naucalpan, State of Mexico": 460,
-     "Nezahualcóyotl, State of Mexico": 289,
-     "Nuevo México, Jalisco": 130,
-     "Pachuca, Hidalgo": 183,
-     "Playa del Carmen, Quintana Roo": 76,
-     "Puebla, Puebla": 298,
-     "Querétaro, Querétaro Arteaga": 453,
-     "Saltillo, Coahuila de Zaragoza": 88,
-     "San Bartolomé Coatepec, State of Mexico": 102,
-     "San José el Alto, Querétaro Arteaga": 82,
-     "San Luis Potosí, San Luis Potosi": 109,
-     "San Nicolás de los Garza, Nuevo León": 227,
-     "San Pedro Garza Garcia , Nuevo León": 150,
-     "Santa Catarina, Nuevo León": 142,
-     "Santiago Yancuitlalpan, State of Mexico": 146,
-     "Tecamac, State of Mexico": 209,
-     "Tizayuca, Hidalgo": 83,
-     "Tlajomulco de Zúñiga, Jalisco": 334,
-     "Tlaquepaque, Jalisco": 247,
-     "Toluca, State of Mexico": 328,
-     "Tonalá, Jalisco": 120,
-     "Zapopan, Jalisco": 1426
+     "Mérida, Yucatán": 113,
+     "Naucalpan, State of Mexico": 461,
+     "Nezahualcóyotl, State of Mexico": 296,
+     "Nuevo México, Jalisco": 124,
+     "Pachuca, Hidalgo": 189,
+     "Puebla, Puebla": 303,
+     "Querétaro, Querétaro Arteaga": 455,
+     "Saltillo, Coahuila de Zaragoza": 85,
+     "San Bartolomé Coatepec, State of Mexico": 106,
+     "San José el Alto, Querétaro Arteaga": 84,
+     "San Luis Potosí, San Luis Potosi": 111,
+     "San Nicolás de los Garza, Nuevo León": 235,
+     "San Pedro Garza Garcia , Nuevo León": 171,
+     "Santa Catarina, Nuevo León": 143,
+     "Santiago Yancuitlalpan, State of Mexico": 142,
+     "Tecamac, State of Mexico": 215,
+     "Tizayuca, Hidalgo": 85,
+     "Tlajomulco de Zúñiga, Jalisco": 330,
+     "Tlaquepaque, Jalisco": 265,
+     "Toluca, State of Mexico": 322,
+     "Tonalá, Jalisco": 116,
+     "Zapopan, Jalisco": 1458
     },
     "edad": {
-     "13-17": 12,
-     "18-24": 414,
-     "25-34": 5808,
-     "35-44": 9761,
-     "45-54": 6573,
-     "55-64": 2798,
-     "65+": 1233
+     "13-17": 26,
+     "18-24": 386,
+     "25-34": 5811,
+     "35-44": 9884,
+     "45-54": 6729,
+     "55-64": 2888,
+     "65+": 1285
     },
     "edad_alcance": {
-     "13-17": 5540,
-     "18-24": 8523,
-     "25-34": 1080408,
-     "35-44": 432757,
-     "45-54": 205467,
-     "55-64": 78523,
-     "65+": 41509
+     "13-17": 6353,
+     "18-24": 9742,
+     "25-34": 1213198,
+     "35-44": 487523,
+     "45-54": 231020,
+     "55-64": 88975,
+     "65+": 47194
     },
     "edad_interaccion": {
-     "13-17": 317,
-     "18-24": 73,
-     "25-34": 1278,
-     "35-44": 791,
-     "45-54": 688,
-     "55-64": 358,
-     "65+": 192
+     "13-17": 346,
+     "18-24": 78,
+     "25-34": 1286,
+     "35-44": 789,
+     "45-54": 702,
+     "55-64": 359,
+     "65+": 211
     },
     "fb_ciudad": {
      "Aguascalientes, Mexico": 200,
-     "Apodaca, Nuevo León, Mexico": 750,
-     "Cancún, Quintana Roo, Mexico": 190,
-     "Chimalhuacán, State of Mexico, Mexico": 318,
-     "Coacalco, State of Mexico, Mexico": 324,
-     "Colonia Vista Hermosa, State of Mexico, Mexico": 173,
-     "Cuautitlán Izcalli, State of Mexico, Mexico": 548,
-     "Cuautitlán, State of Mexico, Mexico": 210,
-     "Ecatepec de Morelos, State of Mexico, Mexico": 1340,
-     "El Marques, Querétaro Arteaga, Mexico": 238,
-     "Fuentes del Valle, State of Mexico, Mexico": 164,
-     "Garcia, Nuevo León, Mexico": 411,
-     "General Escobedo, Nuevo León, Mexico": 475,
-     "Guadalajara, Jalisco, Mexico": 1744,
-     "Guadalupe, Nuevo León, Mexico": 823,
+     "Apodaca, Nuevo León, Mexico": 755,
+     "Cancún, Quintana Roo, Mexico": 189,
+     "Chimalhuacán, State of Mexico, Mexico": 326,
+     "Coacalco, State of Mexico, Mexico": 323,
+     "Colonia Vista Hermosa, State of Mexico, Mexico": 177,
+     "Cuautitlán Izcalli, State of Mexico, Mexico": 550,
+     "Cuautitlán, State of Mexico, Mexico": 209,
+     "Ecatepec de Morelos, State of Mexico, Mexico": 1264,
+     "El Marques, Querétaro Arteaga, Mexico": 240,
+     "Fuentes del Valle, State of Mexico, Mexico": 165,
+     "Garcia, Nuevo León, Mexico": 414,
+     "General Escobedo, Nuevo León, Mexico": 471,
+     "Guadalajara, Jalisco, Mexico": 1741,
+     "Guadalupe, Nuevo León, Mexico": 826,
      "Huehuetoca, State of Mexico, Mexico": 192,
-     "Ixtapaluca, State of Mexico, Mexico": 251,
-     "Juárez, Nuevo León, Mexico": 398,
+     "Ixtapaluca, State of Mexico, Mexico": 248,
+     "Juárez, Nuevo León, Mexico": 402,
      "León, Guanajuato, Mexico": 625,
-     "López Mateos, State of Mexico, Mexico": 410,
-     "Metepec, State of Mexico, Mexico": 241,
-     "Mexico City, Distrito Federal, Mexico": 9320,
-     "Monterrey, Nuevo León, Mexico": 1394,
-     "Morelia, Michoacán de Ocampo, Mexico": 180,
-     "Mérida, Yucatán, Mexico": 225,
-     "Naucalpan, State of Mexico, Mexico": 670,
-     "Nezahualcóyotl, State of Mexico, Mexico": 719,
-     "Pachuca, Hidalgo, Mexico": 426,
-     "Puebla, Mexico": 356,
-     "Querétaro, Querétaro Arteaga, Mexico": 850,
+     "López Mateos, State of Mexico, Mexico": 415,
+     "Metepec, State of Mexico, Mexico": 243,
+     "Mexico City, Distrito Federal, Mexico": 9350,
+     "Monterrey, Nuevo León, Mexico": 1399,
+     "Morelia, Michoacán de Ocampo, Mexico": 179,
+     "Mérida, Yucatán, Mexico": 226,
+     "Naucalpan, State of Mexico, Mexico": 679,
+     "Nezahualcóyotl, State of Mexico, Mexico": 729,
+     "Pachuca, Hidalgo, Mexico": 425,
+     "Puebla, Mexico": 355,
+     "Querétaro, Querétaro Arteaga, Mexico": 840,
      "Saltillo, Coahuila de Zaragoza, Mexico": 263,
-     "San Luis Potosí, San Luis Potosi, Mexico": 217,
-     "San Nicolás de los Garza, Nuevo León, Mexico": 536,
+     "San Luis Potosí, San Luis Potosi, Mexico": 216,
+     "San Nicolás de los Garza, Nuevo León, Mexico": 533,
      "San Pablo de las Salinas, State of Mexico, Mexico": 175,
-     "Santa Catarina, Nuevo León, Mexico": 243,
-     "Tecámac": 635,
+     "Santa Catarina, Nuevo León, Mexico": 242,
+     "Tecámac": 646,
      "Tizayuca, Hidalgo, Mexico": 307,
-     "Tlajomulco de Zúñiga": 548,
-     "Tlaquepaque, Jalisco, Mexico": 462,
-     "Toluca, State of Mexico, Mexico": 640,
-     "Tonalá, Jalisco, Mexico": 302,
+     "Tlajomulco de Zúñiga": 551,
+     "Tlaquepaque, Jalisco, Mexico": 459,
+     "Toluca, State of Mexico, Mexico": 638,
+     "Tonalá, Jalisco, Mexico": 305,
      "Veracruz, Mexico": 189,
      "Villa Nicolás Romero, State of Mexico, Mexico": 216,
-     "Xico, State of Mexico, Mexico": 174,
-     "Zapopan, Jalisco, Mexico": 1233
+     "Xico, State of Mexico, Mexico": 171,
+     "Zapopan, Jalisco, Mexico": 1239
     },
     "genero": {
-     "F": 11161,
-     "M": 11949,
-     "U": 3489
+     "F": 11336,
+     "M": 12178,
+     "U": 3495
     },
     "pais": {
-     "AE": 4,
-     "AR": 40,
-     "AU": 6,
-     "BO": 6,
+     "AE": 5,
+     "AR": 46,
+     "AU": 5,
+     "BD": 4,
+     "BE": 2,
+     "BO": 7,
      "BR": 34,
-     "CA": 34,
+     "CA": 35,
      "CH": 3,
-     "CL": 21,
-     "CO": 499,
+     "CL": 20,
+     "CN": 3,
+     "CO": 502,
      "CR": 8,
-     "DE": 10,
+     "DE": 13,
      "DO": 8,
-     "EC": 14,
+     "EC": 16,
      "EG": 3,
-     "ES": 78,
-     "FR": 9,
-     "GB": 6,
+     "ES": 84,
+     "FR": 11,
+     "GB": 5,
      "GT": 5,
-     "HN": 6,
-     "ID": 19,
-     "IE": 6,
+     "HN": 8,
+     "ID": 12,
+     "IE": 5,
      "IL": 3,
-     "IN": 123,
-     "IQ": 4,
-     "IR": 3,
-     "IT": 8,
+     "IN": 105,
+     "IQ": 3,
+     "IT": 7,
      "JP": 4,
-     "KR": 3,
-     "MA": 4,
-     "MX": 25129,
-     "MY": 12,
-     "NG": 8,
+     "MX": 25561,
+     "MY": 8,
+     "NG": 6,
      "NL": 3,
      "PA": 5,
-     "PE": 35,
-     "PK": 4,
-     "PT": 4,
-     "RU": 23,
-     "SE": 3,
-     "SV": 6,
+     "PE": 38,
+     "PR": 3,
+     "PT": 5,
+     "PY": 3,
+     "RU": 17,
+     "SV": 7,
      "TR": 7,
-     "US": 301,
+     "US": 297,
      "UY": 5,
-     "VE": 32,
-     "VN": 4
+     "VE": 35,
+     "VN": 6
     }
    }
   },
   "PCOM": {
    "2026-10": {
     "ciudad": {
-     "Aguascalientes, Aguascalientes": 27,
-     "Apodaca, Nuevo León": 21,
-     "Boca del Río, Veracruz": 17,
-     "Bogotá, Distrito Especial": 38,
-     "Cancún, Quintana Roo": 85,
+     "Aguascalientes, Aguascalientes": 25,
+     "Apodaca, Nuevo León": 22,
+     "Bogotá, Distrito Especial": 37,
+     "Cancún, Quintana Roo": 82,
      "Chihuahua, Chihuahua": 21,
-     "Colonia Vista Hermosa, State of Mexico": 42,
-     "Corregidora, Querétaro Arteaga": 27,
-     "Cuautitlán Izcalli, State of Mexico": 20,
-     "Cuernavaca, Morelos": 45,
-     "Culiacán, Sinaloa": 38,
-     "Ecatepec de Morelos, State of Mexico": 50,
-     "El Marques, Querétaro Arteaga": 42,
-     "Guadalajara, Jalisco": 79,
+     "Colonia Vista Hermosa, State of Mexico": 39,
+     "Corregidora, Querétaro Arteaga": 28,
+     "Cuautitlán Izcalli, State of Mexico": 19,
+     "Cuernavaca, Morelos": 47,
+     "Culiacán, Sinaloa": 36,
+     "Ecatepec de Morelos, State of Mexico": 55,
+     "El Marques, Querétaro Arteaga": 41,
+     "Guadalajara, Jalisco": 81,
      "Guadalupe, Nuevo León": 22,
-     "León, Guanajuato": 44,
-     "Lima, Lima Region": 20,
-     "López Mateos, State of Mexico": 74,
+     "León, Guanajuato": 45,
+     "Lima, Lima Region": 19,
+     "López Mateos, State of Mexico": 71,
      "Mazatlán, Sinaloa": 19,
-     "Metepec, State of Mexico": 21,
+     "Metepec, State of Mexico": 20,
      "Mexicali, Baja California": 18,
-     "Mexico City, Distrito Federal": 1251,
-     "Monterrey, Nuevo León": 108,
+     "Mexico City, Distrito Federal": 1304,
+     "Monterrey, Nuevo León": 106,
      "Mérida, Yucatán": 77,
-     "Naucalpan, State of Mexico": 75,
-     "Nezahualcóyotl, State of Mexico": 36,
-     "Nuevo México, Jalisco": 15,
-     "Pachuca, Hidalgo": 25,
-     "Playa del Carmen, Quintana Roo": 70,
-     "Puebla, Puebla": 74,
-     "Puerto Vallarta, Jalisco": 16,
-     "Querétaro, Querétaro Arteaga": 51,
-     "Saltillo, Coahuila de Zaragoza": 19,
-     "San Luis Potosí, San Luis Potosi": 36,
-     "San Pedro Garza Garcia , Nuevo León": 21,
-     "Santiago Yancuitlalpan, State of Mexico": 27,
-     "Tecamac, State of Mexico": 19,
+     "Naucalpan, State of Mexico": 80,
+     "Nezahualcóyotl, State of Mexico": 39,
+     "Nuevo México, Jalisco": 16,
+     "Pachuca, Hidalgo": 29,
+     "Playa del Carmen, Quintana Roo": 65,
+     "Puebla, Puebla": 77,
+     "Puerto Vallarta, Jalisco": 15,
+     "Querétaro, Querétaro Arteaga": 49,
+     "Saltillo, Coahuila de Zaragoza": 18,
+     "San José el Alto, Querétaro Arteaga": 15,
+     "San Luis Potosí, San Luis Potosi": 35,
+     "San Pedro Garza Garcia , Nuevo León": 23,
+     "Santiago Yancuitlalpan, State of Mexico": 24,
+     "Tecamac, State of Mexico": 21,
      "Tijuana, Baja California": 41,
-     "Tlajomulco de Zúñiga, Jalisco": 18,
-     "Tlaquepaque, Jalisco": 17,
+     "Tlajomulco de Zúñiga, Jalisco": 19,
+     "Tlaquepaque, Jalisco": 16,
      "Toluca, State of Mexico": 36,
      "Torreón, Coahuila de Zaragoza": 18,
      "Tulum, Quintana Roo": 21,
-     "Veracruz, Veracruz": 15,
-     "Zapopan, Jalisco": 160
+     "Veracruz, Veracruz": 18,
+     "Zapopan, Jalisco": 151
     },
     "edad": {
      "13-17": 5,
-     "18-24": 132,
-     "25-34": 992,
-     "35-44": 1492,
-     "45-54": 1023,
-     "55-64": 429,
-     "65+": 128
+     "18-24": 130,
+     "25-34": 993,
+     "35-44": 1507,
+     "45-54": 1039,
+     "55-64": 441,
+     "65+": 132
     },
     "edad_alcance": {
      "13-17": 1,
-     "18-24": 42,
-     "25-34": 8095,
-     "35-44": 4373,
-     "45-54": 1692,
-     "55-64": 600,
-     "65+": 277
+     "18-24": 64,
+     "25-34": 10112,
+     "35-44": 5349,
+     "45-54": 2095,
+     "55-64": 753,
+     "65+": 330
     },
     "fb_ciudad": {
      "Acapulco de Juárez, México": 209,
-     "Aguascalientes, México": 330,
-     "Apodaca, Nuevo León, México": 173,
+     "Aguascalientes, México": 331,
+     "Apodaca, Nuevo León, México": 170,
      "Buenos Aires, Argentina": 176,
-     "Cancún, México": 300,
+     "Cancún, México": 298,
      "Chihuahua, México": 284,
      "Ciudad Juárez, México": 160,
-     "Ciudad de México, México": 17248,
-     "Coacalco de Berriozábal, Estado de México, México": 151,
-     "Colonia Vista Hermosa, State of Mexico, Mexico": 281,
-     "Cuautitlán Izcalli, Estado de México, México": 359,
+     "Ciudad de México, México": 17262,
+     "Coacalco de Berriozábal, Estado de México, México": 152,
+     "Colonia Vista Hermosa, State of Mexico, Mexico": 286,
+     "Cuautitlán Izcalli, Estado de México, México": 360,
      "Cuernavaca, Morelos, México": 214,
-     "Ecatepec de Morelos, Estado de México, México": 649,
+     "Ecatepec de Morelos, Estado de México, México": 611,
      "El Marques, Querétaro Arteaga, Mexico": 251,
-     "Guadalajara, Jalisco, México": 1076,
-     "Guadalupe, Nuevo León, México": 241,
+     "Guadalajara, Jalisco, México": 1077,
+     "Guadalupe, Nuevo León, México": 240,
      "Hermosillo, Sonora, México": 169,
-     "León, México": 424,
-     "López Mateos, State of Mexico, Mexico": 862,
-     "Metepec, Estado de México, México": 283,
-     "Mexicali, Península de Baja California, México": 216,
-     "Monterrey, Nuevo León, México": 646,
-     "Morelia, México": 265,
-     "Municipio de Tecámac, Estado de México, México": 291,
-     "Mérida, México": 403,
-     "Naucalpan de Juárez, Estado de México, México": 1405,
+     "León, México": 425,
+     "López Mateos, State of Mexico, Mexico": 859,
+     "Metepec, Estado de México, México": 284,
+     "Mexicali, Península de Baja California, México": 217,
+     "Monterrey, Nuevo León, México": 643,
+     "Morelia, México": 264,
+     "Municipio de Tecámac, Estado de México, México": 298,
+     "Mérida, México": 405,
+     "Naucalpan de Juárez, Estado de México, México": 1421,
      "Nezahualcóyotl, Estado de México, México": 508,
      "Oaxaca de Juárez, México": 138,
-     "Pachuca de Soto, México": 290,
+     "Pachuca de Soto, México": 289,
      "Playa del Carmen, México": 169,
-     "Puebla de Zaragoza, México": 627,
+     "Puebla de Zaragoza, México": 629,
      "Querétaro, México": 618,
-     "Saltillo, México": 168,
+     "Saltillo, México": 170,
      "San Luis Potosí, México": 372,
-     "San Nicolás de los Garza, Nuevo León, México": 171,
-     "Santiago Yancuitlalpan, State of Mexico, Mexico": 147,
+     "San Nicolás de los Garza, Nuevo León, México": 172,
+     "Santiago Yancuitlalpan, State of Mexico, Mexico": 150,
      "Tampico, México": 143,
-     "Tijuana, Península de Baja California, México": 514,
-     "Tlaquepaque, Jalisco, México": 157,
-     "Toluca de Lerdo, Estado de México, México": 367,
+     "Tijuana, Península de Baja California, México": 515,
+     "Tlaquepaque, Jalisco, México": 159,
+     "Toluca de Lerdo, Estado de México, México": 362,
      "Torreón, México": 207,
-     "Veracruz, Veracruz de Ignacio de la Llave, México": 198,
-     "Victoria de Durango, México": 191,
-     "Xalapa-Enríquez, Veracruz de Ignacio de la Llave, México": 176,
-     "Zapopan, Jalisco, México": 766
+     "Veracruz, Veracruz de Ignacio de la Llave, México": 197,
+     "Victoria de Durango, México": 190,
+     "Xalapa-Enríquez, Veracruz de Ignacio de la Llave, México": 177,
+     "Zapopan, Jalisco, México": 763
     },
     "genero": {
-     "F": 1797,
-     "M": 1677,
-     "U": 727
+     "F": 1831,
+     "M": 1687,
+     "U": 729
     },
     "pais": {
-     "AE": 2,
+     "AE": 1,
      "AR": 36,
      "BJ": 1,
      "BO": 3,
-     "BR": 4,
+     "BR": 5,
      "CA": 8,
      "CH": 1,
-     "CL": 11,
-     "CO": 73,
-     "CR": 6,
-     "CU": 6,
+     "CL": 12,
+     "CO": 72,
+     "CR": 5,
+     "CU": 7,
      "DE": 1,
      "DK": 1,
      "DO": 7,
      "EC": 3,
-     "ES": 25,
-     "FR": 6,
+     "ES": 24,
+     "FR": 5,
      "GB": 1,
      "GE": 1,
      "GT": 2,
-     "HN": 3,
+     "HN": 2,
      "ID": 1,
      "IN": 6,
      "IT": 4,
      "JP": 1,
      "KE": 1,
-     "MX": 3850,
+     "LU": 1,
+     "MX": 3898,
      "NG": 2,
      "NL": 3,
      "NZ": 1,
      "PA": 4,
-     "PE": 28,
+     "PE": 27,
      "PK": 1,
      "PL": 1,
-     "PT": 1,
      "PY": 2,
      "SV": 4,
      "UA": 1,
-     "US": 63,
+     "US": 65,
      "UY": 4,
      "VE": 22
     }
@@ -132750,19 +132860,19 @@
     "ig_altas": 1854,
     "ig_bajas": 504,
     "ig_clics": 950,
-    "ig_interacciones": 6565,
+    "ig_interacciones": 6564,
     "ig_perfil": 8398,
     "ig_vistas": 7888300
    },
    "2026-10": {
-    "ig_alc_noseg": 1145731,
-    "ig_alc_seg": 30913,
-    "ig_altas": 1205,
-    "ig_bajas": 348,
-    "ig_clics": 615,
-    "ig_interacciones": 4204,
-    "ig_perfil": 5649,
-    "ig_vistas": 4683108
+    "ig_alc_noseg": 1184973,
+    "ig_alc_seg": 31765,
+    "ig_altas": 1278,
+    "ig_bajas": 365,
+    "ig_clics": 667,
+    "ig_interacciones": 4532,
+    "ig_perfil": 6170,
+    "ig_vistas": 4989668
    }
   },
   "MX": {
@@ -132932,17 +133042,17 @@
     "ig_clics": 287,
     "ig_interacciones": 3716,
     "ig_perfil": 4942,
-    "ig_vistas": 9352969
+    "ig_vistas": 9352972
    },
    "2026-10": {
-    "ig_alc_noseg": 2087084,
-    "ig_alc_seg": 10315,
-    "ig_altas": 488,
-    "ig_bajas": 142,
-    "ig_clics": 147,
-    "ig_interacciones": 4018,
-    "ig_perfil": 3329,
-    "ig_vistas": 6232042
+    "ig_alc_noseg": 2184509,
+    "ig_alc_seg": 10468,
+    "ig_altas": 526,
+    "ig_bajas": 149,
+    "ig_clics": 159,
+    "ig_interacciones": 4237,
+    "ig_perfil": 3557,
+    "ig_vistas": 6717626
    }
   },
   "PCOM": {
@@ -133115,18 +133225,18 @@
     "ig_vistas": 141290
    },
    "2026-10": {
-    "ig_alc_noseg": 18028,
-    "ig_alc_seg": 117,
-    "ig_altas": 54,
+    "ig_alc_noseg": 18622,
+    "ig_alc_seg": 119,
+    "ig_altas": 57,
     "ig_bajas": 19,
-    "ig_clics": 44,
+    "ig_clics": 45,
     "ig_interacciones": 37,
-    "ig_perfil": 304,
-    "ig_vistas": 82667
+    "ig_perfil": 319,
+    "ig_vistas": 86979
    }
   }
  },
- "last_refresh": "2026-10-20T22:37:21Z",
+ "last_refresh": "2026-10-21T22:42:29Z",
  "posts": {
   "CO": {
    "17842262945118539": {
@@ -139770,18 +139880,18 @@
     "texto": "¡Vende tu inmueble de forma segura como Consuelo!"
    },
    "17991386022112389": {
-    "alcance": 277,
+    "alcance": 542,
     "comentarios": 0,
     "compartidos": 1,
     "fecha": "2026-10-20",
     "formato": "carrusel",
     "guardados": 0,
-    "interacciones": 8,
-    "likes": 7,
+    "interacciones": 17,
+    "likes": 16,
     "link": "https://www.instagram.com/p/Deum1FzH3s6/",
     "pauta": false,
     "texto": "11 sesiones clave para transformar tu negocio inmobiliario en un solo lugar. 🚀✨ Conoce la agenda oficial del Salón Inspira en Habi Next Colo",
-    "vistas": 668
+    "vistas": 1499
    },
    "17992156303795637": {
     "comentarios": 14,
@@ -140463,7 +140573,7 @@
     "texto": "Sabemos que tienes muchas dudas y en Habi queremos darte completa seguridad en la venta de tu vivienda 🏠☺. Hacemos que tu experiencia sea 10"
    },
    "18017658827947213": {
-    "alcance": 2027,
+    "alcance": 2052,
     "comentarios": 5,
     "compartidos": 10,
     "fecha": "2026-09-11",
@@ -140474,7 +140584,7 @@
     "link": "https://www.instagram.com/reel/DdKbiqLoi-S/",
     "pauta": false,
     "texto": "El agente inmobiliario del futuro no trabaja solo 🤖",
-    "vistas": 2965
+    "vistas": 3002
    },
    "18017779564605748": {
     "comentarios": 2,
@@ -140613,7 +140723,7 @@
     "texto": "Es mejor tener 1 opción segura que contar con 4 que no sean fiables 😄✅. "
    },
    "18023098631924268": {
-    "alcance": 889,
+    "alcance": 931,
     "comentarios": 2,
     "compartidos": 1,
     "fecha": "2026-10-10",
@@ -140624,7 +140734,7 @@
     "link": "https://www.instagram.com/p/DeSxxxADnlN/",
     "pauta": false,
     "texto": "¿Tus campañas en Meta realmente te están trayendo clientes que sí compran? 🚀",
-    "vistas": 2259
+    "vistas": 2320
    },
    "18023932093341153": {
     "comentarios": 1,
@@ -141999,18 +142109,18 @@
     "texto": "¿Te resignas ante un sueño solo por esperar y esperar? 😔"
    },
    "18095237225141851": {
-    "alcance": 1038,
+    "alcance": 1091,
     "comentarios": 0,
     "compartidos": 2,
     "fecha": "2026-10-13",
     "formato": "carrusel",
     "guardados": 1,
-    "interacciones": 26,
-    "likes": 17,
+    "interacciones": 27,
+    "likes": 18,
     "link": "https://www.instagram.com/p/DeczQ7HH6-Z/",
     "pauta": false,
     "texto": "¡Un edificio de 195 departamentos vendido en 48 horas por WhatsApp! 🏢📲⚡",
-    "vistas": 2738
+    "vistas": 2831
    },
    "18095270275259657": {
     "comentarios": 4,
@@ -142394,6 +142504,20 @@
     "pauta": false,
     "texto": "Una de las principales preguntas que han tenido los usuarios de Habi es ¿Cómo funcionan nuestros precios? 😳"
    },
+   "18120167935915589": {
+    "alcance": 521,
+    "comentarios": 2,
+    "compartidos": 2,
+    "fecha": "2026-10-21",
+    "formato": "video",
+    "guardados": 0,
+    "interacciones": 34,
+    "likes": 28,
+    "link": "https://www.instagram.com/reel/DevKlN1uuTy/",
+    "pauta": false,
+    "texto": "¡Qué jornada tan increíble vivimos en Habi Next Colombia! 🚀💜 ",
+    "vistas": 958
+   },
    "18120357136303606": {
     "comentarios": 4,
     "fecha": "2022-07-11",
@@ -142542,18 +142666,18 @@
     "texto": "El valor de tu vivienda es el resultado de una ecuación donde tienen que ver muchos factores, algunos de ellos son: la ubicación, el metraje"
    },
    "18128196655879169": {
-    "alcance": 731,
+    "alcance": 783,
     "comentarios": 4,
     "compartidos": 3,
     "fecha": "2026-10-16",
     "formato": "carrusel",
     "guardados": 1,
-    "interacciones": 26,
-    "likes": 16,
+    "interacciones": 27,
+    "likes": 17,
     "link": "https://www.instagram.com/p/DeiSoMzDnFR/",
     "pauta": false,
     "texto": "Hoy te presentamos a Camilo Olarte, fundador de LOKL. Su propuesta para el Edificio Coltejer, desarrollada con Inteligencia Artificial, fue ",
-    "vistas": 1824
+    "vistas": 1927
    },
    "18128463880175563": {
     "comentarios": 0,
@@ -142646,18 +142770,18 @@
     "texto": "El predial es una mezcla de dos valores: el de la tierra y el de la construcción, conoce estos datos y más en la entrada del blog que le ded"
    },
    "18135347212777661": {
-    "alcance": 1339,
+    "alcance": 1408,
     "comentarios": 0,
     "compartidos": 5,
     "fecha": "2026-10-09",
     "formato": "carrusel",
     "guardados": 3,
-    "interacciones": 43,
-    "likes": 31,
+    "interacciones": 46,
+    "likes": 34,
     "link": "https://www.instagram.com/p/DeSPilcnznD/",
     "pauta": false,
     "texto": "El asesor que invierte, crece dos veces. Conoces el mercado inmobiliario mejor que nadie, ¿por qué no usar ese conocimiento para construir t",
-    "vistas": 2868
+    "vistas": 2980
    },
    "18135941518160971": {
     "comentarios": 1,
@@ -143800,6 +143924,20 @@
     "link": "https://www.instagram.com/p/DD98cTPT844/",
     "texto": "¡Que la magia de la Navidad llene cada rincón de tu hogar de alegría y unión familiar! 🎄✨ En Habi, celebramos contigo los momentos que impor"
    },
+   "18497174911103026": {
+    "alcance": 547,
+    "comentarios": 2,
+    "compartidos": 1,
+    "fecha": "2026-10-20",
+    "formato": "video",
+    "guardados": 0,
+    "interacciones": 34,
+    "likes": 26,
+    "link": "https://www.instagram.com/reel/Deu7QZNIWGy/",
+    "pauta": false,
+    "texto": "Red Habi: Conectando el ecosistema inmobiliario. 🏠⚡ ¡Así se está viviendo la experiencia de la red inmobiliaria más grande del país en Habi ",
+    "vistas": 1015
+   },
    "18508526326052600": {
     "comentarios": 0,
     "fecha": "2025-02-07",
@@ -144195,7 +144333,7 @@
     "vistas": 2825
    },
    "17868375870646075": {
-    "alcance": 679,
+    "alcance": 681,
     "comentarios": 0,
     "compartidos": 0,
     "fecha": "2026-09-16",
@@ -144206,7 +144344,7 @@
     "link": "https://www.instagram.com/reel/DdVKe5tDHvM/",
     "pauta": false,
     "texto": "Este 15 de septiembre hay más de una independencia que celebrar. 🇲🇽🏠",
-    "vistas": 884
+    "vistas": 886
    },
    "17871148841756894": {
     "comentarios": 2,
@@ -144231,6 +144369,20 @@
     "likes": 35,
     "link": "https://www.instagram.com/p/CjeHZLav-sR/",
     "texto": "Sí tu propiedad cumple estos requisitos 👌, nosotros te la compramos 😉 y recibes tu dinero 💰 en 🔟 días*. Entra al link en el perfil 👆 en la o"
+   },
+   "17872166067643446": {
+    "alcance": 113,
+    "comentarios": 0,
+    "compartidos": 0,
+    "fecha": "2026-10-21",
+    "formato": "video",
+    "guardados": 0,
+    "interacciones": 2,
+    "likes": 2,
+    "link": "https://www.instagram.com/reel/DexATk2kSGH/",
+    "pauta": false,
+    "texto": "Hay historias que se cuentan con las luces apagadas... y otras que se viven al intentar vender una casa. 👻🏚️",
+    "vistas": 184
    },
    "17872463346226344": {
     "comentarios": 1,
@@ -145026,7 +145178,7 @@
     "texto": "En habi 💜 día a día estamos en crecimiento continuo 📈 gracias al trabajo de nuestras Master Key's 🔑 y el liderazgo de nuestra CEO Brynne. 🙆‍"
    },
    "17910610743472907": {
-    "alcance": 363,
+    "alcance": 378,
     "comentarios": 0,
     "compartidos": 1,
     "fecha": "2026-10-12",
@@ -145037,7 +145189,7 @@
     "link": "https://www.instagram.com/reel/DeZ1CvTEXo7/",
     "pauta": false,
     "texto": "Vender una casa es de las decisiones más grandes que tomamos, y la confianza pesa tanto como el precio. 🤝",
-    "vistas": 465
+    "vistas": 484
    },
    "17910639993010274": {
     "comentarios": 0,
@@ -145151,7 +145303,7 @@
     "texto": "¡Además te olvidas de los trámites notariales, nosotros nos encargamos!😉✅"
    },
    "17913265824494831": {
-    "alcance": 728,
+    "alcance": 746,
     "comentarios": 0,
     "compartidos": 2,
     "fecha": "2026-10-09",
@@ -145162,7 +145314,7 @@
     "link": "https://www.instagram.com/reel/DeQVchSjAl9/",
     "pauta": false,
     "texto": "Hay casas que guardan recuerdos, y hay decisiones que los honran. ☕ Sofía y Daniel vendieron la casa de sus papás y la convirtieron en un nu",
-    "vistas": 869
+    "vistas": 884
    },
    "17913417497024750": {
     "comentarios": 0,
@@ -145197,7 +145349,7 @@
     "texto": "Vender tu propiedad nunca había sido tan fácil 😁. \r"
    },
    "17913800406496497": {
-    "alcance": 493,
+    "alcance": 507,
     "comentarios": 2,
     "compartidos": 3,
     "fecha": "2026-10-14",
@@ -145208,7 +145360,7 @@
     "link": "https://www.instagram.com/reel/Dee-2zwIJR3/",
     "pauta": false,
     "texto": "Hay historias que se cuentan con las luces apagadas... y otras que se viven al intentar vender una casa. 👻🏚️",
-    "vistas": 625
+    "vistas": 645
    },
    "17913863532004944": {
     "comentarios": 0,
@@ -145219,7 +145371,7 @@
     "texto": "Deja tu proceso en manos de expertos 💜🏡"
    },
    "17913872127516177": {
-    "alcance": 453,
+    "alcance": 456,
     "comentarios": 2,
     "compartidos": 1,
     "fecha": "2026-10-07",
@@ -145230,7 +145382,7 @@
     "link": "https://www.instagram.com/reel/DeLKODZDN9i/",
     "pauta": false,
     "texto": "¿Necesitas vender tu casa? En Tuhabi tú eliges: recibe una oferta directa para vender en 10 días o conecta con nuestra red de más de 4,000 b",
-    "vistas": 574
+    "vistas": 579
    },
    "17914197079995163": {
     "comentarios": 1,
@@ -145268,7 +145420,7 @@
     "link": "https://www.instagram.com/reel/DdkdiULESFT/",
     "pauta": false,
     "texto": "¿Y esta rosa? 🌹👀 Ni nosotros sabemos bien qué está pasando...",
-    "vistas": 1627
+    "vistas": 1629
    },
    "17914712512978337": {
     "comentarios": 0,
@@ -145383,7 +145535,7 @@
     "texto": "Este año fue una montaña rusa de retos, aprendizajes y triunfos. Por eso, quisimos cerrar con una fiesta inolvidable, llena de sonrisas, mús"
    },
    "17917467432449389": {
-    "alcance": 378,
+    "alcance": 380,
     "comentarios": 0,
     "compartidos": 2,
     "fecha": "2026-09-28",
@@ -145394,7 +145546,7 @@
     "link": "https://www.instagram.com/reel/Dd2Qae9js3v/",
     "pauta": false,
     "texto": "No todos buscamos lo mismo en una casa, pero todos buscamos un lugar así. 🏡",
-    "vistas": 551
+    "vistas": 557
    },
    "17917701434272563": {
     "comentarios": 1,
@@ -145593,7 +145745,7 @@
     "vistas": 820
    },
    "17922859410428996": {
-    "alcance": 1422,
+    "alcance": 1432,
     "comentarios": 2,
     "compartidos": 2,
     "fecha": "2026-10-08",
@@ -145604,7 +145756,7 @@
     "link": "https://www.instagram.com/reel/DeN0-2UM3nC/",
     "pauta": false,
     "texto": "Un nuevo comienzo puede empezar con unos cuantos clics. 💻",
-    "vistas": 1656
+    "vistas": 1662
    },
    "17923094723449797": {
     "comentarios": 8,
@@ -149856,7 +150008,7 @@
     "vistas": 1022
    },
    "18091186082451056": {
-    "alcance": 507,
+    "alcance": 508,
     "comentarios": 2,
     "compartidos": 5,
     "fecha": "2026-09-10",
@@ -149895,7 +150047,7 @@
     "link": "https://www.instagram.com/p/Dc9IXFCI3WV/",
     "pauta": false,
     "texto": "Anunciamos en las calles lo que ya sabemos hacer bien: ayudarte a vender tu casa fácil, rápido y seguro.",
-    "vistas": 1159
+    "vistas": 1161
    },
    "18092752534943559": {
     "alcance": 730,
@@ -149968,7 +150120,7 @@
     "vistas": 2639
    },
    "18094803581399373": {
-    "alcance": 2158,
+    "alcance": 2170,
     "comentarios": 0,
     "compartidos": 14,
     "fecha": "2026-10-07",
@@ -149979,10 +150131,10 @@
     "link": "https://www.instagram.com/reel/DeNh-H6OhnG/",
     "pauta": false,
     "texto": "Vender tu casa también es cumplir un sueño, y en Tuhabi te acompañamos desde la primera visita. 🏠",
-    "vistas": 2582
+    "vistas": 2595
    },
    "18095106716658147": {
-    "alcance": 609,
+    "alcance": 611,
     "comentarios": 0,
     "compartidos": 2,
     "fecha": "2026-10-06",
@@ -149993,7 +150145,7 @@
     "link": "https://www.instagram.com/reel/DeKbBhgFeY6/",
     "pauta": true,
     "texto": "Hay casas que nos dan los mejores años de la vida, y hay etapas que piden un hogar a nuestra medida. 🏠",
-    "vistas": 863
+    "vistas": 865
    },
    "18095527150615442": {
     "alcance": 616,
@@ -150022,7 +150174,7 @@
     "vistas": 869
    },
    "18095861000268921": {
-    "alcance": 685,
+    "alcance": 687,
     "comentarios": 2,
     "compartidos": 3,
     "fecha": "2026-09-17",
@@ -150033,7 +150185,7 @@
     "link": "https://www.instagram.com/reel/DdZdGopgTzT/",
     "pauta": false,
     "texto": "Toda casa mexicana guarda sus propias costumbres. 🏠😅 Y cuando toca vender, lo único que debe quedarse atrás son las paredes, no los recuerdo",
-    "vistas": 957
+    "vistas": 962
    },
    "18096753376810022": {
     "alcance": 599,
@@ -150096,7 +150248,7 @@
     "vistas": 1108
    },
    "18100366775303408": {
-    "alcance": 744,
+    "alcance": 759,
     "comentarios": 0,
     "compartidos": 7,
     "fecha": "2026-10-07",
@@ -150107,21 +150259,21 @@
     "link": "https://www.instagram.com/reel/DeNjpVcj-DH/",
     "pauta": false,
     "texto": "Cuando la vida cambia de golpe, también llegan nuevas oportunidades. 🌹✨",
-    "vistas": 1067
+    "vistas": 1084
    },
    "18101198363077410": {
-    "alcance": 389,
+    "alcance": 424,
     "comentarios": 0,
     "compartidos": 2,
     "fecha": "2026-10-19",
     "formato": "video",
-    "guardados": 1,
-    "interacciones": 10,
+    "guardados": 2,
+    "interacciones": 11,
     "likes": 6,
     "link": "https://www.instagram.com/reel/Der2ojCibG-/",
     "pauta": false,
     "texto": "Tu propio camino en el mundo inmobiliario puede empezar hoy. 🔑 ",
-    "vistas": 526
+    "vistas": 585
    },
    "18101794354966687": {
     "alcance": 1194,
@@ -150355,7 +150507,7 @@
     "vistas": 1493
    },
    "18117365015090553": {
-    "alcance": 706,
+    "alcance": 709,
     "comentarios": 2,
     "compartidos": 3,
     "fecha": "2026-10-06",
@@ -150366,7 +150518,7 @@
     "link": "https://www.instagram.com/reel/DeKs6vyDaYM/",
     "pauta": true,
     "texto": "Vender tu casa también puede ser rápido, seguro y sin sustos. 🏠",
-    "vistas": 872
+    "vistas": 937
    },
    "18117383101262639": {
     "comentarios": 0,
@@ -150412,7 +150564,7 @@
     "vistas": 1516
    },
    "18122671150925285": {
-    "alcance": 1349,
+    "alcance": 1355,
     "comentarios": 4,
     "compartidos": 9,
     "fecha": "2026-10-02",
@@ -150423,10 +150575,10 @@
     "link": "https://www.instagram.com/reel/DeAAqetJtCB/",
     "pauta": true,
     "texto": "A Mariana le urgía vender su casa para no perder la de sus sueños. 🏠  Tuhabi le compró rápido y el milagro se hizo realidad. ✨",
-    "vistas": 1981
+    "vistas": 1989
    },
    "18124008895698697": {
-    "alcance": 460,
+    "alcance": 483,
     "comentarios": 4,
     "compartidos": 1,
     "fecha": "2026-10-16",
@@ -150437,7 +150589,7 @@
     "link": "https://www.instagram.com/reel/DekIUrtnQXK/",
     "pauta": false,
     "texto": "Aprendiste algo nuevo hoy, ¿verdad? 🦄",
-    "vistas": 570
+    "vistas": 591
    },
    "18127886914496995": {
     "alcance": 814,
@@ -150453,7 +150605,7 @@
     "vistas": 863
    },
    "18128433292826903": {
-    "alcance": 700,
+    "alcance": 713,
     "comentarios": 0,
     "compartidos": 8,
     "fecha": "2026-10-09",
@@ -150464,7 +150616,7 @@
     "link": "https://www.instagram.com/reel/DeQTcRCjaj3/",
     "pauta": false,
     "texto": "A veces la decisión más difícil es la que tomamos por nosotras mismas. 🏠 Cinthia eligió empezar de nuevo en Guadalajara, y Tuhabi le ayudó a",
-    "vistas": 935
+    "vistas": 947
    },
    "18129741625520129": {
     "alcance": 1164,
@@ -150481,7 +150633,7 @@
     "vistas": 1571
    },
    "18130028083701641": {
-    "alcance": 738,
+    "alcance": 750,
     "comentarios": 0,
     "compartidos": 2,
     "fecha": "2026-10-09",
@@ -150492,7 +150644,7 @@
     "link": "https://www.instagram.com/reel/DeSGtsCAFE8/",
     "pauta": false,
     "texto": "Según datos del INEGI, 1 de cada 4 casas en México no tiene escrituras. ¿La tuya es una de ellas? 🏠",
-    "vistas": 950
+    "vistas": 969
    },
    "18130909303283336": {
     "comentarios": 4,
@@ -150645,7 +150797,7 @@
     "vistas": 4525
    },
    "18141929419594879": {
-    "alcance": 1036,
+    "alcance": 1039,
     "comentarios": 0,
     "compartidos": 7,
     "fecha": "2026-10-05",
@@ -150656,7 +150808,7 @@
     "link": "https://www.instagram.com/reel/DeH23fKCvtN/",
     "pauta": true,
     "texto": "Le dieron el trabajo en Querétaro… pero la casa todavía tenía hipoteca. 🏠",
-    "vistas": 1463
+    "vistas": 1468
    },
    "18141965482521393": {
     "alcance": 580,
@@ -150673,7 +150825,7 @@
     "vistas": 760
    },
    "18142654360519765": {
-    "alcance": 608,
+    "alcance": 619,
     "comentarios": 4,
     "compartidos": 2,
     "fecha": "2026-10-07",
@@ -150684,10 +150836,10 @@
     "link": "https://www.instagram.com/reel/DeLGI6ojFng/",
     "pauta": true,
     "texto": "¿Vendes tu casa? Hazlo con nuestra red de brokers, la más grande del país, o te la compramos de inmediato. Tú decides.",
-    "vistas": 836
+    "vistas": 845
    },
    "18143512165574416": {
-    "alcance": 548,
+    "alcance": 551,
     "comentarios": 0,
     "compartidos": 2,
     "fecha": "2026-10-06",
@@ -150698,7 +150850,7 @@
     "link": "https://www.instagram.com/reel/DeKzpBmCE3B/",
     "pauta": true,
     "texto": "Los nuevos comienzos también se construyen en familia. 🛞 En Tuhabi compramos tu casa aunque todavía tenga crédito hipotecario o bancario. ",
-    "vistas": 705
+    "vistas": 709
    },
    "18144760936490510": {
     "alcance": 716,
@@ -150755,7 +150907,7 @@
     "vistas": 667
    },
    "18154222711459215": {
-    "alcance": 929,
+    "alcance": 932,
     "comentarios": 0,
     "compartidos": 4,
     "fecha": "2026-10-06",
@@ -150766,7 +150918,7 @@
     "link": "https://www.instagram.com/reel/DeIlw3wAqWw/",
     "pauta": true,
     "texto": "A veces los hijos llegan a enseñarnos que los sueños sí se cumplen. 🏠",
-    "vistas": 1216
+    "vistas": 1218
    },
    "18154907197250307": {
     "comentarios": 4,
@@ -150777,7 +150929,7 @@
     "texto": "Es simple, es seguro, es Tuhabi. 💜"
    },
    "18155345401520825": {
-    "alcance": 571,
+    "alcance": 583,
     "comentarios": 0,
     "compartidos": 1,
     "fecha": "2026-10-07",
@@ -150788,7 +150940,7 @@
     "link": "https://www.instagram.com/reel/DeNUUAOie6Q/",
     "pauta": false,
     "texto": "Los mejores consejos se comparten entre amigas. 🌹",
-    "vistas": 548
+    "vistas": 560
    },
    "18155457082479887": {
     "alcance": 502,
@@ -150805,7 +150957,7 @@
     "vistas": 658
    },
    "18156828400511994": {
-    "alcance": 682,
+    "alcance": 695,
     "comentarios": 0,
     "compartidos": 1,
     "fecha": "2026-10-07",
@@ -150816,7 +150968,7 @@
     "link": "https://www.instagram.com/reel/DeNiGHwOVNC/",
     "pauta": false,
     "texto": "Los nuevos comienzos también acercan a las familias. 🌹",
-    "vistas": 880
+    "vistas": 891
    },
    "18160880848229503": {
     "comentarios": 2,
@@ -151056,7 +151208,7 @@
     "link": "https://www.instagram.com/reel/Ddo566JgB-T/",
     "pauta": false,
     "texto": "Cuando alguien conoce tu colonia de verdad, no necesita adivinar lo que vale tu casa. Ya lo sabe.",
-    "vistas": 598
+    "vistas": 604
    },
    "18225750709167953": {
     "comentarios": 0,
@@ -151827,7 +151979,7 @@
     "vistas": 545
    },
    "18449795167123376": {
-    "alcance": 531,
+    "alcance": 534,
     "comentarios": 0,
     "compartidos": 0,
     "fecha": "2026-09-19",
@@ -151838,7 +151990,7 @@
     "link": "https://www.instagram.com/p/DdemtouFydE/",
     "pauta": false,
     "texto": "¿Llevas meses tratando de vender tu casa y nada?",
-    "vistas": 928
+    "vistas": 932
    },
    "18454771756049745": {
     "comentarios": 0,
@@ -151969,7 +152121,7 @@
     "link": "https://www.instagram.com/reel/DeNW7onDnA6/",
     "pauta": true,
     "texto": "A veces la señal aparece justo cuando más la necesitas... ✨",
-    "vistas": 7771
+    "vistas": 8318
    }
   },
   "PCOM": {
